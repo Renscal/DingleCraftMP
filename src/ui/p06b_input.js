@@ -64,7 +64,7 @@ function setupInput(){
       else if(!paused&&!P.dead)openModal(P.mode==='c'?'creative':'inv');
     }
     if(e.code==='KeyQ'&&!modalOpen()&&!paused)dropSel(KEY.ControlLeft);
-    if(e.code==='F3'){e.preventDefault();debugOn=!debugOn;}
+    if(dbgKeyDown(e))return;                               /* F3, and F3+B / F3+G while it is held (p06f_debug.js) */
     if(e.code==='KeyR'&&MODAL.kind==='inv')sortInv();
     if(e.code==='KeyP'&&playing&&!P.dead&&!paused){if(powOpen)closePow();else if(!modalOpen())openPow();}
     if(e.code==='Escape'){
@@ -91,7 +91,7 @@ function setupInput(){
     }
     if(['Space','KeyW','KeyA','KeyS','KeyD','ShiftLeft','ControlLeft'].includes(e.code)||(e.code==='Tab'&&!paused&&!modalOpen()))e.preventDefault();
   });
-  addEventListener('keyup',e=>{KEY[e.code]=false;if(e.code==='KeyW')DBLW.on=false;if(e.code==='Tab')tabHeld=false;});
+  addEventListener('keyup',e=>{KEY[e.code]=false;dbgKeyUp(e);if(e.code==='KeyW')DBLW.on=false;if(e.code==='Tab')tabHeld=false;});
   addEventListener('blur',()=>{for(const k in KEY)KEY[k]=false;MB.l=MB.r=false;tabHeld=false;});
   const gl=$('gl');
   gl.addEventListener('pointerdown',e=>{

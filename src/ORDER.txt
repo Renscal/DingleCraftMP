@@ -85,6 +85,7 @@ features/p52_big_dingle.js
 
 # PART 53: chat, the player list and shared helpers (what is left of the AI Players update, removed in 6.10)
 ui/p53_chat.js
+ui/p06f_debug.js
 
 # PART 58: multiplayer (the client for server/dinglecraft-server.mjs)
 net/n0_contract.js

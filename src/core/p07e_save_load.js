@@ -88,12 +88,14 @@ function snapshot(name){
     ...mgSaveFields(),
     gr:{...GR},
     ...crSaveFields(),
+    ...dbgSaveFields(),
     spw:[...SPW.keys()],
     edits,be,ents};
 }
 function resetWorld(){
   DIM='over';
   SNL=null;SNL_ON=false;
+  dbgLoad(null);
   NUKES.length=0;NARM.e=null;NARM.t=0;nukeHud(-1);
   for(const k2 in ENT_STASH)delete ENT_STASH[k2];
   NCOLM.clear();ACOLM.clear();mpReset();
@@ -135,6 +137,7 @@ function applySave(d){
   const dd=typeof mpDimAlias==='function'?mpDimAlias(d.dim):d.dim;        /* Release 1.0: the old purgatory key loads as 'puppet' */
   DIM=(dd==='nether'||dd==='aether'||dd==='puppet')?dd:'over';
   SNL=null;SNL_ON=!!d.snl;
+  dbgLoad(d);
   NUKES.length=0;
   for(const a of (d.nukes||[]))NUKES.push({x:a[0],y:a[1],z:a[2],d:a[3]===1?'nether':(a[3]===2?'aether':(a[3]===3?'puppet':'over'))});
   for(const k in (d.edits||{})){

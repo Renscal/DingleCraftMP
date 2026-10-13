@@ -21,6 +21,16 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — The debug screen
+
+*Game version 6.22, released 2026-10-13.*
+
+- THE DEBUG SCREEN. F3 used to say five things. It now says where you are to three decimals, which block that is, which way you face, your chunk, your section and your spot inside it, the biome, how much memory the game is using, and the local difficulty.
+- Local difficulty is counted the usual way: the longer a world has been played and the longer anyone has stood in a chunk, the higher it climbs. It is only a number for now. Nothing spawns by it.
+- F3 + B draws a box round everything that has one: mobs, dropped items, vehicles, other players. Mobs and players get a little line showing which way they face.
+- F3 + G draws the borders of your chunk, with a ring every 16 blocks up, and the corners of the chunks around it.
+- F3 now acts when you let go of it, so the combos do not flick the screen on and off.
+
 ## Release 1.1 — Throw it and wait
 
 *Game version 6.21, released 2026-10-13.*

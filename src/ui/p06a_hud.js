@@ -130,14 +130,9 @@ function drawDebug(dt){
   fpsA+=dt;fpsN++;
   if(fpsA>0.5){fpsShow=Math.round(fpsN/fpsA);fpsA=0;fpsN=0;}
   updateCoords();
+  dbgTick(dt);                                             /* 6.22: the world's age, hitboxes, chunk borders (p06f_debug.js) */
   if(!debugOn){$('debug').style.display='none';return;}
   $('debug').style.display='block';
-  const bi=colInfo(Math.floor(P.x),Math.floor(P.z));
-  $('debug').textContent=
-    'DINGLECRAFT '+RELEASE_LABEL+'  '+fpsShow+' fps\n'+
-    'XYZ: '+P.x.toFixed(1)+' / '+P.y.toFixed(1)+' / '+P.z.toFixed(1)+'\n'+
-    'Biome: '+BIOME_NAME[bi.b]+'  Seed: '+SEED+'\n'+
-    'Chunks: '+chunks.size+'  Entities: '+entities.length+'\n'+
-    'Time: '+(timeOfDay%1).toFixed(2)+'  Mode: '+(P.mode==='c'?'Creative':'Survival');
+  $('debug').textContent=dbgText();
 }
 
