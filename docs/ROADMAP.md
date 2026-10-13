@@ -79,6 +79,100 @@ as ES modules (the classic `three.min.js` build went away; check the exact relea
 - Replace `assets/vendor/three.r128.min.js` and its licence file together, and keep the `t?_real` suites green against it.
 - **Proof:** the Hyperreal browser QA, plus og_trace re-blessed with a stated reason.
 
+## 4. Multiplayer: the server runs the game
+
+The goal is a server that works the way a Minecraft server does: it runs the world, and a player's game sends what the
+player does and draws what it is told. Steps 1 to 5 are released (game 6.13 to 6.17). Step 6 is what is left.
+
+**Done**
+
+| step | version | what the server now does |
+|---|---|---|
+| storage | 6.12 | the world is a folder of readable JSON: `level.json`, `region/`, `entities/`, `playerdata/` |
+| 1 | 6.13 | runs its own headless copy of the game in a worker thread; that game spawns, moves and saves the Overworld's mobs |
+| 2 | 6.14 | keeps vehicles; everyone sees what flies (projectiles are announced, not server-owned: see 6c) |
+| 3 | 6.15 | runs water, fire, falling blocks and furnaces; loot is rolled once |
+| 4 | 6.16 | keeps what the world remembers (found structures, dead bosses, spawners, nukes, one stock market) under `data/` |
+| 5 | 6.17 | one game per dimension: Overworld, Nether, Aether. Puppet Purgatory stays per player |
+
+### Step 6a. Accounts (next; self-contained)
+
+Today a player is whoever types a name, and an operator is a name on a list. Anyone who knows an operator's name has
+their rights and their inventory.
+
+1. **A secret per player.** On a name's first join the server makes a random token, stores only its hash in
+   `playerdata/<name>.json`, and sends the token once in `welcome`. The game keeps it (browser storage; the desktop client
+   can keep it in a file) and sends it in `hello` from then on. A name that has a token is refused without it.
+2. **Recovery.** An operator command (`/resetlogin <name>`) clears a token, for a player who lost theirs (cleared
+   browser data, a new machine). Say so in the refusal message.
+3. **Moving between devices.** Show the token on request in the game (Settings) so it can be typed in elsewhere.
+4. **`usercache.json`** next to `server.json`: name, first seen, last seen, last address.
+5. **Split `ops.json`, `whitelist.json`, `banned-players.json`** out of `server.json`, as Minecraft has them.
+6. Tests: a second connection with the right name and the wrong token is refused; the reset command; an old world's
+   players (no token yet) get one on their next join.
+
+Open choice for the owner: tokens only (no passwords to manage) or a per-player password typed on the join screen. The
+plan above assumes tokens.
+
+### Step 6b. The server decides inventory and damage
+
+Today each player's game decides what they hold and what hurts them, and the server stores the result unread. This is
+the largest change to how the game feels, because that is why the game responds instantly.
+
+1. **Server-held inventory.** The player's stand-in on the server's game already has an inventory object. Fill it from
+   `playerdata` at join and make it the copy of record.
+2. **Intentions instead of results**, one kind of action at a time, each with the game predicting the outcome and the
+   server correcting it when it disagrees:
+   - picking up and dropping items (the server already decides pickup);
+   - moving items in chests and furnaces (replaces the chest lock's "trust the holder" rule);
+   - crafting and smelting;
+   - breaking and placing blocks: reach, the right tool, and the block actually being in the inventory;
+   - eating, armour, tool wear.
+3. **Damage on the server.** Mob hits, falls, drowning, fire and PvP are applied to the stand-in's health; the game is
+   told its health. Needs the stand-in to follow the player's real movement, so do it after 4.
+4. **Movement checks.** Speed and teleport limits per pose, with a correction sent back. Creative and vehicles exempt.
+5. **Reject and correct.** Any refused action sends the server's copy back (edits, inventory slots, position), so a
+   game that disagrees is put right instead of silently diverging. Spawn protection needs this too (a refused edit is
+   not sent back today).
+6. **The world lists** (`wd`): a structure "found" or a boss "dead" should be checked against the server's own game
+   (the player is near it; the boss it ran did die) instead of believed.
+
+Do 1 and 2 first and release them; 3 and 4 as a second release.
+
+### Step 6c. Loose ends from steps 1 to 5
+
+Smaller, independent, any order.
+
+- **Projectiles as server entities.** They are owned by the shooter's game and only announced. Make the server's game
+  own them once 6b lets it trust where a player is aiming.
+- **Fortress bosses** (Nether, Aether) and their guards carry a `cellId` and are excluded from sharing: still each
+  player's own, though their deaths are shared.
+- **Structure chests** are filled by the first visitor's game, not by the server's. Run the structure processors on the
+  server's game instead.
+- **Creativity works** are saved per player; a work handed to another player does not show. Needs world-wide numbering.
+- **Disasters and the Snail** start in one player's game.
+- **A boss fights one player** (the nearest), and the dungeon boss and the Stone Titan have no kill record of their own.
+- **Furnace progress** updates in 2-second steps when opening one the server has been cooking.
+- **A server game that crashes** is only restarted when a player next enters its dimension; the Overworld's should be
+  restarted at once.
+- **Idle dimension games are never stopped.** Stop one after some minutes with nobody in it.
+
+### Verification debt
+
+None of 6.10 to 6.17 has been through the full gate or a browser. Before calling any of it stable:
+
+- run `npm run gate` (about 20 minutes) and fix what it finds;
+- a muted two-browser session per `docs/QA.md`: join, mobs, a vehicle ride, a portal trip, a disconnect and reconnect;
+- the Aether's server game has never been exercised (same code path as the Nether's, which is tested);
+- `n_host.js` failed two checks once in four parallel runs and passed the other three: find the timing-sensitive check;
+- TLS (`cert` / `key`) has never been run with a real certificate;
+- the Electron client (`client/`) has never been started;
+- 14 textures of the removed AI-player models are still packed into the html (about 2 MB): needs a repack from the art
+  sources;
+- Purgatory and Malgorath still carry unreachable "is this target an AI player" branches.
+
+---
+
 ## Open questions for the owner
 
 - The brain falls back to a key exported in the shell when the repo has no `.env` key. Keep that, or go file-only?
