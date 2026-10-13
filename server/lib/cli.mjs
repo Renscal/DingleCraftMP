@@ -29,14 +29,15 @@ function printWelcome(S) {
   console.log(`  listening on port ${S.port}` + (S.opts.password ? ' (password required)' : '') + `, up to ${S.opts.maxPlayers} players, PvP ${S.opts.pvp ? 'on' : 'off'}`);
   if (S.gameFile) {
     console.log('  Players open one of these in a browser (it hands them the game, already pointed at this server):');
-    console.log(`    this computer   http://localhost:${S.port}/`);
-    for (const a of lan) console.log(`    your network    http://${a}:${S.port}/`);
+    console.log(`    this computer   ${S.secure ? 'https' : 'http'}://localhost:${S.port}/`);
+    for (const a of lan) console.log(`    your network    ${S.secure ? 'https' : 'http'}://${a}:${S.port}/`);
   } else {
-    console.log('  No game html found to hand out (build one with "npm run build", or put dinglecraft_v6.10.html next to the server).');
+    console.log('  No game html found to hand out (build one with "npm run build", or put dinglecraft_v<version>.html next to the server).');
     console.log('  Players open their own copy of the game, choose Multiplayer and enter:');
-    console.log(`    this computer   localhost:${S.port}`);
-    for (const a of lan) console.log(`    your network    ${a}:${S.port}`);
+    console.log(`    this computer   ${S.secure ? 'wss://' : ''}localhost:${S.port}`);
+    for (const a of lan) console.log(`    your network    ${S.secure ? 'wss://' : ''}${a}:${S.port}`);
   }
+  if (S.secure) console.log('  Encrypted (TLS): the certificate must be for the address players type, or their browser will refuse it.');
   console.log('  Friends outside your network need your public address and this port forwarded on your router (TCP).');
   console.log('  Commands: list, say <text>, kick <name>, op <name>, ban <name>, whitelist, time <day|night|0..1>, save, stop, help');
   console.log('');

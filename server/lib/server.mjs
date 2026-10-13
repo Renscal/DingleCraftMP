@@ -10,7 +10,13 @@
 //   noGame    true = do not look for a game html to hand out                  quiet   true = no log lines
 //   onRules   called with the rules when a player changes one in the game
 //   onSettings called when a command changed the ops, the bans, the whitelist or the default game mode
+//   cert, key a TLS certificate and its private key (PEM files, inside the data folder unless a full path): with both, the
+//             server speaks https:// and wss:// instead of http:// and ws://
+//   origins   web addresses whose pages may connect, besides the server's own page and a game opened from a file
+//             ([] = any page may, which is what "open your own copy of the game" needs)
+import fs from 'node:fs';
 import http from 'node:http';
+import https from 'node:https';
 import path from 'node:path';
 import { DEFAULTS, LIMITS, SERVER_DIR, cleanRules, cleanList, findGame } from './config.mjs';
 import { openWorld, applySettings, writeWorld } from './world.mjs';
@@ -28,6 +34,9 @@ export function createServer(opts = {}) {
   const dataDir = path.resolve(o.data || path.join(SERVER_DIR, 'data'));
   const worldFile = o.world ? path.resolve(dataDir, o.world) : null;   // null: nothing is ever written (tests)
   const game = o.noGame ? null : findGame(o.game, dataDir);
+  o.origins = cleanList(o.origins).map((s) => s.replace(/\/+$/, ''));
+  /* TLS: read once, at start. A file that is named but cannot be read stops the server rather than quietly serving in the clear. */
+  const tls = o.cert && o.key ? { cert: fs.readFileSync(path.resolve(dataDir, o.cert)), key: fs.readFileSync(path.resolve(dataDir, o.key)) } : null;
 
   /* ---- the world ---- */
   const { world, isNew } = openWorld(worldFile, o, log);
@@ -60,11 +69,15 @@ export function createServer(opts = {}) {
     if (c.sock.writableLength > LIMITS.backlog) return drop(c, 'too far behind');
     c.sock.write(buf);
   }
-  const send = (c, m) => sendRaw(c, textFrame(JSON.stringify(m)));
+  const send = (c, m) => sendRaw(c, textFrame(JSON.stringify(m), c.deflate));
   /* to every player who has finished joining, except one (usually the sender); onlyIf(client) narrows it further */
   function broadcast(m, except, onlyIf) {
-    let buf = null;                                     // encoded once (and only if someone gets it), written to each
-    for (const c of S.clients.values()) if (c !== except && c.ready && (!onlyIf || onlyIf(c))) sendRaw(c, buf || (buf = textFrame(JSON.stringify(m))));
+    const bufs = [null, null];                          // encoded once per kind of connection (plain, compressed), and only if someone gets it
+    let json = null;
+    for (const c of S.clients.values()) if (c !== except && c.ready && (!onlyIf || onlyIf(c))) {
+      const i = c.deflate ? 1 : 0;
+      sendRaw(c, bufs[i] || (bufs[i] = textFrame(json || (json = JSON.stringify(m)), c.deflate)));
+    }
   }
   /* end a connection. tell = send the reason first (a refusal or a kick), so the player's game can show it. */
   function drop(c, why, tell) {
@@ -75,7 +88,7 @@ export function createServer(opts = {}) {
     setTimeout(() => { try { c.sock.destroy(); } catch { /* gone */ } }, 500).unref();
     if (c.id && S.clients.get(c.id) === c) {
       S.clients.delete(c.id);
-      forget(S, c);
+      forget(S, net, c);
       log(`- ${c.name} left (${why}); ${S.clients.size} online`);
       broadcast({ t: 'leave', id: c.id });
       broadcast({ t: 'sys', txt: c.name + ' left the game' });
@@ -84,18 +97,32 @@ export function createServer(opts = {}) {
   const net = { send, broadcast, drop };
 
   /* ---- receiving ---- */
+  /* may a page from this web address open a connection? Always: the server's own page, a game opened from a file (or the
+     desktop client), and anything that is not a browser. Other pages only when the settings list none, or list them. */
+  function originOK(req) {
+    const og = String(req.headers.origin || '').toLowerCase().replace(/\/+$/, '');
+    if (!o.origins.length || !og || og === 'null' || og.startsWith('file:')) return true;
+    const host = og.replace(/^[a-z]+:\/\//, '');
+    return host === String(req.headers.host || '').toLowerCase() || o.origins.includes(og) || o.origins.includes(host);
+  }
   function onText(c, text) {
+    /* every message counts toward one budget per second; a few seconds in a row over it is a flood, not a game */
+    const now = Date.now();
+    if (now - c.msgT >= 1000) { c.flood = c.msgN > LIMITS.msgsPerSec ? c.flood + 1 : 0; c.msgT = now; c.msgN = 0; }
+    if (++c.msgN > LIMITS.msgsPerSec) { if (c.flood >= LIMITS.floodSecs) drop(c, 'Too many messages.', true); return; }
     let m;
     try { m = JSON.parse(text); } catch { return drop(c, 'bad message'); }
     try { handleMessage(S, net, c, m, text.length); } catch (e) { log('error handling a message from ' + (c.name || c.addr) + ': ' + e.message); }
   }
 
-  const srv = http.createServer(pageHandler(S));
+  const srv = tls ? https.createServer(tls, pageHandler(S)) : http.createServer(pageHandler(S));
   srv.on('upgrade', (req, sock) => {
-    if (!acceptUpgrade(req, sock)) return;
+    if (!originOK(req)) { sock.destroy(); return; }
+    const up = acceptUpgrade(req, sock);
+    if (!up) return;
     /* a client: the socket's parsing state plus what the game protocol keeps about a player */
-    const c = Object.assign(newConn(sock), { addr: sock.remoteAddress || '?', id: 0, name: '', ready: false,
-      seen: Date.now(), born: Date.now(), pose: null, poseT: 0, chatT: 0, chatN: 0,
+    const c = Object.assign(newConn(sock, up.deflate), { addr: sock.remoteAddress || '?', id: 0, name: '', ready: false,
+      seen: Date.now(), born: Date.now(), pose: null, poseT: 0, chatT: 0, chatN: 0, ms: 0, msgT: 0, msgN: 0, flood: 0,
       rd: o.viewChunks, sent: null, sk: '', farT: 0, hitT: 0, lastHit: null, sleepT: 0, sleepAt: null, gm: null, rate: {} });
     pending.add(c);
     sock.on('data', (d) => {
@@ -112,11 +139,11 @@ export function createServer(opts = {}) {
   const tick = setInterval(() => {
     const now = Date.now(), dt = Math.min(5, (now - lastTick) / 1000); lastTick = now;
     worldTick(S, net, beats, now, dt);
-    for (const c of pending) {          // quiet sockets: ping after 15 s, give up after 45 s; 15 s to say hello
+    for (const c of pending) {          // quiet sockets: ping after 5 s, give up after 20 s; 15 s to say hello
       if (c.closed) continue;
       if (!c.ready && now - c.born > 15000) drop(c, 'never said hello');
-      else if (now - c.seen > 45000) drop(c, 'timed out');
-      else if (now - c.seen > 15000) { try { c.sock.write(PING); } catch { /* gone */ } }
+      else if (now - c.seen > LIMITS.quietDrop) drop(c, 'timed out');
+      else if (now - c.seen > LIMITS.quietPing) { try { c.sock.write(PING); } catch { /* gone */ } }
     }
   }, 1000);
   const autosave = setInterval(() => saveWorld(), 30000);
@@ -124,7 +151,7 @@ export function createServer(opts = {}) {
 
   /* ---- what the caller gets ---- */
   const api = {
-    opts: o, world: () => world, rules: () => cleanRules(world.gr), status: () => statusOf(S), gameFile: S.gameFile, worldFile, saveWorld, log,
+    opts: o, secure: !!tls, world: () => world, rules: () => cleanRules(world.gr), status: () => statusOf(S), gameFile: S.gameFile, worldFile, saveWorld, log,
     get port() { const a = srv.address(); return a && typeof a === 'object' ? a.port : o.port; },
     players: () => [...S.clients.values()],
     say(txt) { broadcast({ t: 'sys', txt: '[Server] ' + txt }); log('[Server] ' + txt); },

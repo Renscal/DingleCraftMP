@@ -7,10 +7,11 @@
 //   from a player                                 to players
 //   hello {proto, v, name, pw, rd}                welcome, perm, edits..., bes, drops, ready   (to the one joining)
 //                                                 join, sys                                    (to the others)
-//   pose {x y z yaw pitch dim held hp fl}         pose (+id): at once to players nearby, once a second to the rest;
-//                                                 edits (s:1) for the chunks that came into range
+//   pose {x y z yaw pitch dim held hp fl ar rv}   pose (+id, ms): at once to players nearby, once a second to the rest;
+//                                                 edits (s:1), bes and drops (add:1) for the chunks that came into range
+//   ping {n, ms}                                  pong {n}  (the game times the round trip and reports it in the next ping)
 //   rd {v}                                        -         (how far that player's game draws, in chunks)
-//   edits {e: [[chunkKey, localKey, id]...]}      edits     (to players who have that chunk)
+//   edits {e: [[chunkKey, localKey, id, by?]...]} edits     (to players who have that chunk; by 1: a player's own hand did it)
 //   open {k}                                      be, lock {k, ok, by}   (a chest is used by one player at a time)
 //   close {k}                                     -
 //   be {k, v|null}                                be        (or be back to the sender if someone else holds the lock)
@@ -31,10 +32,11 @@
 //   mgive {to, m}                                 mgive     (to that player: their game runs this mob from now on)
 //   mhit {to, id, dmg, kx, kz}                    mhit      (to the player whose game runs that mob)
 //   boom {x y z r mob}                            boom      (to players nearby, with hurt: may it damage them)
-// The server also sends on its own: time (every 5 s), undrop (an item's 5 minutes are up), leave, sys, kick, and to one
-// player tp / give / mode (commands).
+// The server also sends on its own: time (every 5 s), undrop (an item's 5 minutes are up), leave, sys, kick, to one
+// player tp / give / mode (commands), and mheir {from} to the player nearest to one who just left (their mobs are yours).
+// Every type has a per-second limit (RATE in lib/config.mjs, or its own counter here); lib/server.mjs counts the total.
 import crypto from 'node:crypto';
-import { PROTO, DAY_LEN, MIN_GAME, LIMITS, RULES, CK_RE, LK_RE, BK_RE, DROP_ID_RE, DIMS, DIM_PFX, cleanRules, cmpVer } from './config.mjs';
+import { PROTO, DAY_LEN, MIN_GAME, LIMITS, RATE, RULES, CK_RE, LK_RE, BK_RE, DROP_ID_RE, DIMS, DIM_PFX, cleanRules, cmpVer } from './config.mjs';
 import { num, cleanName, cleanText, cleanStack, playerKey } from './world.mjs';
 import { runCommand, isOp, protRadius, permOf } from './commands.mjs';
 
@@ -60,23 +62,44 @@ function near(a, b, dist) {
   return !!a && !!b && a.dim === b.dim && Math.hypot(a.x - b.x, a.z - b.z) <= dist;
 }
 
+/* what a player can be seen riding (the game's vehicle kinds) */
+const RIDES = new Set(['car', 'skate', 'cart', 'boat', 'plane']);
+
 /* is it night (the game's sunUp, src/core/p07a_render_sound.js, turned around)? */
 const isNight = (time) => Math.sin(time * Math.PI * 2) <= 0.02;
 
-/* Send a player the block edits of every chunk that has come within their view and that they do not have yet.
-   c.sent is the set of chunk keys they have (null: they were sent the whole world). Cheap unless they crossed into a new
-   chunk. Edits sent this way carry s:1, so a game that has already built the chunk applies them without side effects. */
+/* the chunk key a block key ("x,y,z", with the same dimension prefix) lies in; '' if it is not a block key */
+function beChunk(k) {
+  const q = /^([a-z];)?(-?\d+),-?\d+,(-?\d+)$/.exec(k);
+  return q ? (q[1] || '') + Math.floor(q[2] / 16) + ',' + Math.floor(q[3] / 16) : '';
+}
+/* ... and the one a dropped item lies in */
+const dropChunk = (d) => (DIM_PFX[d.dim] || '') + Math.floor(d.x / 16) + ',' + Math.floor(d.z / 16);
+
+/* Send a player what the world holds in every chunk that has come within their view and that they do not have yet: the
+   block edits, the chests and furnaces, the dropped items. c.sent is the set of chunk keys they have (null: they were sent
+   the whole world). Cheap unless they crossed into a new chunk. Edits sent this way carry s:1, so a game that has already
+   built the chunk applies them without side effects; bes and drops carry add:1 ("more of them", not "all of them").
+   The set is trimmed now and then to the chunks around the player, so it does not grow for as long as they travel; a
+   chunk that was trimmed and comes back into view is simply sent again. */
 function syncAround(S, net, c, dim, x, z) {
   if (!c.sent) return;
   const cx = Math.floor(x / 16), cz = Math.floor(z / 16), at = dim + ':' + cx + ',' + cz + ':' + c.rd;
   if (c.sk === at) return;
   c.sk = at;
-  const pfx = DIM_PFX[dim] || '', r = c.rd, edits = S.world.edits;
+  const pfx = DIM_PFX[dim] || '', r = c.rd, edits = S.world.edits, fresh = new Set();
+  if (c.sent.size > 3 * (2 * r + 1) * (2 * r + 1)) {
+    const keep = r + LIMITS.sentSlack;
+    for (const k of c.sent) {
+      const here = pfx ? k.startsWith(pfx) : k[1] !== ';', p = (here ? k.slice(pfx.length) : '').split(',');
+      if (!here || Math.abs(p[0] - cx) > keep || Math.abs(p[1] - cz) > keep) c.sent.delete(k);
+    }
+  }
   let batch = [];
   for (let dx = -r; dx <= r; dx++) for (let dz = -r; dz <= r; dz++) {
     const k = pfx + (cx + dx) + ',' + (cz + dz);
     if (c.sent.has(k)) continue;
-    c.sent.add(k);
+    c.sent.add(k); fresh.add(k);
     const ed = edits[k];
     if (!ed) continue;
     for (const lk of Object.keys(ed)) {
@@ -85,6 +108,12 @@ function syncAround(S, net, c, dim, x, z) {
     }
   }
   if (batch.length) net.send(c, { t: 'edits', e: batch, s: 1 });
+  const { be, drops } = S.world, bes = {}, ds = [];
+  let nb = 0;
+  for (const k of Object.keys(be)) if (fresh.has(beChunk(k))) { bes[k] = be[k]; nb++; }
+  if (nb) net.send(c, { t: 'bes', m: bes, add: 1 });
+  for (const id of Object.keys(drops)) { const d = drops[id]; if (fresh.has(dropChunk(d))) ds.push({ id, dim: d.dim, x: d.x, y: d.y, z: d.z, st: d.st }); }
+  if (ds.length) net.send(c, { t: 'drops', d: ds, add: 1 });
 }
 
 /* The first message of every connection. Refuse (with a reason the player sees) or let them in: then the world goes out in
@@ -132,9 +161,9 @@ function hello(S, net, c, m) {
       }
     }
     if (batch.length) net.send(c, { t: 'edits', e: batch });
+    net.send(c, { t: 'bes', m: be });
+    net.send(c, { t: 'drops', d: Object.keys(drops).map((id) => { const d = drops[id]; return { id, dim: d.dim, x: d.x, y: d.y, z: d.z, st: d.st }; }) });
   }
-  net.send(c, { t: 'bes', m: be });
-  net.send(c, { t: 'drops', d: Object.keys(drops).map((id) => { const d = drops[id]; return { id, dim: d.dim, x: d.x, y: d.y, z: d.z, st: d.st }; }) });
   net.send(c, { t: 'ready' });
   c.ready = true;                        // from here on it also gets every live broadcast, in order, behind the sync
   S.log(`+ ${c.name} joined from ${c.addr} (${saved ? 'returning' : 'new'} player); ${S.clients.size} online`);
@@ -142,9 +171,24 @@ function hello(S, net, c, m) {
   net.broadcast({ t: 'sys', txt: c.name + ' joined the game' }, c);
 }
 
-/* a player is gone: whatever they held open is free again (called by lib/server.mjs when a connection ends) */
-export function forget(S, c) {
+/* a player is gone (called by lib/server.mjs when a connection ends, before the others are told):
+   - whatever they held open is free again;
+   - if their game did not get to save on the way out (a crash, a dropped line), their saved place becomes where the
+     server last saw them, so they do not come back a minute's walk behind. Only within one dimension: the rest of a
+     saved player belongs to the dimension it was saved in;
+   - the mobs their game was running go to the nearest player who can see them (mheir). */
+export function forget(S, net, c) {
   for (const [k, id] of S.locks) if (id === c.id) S.locks.delete(k);
+  const p = c.pose, sv = S.world.players[playerKey(c.name)];
+  if (!p) return;
+  if (sv && typeof sv === 'object' && !(p.fl & 4) && (sv.dim || 'over') === p.dim) { sv.x = p.x; sv.y = p.y; sv.z = p.z; sv.yaw = p.yaw; sv.pitch = p.pitch; S.dirty = true; }
+  let heir = null, hd = LIMITS.mobRange;
+  for (const q of S.clients.values()) {
+    if (q === c || !q.ready || !q.pose || q.pose.dim !== p.dim || (q.pose.fl & 36)) continue;   // not the dead (4), not the paused (32)
+    const d = Math.hypot(q.pose.x - p.x, q.pose.z - p.z);
+    if (d <= hd) { hd = d; heir = q; }
+  }
+  if (heir) net.send(heir, { t: 'mheir', from: c.id });
 }
 
 /* who holds the lock on this block entity right now, or null. A holder who has left, or walked away, has let go. */
@@ -210,13 +254,21 @@ export function handleMessage(S, net, c, m, size) {
   if (!c.ready) { if (m.t === 'hello' && !c.id) hello(S, net, c, m); return; }
   const { o, world } = S;
   const now = Date.now();
+  if (RATE[m.t] && !allow(c, m.t, RATE[m.t], now)) return;
   switch (m.t) {
+    case 'ping': {                     // the game times the answer; what it measured last time rides along for the player list
+      c.ms = Math.round(num(m.ms, 0, 9999, c.ms));
+      return net.send(c, { t: 'pong', n: num(m.n, 0, 1e15, 0) });
+    }
     case 'pose': {                     // where a player is and what they look like right now: relayed, never stored on disk
       if (now - c.poseT < 25) return;  // 40 a second is plenty
       c.poseT = now;
       const was = c.pose;
       c.pose = { x: num(m.x, -3e7, 3e7, 0), y: num(m.y, -256, 1024, 0), z: num(m.z, -3e7, 3e7, 0), yaw: num(m.yaw, -1e4, 1e4, 0), pitch: num(m.pitch, -2, 2, 0),
-        dim: DIMS.has(m.dim) ? m.dim : 'over', held: num(m.held, 0, 99999, 0) | 0, hp: num(m.hp, 0, 9999, 20), fl: num(m.fl, 0, 255, 0) | 0 };
+        dim: DIMS.has(m.dim) ? m.dim : 'over', held: num(m.held, 0, 99999, 0) | 0, hp: num(m.hp, 0, 9999, 20), fl: num(m.fl, 0, 255, 0) | 0, ms: c.ms };
+      /* what they wear (four item ids, 0 for a bare slot) and what they ride: only sent on when there is something to say */
+      if (Array.isArray(m.ar) && m.ar.length === 4 && m.ar.some((v) => v)) c.pose.ar = m.ar.map((v) => num(v, 0, 99999, 0) | 0);
+      if (typeof m.rv === 'string' && RIDES.has(m.rv)) { c.pose.rv = m.rv; c.pose.ry = num(m.ry, -1e4, 1e4, 0); c.pose.rh = num(m.rh, -8, 8, 0); }
       syncAround(S, net, c, c.pose.dim, c.pose.x, c.pose.z);
       /* players nearby see every pose; everyone else gets one a second (enough for the player list), and a change of
          dimension at once */
@@ -232,6 +284,9 @@ export function handleMessage(S, net, c, m, size) {
     }
     case 'edits': {                    // block changes: the last writer of a cell wins
       if (!Array.isArray(m.e) || m.e.length > LIMITS.editsPerMsg) return;
+      { const r = c.rate.cells || (c.rate.cells = { t: 0, n: 0 });
+        if (now - r.t >= 1000) { r.t = now; r.n = 0; }
+        if ((r.n += m.e.length) > LIMITS.cellsPerSec) return; }
       const out = [], prot = isOp(S, c) ? 0 : protRadius(S), sp = world.spawn;
       for (const e of m.e) {
         if (!Array.isArray(e) || typeof e[0] !== 'string' || typeof e[1] !== 'string' || !CK_RE.test(e[0]) || !LK_RE.test(e[1])) continue;
@@ -242,7 +297,7 @@ export function handleMessage(S, net, c, m, size) {
           if (Math.abs(ck[0] * 16 + +lk[0] + 0.5 - sp.x) <= prot && Math.abs(ck[1] * 16 + +lk[2] + 0.5 - sp.z) <= prot) continue;
         }
         (world.edits[e[0]] ||= {})[e[1]] = id;
-        out.push([e[0], e[1], id]);
+        out.push(e[3] === 1 ? [e[0], e[1], id, 1] : [e[0], e[1], id]);
       }
       if (!out.length) return;
       S.dirty = true; S.editCount += out.length;
@@ -268,6 +323,9 @@ export function handleMessage(S, net, c, m, size) {
     }
     case 'be': {                       // a chest, furnace or other block entity changed (v null: it was removed)
       if (typeof m.k !== 'string' || !BK_RE.test(m.k)) return;
+      /* about a chunk this player has not been sent yet (they just arrived and their game generated it afresh): the server's
+         copy is on its way to them and stands */
+      if (c.sent && !c.sent.has(beChunk(m.k))) return;
       if (m.v == null) { S.locks.delete(m.k); if (m.k in world.be) { delete world.be[m.k]; S.dirty = true; net.broadcast({ t: 'be', k: m.k, v: null }, c); } return; }
       if (typeof m.v !== 'object' || typeof m.v.t !== 'string' || size > LIMITS.beBlob) return;
       const h = lockHolder(S, m.k);

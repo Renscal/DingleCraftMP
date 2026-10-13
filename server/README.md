@@ -1,6 +1,6 @@
 # The DINGLECRAFT multiplayer server
 
-No dependencies and nothing to install: `dinglecraft-server.mjs` plus the `lib/` folder beside it. It needs [Node.js](https://nodejs.org) 20 or newer and a game build of 6.10 or newer.
+No dependencies and nothing to install: `dinglecraft-server.mjs` plus the `lib/` folder beside it. It needs [Node.js](https://nodejs.org) 20 or newer and a game build of 6.11 or newer.
 
 ## Start it
 
@@ -31,6 +31,14 @@ TCP port 40162 forwarded to your computer on your router.
 A page served over `https://` cannot talk to a plain `ws://` server (browsers forbid it). Open the game from the server's
 own `http://` address, or from a file on disk, and it works.
 
+**Encryption.** Out of the box the server speaks plain `http://` and `ws://`: fine on a home network, but the password
+travels in the clear. Give it a certificate (`cert` and `key` below, PEM files) and it speaks `https://` and `wss://`
+instead, on the same port. The certificate must be for the address players type. A player using their own copy of the game
+then enters `wss://<address>:40162`.
+
+**A dropped connection** is retried by the game by itself, five times over about 25 seconds, and the player comes back
+where the server last saw them. A kick, a ban or a server shutdown is not retried.
+
 ## Settings
 
 The first run writes `data/server.json`. Edit it and restart, or pass the same things on the command line (which wins):
@@ -54,7 +62,9 @@ The first run writes `data/server.json`. Edit it and restart, or pass the same t
 | `bans` | | `[]` | names (or addresses) that may not join |
 | `spawnProtection` | | 16 | blocks around the world spawn that only operators may change. Like Minecraft, it only applies once the server has an operator; 0 turns it off |
 | `sleepPercent` | | 100 | how many of the players online must be in bed to skip the night |
-| `viewChunks` | | 12 | how far around a player the server sends block changes, for a game that does not say (the game asks for its own draw distance + 3) |
+| `viewChunks` | | 12 | how far around a player the server sends block changes, chests and dropped items, for a game that does not say (the game asks for its own draw distance + 3) |
+| `cert`, `key` | `--cert`, `--key` | | a TLS certificate and its private key (PEM files, looked for in the data folder unless a full path). With both, the server is `https://` and `wss://` |
+| `origins` | | `[]` | web addresses whose pages may connect, e.g. `["https://play.example"]`. Empty: any page may (needed for "open your own copy of the game"). The server's own page, a game opened from a file and the desktop client are always let in |
 
 `data/` is ignored by git: the world, the settings and the password stay on your machine.
 
@@ -159,22 +169,31 @@ Shared by everyone, kept by the server and saved every 30 seconds:
 - ordinary mobs: zombies, skeletons, boomers, spiders, pigs, cows, sheep and the Nether and Aether locals. Each one is run
   by the game of the player nearest to it (so that is who it chases) and everyone nearby sees the same mob, can hit it and
   can loot it. When another player gets clearly closer, it changes hands
+- since 6.11 also the villagers, the Nuke Kegs, and the dungeon boss, the Stone Titan and the Nether and Aether bosses.
+  A boss fights the player whose game runs it and stays with that game while its player is within 40 blocks; everyone
+  else sees it and can hurt it. A village or a boss room is populated once, not once per player standing there
 - explosions (everyone nearby is hurt, not just the player whose game set it off), and arrows and bullets between players
 - each player's inventory, armour, XP, Dingle Bucks, spawn point, position and game mode, by name
 - the world spawn, where new players appear (the first player's game finds it; `/setworldspawn` moves it)
-- chat, the player list, players' positions and what they hold, punches and sword hits between players
+- chat, the player list (with each player's ping), players' positions, what they hold, the armour they wear and the car,
+  boat, plane, cart or skateboard they are riding, punches and sword hits between players
+- the sound and the dust of a block another player places or breaks nearby
 
 Not shared yet: each player's own game still plays these by itself, so two players standing together do not see the same ones.
 
-- the special mobs: bosses, dragons, villagers, snakes, blocklings, titans and the Puppet Purgatory and Malgorath casts.
+- dragons (tamed and ridden by one player), snakes, blocklings and the Puppet Purgatory and Malgorath casts.
   What a mob drops when you kill it is shared like any other dropped item; the XP goes to the player whose game ran it
-- vehicles, and arrows as things you can see (the hit arrives, the arrow in the air is only in the archer's game)
+- what a boss throws: its fireballs and rocks are only in the game that runs it (the explosions they cause are shared)
+- parked vehicles (you see a vehicle under the player riding it; an empty one is only in the game that placed it), and
+  arrows as things you can see (the hit arrives, the arrow in the air is only in the archer's game)
+- which bosses are already dead: a boss comes back for a player who was not there when it died
 - paintings and records from the Creativity Update (the works are stored per player)
 - the stock market
 
 Things that follow from that: loot chests in a structure refill the first time each player visits it. Mobs are not saved
-with the world: when the last player near one leaves, it is gone, and a mob whose owner loses their connection vanishes
-after a few seconds. A game that is paused (a menu open) hands its mobs to the nearest other player. Water is flowed by
+with the world: when the last player near one leaves, it is gone. When a player leaves or loses their connection, the
+mobs their game was running go to the nearest other player (they stand still for a moment first). A game that is paused
+(a menu open) hands its mobs to the nearest other player. Water is flowed by
 one game per area (the lowest-numbered player nearby); fire and falling blocks still run in every game, so now and then
 an item knocked loose by one of those can appear once per player nearby. Dropped items of the same kind do not merge into
 one pile on a server, and they only grow old while someone is online.
@@ -189,7 +208,8 @@ This is a server for friends. There are no accounts: a player is whoever types t
 is, so use the password (and the whitelist) if the address gets around. The server has no terrain and does not run the
 game, so it checks what it can without one: who may change the time and the rules, that a hit came from within reach,
 that you are standing by the item you pick up, that only one player writes to a chest, that nobody but an operator
-builds at spawn, and it writes the death messages itself. It validates everything it stores (block keys, ids, sizes) and
-drops clients that send oversized or malformed data. What it cannot do is stop a modified game from giving itself
+builds at spawn, and it writes the death messages itself. It validates everything it stores (block keys, ids, sizes),
+limits how many messages of each kind a player may send in a second, and drops clients that send oversized or malformed
+data or keep flooding it. A player who goes silent is given up after 20 seconds. What it cannot do is stop a modified game from giving itself
 diamonds or walking through walls: inventories and movement are still each player's own game being honest. Do not put it
 on the open internet for strangers.

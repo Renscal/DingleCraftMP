@@ -21,6 +21,21 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — Multiplayer, tightened
+
+*Game version 6.11, released 2026-10-13.*
+
+- MULTIPLAYER, TIGHTENED. Same server, fewer ways for it to let you down. Needs the 6.11 server: a 6.10 game and a 6.11 server politely refuse each other.
+- Lost your connection? The game now tries to get back in by itself: five tries over about 25 seconds, and you come back where the server last saw you, not where you last saved. Kicks, bans and shutdowns are still final.
+- A heartbeat every 2 seconds: the game notices a dead line in 12 seconds and the server gives up on a silent player after 20 (it used to be 45). Hold TAB to see everyone's ping.
+- Other players now wear their armour where you can see it, in the right metal, and when they drive past you there is a car under them. Also boats, planes, carts and skateboards.
+- You hear your friends dig. A block placed or broken by another player nearby comes with its sound and its dust. Water going about its business stays quiet.
+- Villagers, Nuke Kegs, the dungeon boss, the Stone Titan and the Nether and Aether bosses are shared: everybody sees the same one and can hit it. A boss fights the player whose game is running it. A village no longer comes with one set of villagers per visitor.
+- When a player leaves or drops, the mobs their game was running are handed to whoever is nearest. They used to vanish.
+- The server compresses what it sends, and sends chests and dropped items for the area around you, not for the whole world. Joining a big world is quicker.
+- Server owners: optional TLS (cert and key in server.json, then it is https and wss), an origins list for who may connect, and a limit on how fast any one player may send anything. Flooders are shown the door.
+- Still each player's own: dragons, parked vehicles, what a boss throws at you, and the casts of Purgatory and Malgorath.
+
 ## Release 1.1 — Multiplayer
 
 *Game version 6.10, released 2026-10-13.*

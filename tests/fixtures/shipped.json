@@ -308,6 +308,42 @@
           "sha1": "10e1541a08f77d49833a9e833f0f15444667c174"
         }
       }
+    },
+    "6.11": {
+      "label": "Release 1.1",
+      "bytes": 42152370,
+      "md5": "73bf8cf6b34f727e7218bfa9deb81a2f",
+      "date": "2026-10-13",
+      "parts": {
+        "head": {
+          "bytes": 2591351,
+          "md5": "920b08c8175b2f11c61a79dc77beda94"
+        },
+        "game": {
+          "bytes": 2777230,
+          "md5": "0b23e14f396bfb0410cee3abc8f62640"
+        },
+        "hrassets": {
+          "bytes": 36783763,
+          "md5": "11250fdee19a8b0b735a1154a3d05a17"
+        },
+        "tail": {
+          "bytes": 26,
+          "md5": "6ad4ea15127078e6949350f7e3821449"
+        }
+      },
+      "assets": {
+        "hr_assets.gen.js": {
+          "bytes": 34483285,
+          "md5": "d047cc7b7bf35ea2cfda9d2618b22b97",
+          "sha1": "71c3e7fbc4cbdb17a66fd0e044ad2628ec886736"
+        },
+        "mg_assets.gen.js": {
+          "bytes": 2300478,
+          "md5": "8f653d2b420efaa190f9ec005aad2d40",
+          "sha1": "10e1541a08f77d49833a9e833f0f15444667c174"
+        }
+      }
     }
   }
 }

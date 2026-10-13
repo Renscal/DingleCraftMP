@@ -92,7 +92,7 @@ boot.run(async()=>{
   {const r=raw(port,{pw:'nope'});await r.open;await until(()=>r.closed);
     ok('a wrong password is refused with a reason',r.closed&&/password/i.test((r.last('kick')||{}).why||'')&&S.players().length===0);}
   {const r=raw(port,{pw:'pw',v:'6.9'});await r.open;await until(()=>r.closed);
-    ok('a game older than 6.10 is refused with a reason',r.closed&&/6\.10/.test((r.last('kick')||{}).why||''));}
+    ok('a game older than 6.11 is refused with a reason',r.closed&&/6\.11/.test((r.last('kick')||{}).why||''));}
   {const r=raw(port,{pw:'pw',proto:99});await r.open;await until(()=>r.closed);ok('another protocol version is refused',r.closed&&!!r.last('kick'));}
   {V.ntConnect('127.0.0.1:'+port,'wrong');await until(()=>NET.st==='off');
     ok('the game: a wrong password leaves you on the title with the reason',NET.on===false&&V.playing===false&&/password/i.test(NET.msg||''));}
@@ -304,7 +304,7 @@ boot.run(async()=>{
     V.ntConnect('127.0.0.1:'+port,'pw');await until(()=>NET.on);step(30);
     ok('rejoin: the inventory and the position come back',NET.on&&V.P.inv[3]&&V.P.inv[3].id===B.GLASS&&V.P.inv[3].count===11&&Math.abs(V.P.x-px)<0.01&&Math.abs(V.P.z-pz)<0.01);
     {const t0=Date.now();while(Date.now()-t0<5000&&!V.entities.some(e=>e.nid==='beakeep1.1'&&!e.dead)){step(2);await sleep(8);}
-      ok('rejoin: the dropped items still lying around come with the world',NET.drops.has('beakeep1.1')&&NET.drops.has('beafar01.1')&&V.entities.filter(e=>e.nid==='beakeep1.1'&&!e.dead).length===1&&V.entities.find(e=>e.nid==='beakeep1.1').st.count===3);}
+      ok('rejoin: the dropped items lying around here come with the world (one 6000 blocks away comes when its chunk does)',NET.drops.has('beakeep1.1')&&!NET.drops.has('beafar01.1')&&('beafar01.1' in W.drops)&&V.entities.filter(e=>e.nid==='beakeep1.1'&&!e.dead).length===1&&V.entities.find(e=>e.nid==='beakeep1.1').st.count===3);}
     ok('rejoin: the blocks from before are still there',V.snapshot('x').edits[ckOf(ax,az)][lkOf(ax,ay,az)]===B.COBBLE);}
 
   /* ----- from here on: two players in the world again, Dan (rejoined: the newer id) and Bea ----- */
@@ -395,8 +395,15 @@ boot.run(async()=>{
       await sleep(90);bea.send({t:'mgone',ids:['b.1'],dead:1});
       ok('told it died: gone',await pumpUntil(()=>!mob('b.1')&&!NET.mobs.has('b.1'),2000)&&e.dead===true);}
     await sleep(90);bea.send({t:'mobs',m:[['b.4','pig',P.x+5,P.y,P.z,0,10,0]]});await pumpUntil(()=>!!mob('b.4'),3000);
-    {const t0=NET.acc;while(NET.acc-t0<4&&mob('b.4')){step(4);await sleep(2);}
+    {const t0=NET.acc,o=NET.peers.get(beaId);while(NET.acc-t0<4&&mob('b.4')){o.pt=NET.acc;step(4);await sleep(2);}   /* o.pt: its owner is still talking */
       ok('a puppet nobody speaks for is removed after 3 seconds',!mob('b.4')&&!NET.mobs.has('b.4'));}
+    await sleep(90);bea.send({t:'mobs',m:[['b.5','pig',P.x+5,P.y,P.z,0,10,0]]});await pumpUntil(()=>!!mob('b.5'),3000);
+    {const t0=NET.acc,o=NET.peers.get(beaId);o.pt=NET.acc-9;while(NET.acc-t0<6){o.pt=NET.acc-9;step(4);await sleep(1);}
+      const held=!!mob('b.5');
+      ok('...but while its owner has gone quiet too (a bad line) it waits: still here after 6 seconds',held);
+      V.ntMsg({t:'mheir',from:beaId});
+      ok('the server names this game the heir of a player who left: their mobs are ordinary mobs here from now on',held&&mob('b.5').pup===false&&NET.mobs.get('b.5')===mob('b.5'));
+      if(mob('b.5')){const e=mob('b.5');e.hurtT=0;V.hurtMob(e,999,0,0);}await pump(12);}
     /* Dan's own mobs go out */
     await beaPose(P.x+100,P.y,P.z);bea.clear();
     V.spawnMob('pig',P.x+3,P.y+1,P.z);const pig=V.entities[V.entities.length-1];
@@ -433,10 +440,51 @@ boot.run(async()=>{
     ok('a player far away has no say here, but runs what is near them; where nobody is near, everyone does',V.ntSimHere(cx,cz)===true&&V.ntSimHere(cx+100,cz)===false&&V.ntSimHere(cx+400,cz)===true);
     await beaPose(P.x+3,P.y,P.z);P.hp=20;}
 
+  /* ===== 22. 6.11: the heartbeat, what other players look like, structure mobs, a lost line ===== */
+  {const P=V.P;P.hp=20;
+    ok('the heartbeat: a ping every 2 seconds, each answered, and the round trip measured',await pumpUntil(()=>NET.pingN>0&&NET.pingAt===0&&NET.ms>=0,5000)&&bea.by('pong').length===0);
+    await beaPose(P.x+3,P.y,P.z,{ar:[V.armorId(0,0),0,V.armorId(2,2),0],rv:'car',ry:0.5,rh:0.3,fl:8});await pump(6);
+    {const p=NET.peers.get(beaId),rows=[['Dan','20','',0]];V.ntTabRows(rows);
+      ok('the Tab list shows a ping for this player and for the others',/^\d+ ms$/.test(rows[0][2])&&rows.length===2&&/^\d+ ms$/.test(rows[1][2]));
+      ok('another player\'s armour is seen: the helmet and the leggings they wear, in their own metals, and nothing on the bare slots',!!p.M&&p.M.arm[0].parts.every(m=>m.visible)&&p.M.arm[2].parts.every(m=>m.visible)&&
+        p.M.arm[1].parts.every(m=>!m.visible)&&p.M.arm[3].parts.every(m=>!m.visible)&&p.M.arm[0].col==='#d8d8d8'&&p.M.arm[2].col==='#46e2cf');
+      ok('...and so is the car they are driving, turned its own way',!!p.M.veh&&p.M._veh==='car'&&Math.abs(p.M.veh.rotation.y-(0.5-p.yaw))<1e-6&&Math.abs(p.M.veh.position.y+0.3)<1e-6);
+      await beaPose(P.x+3,P.y,P.z);await pump(6);
+      ok('off the car and out of the armour: both gone again',p.M.veh===null&&p.M.arm.every(a=>a.parts.every(m=>!m.visible)));}
+    /* a block changed by hand is marked; what the world does on its own is not */
+    {const x=Math.floor(P.x)+2,z=Math.floor(P.z)+2,y=Math.floor(P.y)+4;NET.q.length=0;
+      V.ntGuard(x,z);V.setBlock(x,y,z,B.STONE);V.setBlock(x,y+1,z,B.STONE);
+      ok('a block this player changes by hand is marked for the others; the next write is not',NET.q.length===2&&NET.q[0][3]===1&&NET.q[1].length===3);
+      await pump(4);
+      const ck=Math.floor(x/16)+','+Math.floor(z/16),lk=(((x%16)+16)%16)+','+(y+3)+','+(((z%16)+16)%16);
+      V.ntMsg({t:'edits',e:[[ck,lk,B.STONE,1]]});
+      ok('a marked edit from another player is applied like any other (with its sound and dust on top)',V.getBlock(x,y+3,z)===B.STONE);
+      V.ntMsg({t:'edits',e:[[ck,lk,B.AIR,1]]});V.setBlock(x,y,z,B.AIR);V.setBlock(x,y+1,z,B.AIR);await pump(4);}
+    /* a villager both games spawned at the same spot is one villager */
+    {await beaPose(P.x+3,P.y,P.z);V.spawnMob('alien',P.x+6,P.y+1,P.z);const own=V.entities[V.entities.length-1];
+      await pumpUntil(()=>!!own.rid,3000);
+      const live=()=>V.entities.filter(e=>e.t==='mob'&&e.mt==='alien'&&!e.dead);
+      ok('a villager of this game is sent with its name and the spot it was spawned at',!!own.rid&&typeof own.ox==='number'&&bea.by('mobs').some(m=>m.m.some(a=>a[0]===own.rid&&a[8]===own.name&&a[9]===own.ox&&a[10]===own.oz)));
+      bea.send({t:'mobs',m:[['b.9','alien',own.ox,P.y+1,own.oz,0,16,0,'Zorp',own.ox,own.oz]]});await sleep(120);await pump(12);
+      ok('the same villager arriving from a player with a lower id replaces this game\'s own (one villager, theirs, with their name for it)',
+        beaId<NET.id&&live().length===1&&live()[0].pup===true&&live()[0].rid==='b.9'&&live()[0].name==='Zorp'&&own.dead===true);
+      V.spawnMob('alien',own.ox,P.y+1,own.oz);const again=V.entities[V.entities.length-1];await pump(20);
+      ok('...and this game spawning it again while theirs is here makes no second one',again.dead===true&&!again.rid&&live().length===1);
+      bea.send({t:'mgone',ids:['b.9']});await pumpUntil(()=>live().length===0,3000);}
+    /* the line drops without a word: back to the title, and back in */
+    {const px=V.P.x,pz=V.P.z,c=S.players().find(q=>q.name===NET.name);
+      await V.saveToStorage('x',true);await sleep(60);V.P.x=px+7;await pump(8);   /* walked on after the last save */
+      c.sock.destroy();
+      ok('a lost connection: back on the title, saying it is trying again',await pumpUntil(()=>V.playing===false&&NET.retryN===1,4000)&&/Reconnecting \(try 1 of 5\)/.test(NET.msg));
+      ok('the server kept the place it last saw them, not the place of their last save',Math.abs(W.players[dan.toLowerCase()].x-(px+7))<0.05);
+      ok('...and back in the world moments later, as the same player, where they stood',await until(()=>NET.on&&V.playing,8000)&&NET.retryN===0&&NET.name===dan&&Math.abs(V.P.x-(px+7))<0.05&&Math.abs(V.P.z-pz)<0.05);
+      step(30);await pump(6);}
+  }
+
   /* ===== 12b. kicked ===== */
   ok('the server can kick by name',S.kick(V.getPName(),'Testing the door.')===true);
   await until(()=>!NET.on&&!V.playing,3000);
-  ok('kicked: back on the title with the reason, nothing saved locally',NET.on===false&&V.playing===false&&NET.st==='off'&&(await window.storage.list('vxw:')).keys.every(k=>k==='vxw:nsolo'));
+  ok('kicked: back on the title with the reason, nothing saved locally, and no trying again',NET.on===false&&V.playing===false&&NET.st==='off'&&NET.retryN===0&&NET.retryH===0&&(await window.storage.list('vxw:')).keys.every(k=>k==='vxw:nsolo'));
 
   /* ===== 13. the server itself ===== */
   {const r=await fetch('http://127.0.0.1:'+port+'/status').then(x=>x.json());

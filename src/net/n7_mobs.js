@@ -7,23 +7,46 @@
    The owner is the game of the nearest player: twice a second each owner hands a mob to a player who is clearly nearer
    (ntMobHeir, ntMobGive -> {t:'mgive'} -> ntMobTaken). The mob's brain only knows the local player, so "run by the nearest
    player's game" is what makes it chase and hit the nearest player, with no change to any brain.
-   NET.mobs is id -> entity for both kinds. A puppet that hears nothing for 3 seconds is removed (its owner left, or went
-   out of range). Mobs are never saved by the server: like a single-player dimension stash, they belong to the moment.
-   Only the ordinary mobs travel (NT_MOBS): bosses, dragons, villagers, snakes, blocklings, titans, Purgatory's and
-   Malgorath's casts keep their own state machines and stay local. */
+   NET.mobs is id -> entity for both kinds. A puppet that hears nothing for 3 seconds is removed (its owner went out of
+   range); if the owner itself has gone quiet (a bad line) it waits up to 25 seconds, and when the server gives the owner up
+   it names an heir (mheir -> ntMobAdopt), who runs those mobs from then on. Mobs are never saved by the server: like a
+   single-player dimension stash, they belong to the moment.
+   What travels (NT_MOBS): the ordinary mobs, and since 6.11 the villagers, the Nuke Kegs and the bosses that are plain
+   mobs underneath (the dungeon boss, the titan, the Nether's and the Aether's). A boss fights the player whose game runs it
+   and stays with that game while its player is in the fight (ntMobHeir); everyone else sees it and can hurt it.
+   The ones a structure spawns (NT_UNIQ) would otherwise appear once per player, each game populating the same village or
+   dungeon: each carries the spot it was spawned at, and two of a kind from the same spot are one mob (ntMobTwin).
+   Dragons (tamed and ridden by one player), snakes, blocklings, Purgatory's and Malgorath's casts stay local. */
 
-const NT_MOBS={pig:1,cow:1,sheep:1,zombie:1,skel:1,boomer:1,spider:1,imp:1,hellhog:1,cherub:1};
+const NT_MOBS={pig:1,cow:1,sheep:1,zombie:1,skel:1,boomer:1,spider:1,imp:1,hellhog:1,cherub:1,
+  alien:1,creep:1,nuker:1,boss:1,titan:1,infernis:1,valkyra:1};
+/* the kinds a structure spawns at a fixed spot: one per spot, whoever's game got there first */
+const NT_UNIQ={alien:1,boss:1,titan:1,infernis:1,valkyra:1};
 /* ----- shared mobs ----- */
 /* does this entity travel? */
 function ntMobShared(e){return e.t==='mob'&&!e.pkeep&&!e.cellId&&NT_MOBS[e.mt]===1;}
-/* a mob as it goes on the wire: [id, type, x, y, z, yaw, hp, flags] (flags: 1 just hurt, 2 a fuse is burning) */
+/* a mob as it goes on the wire: [id, type, x, y, z, yaw, hp, flags, name, ox, oz] (flags: 1 just hurt, 2 a fuse is burning;
+   name: a villager's; ox oz: where it was spawned, for the kinds in NT_UNIQ) */
 function ntMobState(e){
-  return [e.rid,e.mt,+e.x.toFixed(2),+e.y.toFixed(2),+e.z.toFixed(2),+(e.yaw||0).toFixed(2),Math.round(e.hp*10)/10,(e.hurtT>0.25?1:0)|(e.fuse>0?2:0)];
+  const a=[e.rid,e.mt,+e.x.toFixed(2),+e.y.toFixed(2),+e.z.toFixed(2),+(e.yaw||0).toFixed(2),Math.round(e.hp*10)/10,(e.hurtT>0.25?1:0)|(e.fuse>0?2:0)];
+  if(NT_UNIQ[e.mt]===1)a.push((''+(e.name||'')).slice(0,24),e.ox==null?a[2]:e.ox,e.oz==null?a[4]:e.oz);
+  return a;
+}
+/* the mob of this kind, other than e, that was spawned at the same spot (within 3 blocks) and that pup says is (true) or
+   is not (false) another player's; null if there is none */
+function ntMobTwin(mt,ox,oz,pup,e){
+  for(const o of entities){
+    if(o===e||o.dead||o.t!=='mob'||o.mt!==mt||!!o.pup!==pup)continue;
+    const x=o.ox==null?o.x:o.ox,z=o.oz==null?o.z:o.oz;
+    if(Math.abs(x-ox)<3&&Math.abs(z-oz)<3)return o;
+  }
+  return null;
 }
 /* the player a mob of ours should belong to instead: one who is clearly nearer to it than we are (or anyone in range,
    if this game is paused or its player is dead), else null */
 function ntMobHeir(e){
   const away=P.dead||paused,mine=away?1e9:Math.hypot(P.x-e.x,P.z-e.z);
+  if(MOBT[e.mt].boss&&mine<40)return null;                 /* a boss stays with the game it is fighting */
   let best=null,bd=56;
   for(const p of NET.peers.values()){
     if(!ntPeerLive(p)||(p.fl&4)||((p.fl&16)&&!away))continue;
@@ -49,6 +72,8 @@ function ntMobMake(a){
   if(entities.length<=n||!e||e.t!=='mob')return null;
   e.rid=rid;e.pup=true;e.own=0;e.pupT=NET.acc;e.pfl=0;
   e.tx=a[2];e.ty=a[3];e.tz=a[4];e.tyaw=+a[5]||0;e.yaw=e.tyaw;
+  if(typeof a[8]==='string'&&a[8]&&mt==='alien')e.name=a[8];
+  if(typeof a[9]==='number'&&typeof a[10]==='number'){e.ox=a[9];e.oz=a[10];}
   NET.mobs.set(rid,e);
   return e;
 }
@@ -61,6 +86,12 @@ function ntMobsIn(m){
     if(e&&(e.dead||!e.pup))continue;                       /* ours (an old owner's last word), or on its way out */
     if(!e){
       if(Math.hypot(a[2]-P.x,a[4]-P.z)>60)continue;        /* beyond where this game keeps mobs (mobsTick despawns at 64) */
+      if(NT_UNIQ[a[1]]===1&&typeof a[9]==='number'&&typeof a[10]==='number'){
+        /* this game spawned the same one (both games populated the same village or dungeon at once): the game with the
+           lower id keeps its own, the other one's becomes the puppet */
+        const mine=ntMobTwin(a[1],a[9],a[10],false,null);
+        if(mine){if((m.from|0)>NET.id)continue;removeEnt(mine);}
+      }
       e=ntMobMake(a);
       if(!e)continue;
     }
@@ -96,6 +127,14 @@ function ntMobTaken(m){
   e.x=+a[2]||0;e.y=+a[3]||0;e.z=+a[4]||0;e.yaw=+a[5]||0;e.vx=e.vy=e.vz=0;
   if(typeof a[6]==='number')e.hp=a[6];
   e.mode='idle';e.tT=0;e.fuse=0;e.hissed=false;
+}
+/* {t:'mheir'}: the player whose game ran these mobs is gone, and the server picked this game to carry on with them */
+function ntMobAdopt(from){
+  for(const e of NET.mobs.values()){
+    if(!e.pup||e.dead||e.own!==from)continue;
+    e.pup=false;e.own=0;e.vx=e.vy=e.vz=0;
+    e.mode='idle';e.tT=0;e.fuse=0;e.hissed=false;
+  }
 }
 /* the hurtMob hook: this player hit a puppet. Flash it here; its owner's game decides what the hit did */
 function ntMobHit(e,dmg,kx,kz){
@@ -141,7 +180,12 @@ function ntMobsTick(dt){
   const gone=[],dead=[];
   for(const [rid,e] of NET.mobs){
     if(e.dead){NET.mobs.delete(rid);if(!e.pup)(e.hp<=0?dead:gone).push(rid);}
-    else if(e.pup&&NET.acc-e.pupT>3){NET.mobs.delete(rid);removeEnt(e);}
+    else if(e.pup){
+      /* silence: 3 seconds if its owner is still talking (the mob left their range), 25 if the owner has gone quiet too
+         (their line is bad: the server will either hear from them again or name an heir) */
+      const o=NET.peers.get(e.own);
+      if(NET.acc-e.pupT>(o&&NET.acc-o.pt>2.5?25:3)){NET.mobs.delete(rid);removeEnt(e);}
+    }
   }
   if(gone.length)ntSend({t:'mgone',ids:gone.slice(0,60)});
   if(dead.length)ntSend({t:'mgone',ids:dead.slice(0,60),dead:1});
@@ -150,7 +194,13 @@ function ntMobsTick(dt){
   if(give)NET.ownT=NET.acc;
   for(const e of entities){
     if(e.dead||e.pup||!ntMobShared(e))continue;
-    if(!e.rid){e.rid=NET.id.toString(36)+'.'+(++NET.mseq).toString(36);NET.mobs.set(e.rid,e);}
+    if(!e.rid){
+      if(NT_UNIQ[e.mt]===1){
+        e.ox=+e.x.toFixed(1);e.oz=+e.z.toFixed(1);
+        if(ntMobTwin(e.mt,e.ox,e.oz,true,e)){removeEnt(e);continue;}   /* another player's game already runs the one from this spot */
+      }
+      e.rid=NET.id.toString(36)+'.'+(++NET.mseq).toString(36);NET.mobs.set(e.rid,e);
+    }
     if(give){const p=ntMobHeir(e);if(p){ntMobGive(e,p);continue;}}
     if(out.length<60)out.push(ntMobState(e));
   }

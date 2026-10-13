@@ -16,7 +16,10 @@
    10 chunks: a joining player gets the edits around them, the rest as they travel (s:1), and live edits only for chunks they
       have; poses reach players nearby at full rate and everyone else once a second
    11 mobs and explosions are passed on to the players in range, a hand-over and a mob hit to the one they are for; junk is
-      dropped; time and game rules need the right to change them */
+      dropped; time and game rules need the right to change them
+   12 the line (6.11): ping and pong, what a pose carries (ping, armour, a vehicle), marked edits, per-type and total message
+      limits, chests and drops sent by range like edits, a chest write about a chunk not yet sent, the place of a player
+      whose line dropped, the heir to their mobs, the origin check, compressed messages */
 'use strict';
 const boot=require('../lib/c_boot.js'),{ok}=boot;
 const path=require('path'),{pathToFileURL}=require('url');
@@ -236,6 +239,83 @@ boot.run(async()=>{
     ok('with Cheats on, anyone may (the host chose that)',W.gr.god===true&&Math.abs(W.time-0.9)<1e-6);W.gr.cheats=false;}
   {a.clear();await sleep(1010);for(let i=0;i<12;i++)a.send({t:'cmd',txt:'/list'});await sleep(80);
     ok('commands are rate limited',a.by('sys').some(m=>m.txt==='Slow down.'));}
+
+  /* ===== 12. the line (6.11) ===== */
+  const {textFrame,readFrames,DEFLATE_MIN}=await lib('lib/websocket.mjs'),{RATE}=await lib('lib/config.mjs'),zlib=require('zlib'),net=require('net');
+  await sleep(1010);
+  {a.clear();a.send({t:'ping',n:7,ms:42});await until(()=>!!a.last('pong'),1500);
+    ok('a ping is answered at once with its own number',!!a.last('pong')&&a.last('pong').n===7);
+    const seen=async o=>{bo.clear();await a.pose(1,40,0,o);await until(()=>bo.by('pose').some(m=>m.id===a.id),1500);return bo.by('pose').filter(m=>m.id===a.id).pop()||{};};
+    const p1=await seen({ar:[230,0,0,243],rv:'car',ry:1.5,rh:0.4,fl:8});
+    ok('a pose is passed on with the ping the game measured, the armour worn and the vehicle ridden',p1.ms===42&&JSON.stringify(p1.ar)==='[230,0,0,243]'&&p1.rv==='car'&&p1.ry===1.5&&p1.rh===0.4);
+    const p2=await seen({ar:[0,0,0,0],rv:'rocket',ry:9});
+    ok('bare armour slots and a vehicle the game does not have are left out',!('ar' in p2)&&!('rv' in p2)&&!('ry' in p2));
+    await sleep(1010);a.clear();for(let i=0;i<RATE.ping+5;i++)a.send({t:'ping',n:i});await sleep(150);
+    ok('each kind of message has its own limit per second: '+RATE.ping+' pings are answered, the rest dropped',a.by('pong').length===RATE.ping);}
+  {const sp0=S.opts.spawnProtection;S.opts.spawnProtection=0;bo.clear();
+    a.send({t:'edits',e:[['1,1','1,50,1',5,1],['1,1','2,50,1',5],['1,1','3,50,1',5,7]]});await until(()=>!!bo.last('edits'),1500);
+    const e=(bo.last('edits')||{e:[]}).e;
+    ok('an edit made by hand keeps its mark on the way to the others; anything else in that place is dropped',e.length===3&&e[0][3]===1&&e[1].length===3&&e[2].length===3);
+    S.opts.spawnProtection=sp0;}
+  /* chests and dropped items by range */
+  {W.be['2,40,2']={t:'chest',inv:[]};W.be['4000,40,4000']={t:'chest',inv:[]};W.be['n;2,40,2']={t:'chest',inv:[]};
+    W.drops['nearnear.1']={dim:'over',x:2,y:40,z:2,st:{id:1,count:1},age:0};W.drops['farfar01.1']={dim:'over',x:4000,y:40,z:4000,st:{id:1,count:1},age:0};
+    W.players.scout={x:1,y:40,z:1,dim:'over',yaw:0,pitch:0};
+    const sc=await join('Scout');
+    const beKeys=()=>sc.by('bes').flatMap(m=>Object.keys(m.m)),dropIds=()=>sc.by('drops').flatMap(m=>m.d.map(d=>d.id));
+    ok('joining: the chests and dropped items around the player come with the world, marked as "more", not the ones far away or in another dimension',
+      sc.by('bes').every(m=>m.add===1)&&beKeys().includes('2,40,2')&&!beKeys().includes('4000,40,4000')&&!beKeys().includes('n;2,40,2')&&dropIds().includes('nearnear.1')&&!dropIds().includes('farfar01.1'));
+    sc.send({t:'be',k:'9000,40,9000',v:{t:'chest',inv:[1]}});await sleep(60);
+    ok('a chest write about a chunk the player has not been sent is ignored (their game made that chunk afresh; the server\'s copy stands)',!('9000,40,9000' in W.be));
+    sc.clear();await sc.pose(4000,40,4000);await until(()=>beKeys().includes('4000,40,4000'),1500);
+    ok('travelling: the far chest and the far drop arrive with their chunk',beKeys().includes('4000,40,4000')&&dropIds().includes('farfar01.1')&&!beKeys().includes('2,40,2'));
+    sc.send({t:'be',k:'4001,40,4001',v:{t:'chest',inv:[]}});await until(()=>'4001,40,4001' in W.be,1500);
+    ok('...and from then on their chest writes there count',('4001,40,4001' in W.be));
+    {const c=srv('Scout'),n0=c.sent.size;for(let i=1;i<=40;i++){c.pose.x=4000+i*400;c.sk='';sc.send({t:'pose',x:4000+i*400,y:40,z:4000,yaw:0,pitch:0,dim:'over',held:0,hp:20,fl:0});await sleep(28);}
+      ok('the list of chunks a player has is trimmed as they travel ('+n0+' at the start, '+c.sent.size+' after 16000 blocks)',c.sent.size<n0*4&&c.sent.size>=n0);}
+    await sc.pose(4000,40,4000);await sc.pose(4010,41,4020,{yaw:1.25});
+    await sc.quit();
+    ok('a player whose line dropped is remembered where the server last saw them',W.players.scout.x===4010&&W.players.scout.y===41&&W.players.scout.z===4020&&W.players.scout.yaw===1.25);
+    W.players.scout.dim='over';const s2=await join('Scout');await s2.pose(5,40,5,{dim:'nether'});await s2.quit();
+    ok('...but never moved into a dimension they were not saved in',W.players.scout.x===4010&&W.players.scout.dim==='over');
+    delete W.be['2,40,2'];delete W.be['4000,40,4000'];delete W.be['n;2,40,2'];delete W.be['4001,40,4001'];delete W.drops['nearnear.1'];delete W.drops['farfar01.1'];}
+  /* the heir */
+  {await a.pose(0,40,0);await bo.pose(3,40,0);const g=await join('Gone');await g.pose(1,40,0);const gid=g.id;a.clear();bo.clear();far.clear();await g.quit();await sleep(60);
+    ok('the mobs of a player who left go to the nearest player: that one is told, nobody else',a.by('mheir').length===1&&a.last('mheir').from===gid&&bo.by('mheir').length===0&&far.by('mheir').length===0&&
+      a.got.findIndex(m=>m.t==='mheir')<a.got.findIndex(m=>m.t==='leave'));
+    await a.pose(0,40,0,{fl:32});const g2=await join('Gone');await g2.pose(1,40,0);const gid2=g2.id;a.clear();bo.clear();await g2.quit();await sleep(60);
+    ok('...never to one whose game is paused',a.by('mheir').length===0&&bo.by('mheir').length===1&&bo.last('mheir').from===gid2);await a.pose(0,40,0);}
+  /* too many messages */
+  {const m0=LIMITS.msgsPerSec,f0=LIMITS.floodSecs;LIMITS.msgsPerSec=20;LIMITS.floodSecs=1;
+    const fl=await join('Flood');await sleep(1010);for(let i=0;i<40;i++)fl.send({t:'rd',v:8});await sleep(1050);for(let i=0;i<40;i++)fl.send({t:'rd',v:8});await sleep(1050);for(let i=0;i<40;i++)fl.send({t:'rd',v:8});
+    await until(()=>fl.closed,3000);
+    ok('a player who keeps sending far more than a game does is dropped, with the reason',fl.closed&&/Too many/.test((fl.last('kick')||{}).why||'')&&!srv('Flood')&&!a.closed);
+    LIMITS.msgsPerSec=m0;LIMITS.floodSecs=f0;}
+  /* who may connect, and compression */
+  {const shake=(port,extra)=>new Promise(res=>{let d='';const s=net.connect(port,'127.0.0.1',()=>s.write('GET / HTTP/1.1\r\nHost: 127.0.0.1:'+port+'\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\n'+(extra||'')+'\r\n'));
+      s.on('data',b=>{d+=b;if(d.includes('\r\n\r\n')){s.destroy();res(d);}});s.on('close',()=>res(d));s.on('error',()=>res(d));});
+    const ok101=d=>/^HTTP\/1\.1 101/.test(d);
+    ok('by default a page from anywhere may connect (that is what "open your own copy of the game" needs)',ok101(await shake(port,'Origin: http://elsewhere.test\r\n')));
+    const S6=createServer({port:0,memory:true,world:'',noGame:true,quiet:true,origins:['https://good.test/','Other.Test']});await S6.listen();const p6=S6.port;
+    ok('with origins listed: other pages are refused',!ok101(await shake(p6,'Origin: http://evil.test\r\n')));
+    ok('...the listed ones, the server\'s own page, a game opened from a file and a program that is not a browser are let in',ok101(await shake(p6,'Origin: https://good.test\r\n'))&&ok101(await shake(p6,'Origin: http://other.test\r\n'))&&
+      ok101(await shake(p6,'Origin: http://127.0.0.1:'+p6+'\r\n'))&&ok101(await shake(p6,'Origin: null\r\n'))&&ok101(await shake(p6,'Origin: file://\r\n'))&&ok101(await shake(p6,'')));
+    const hs=await shake(p6,'Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits\r\n');
+    ok('compression is agreed when the game offers it (each message on its own), and not otherwise',/Sec-WebSocket-Extensions: permessage-deflate; server_no_context_takeover; client_no_context_takeover\r\n/.test(hs)&&!/Sec-WebSocket-Extensions/.test(await shake(p6,'')));
+    await S6.close();
+    const big=JSON.stringify({t:'edits',e:Array.from({length:600},(_,i)=>['0,0',(i%16)+',40,'+((i>>4)%16),1])}),small='{"t":"pose","x":1}';
+    const z=textFrame(big,true),pl=textFrame(big,false);
+    const body=z.subarray(z[1]===126?4:z[1]===127?10:2);
+    ok('a big message to a player who agreed goes out compressed ('+pl.length+' -> '+z.length+' bytes) and opens to the same text; a small one, or one for a player who did not, goes as it is',
+      z[0]===0xc1&&pl[0]===0x81&&z.length<pl.length/4&&zlib.inflateRawSync(Buffer.concat([body,Buffer.from([0,0,255,255])]),{finishFlush:zlib.constants.Z_SYNC_FLUSH}).toString()===big&&
+      textFrame(small,true)[0]===0x81&&small.length<DEFLATE_MIN);
+    /* the other way: a masked, compressed frame as a browser sends it */
+    const frame=(text,zip)=>{let b=Buffer.from(text);if(zip){const q=zlib.deflateRawSync(b,{finishFlush:zlib.constants.Z_SYNC_FLUSH});b=q.subarray(0,q.length-4);}
+      const h=b.length<126?Buffer.from([zip?0xc1:0x81,0x80|b.length]):Buffer.from([zip?0xc1:0x81,0x80|126,b.length>>8,b.length&255]),mk=Buffer.from([7,11,13,17]),p=Buffer.from(b);
+      for(let i=0;i<p.length;i++)p[i]^=mk[i&3];return Buffer.concat([h,mk,p]);};
+    const feed=(buf,deflate,max)=>{let got=null,fail=null;readFrames({sock:{write(){}},buf:Buffer.alloc(0),parts:null,partLen:0,closed:false,deflate,zip:false},buf,max||LIMITS.frame,t=>{got=t;},w=>{fail=w;});return {got,fail};};
+    ok('a compressed message from a game is opened; from one that never agreed to it, it is a bad frame',feed(frame(big,true),true).got===big&&feed(frame(big,true),false).fail==='bad frame'&&feed(frame(small,false),true).got===small);
+    ok('a small message that would unfold past the size limit is refused, not unfolded',feed(frame('x'.repeat(60000),true),true,5000).fail==='message too big');}
 
   await S.close();
 });

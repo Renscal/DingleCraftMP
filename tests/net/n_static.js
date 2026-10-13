@@ -79,7 +79,10 @@ boot.run(async()=>{
       count(readSrc('world/p37_dimensions.js'),"e.t==='drop'&&e.st&&!e.nid){out.push(")===1&&count(readSrc('entities/p05a_entities_drops.js'),'&&e.st.dur==null&&!NET.on){')===1);
     ok('e.nid is only ever set by PART 58',!/\.nid\s*=[^=]/.test(outside));
     ok('e.pup and e.rid are only ever set by PART 58, and another player\'s mob never goes into the dimension stash',!/\.(pup|rid)\s*=[^=]/.test(outside)&&count(readSrc('world/p37_dimensions.js'),"if(e.t==='mob'&&e.pup){removeEnt(e);continue;}")===1);
-    ok('only the ordinary mobs are shared (no boss, dragon, villager, Purgatory or Malgorath cast)',Object.keys(V.MOBT).filter(mt=>V.ntMobShared({t:'mob',mt})).every(mt=>{const T=V.MOBT[mt];return !T.boss&&!T.fly&&!T.pmob&&!T.mg&&!T.pnc&&!T.nuke&&mt!=='alien';})&&V.ntMobShared({t:'mob',mt:'zombie'})&&!V.ntMobShared({t:'mob',mt:'zombie',pkeep:1})&&!V.ntMobShared({t:'drop'}));
+    {const shared=Object.keys(V.MOBT).filter(mt=>V.ntMobShared({t:'mob',mt}));
+      ok('what is shared (6.11): the ordinary mobs, villagers, Nuke Kegs and the plain bosses; never a Purgatory or Malgorath cast, a prop, a dragon, a snake or a blockling',
+        shared.every(mt=>{const T=V.MOBT[mt];return !T.pmob&&!T.mg&&!T.pnc&&mt!=='dragon'&&mt!=='dking'&&mt!=='snake'&&mt!=='blockling';})&&
+        ['zombie','pig','alien','nuker','boss','titan','infernis','valkyra'].every(mt=>shared.includes(mt))&&!V.ntMobShared({t:'mob',mt:'zombie',pkeep:1})&&!V.ntMobShared({t:'drop'}));}
     ok('ntFrame and ntLeave guard themselves; every other hook is behind NET.on',/function ntFrame\(dt\)\{\n  if\(!NET\.on\|\|!P\)return;/.test(N)&&/function ntLeave\(\)\{\n  if\(!NET\.on&&NET\.st==='off'&&!NET\.ws\)return;/.test(N));}
 
   /* ---- 5. the title ---- */

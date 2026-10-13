@@ -1,17 +1,21 @@
 /* ---- PART 58: n5_players.js ---- */
 /* The other players. A peer is {id, name, has (a pose has arrived), x y z yaw (where the body is drawn), tx ty tz tyaw
    (where the last pose says it is), pt (when that pose arrived, on NET.acc), pitch, dim, held, hp, fl (the pose flags, see
-   ntPoseNow), M (the body, built on first sight), anim / sw / spd (walk cycle, arm swing, measured speed)}. Poses arrive about 15 times a second; ntPeersTick
+   ntPoseNow), ar (the four armour item ids, or null), rv ry rh (the vehicle they ride: kind, heading, how far below them),
+   ms (their ping), M (the body, built on first sight), anim / sw / spd (walk cycle, arm swing, measured speed)}. Poses arrive about 15 times a second; ntPeersTick
    eases the body toward the latest one every frame. Bodies are only shown in the dimension the local player is in. */
 
 const NT_SHIRTS=[0x3b82d9,0xd94a4a,0x3fae5a,0xa24bd1,0xe0b030,0x2fb5b5,0xd9648f,0x7a8a99];
+/* the vehicles a player can be seen riding (entity kinds); each has a mesh builder in the core, looked up when needed */
+const NT_RIDES={car:1,skate:1,cart:1,boat:1,plane:1};
 /* ----- the other players ----- */
 function ntHash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
 /* a player joined (or was already there when we did) */
 function ntPeerAdd(id,name,pose){
   id=id|0;if(!id||id===NET.id)return null;
   ntPeerDel(id);
-  const p={id,name:''+(name||'Player'),has:false,x:0,y:0,z:0,yaw:0,pitch:0,tx:0,ty:0,tz:0,tyaw:0,pt:-9,dim:'over',held:0,hp:20,fl:0,M:null,anim:0,sw:0,spd:0};
+  const p={id,name:''+(name||'Player'),has:false,x:0,y:0,z:0,yaw:0,pitch:0,tx:0,ty:0,tz:0,tyaw:0,pt:-9,dim:'over',held:0,hp:20,fl:0,M:null,anim:0,sw:0,spd:0,
+    ar:null,rv:'',ry:0,rh:0,ms:0};
   NET.peers.set(id,p);
   if(pose)ntPeerPose(p,pose);
   return p;
@@ -21,7 +25,9 @@ function ntPeerPose(p,m){
   if(typeof m.x!=='number'||typeof m.y!=='number'||typeof m.z!=='number')return;
   const far=!p.has||p.dim!==m.dim||Math.hypot(m.x-p.x,m.y-p.y,m.z-p.z)>12;
   p.tx=m.x;p.ty=m.y;p.tz=m.z;p.tyaw=+m.yaw||0;p.pitch=+m.pitch||0;p.pt=NET.acc;
-  p.dim=''+(m.dim||'over');p.held=m.held|0;p.hp=+m.hp||0;
+  p.dim=''+(m.dim||'over');p.held=m.held|0;p.hp=+m.hp||0;p.ms=m.ms|0;
+  p.ar=Array.isArray(m.ar)&&m.ar.length===4?m.ar.map(v=>v|0):null;
+  p.rv=typeof m.rv==='string'&&NT_RIDES[m.rv]===1?m.rv:'';p.ry=+m.ry||0;p.rh=+m.rh||0;
   if((m.fl&1)&&!(p.fl&1))p.sw=1;
   p.fl=m.fl|0;
   if(far){p.x=p.tx;p.y=p.ty;p.z=p.tz;p.yaw=p.tyaw;}
@@ -36,6 +42,7 @@ function ntPeerDel(id){
 function ntClearPeers(){for(const p of NET.peers.values())ntPeerUnmesh(p);NET.peers.clear();}
 /* take a player's body out of the scene and free what only it owned (shared tool models are left alone) */
 function ntPeerUnmesh(p){
+  if(p.M&&p.M.veh){const f=p.fl;p.fl=0;ntPeerRide(p);p.fl=f;}   /* the vehicle first: it owns its own geometry */
   const M=p.M;p.M=null;
   if(!M||!scene)return;
   scene.remove(M.G);
@@ -59,7 +66,15 @@ function ntPeerMesh(p){
   const lL=mkLimb(pants,0.21,0.66),lR=mkLimb(pants,0.21,0.66);
   lL.position.set(-0.13,0.66,0);lR.position.set(0.13,0.66,0);
   for(const sx of[-1,1]){const s=new THREE.Mesh(new THREE.BoxGeometry(0.22,0.1,0.26),shoe);s.position.set(sx*0.13,0.05,-0.02);G.add(s);}
-  const M={G,head,aL,aR,lL,lR,tag:null,_toolId:0,_tool:null};
+  /* armour: plates a little larger than the limb under them, hidden until worn. Slot 0 helmet, 1 chestplate (body and
+     arms), 2 leggings, 3 boots; each slot has one material, tinted to what is worn (ntPeerArmor). */
+  const arm=[0,1,2,3].map(()=>({mat:mat(0xd8d8d8),parts:[],col:''}));
+  const plate=(slot,par,w,hh,d,y)=>{const me=new THREE.Mesh(new THREE.BoxGeometry(w,hh,d),arm[slot].mat);me.position.y=y;me.visible=false;par.add(me);arm[slot].parts.push(me);};
+  plate(0,head,0.56,0.56,0.56,0);
+  plate(1,G,0.56,0.76,0.33,1.0);plate(1,aL,0.24,0.42,0.24,-0.19);plate(1,aR,0.24,0.42,0.24,-0.19);
+  plate(2,lL,0.25,0.44,0.25,-0.2);plate(2,lR,0.25,0.44,0.25,-0.2);
+  plate(3,lL,0.26,0.2,0.3,-0.56);plate(3,lR,0.26,0.2,0.3,-0.56);
+  const M={G,head,aL,aR,lL,lR,tag:null,_toolId:0,_tool:null,arm,_arS:'',veh:null,_veh:''};
   try{
     if(typeof THREE.Sprite==='function'&&typeof THREE.CanvasTexture==='function'&&typeof document!=='undefined'){
       const cv=document.createElement('canvas'),c=cv.getContext('2d');
@@ -90,6 +105,34 @@ function ntPeerTool(p){
   }catch(e){g=null;}
   if(g){g.isT3D=true;M.aR.add(g);M._tool=g;}
 }
+/* show the armour this player wears, rebuilt only when it changes */
+function ntPeerArmor(p){
+  const M=p.M,s=p.ar?p.ar.join(','):'';
+  if(M._arS===s)return;
+  M._arS=s;
+  for(let i=0;i<4;i++){
+    const d=p.ar&&p.ar[i]?DEFS[p.ar[i]]:null,a=d&&d.armor&&typeof ARM_M!=='undefined'?ARM_M[d.armor.m]:null;
+    if(a){M.arm[i].mat.color.set(a.col);M.arm[i].col=a.col;}
+    for(const me of M.arm[i].parts)me.visible=!!a;
+  }
+}
+/* the vehicle under a riding player: the core's own model for that kind, built when they get on and dropped when they
+   get off. It hangs off the body (so it shows, hides and leaves with it) and is turned to the vehicle's own heading. */
+function ntPeerRide(p){
+  const M=p.M,kind=(p.fl&8)?p.rv:'';
+  if(M._veh!==kind){
+    M._veh=kind;
+    if(M.veh){M.G.remove(M.veh);if(typeof M.veh.traverse==='function')M.veh.traverse(o=>{if(o.geometry)o.geometry.dispose();
+      for(const mm of (Array.isArray(o.material)?o.material:o.material?[o.material]:[]))mm.dispose();});M.veh=null;}
+    if(kind){
+      let r=null;
+      try{r=kind==='car'?mkCarMesh():kind==='skate'?mkSkateMesh():kind==='cart'?mkCartMesh():kind==='boat'?mkBoatMesh():mkPlaneMesh();}catch(e){r=null;}
+      const g=r&&r.G?r.G:null;
+      if(g){g.userData.shared=true;g.traverse&&g.traverse(o=>{o.userData.shared=true;});M.G.add(g);M.veh=g;}   /* shared: ntPeerUnmesh leaves it to the code above */
+    }
+  }
+  if(M.veh){M.veh.rotation.y=p.ry-p.yaw;M.veh.position.y=-p.rh+((p.fl&2)?0.12:0);}
+}
 /* every frame: ease each body toward its last pose and animate it (walk, sit, sneak, swing) */
 function ntPeersTick(dt){
   if(!NET.peers.size||!scene)return;
@@ -107,7 +150,7 @@ function ntPeersTick(dt){
     M.G.position.set(p.x,p.y-((p.fl&2)?0.12:0),p.z);
     M.G.rotation.y=p.yaw;
     M.head.rotation.x=p.pitch*0.55;
-    ntPeerTool(p);
+    ntPeerTool(p);ntPeerArmor(p);ntPeerRide(p);
     if(p.fl&8){M.lL.rotation.x=M.lR.rotation.x=-1.15;M.aL.rotation.x=M.aR.rotation.x=-0.5;}
     else{
       p.anim+=p.spd*dt*2.4;
@@ -117,9 +160,10 @@ function ntPeersTick(dt){
     if(p.sw>0){p.sw=Math.max(0,p.sw-dt*4);M.aR.rotation.x=-1.5*Math.sin(p.sw*Math.PI);}
   }
 }
-/* the renderTab hook: one row per other player (name, health, where they are if not here) */
+/* the renderTab hook: one row per other player (name, health, ping, where they are if not here), and this player's ping */
 function ntTabRows(rows){
-  for(const p of NET.peers.values())rows.push([p.name,(p.fl&16)?'creative':(p.fl&4)?'dead':Math.round(p.hp)+'❤','',
+  if(rows[0])rows[0][2]=NET.ms+' ms';
+  for(const p of NET.peers.values())rows.push([p.name,(p.fl&16)?'creative':(p.fl&4)?'dead':Math.round(p.hp)+'❤',p.ms+' ms',
     p.dim!==DIM?(p.dim==='over'?'Overworld':p.dim==='puppet'?'Puppet Purgatory':p.dim==='nether'?'Nether':'Aether'):'']);
 }
 /* left click: is another player the nearest thing along the look ray? (e eye, d direction, lim the nearest mob or block) */

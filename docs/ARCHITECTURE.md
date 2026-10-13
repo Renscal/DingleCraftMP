@@ -381,7 +381,18 @@ makes `syncAround` send the edits of every chunk newly within `rd` chunks (the c
 `{t:'edits', s:1}`; the client applies an `s:1` edit in a loaded chunk straight into the block array (`ntApplyEdit`'s
 `raw`), so old news never makes sand fall or water flow. Live edits go only to connections that have the chunk. Poses go
 at full rate to players within 128 blocks in the same dimension, and once a second (and on a change of dimension) to
-everyone else, which is what the Tab list needs.
+everyone else, which is what the Tab list needs. Chests and dropped items travel the same way since 6.11: `syncAround`
+sends the ones in each newly visible chunk as `bes` / `drops` with `add:1`, the set of sent chunks is trimmed as the
+player travels, and a `be` about a chunk the player has not been sent is ignored.
+
+**The line (6.11).** Messages are compressed per message by the standard WebSocket extension (`permessage-deflate`,
+negotiated in `lib/websocket.mjs`, no context kept on either side). Every message type has a per-second limit (`RATE`
+in `lib/config.mjs`, or its own counter in `lib/protocol.mjs`) and all of them together another (`msgsPerSec`): a new
+message type needs a `RATE` entry. The game pings every 2 s (`ntPing`: the round trip is the ping in the Tab list) and
+closes a line that has been silent for 12 s; the server gives a silent player up after 20 s. A line that was lost, not
+refused, is retried from the title (`ntRetry`: 5 tries, 1 to 8 s apart). When a connection ends, `forget` moves the
+player's saved place to their last pose (same dimension only) and names the nearest other player heir to their mobs
+(`mheir` -> `ntMobAdopt`). TLS (`cert`, `key`) and an `origins` list are optional server settings.
 
 | shared (server-owned) | how |
 |---|---|
@@ -398,8 +409,15 @@ everyone else, which is what the Tab list needs.
 | each player's own state | `saveToStorage` is redirected to `ntSave` (the `player` part of a snapshot, the dimension, the purgatory state): the autosave, Save World and quitting all go to the server, and a server world never touches local storage |
 | chat, PvP | `chatSubmit` to `ntChat`; `doMine` asks `ntMelee` whether another player is the nearest thing on the look ray |
 
-**Not shared:** vehicles, bosses, dragons, villagers, snakes, blocklings, titans, the Purgatory and Malgorath casts, the
-XP orbs, creativity works, the stock market and the structure SEEN sets. Each client simulates
+**Shared since 6.11:** villagers, Nuke Kegs and the bosses that are plain mobs (`boss`, `titan`, `infernis`,
+`valkyra`), through the same owner/puppet path. A boss is not handed over while its owner is within 40 blocks. The kinds a
+structure spawns (`NT_UNIQ`) carry their spawn spot, and two of a kind from one spot are one mob (`ntMobTwin`), so a
+village is populated once, not once per client. A pose also carries armour (`ar`) and the vehicle being ridden
+(`rv`, `ry`, `rh`), drawn by `ntPeerArmor` and `ntPeerRide`; an edit made by the player's own hand is marked (`ntGuard`
+sets `NET.act`, `ntEdit` spends it) so other clients play its sound and dust.
+
+**Not shared:** parked vehicles, dragons, snakes, blocklings, a boss's projectiles, the Purgatory and Malgorath casts, the
+XP orbs, creativity works, the stock market and the structure SEEN sets (so a dead boss returns for a player who was not there). Each client simulates
 those itself. Fire, falling blocks and structure processing also still run on every client: their block writes travel as
 ordinary edits and converge on the last writer.
 

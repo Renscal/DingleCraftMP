@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 // Package a version for its GitHub release: npm run package   (after npm run release, or npm run build for a dry run)
+//   --beta   the notes end with a line saying this is a beta that was released without the full test run
 // Writes into out/release/ (gitignored):
 //   DINGLECRAFT-Server-v<X.Y>.zip   server/ (front door, lib/, launchers, README) with the game html beside it, so the
 //                                   server hands the game out at its own address: players only need a browser
@@ -15,6 +16,8 @@ import { readVersion, readLabel, readPatchLog } from './lib/version.mjs';
 import { writeZip, readZip } from './lib/zip.mjs';
 
 const die = (m) => { console.error('package: ' + m); process.exit(1); };
+for (const a of process.argv.slice(2)) if (a !== '--beta') die('unknown option ' + a);
+const BETA = process.argv.includes('--beta');
 const md5 = (b) => crypto.createHash('md5').update(b).digest('hex');
 const VER = readVersion(REPO), LABEL = readLabel(REPO);
 const HTML_NAME = `dinglecraft_v${VER}.html`;
@@ -77,6 +80,7 @@ const notes = [
     '`Start Server.bat` on Windows, `./start-server.sh` elsewhere) and players open its address in a browser: nothing else to install.',
   `- **DINGLECRAFT-Client-v${VER}.zip**: the game as a desktop app (an Electron wrapper around the same html). Optional: ` +
     'the html inside it also opens in any browser by double-click. `npm install`, then `npm start`.', '',
+  ...(BETA ? ['> **Beta.** Cut from the Experimental branch for players to test; it was released without the full test run. Report what breaks.', ''] : []),
 ].join('\n');
 const notesFile = path.join(OUT, 'notes.md');
 fs.writeFileSync(notesFile, notes);

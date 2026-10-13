@@ -139,8 +139,11 @@ Full map: `docs/ARCHITECTURE.md` (PART-to-file table, systems index, how each up
   single player is byte-for-byte the old behaviour. The server owns blocks, block entities (one player in a chest at a
   time), dropped items, time, rules, rights (ops, bans, the whitelist, spawn protection, slash commands in
   `server/lib/commands.mjs`) and players-by-name. It never runs the game: an ordinary mob (`NT_MOBS`) is simulated by the
-  game of the nearest player and shown to the others as a puppet; vehicles, bosses and every special cast stay local to
-  each client. Anything that writes blocks must go through `setBlock`, anything that drops an item through `spawnDrop`,
+  game of the nearest player and shown to the others as a puppet (since 6.11 also villagers, Nuke Kegs and the plain
+  bosses; a structure-spawned one is deduplicated by its spawn spot); dragons, parked vehicles and the Purgatory and
+  Malgorath casts stay local to each client. The line itself (6.11): messages are compressed (permessage-deflate), every
+  message type has a per-second limit (`RATE` in `server/lib/config.mjs`: a new message type needs an entry), the game
+  pings every 2 s and reconnects by itself after a lost connection, and chests and drops are sent by range like edits. Anything that writes blocks must go through `setBlock`, anything that drops an item through `spawnDrop`,
   and anything that hurts a mob through `hurtMob`, or it will not reach other players.
 
 **ID ledger** (`docs/ARCHITECTURE.md` section 7): grep before allocating. Next free at v6.3: block ids 217, 218, 219, 248,

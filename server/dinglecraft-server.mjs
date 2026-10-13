@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// DINGLECRAFT multiplayer server (game 6.10 and up). No dependencies: plain Node 20+, on Windows, macOS or Linux.
+// DINGLECRAFT multiplayer server (game 6.11 and up). No dependencies: plain Node 20+, on Windows, macOS or Linux.
 //
 //   node server/dinglecraft-server.mjs [--port 40162] [--world file] [--game file.html] [--seed text] [--mode s|c]
 //                                      [--name text] [--password text] [--max 8] [--no-pvp] [--data dir]

@@ -90,6 +90,7 @@ npm run release
 
 A **beta** (the pre-releases cut from `Experimental`, which exist to be tested by players) may skip the gate:
 `npm run release -- --no-gate` drops the third check and says so in its output. Everything else still applies.
+Package it with `npm run package -- --beta`, which says the same in the release notes.
 
 Then it rebuilds into a private folder, copies the html to `dist/` (if it is not there yet) and to `DINGLECRAFT.html`
 at the repo root (the play file players download; `r_build` checks it is always the newest release), records the version in

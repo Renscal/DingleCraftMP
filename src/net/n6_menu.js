@@ -27,7 +27,7 @@ function ntMenuGo(){
 {
   const on=(id,f)=>{const b=$(id);if(b)b.onclick=f;};
   on('t_go_mp',()=>{ntOpenMenu();playS('click');});
-  on('t_back_mp',()=>{if(NET.st==='connecting'){const ws=NET.ws;NET.ws=null;NET.st='off';NET.pend=null;if(ws){try{ws.onclose=null;ws.close();}catch(e){}}ntStatus('');}
+  on('t_back_mp',()=>{ntRetryStop();if(NET.st==='connecting'){const ws=NET.ws;NET.ws=null;NET.st='off';NET.pend=null;if(ws){try{ws.onclose=null;ws.close();}catch(e){}}ntStatus('');}
     tmShow('main','t_go_mp');playS('click');});
   on('t_mp_go',()=>{ntMenuGo();playS('click');});
   for(const id of ['t_mp_addr','t_mp_pw']){const i=$(id);

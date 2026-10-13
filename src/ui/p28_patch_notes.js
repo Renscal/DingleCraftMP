@@ -3,7 +3,19 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Multiplayer',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Multiplayer, tightened',lines:[
+    'MULTIPLAYER, TIGHTENED. Same server, fewer ways for it to let you down. Needs the 6.11 server: a 6.10 game and a 6.11 server politely refuse each other.',
+    'Lost your connection? The game now tries to get back in by itself: five tries over about 25 seconds, and you come back where the server last saw you, not where you last saved. Kicks, bans and shutdowns are still final.',
+    'A heartbeat every 2 seconds: the game notices a dead line in 12 seconds and the server gives up on a silent player after 20 (it used to be 45). Hold TAB to see everyone&#x27;s ping.',
+    'Other players now wear their armour where you can see it, in the right metal, and when they drive past you there is a car under them. Also boats, planes, carts and skateboards.',
+    'You hear your friends dig. A block placed or broken by another player nearby comes with its sound and its dust. Water going about its business stays quiet.',
+    'Villagers, Nuke Kegs, the dungeon boss, the Stone Titan and the Nether and Aether bosses are shared: everybody sees the same one and can hit it. A boss fights the player whose game is running it. A village no longer comes with one set of villagers per visitor.',
+    'When a player leaves or drops, the mobs their game was running are handed to whoever is nearest. They used to vanish.',
+    'The server compresses what it sends, and sends chests and dropped items for the area around you, not for the whole world. Joining a big world is quicker.',
+    'Server owners: optional TLS (cert and key in server.json, then it is https and wss), an origins list for who may connect, and a limit on how fast any one player may send anything. Flooders are shown the door.',
+    'Still each player&#x27;s own: dragons, parked vehicles, what a boss throws at you, and the casts of Purgatory and Malgorath.',
+  ]},
+ {v:'6.10',label:'Release 1.1',title:'Multiplayer',lines:[
     'MULTIPLAYER. Other people. In your world. On purpose.',
     'Main menu: Multiplayer. Type a server address, press Join Server, and you are standing next to your friends, who each get their own shirt colour and their name floating over their head.',
     'Shared with everyone: every block placed or broken (in every dimension), chests and furnaces, dropped items, chat, the player list (hold TAB), the time of day, sleeping through the night and the game rules.',

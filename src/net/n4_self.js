@@ -14,11 +14,26 @@ function ntSave(quiet){
    inventory and the world, so the server never remembers an inventory that still holds what now lies on the ground */
 function ntSaveSoon(){if(NET.saveT<0)NET.saveT=NET.acc+1;}
 /* this player as others need to see them. fl bits: 1 swinging, 2 sneaking, 4 dead, 8 riding, 16 creative, 32 paused (this
-   game is not running the world right now, so it must not be anyone's simulation owner) */
+   game is not running the world right now, so it must not be anyone's simulation owner).
+   ar: the four armour slots as item ids (only when something is worn). rv ry rh: the kind of vehicle being ridden, which
+   way it points and how far below the player it sits (only on a vehicle). */
 function ntPoseNow(){
-  const st=heldStack();
-  return {t:'pose',x:+P.x.toFixed(2),y:+P.y.toFixed(2),z:+P.z.toFixed(2),yaw:+P.yaw.toFixed(3),pitch:+P.pitch.toFixed(3),
+  const st=heldStack(),r=P.ride;
+  const m={t:'pose',x:+P.x.toFixed(2),y:+P.y.toFixed(2),z:+P.z.toFixed(2),yaw:+P.yaw.toFixed(3),pitch:+P.pitch.toFixed(3),
     dim:DIM,held:st?st.id:0,hp:Math.round(P.hp),fl:(P.swing>0.3?1:0)|(P.sneak?2:0)|(P.dead?4:0)|(P.ride?8:0)|(P.mode==='c'?16:0)|(paused?32:0)};
+  if(P.armor&&P.armor.some(a=>a))m.ar=P.armor.slice(0,4).map(a=>a?a.id:0);
+  if(r&&NT_RIDES[r.t]===1){m.rv=r.t;m.ry=+(r.yaw||0).toFixed(2);m.rh=+(P.y-r.y).toFixed(2);}
+  return m;
+}
+/* the heartbeat, every 2 seconds: the server answers each ping at once, which times the round trip (shown in the Tab list)
+   and proves the line is alive. Nothing at all from the server for 12 seconds (it sends the time every 5) means the line is
+   dead even if the browser has not noticed: close it, and ntDown takes it from there (and tries to reconnect). */
+function ntPing(){
+  if(NET.acc-NET.pingT>=2){NET.pingT=NET.acc;NET.pingAt=Date.now();ntSend({t:'ping',n:++NET.pingN,ms:NET.ms});}
+  if(NET.rxAt&&Date.now()-NET.rxAt>12000){
+    const ws=NET.ws;NET.rxAt=0;
+    if(ws){try{ws.close();}catch(e){}if(NET.ws===ws&&typeof ws.onclose==='function')ws.onclose();}
+  }
 }
 /* the chatSubmit hook: a normal chat line goes to everyone */
 function ntChat(txt){ntSend({t:'chat',txt});}
@@ -41,6 +56,9 @@ function ntSleep(){
 function ntFrame(dt){
   if(!NET.on||!P)return;
   NET.acc+=dt;
+  NET.act=false;                     /* a hand that changed nothing this frame marks nothing */
+  ntPing();
+  if(!NET.on)return;                 /* the line was dead: ntDown has taken the game back to the title */
   if(NET.dim!==DIM)ntDropsScan();   /* a dimension change: before anything else looks at the drops */
   if(P.hurtT<=0)NET.dmgRef=LASTDMG;
   ntLockTick();

@@ -3,7 +3,7 @@
 //   GET /status   a small JSON readout: name, version, who is online
 // Everything else is a 404. Nothing here can change the world.
 import fs from 'node:fs';
-import { PROTO } from './config.mjs';
+import { PROTO, MIN_GAME } from './config.mjs';
 
 /* what /status says (also used by the suites) */
 export function statusOf(S) {
@@ -23,7 +23,7 @@ export function pageHandler(S) {
     if (url === '/' || url === '/index.html') {
       if (!S.gameFile) {
         res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
-        return res.end(`${S.o.name}\nThis DINGLECRAFT server is running, but it has no game file to hand out.\nOpen your own copy of the game (6.10 or newer), choose Multiplayer and enter this address.\n`);
+        return res.end(`${S.o.name}\nThis DINGLECRAFT server is running, but it has no game file to hand out.\nOpen your own copy of the game (${MIN_GAME} or newer), choose Multiplayer and enter this address.\n`);
       }
       let st;
       try { st = fs.statSync(S.gameFile); } catch { res.writeHead(500); return res.end('game file missing'); }

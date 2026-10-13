@@ -7,7 +7,12 @@
    Block entities (chests, furnaces, terrariums, displays) have no single writer, so they are compared once a second. */
 
 /* ----- block edits ----- */
-function ntEdit(k,lk,id){NET.q.push([k,lk,id]);}
+/* the setBlock hook. An edit made by this player's own hand (ntGuard saw it coming) is marked, so the others get the
+   sound and the dust of it; what water, fire and gravity do travels unmarked and silent. */
+function ntEdit(k,lk,id){
+  if(NET.act){NET.act=false;NET.q.push([k,lk,id,1]);}
+  else NET.q.push([k,lk,id]);
+}
 /* send the queued block changes, at most 4000 per message */
 function ntFlush(){
   const q=NET.q;
@@ -18,8 +23,9 @@ function ntFlush(){
 /* a block change from another player. Loaded chunk in this dimension: through setBlock (so meshes, torches and
    water react) with NET.ap set so it is not sent back. Anything else: straight into chunkEdits, for when the chunk loads.
    raw: the edit is old news about a chunk that just came into range (the server sends those as the player travels), so
-   even in a loaded chunk it is written without side effects: nothing falls, flows or pops because of it. */
-function ntApplyEdit(k,lk,id,raw){
+   even in a loaded chunk it is written without side effects: nothing falls, flows or pops because of it.
+   by: another player did it by hand, just now: if it is close, it is heard and (a broken block) seen. */
+function ntApplyEdit(k,lk,id,raw,by){
   if(typeof k!=='string'||typeof lk!=='string'||!(id>=0&&id<256))return;
   const kd=k[1]===';'?k.slice(0,2):'';
   const c=(kd?k.slice(2):k).split(','),p=lk.split(',');
@@ -28,6 +34,13 @@ function ntApplyEdit(k,lk,id,raw){
   const x=cx*CH+lx,z=cz*CH+lz;
   const ch=chunks.get(k);
   if(ch&&keyDim(k)===DIM&&!raw){
+    if(by&&P&&playing){
+      const was=ch.bl[bidx(lx,y,lz)];
+      if(was!==id){
+        if(id===B.AIR&&was&&Math.hypot(x-P.x,z-P.z)<24)burstParticles(x+0.5,y+0.5,z+0.5,was,8,0.5);
+        playSAt(id===B.AIR?'dig':'place',x+0.5,y+0.5,z+0.5);
+      }
+    }
     NET.ap=true;
     try{setBlock(x,y,z,id);}finally{NET.ap=false;}
     if(ch.bl[bidx(lx,y,lz)]===id)return;                 /* a protected cell refused it: record it below anyway */
@@ -108,6 +121,7 @@ function ntLockTick(){
    spawn belongs to the operators (and only on a server that has operators: NET.prot is 0 otherwise). The server refuses the
    same edits, so this is the polite half: it stops the block from changing here in the first place. */
 function ntGuard(x,z){
+  NET.act=true;                                            /* a hand is on a block: the next edit is this player's own (ntEdit) */
   if(!(NET.prot>0)||NET.op||DIM!=='over'||!NET.spawn)return false;
   if(Math.abs(x+0.5-NET.spawn.x)>NET.prot||Math.abs(z+0.5-NET.spawn.z)>NET.prot)return false;
   if(NET.acc-NET.guardT>2){NET.guardT=NET.acc;showToast('The spawn area is protected.');}

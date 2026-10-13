@@ -3,7 +3,11 @@
    Joining is "load a save": welcome carries the world's settings and this player's saved state, edits / bes / drops carry the
    rest, and on ready ntEnter builds a save-shaped object and hands it to applySave.
    Three ways out: ntLeave (the player quit: called from the tail of quitToTitle), ntDown (the socket closed or the server
-   refused: back to the title with the reason), and a failed load in ntEnter (which closes the socket, so ntDown runs). */
+   refused: back to the title with the reason), and a failed load in ntEnter (which closes the socket, so ntDown runs).
+   A connection that was lost (not refused, not a kick, not the player's own doing) is tried again a few times from the
+   title (ntRetry): joining is "load a save", so coming back is simply joining again, with whatever the server has. */
+
+const NT_RETRIES=5;
 
 /* ----- the socket ----- */
 function ntUrl(addr){
@@ -28,33 +32,56 @@ function ntSend(m){
   if(!ws||ws.readyState!==1)return false;
   try{ws.send(JSON.stringify(m));NET.stats.out++;return true;}catch(e){return false;}
 }
-/* open the connection and say hello. The answer arrives in ntMsg: welcome, the world, then ready -> ntEnter. */
-function ntConnect(addr,pw){
+/* open the connection and say hello. The answer arrives in ntMsg: welcome, the world, then ready -> ntEnter.
+   retry: the attempt number when ntRetry is calling (a call from the menu starts over) */
+function ntConnect(addr,pw,retry){
   if(NET.st==='connecting'||NET.on)return false;
+  if(!retry)ntRetryStop();
   const url=ntUrl(addr);
   if(!url){ntStatus('Type the server address first.',true);return false;}
   if(typeof WebSocket!=='function'){ntStatus('This browser cannot open a connection.',true);return false;}
   let ws;
   try{ws=new WebSocket(url);}catch(e){ntStatus('That address does not look right.',true);return false;}
-  NET.ws=ws;NET.st='connecting';NET.why='';NET.pend=null;NET.addr=addr;
-  ntStatus('Connecting to '+url.replace(/^wss?:\/\//,'')+' …');
+  NET.ws=ws;NET.st='connecting';NET.why='';NET.pend=null;NET.addr=addr;NET.pw=''+(pw||'');
+  ntStatus(retry?'Lost the connection. Reconnecting (try '+retry+' of '+NT_RETRIES+') …':'Connecting to '+url.replace(/^wss?:\/\//,'')+' …');
   ws.onopen=()=>{if(NET.ws!==ws)return;ntSend({t:'hello',proto:NT_PROTO,v:GAME_VERSION,name:PNAME,pw:pw||'',rd:RD+3});ntStatus('Connected. Loading the world …');};
-  ws.onmessage=ev=>{if(NET.ws!==ws)return;let m;try{m=JSON.parse(ev.data);}catch(e){return;}NET.stats.in++;
+  ws.onmessage=ev=>{if(NET.ws!==ws)return;let m;try{m=JSON.parse(ev.data);}catch(e){return;}NET.stats.in++;NET.rxAt=Date.now();
     try{ntMsg(m);}catch(e){if(typeof console!=='undefined')console.error('[net]',e);}};
   ws.onclose=()=>{if(NET.ws===ws)ntDown(NET.why||(NET.st==='connecting'?'Could not reach the server.':'Lost the connection to the server.'));};
   ws.onerror=()=>{};
   try{window.storage.set('vox_mp',JSON.stringify({addr:''+addr})).catch(()=>{});}catch(e){}
   return true;
 }
-/* the connection is gone (or was refused): back to the title, with the reason */
+/* the connection is gone (or was refused): back to the title, with the reason. If it was simply lost, try again. */
 function ntDown(why){
-  const was=NET.on;
+  const was=NET.on,told=!!NET.why,again=NET.retryN;   /* told: the server gave a reason (a kick, a refusal, a shutdown) */
   NET.ws=null;NET.pend=null;
   if(NET.st==='off')return;
   NET.st='off';
   ntStatus(why,true);
-  if(was&&playing){NET.why=why;quitToTitle().then(()=>{showToast(why);});}
-  else{NET.on=false;ntClearPeers();}
+  if(was&&playing){NET.why=why;quitToTitle().then(()=>{showToast(why);if(!told)ntRetry(1);});}
+  else{NET.on=false;ntClearPeers();
+    if(told)ntRetryStop();else if(again>0)ntRetry(again+1);}
+}
+/* try to get back in: attempt n of NT_RETRIES, after 1, 2, 4, 8, 8 seconds. Anything the player does about it (Join, Back,
+   opening another world) calls it off. */
+function ntRetry(n){
+  ntRetryStop();
+  if(n>NT_RETRIES||!NET.addr||typeof setTimeout!=='function'){ntStatus('Lost the connection to the server.',true);return;}
+  NET.retryN=n;
+  if(!playing)ntOpenMenu();
+  ntStatus('Lost the connection. Reconnecting (try '+n+' of '+NT_RETRIES+') …',true);
+  NET.retryH=setTimeout(()=>{
+    NET.retryH=0;
+    if(NET.retryN!==n)return;
+    if(playing||NET.on||NET.st!=='off'){NET.retryN=0;return;}
+    ntConnect(NET.addr,NET.pw,n);
+  },Math.min(8000,1000*Math.pow(2,n-1)));
+}
+/* call the reconnecting off */
+function ntRetryStop(){
+  if(NET.retryH){try{clearTimeout(NET.retryH);}catch(e){}NET.retryH=0;}
+  NET.retryN=0;
 }
 /* leaving on purpose (the tail of quitToTitle): the last save has gone out by now */
 function ntLeave(){
@@ -82,8 +109,12 @@ function ntMsg(m){
       NET.stats.edIn+=m.e.length;
       if(NET.pend){const E=NET.pend.edits;for(const e of m.e)(E[e[0]]||(E[e[0]]={}))[e[1]]=e[2]|0;NET.pend.n+=m.e.length;
         ntStatus('Loading the world … '+NET.pend.n+' blocks');return;}
-      if(NET.on)for(const e of m.e)ntApplyEdit(e[0],e[1],e[2]|0,!!m.s);   /* s: a chunk that came into range, not a live change */
+      if(NET.on)for(const e of m.e)ntApplyEdit(e[0],e[1],e[2]|0,!!m.s,e[3]===1);   /* s: a chunk that came into range, not a live change */
       return;
+    case 'pong':
+      if(m.n===NET.pingN&&NET.pingAt){NET.ms=Math.max(0,Math.min(9999,Math.round(Date.now()-NET.pingAt)));NET.pingAt=0;}
+      return;
+    case 'mheir':if(NET.on)ntMobAdopt(m.from|0);return;
     case 'perm':
       NET.op=!!m.op;NET.prot=+m.prot||0;NET.spawn=m.spawn&&typeof m.spawn.x==='number'&&typeof m.spawn.y==='number'&&typeof m.spawn.z==='number'?m.spawn:null;
       return;
@@ -103,11 +134,15 @@ function ntMsg(m){
     case 'mgive':if(NET.on)ntMobTaken(m);return;
     case 'mhit':if(NET.on)ntMobHurt(m);return;
     case 'boom':if(NET.on)ntBoomIn(m);return;
-    case 'bes':
-      if(NET.pend&&m.m&&typeof m.m==='object')NET.pend.be=m.m;
+    case 'bes':                                           /* add: the ones in chunks that came into range, not the whole list */
+      if(!m.m||typeof m.m!=='object')return;
+      if(NET.pend){if(m.add)Object.assign(NET.pend.be,m.m);else NET.pend.be=m.m;return;}
+      if(NET.on&&m.add)for(const k of Object.keys(m.m))ntApplyBE(k,m.m[k]);
       return;
     case 'drops':
-      if(NET.pend&&Array.isArray(m.d))NET.pend.drops=m.d;
+      if(!Array.isArray(m.d))return;
+      if(NET.pend){if(m.add)NET.pend.drops=(NET.pend.drops||[]).concat(m.d);else NET.pend.drops=m.d;return;}
+      if(NET.on&&m.add)for(const d of m.d)ntDropIn(d);
       return;
     case 'drop':
       if(NET.pend){(NET.pend.drops||(NET.pend.drops=[])).push(m);return;}
@@ -169,6 +204,7 @@ function ntEnter(){
   NET.beS.clear();for(const [k,b] of blockEnts)NET.beS.set(k,ntBeSig(b));
   NET.drops.clear();NET.dim=DIM;NET.dseq=0;NET.dropIn=false;
   NET.mobs.clear();NET.mseq=0;NET.mobT=0;NET.ownT=0;NET.lockK=null;NET.lockWant=null;NET.saveT=-1;NET.rdS=RD;NET.dmgRef=LASTDMG;NET.guardT=-9;
+  ntRetryStop();NET.pingT=0;NET.pingN=0;NET.pingAt=0;NET.ms=0;NET.rxAt=Date.now();NET.act=false;
   if(found)ntSend({t:'spawn',x:found[0],y:found[1],z:found[2]});
   for(const d of (W.drops||[]))ntDropKnow(d);   /* they appear as their chunks load (ntDropsScan) */
   WORLD.name='';enterGame();WORLD.name=(w.name||NET.server||'server');   /* never becomes this browser's "last world" */
