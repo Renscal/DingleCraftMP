@@ -7,7 +7,7 @@ No dependencies and nothing to install: `dinglecraft-server.mjs` plus the `lib/`
 **Windows:** double-click `Start Server.bat`. If Node.js is missing it says so and tells you where to get it. Windows
 Firewall will ask once whether Node may accept connections: allow it on private networks.
 
-**Anything else (or a terminal on Windows):**
+**Anything else (or a terminal on Windows):** `./start-server.sh` next to it, or
 
 ```sh
 node server/dinglecraft-server.mjs

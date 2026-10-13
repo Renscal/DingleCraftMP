@@ -1,0 +1,14 @@
+{
+  "name": "dinglecraft-client",
+  "version": "0.0.0",
+  "private": true,
+  "description": "DINGLECRAFT desktop client: an Electron window around the game's html file.",
+  "license": "SEE LICENSE IN LICENSE",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^38.0.0"
+  }
+}

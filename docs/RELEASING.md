@@ -113,9 +113,34 @@ came in cuts: game version 6.4 (labelled Release 1.0 Preview: the v6.3 game plus
 bigger UI and the new title menu), then 6.5 to 6.9 as Release 1.0. Tag both: `git tag v6.9` and
 `git tag -f release-1.0` (`npm run release` prints the exact commands).
 
+## 6. Publish the release on GitHub
+
+Every version gets a GitHub release with two downloads, cut from the `Experimental` branch (for now every release is
+cut there, and marked as a pre-release):
+
+```
+npm run package
+git push mp Experimental && git push mp v6.9
+gh release create v6.9 out/release/DINGLECRAFT-Server-v6.9.zip out/release/DINGLECRAFT-Client-v6.9.zip \
+  --target Experimental --prerelease --title "Release 1.1 (v6.9) The Something Update" --notes-file out/release/notes.md
+```
+
+`scripts/package.mjs` writes into `out/release/` and prints that exact `gh` command:
+
+| file | what |
+|---|---|
+| `DINGLECRAFT-Server-v<X.Y>.zip` | `server/` with the game html beside it. The server hands the game out at its own address, so players only need a browser |
+| `DINGLECRAFT-Client-v<X.Y>.zip` | `client/` (the Electron wrapper, [client/README.md](../client/README.md)) with the same html beside `main.js`. Optional: nobody needs it to play |
+| `notes.md` | the version's patch notes as Markdown, plus a line about each download |
+
+It refuses an html that is not the released one (md5 against `shipped.json`), reads both zips back and compares every
+file, and never talks to the network. Before `npm run release` it is a dry run (it says so). The zips are built by
+`scripts/lib/zip.mjs`, so packaging needs nothing but Node.
+
 ## Where the new version gets played
 
-- The brain launcher serves the newest `dist/dinglecraft_v*.html` ([BRAIN.md](BRAIN.md)).
+- The multiplayer server hands out the newest `dinglecraft_v*.html` it finds ([server/README.md](../server/README.md)).
+- The desktop client opens the newest one next to it, or in `dist/` ([client/README.md](../client/README.md)).
 - `npm run serve` serves `dist/` at `http://127.0.0.1:8643/`.
 - Or double-click the file.
 

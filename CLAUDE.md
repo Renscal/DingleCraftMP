@@ -49,13 +49,14 @@ src/            the game, about 190 files, joined in src/ORDER.txt order (the on
 html/           head.html in 18 pieces (html/ORDER.txt) + tail.html; css/ per system, dom/ by region
 assets/         logo.png, title/ (menu panorama), vendor/ (three.js r128, inlined), packed/{hr,mg}/ (429 WebP + sidecars +
                 manifests), pack-inputs/
-scripts/        build.mjs serve.mjs bump.mjs release.mjs gate.mjs changelog.mjs guards.json lib/
+scripts/        build.mjs serve.mjs bump.mjs release.mjs package.mjs gate.mjs changelog.mjs guards.json lib/
 tests/          core/ (frozen) lib/ (boot chain, paths.js) texpacks/ purgatory/ pilot/ creativity/ malgorath/
                 ui/ repo/ fixtures/ gate.json
 tools/          art/ (packers, fal client: PAID) assets/ (unpack, repack) qa/ (muted browser rigs) hooks/ (git hooks)
                 scan_secrets.mjs scan_history.mjs grep-safe.sh lib/private_terms.cjs
 server/         the multiplayer server: dinglecraft-server.mjs (the front door) + lib/ (config, world, websocket, protocol,
                 commands, http, server, cli), no dependencies; Start Server.bat; its data/ is gitignored
+client/         the desktop client: an Electron wrapper (main.js) around the same html; optional, nobody needs it to play
 docs/           ARCHITECTURE BUILD TESTING QA ASSETS RELEASING PARITY ROADMAP LEGACY LANDMINES
 build/ dist/ out/   gitignored outputs
 ```
@@ -82,7 +83,9 @@ build/ dist/ out/   gitignored outputs
 8. **Look at it**, muted, in a real browser, in OG and Hyperreal, if it is visual (`docs/QA.md`).
 9. **Ship.** Patch notes, `npm run gate`, `npm run release`, commit with `TZ=UTC0`, tag (`docs/RELEASING.md`).
    **Every update is pushed**: work on the `Experimental` branch, and after each finished update (tests green) commit and
-   push it to the DingleCraftMP repository on GitHub (`git push mp Experimental`). `main` moves only when the owner says so. The access token lives in the machine's git credentials, never in this file or any other repo file (hard
+   push it to the DingleCraftMP repository on GitHub (`git push mp Experimental`). `main` moves only when the owner says so.
+   **Every version gets a GitHub release**, cut from `Experimental`, with two downloads, a server zip and a client zip
+   (`npm run package`, then the `gh release create` line it prints; `docs/RELEASING.md` step 6). The access token lives in the machine's git credentials, never in this file or any other repo file (hard
    rule 2: a token in a tracked file is published with the next push, and GitHub revokes it on sight).
 10. **Announce** with playful per-feature patch notes, plus the test counts `npm run release` prints (the in-game
     patch-notes screen is retired; `PATCH_LOG` is the data behind `CHANGELOG.md`).
