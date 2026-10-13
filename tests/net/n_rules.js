@@ -130,6 +130,20 @@ boot.run(async()=>{
   await bob.pose(3,40,0);await sleep(LIMITS.hitGap+20);
   ok('a hit on yourself, on nobody, with a silly damage',(await hits(a,a))===0&&(a.send({t:'hit',to:9999,dmg:1}),true)&&(await hits(a,bob,{dmg:1e9}))===1&&bob.last('hit').dmg===40);
 
+  /* 6.30: critical hits */
+  await sleep(LIMITS.hitGap+20);const dee=await join('Dee');await dee.pose(5,40,0);a.clear();dee.clear();
+  ok('a critical hit: the flag and the damage reach the victim, and a bystander is shown the burst where the victim stands',
+    (await hits(a,bob,{crit:1,dmg:21}))===1&&bob.last('hit').crit===1&&bob.last('hit').dmg===21&&(await until(()=>dee.by('crit').length===1,1500))&&dee.last('crit').x===3&&dee.last('crit').z===0&&
+    a.by('crit').length===0&&bob.by('crit').length===0);
+  await sleep(LIMITS.hitGap+20);dee.clear();
+  ok('a plain hit carries crit 0 and shows nobody a burst',(await hits(a,bob))===1&&bob.last('hit').crit===0&&dee.by('crit').length===0);
+  bob.clear();dee.clear();a.clear();a.send({t:'crit',x:1,y:41,z:1});
+  ok('a critical hit on a mob: everyone nearby is shown it, the attacker is not sent their own',
+    (await until(()=>bob.by('crit').length===1&&dee.by('crit').length===1,1500))&&bob.last('crit').x===1&&bob.last('crit').y===41&&a.by('crit').length===0);
+  bob.clear();a.send({t:'crit',x:300,y:41,z:1});a.send({t:'crit',x:'here'});await sleep(80);
+  ok('  ... but not one claimed far from where the attacker stands; junk becomes the attacker\'s own place',bob.by('crit').length===1&&bob.last('crit').x===0);
+  await dee.quit();
+
   /* ===== 6. dropped items ===== */
   a.send({t:'drop',id:'rules001.1',dim:'over',x:1,y:40,z:1,vx:0,vy:0,vz:0,st:{id:1,count:5}});await until(()=>'rules001.1' in W.drops,1500);
   ok('a new drop starts at age 0 (no wall-clock time in the record)',W.drops['rules001.1'].age===0&&!('born' in W.drops['rules001.1']));

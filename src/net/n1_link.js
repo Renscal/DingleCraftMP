@@ -184,7 +184,10 @@ function ntMsg(m){
     case 'chat':if(NET.on)chatPush(m.w?{k:'whisper',from:ntShown(m.from),to:'Dan',txt:''+m.txt}:{k:'chat',from:ntShown(m.from),txt:''+m.txt});return;
     case 'sys':if(NET.on)sysMsg(''+m.txt);return;
     case 'hit':
-      if(NET.on&&playing&&P&&!P.dead&&NET.pvp)damagePlayer(+m.dmg||1,+m.kx||0,+m.kz||0);
+      if(NET.on&&playing&&P&&!P.dead&&NET.pvp){damagePlayer(+m.dmg||1,+m.kx||0,+m.kz||0);if(m.crit)critFx(P.x,P.y+1.1,P.z);}
+      return;
+    case 'crit':
+      if(NET.on&&playing&&typeof m.x==='number'&&typeof m.y==='number'&&typeof m.z==='number')critFx(m.x,m.y,m.z);
       return;
     case 'time':
       if(NET.on&&typeof m.v==='number'){let d=m.v-(((timeOfDay%1)+1)%1);if(d>0.5)d-=1;if(d<-0.5)d+=1;

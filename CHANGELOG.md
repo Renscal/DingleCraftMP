@@ -21,6 +21,16 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — Jump, then swing
+
+*Game version 6.30, released 2026-10-13.*
+
+- **JUMP, THEN SWING.** Critical hits are in. Hit something while you are falling and the hit does half as much again. A fist does 1.5. A diamond sword does a great deal more than that. Gravity has always been on your side; now it is on your side in a fight.
+- **The rule.** You must be off the ground and on the way down. Not on the way up, not standing, not in water or lava, not riding anything, not sprinting, and not flying in creative. Jump, wait for the top, swing on the way down.
+- **You will know.** A crit throws a burst of gold sparks off the target and makes a sharp bright sound instead of the usual thud.
+- **Enchantments stack honestly.** The half is taken on the weapon itself; Sharpness is added on top afterwards, not multiplied.
+- **On a server.** It works on other players too, and everyone nearby sees the sparks, whether you crit a friend or a zombie. Your friend also sees them, from closer than they would like.
+
 ## Release 1.1 — Names through walls
 
 *Game version 6.29, released 2026-10-13.*

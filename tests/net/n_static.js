@@ -90,11 +90,12 @@ boot.run(async()=>{
     ['features/p16_xp_enchanting_dungeon.js','if(NET.on&&ntHosted())return;   /* PART 58: where the server runs the world, the spawners are'],
     /* 6.24: a changed skin is told to the server */
     ['features/p53b_skin.js','if(NET.on)ntSkinSend();'],
+    ['core/p04d_player_update.js','if(NET.on)ntCrit(tgt.e.x,cy,tgt.e.z);'],
   ];
   ok('the stock market stands still in a player\'s game on a server that runs it',count(readSrc('features/p12_ramps_tricks_stocks.js'),'if(NET.on&&NET.hosted)return;')===1);
   for(const [f,h] of hooks)ok('hook in '+f+': '+h.slice(0,34)+'… once, and once in the build',count(readSrc(f),h)===1&&count(G,h)===1);
   {const outside=G.slice(0,i58)+G.slice(i57);const calls=outside.match(/\bnt[A-Z]\w*\(/g)||[];
-    ok('the core calls into PART 58 exactly 35 times: 29 behind NET.on or e.pup, 6 for the server\'s own game ('+calls.length+')',calls.length===35);
+    ok('the core calls into PART 58 exactly 36 times: 30 behind NET.on or e.pup, 6 for the server\'s own game ('+calls.length+')',calls.length===36);
     ok('single player never reaches the server-game hooks: each is behind NET.host or NET.on, which only PART 58 sets',!/NET\.(host|hosted|on)\s*=[^=]/.test(outside));
     ok('the two drop guards: networked drops stay out of the dimension stash, and drops do not merge online',
       count(readSrc('world/p37_dimensions.js'),"e.t==='drop'&&e.st&&!e.nid){out.push(")===1&&count(readSrc('entities/p05a_entities_drops.js'),'&&e.st.dur==null&&!NET.on){')===1);

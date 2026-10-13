@@ -125,7 +125,7 @@ const NET={on:false,st:'off',ws:null,id:0,name:'',server:'',pvp:true,ap:false,pe
 
 /* everything the suites reach, spread into window.__vox by src/boot/export_boot.js */
 
-const NTEX={NET,NT_PROTO,ntTagAlpha,ntTagSeen,ntTagTick,NT_PORT,ntUrl,ntConnect,ntLeave,ntDown,ntMsg,ntSend,ntEnter,ntEdit,ntFlush,ntApplyEdit,ntApplyBE,ntBeScan,ntBeSig,
+const NTEX={NET,NT_PROTO,ntTagAlpha,ntTagSeen,ntTagTick,ntCrit,NT_PORT,ntUrl,ntConnect,ntLeave,ntDown,ntMsg,ntSend,ntEnter,ntEdit,ntFlush,ntApplyEdit,ntApplyBE,ntBeScan,ntBeSig,
   ntSave,ntPoseNow,ntFrame,ntPeerAdd,ntPeerDel,ntPeersTick,ntMelee,ntTabRows,ntOpenMenu,ntHash,ntHostHere,ntDropSpawned,ntDropTake,ntDropsScan,ntDropIn,ntDropGone,ntDropTook,
   ntCmd,ntSleep,ntBeAsk,ntLockMsg,ntLockTick,ntGuard,ntSaveSoon,ntSimHere,ntShot,ntMobShared,ntMobsTick,ntMobsIn,ntMobsGone,ntMobTaken,ntMobHurt,ntMobHit,ntMobPup,ntBoom,ntBoomIn,
   ntRetry,ntRetryStop,ntPing,ntMobAdopt,ntPeerArmor,ntPeerRide,ntMobState,ntMobTwin,

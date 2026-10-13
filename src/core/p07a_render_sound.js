@@ -69,6 +69,7 @@ function playS(n){
       case 'knock': tone(150,95,0.08,'square',0.45);break;
       case 'hurt':  tone(230,110,0.2,'sawtooth',0.22);break;
       case 'hit':   noiseS(0.07,0.2,1400,500);tone(190,120,0.06,'square',0.1);break;
+      case 'crit':  noiseS(0.09,0.24,2600,900);tone(880,1320,0.09,'square',0.16);tone(1320,1760,0.07,'sine',0.12);break;
       case 'eat':   noiseS(0.05,0.13,700+Math.random()*400,300);break;
       case 'burp':  tone(150,70,0.28,'square',0.16);break;
       case 'bow':   tone(380,900,0.13,'sine',0.14);noiseS(0.08,0.1,2500,900,true);break;

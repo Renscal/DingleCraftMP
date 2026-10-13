@@ -3,7 +3,14 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Names through walls',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Jump, then swing',lines:[
+    '<b>JUMP, THEN SWING.</b> Critical hits are in. Hit something while you are falling and the hit does half as much again. A fist does 1.5. A diamond sword does a great deal more than that. Gravity has always been on your side; now it is on your side in a fight.',
+    '<b>The rule.</b> You must be off the ground and on the way down. Not on the way up, not standing, not in water or lava, not riding anything, not sprinting, and not flying in creative. Jump, wait for the top, swing on the way down.',
+    '<b>You will know.</b> A crit throws a burst of gold sparks off the target and makes a sharp bright sound instead of the usual thud.',
+    '<b>Enchantments stack honestly.</b> The half is taken on the weapon itself; Sharpness is added on top afterwards, not multiplied.',
+    '<b>On a server.</b> It works on other players too, and everyone nearby sees the sparks, whether you crit a friend or a zombie. Your friend also sees them, from closer than they would like.',
+  ]},
+ {v:'6.29',label:'Release 1.1',title:'Names through walls',lines:[
     '<b>NAMES THROUGH WALLS.</b> Your friend walks behind a hill and their name walks behind it too, which is the exact moment you wanted to know where they went. A name tag is now drawn over everything. Mountains, castles, the casino: the name floats on top.',
     '<b>Dim means hidden.</b> With a clear line from your eye to their head the name is at full strength. Put something solid between you and it fades to about a third. So one glance tells you who is there and whether you can actually see them.',
     '<b>Glass does not count.</b> A window, leaves or a torch in the way is not a wall. Stone behind the window is.',

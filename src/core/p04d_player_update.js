@@ -211,8 +211,10 @@ function doMine(dt){
       P.atkT=0.32;P.swing=1;
       const st=heldStack(),tl=st&&DEFS[st.id].tool;
       let dmg=(tl?tl.dmg:1)+((P.bigT||0)>0?2:0);
-      const E=st&&st.ench;
+      const E=st&&st.ench,crit=!tgt.car&&critNow();
+      if(crit)dmg*=CRIT_MUL;                                 /* 6.30: before the enchantment's bonus, not after */
       if(E&&E.sharp)dmg+=E.sharp*1.2;
+      if(crit){const cy=tgt.e.y+(tgt.e.h||1)*0.6;critFx(tgt.e.x,cy,tgt.e.z);if(NET.on)ntCrit(tgt.e.x,cy,tgt.e.z);}
       if(tgt.car)hitCar(tgt.e,dmg);
       else{
         const kb=1+(E&&E.knock?E.knock*0.8:0);
@@ -252,6 +254,13 @@ function doMine(dt){
 }
 
 /* right mouse: interact / eat / bow / place */
+/* ----- critical hits (6.30) -----
+   A melee hit landed while falling does half as much again: off the ground and on the way down, not in water or lava,
+   not riding, not sprinting, not flying. The half is taken on the weapon's own damage; Sharpness is added after. */
+const CRIT_MUL=1.5;
+function critNow(){return !!(P&&P.vy<0&&!P.onGround&&!P.inWater&&!P.inLava&&!P.ride&&!P.sprint&&!P.flying);}
+/* the burst and the sound, at the place that was hit (also what another player's crit looks like from here) */
+function critFx(x,y,z){burstParticles(x,y,z,B.GLOWSTONE,14,1.5);if(typeof playSAt==='function')playSAt('crit',x,y,z);else playS('crit');}
 let rEdge=false;
 function doUse(dt){
   if(modalOpen()){rEdge=false;P.bowT=0;P.eatT=0;return;}

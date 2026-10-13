@@ -441,7 +441,16 @@ export function handleMessage(S, net, c, m, size) {
       if (now - c.hitT < (shot ? 50 : LIMITS.hitGap)) return;   // a gun fires faster than a fist
       c.hitT = now;
       to.lastHit = { name: c.name, t: now, shot };
-      net.send(to, { t: 'hit', from: c.id, name: c.name, dmg: num(m.dmg, 0, 40, 1), kx: num(m.kx, -1, 1, 0), kz: num(m.kz, -1, 1, 0) });
+      net.send(to, { t: 'hit', from: c.id, name: c.name, dmg: num(m.dmg, 0, 40, 1), kx: num(m.kx, -1, 1, 0), kz: num(m.kz, -1, 1, 0), crit: m.crit ? 1 : 0 });
+      if (m.crit && !shot)   // a critical hit (6.30): the victim's game shows its own, everyone else nearby is shown where
+        net.broadcast({ t: 'crit', x: to.pose.x, y: to.pose.y + 1.1, z: to.pose.z }, c, (p) => p !== to && near(p.pose, to.pose, LIMITS.mobRange));
+      return;
+    }
+    case 'crit': {                     // a critical hit on a mob in this player's game: the others nearby see the burst
+      if (!c.pose) return;
+      const at = { dim: c.pose.dim, x: num(m.x, -3e7, 3e7, c.pose.x), z: num(m.z, -3e7, 3e7, c.pose.z) };
+      if (!near(c.pose, at, LIMITS.hitReach + 2)) return;
+      net.broadcast({ t: 'crit', x: at.x, y: num(m.y, -256, 1024, c.pose.y), z: at.z }, c, (p) => near(p.pose, at, LIMITS.mobRange));
       return;
     }
     case 'save': {                     // this player's own state (inventory, position...), handed back when they next join

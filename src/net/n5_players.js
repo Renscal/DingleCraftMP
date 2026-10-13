@@ -228,13 +228,18 @@ function ntMelee(e,d,lim){
     P.atkT=0.32;P.swing=1;
     const st=heldStack(),tl=st&&DEFS[st.id].tool,E=st&&st.ench;
     let dmg=(tl?tl.dmg:1)+((P.bigT||0)>0?2:0);
+    const crit=critNow();
+    if(crit)dmg*=CRIT_MUL;
     if(E&&E.sharp)dmg+=E.sharp*1.2;
-    ntSend({t:'hit',to:best.id,dmg,kx:d[0],kz:d[2]});
+    ntSend({t:'hit',to:best.id,dmg,kx:d[0],kz:d[2],crit:crit?1:0});   /* the server shows the burst to everyone else nearby */
+    if(crit)critFx(best.x,best.y+1.1,best.z);
     best.sw=0;playS('hit');
     if(tl)damageHeld(tl.type==='sword'?1:2);
   }
   return true;
 }
+/* a critical hit on a mob in this game: the players nearby see the burst (6.30) */
+function ntCrit(x,y,z){ntSend({t:'crit',x,y,z});}
 /* ----- who runs the world here ----- */
 /* is this peer's game running the world right now? (here, alive on the wire, not paused) */
 function ntPeerLive(p){return p.has&&p.dim===DIM&&!(p.fl&32)&&NET.acc-p.pt<3;}
