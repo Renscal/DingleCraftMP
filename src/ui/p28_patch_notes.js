@@ -3,7 +3,15 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Ten pairs of trousers',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Armour you can see through',lines:[
+    '<b>ARMOUR YOU CAN SEE THROUGH.</b> Putting on armour used to turn you into a stack of plain coloured boxes. Whatever skin you had spent an evening on was simply gone, replaced by a diamond-coloured refrigerator. Armour is now a fitted layer with gaps in it, and you are still in there.',
+    '<b>The helmet has a face.</b> There is an opening at the front with a nose guard across it, so your eyes and that grin show through, a slot over each ear, and nothing underneath.',
+    '<b>The chestplate shows the shirt.</b> Plates front and back, straps over the shoulders, open at the sides and below the ribs. On the arms: a shoulder guard and a bracer, with the elbow and the hand bare.',
+    '<b>Leggings and boots.</b> A belt round the hips and each leg covered down to the boot, open at the back of the knee so you can still sit down in theory. Boots cover the ankle down and the sole.',
+    '<b>Four metals.</b> Iron, golden, diamond and dragon each have their own picture, drawn pixel by pixel in code. Mix a golden helmet with diamond boots and each piece keeps its own colour.',
+    '<b>Everyone matches.</b> Your own figure in third person and every other player on a server are dressed by the same piece of code from the same pictures, so what you see on yourself is what they see on you. The Hyperreal player keeps its own look.',
+  ]},
+ {v:'6.35',label:'Release 1.1',title:'Ten pairs of trousers',lines:[
     '<b>TEN PAIRS OF TROUSERS.</b> Your armour used to be a small shield and a number in the corner of the screen, like a parking ticket. It is now a proper armour bar: ten icons in a row directly above your hearts. The icons are trousers. Every other game went with a chestplate. We looked at what actually keeps a person decent and made our choice.',
     '<b>How to read it.</b> Each pair of trousers is two points of armour. One leg is one point. A full iron set is four pairs; full dragon is all ten.',
     '<b>Gold rounds up.</b> A golden piece is worth a point and a half, and the bar shows the nearest half pair, so one golden helmet is one whole pair of trousers. Nobody is drawing three quarters of a trouser.',

@@ -75,7 +75,7 @@ boot.run(async()=>{
   {const M=V.mkPlayerModel(),P=V.P;
     ok('the game builds the player from it',M.skinned===true&&!!M.head&&V.getScene().children.includes(M.G));
     P.armor=[{id:230},{id:231},{id:232},{id:233}];V.syncArmorModel(M);
-    ok('armour still goes on: four slots, the helmet turning with the head and the chestplate on the body',Array.isArray(M._arm)&&M._arm.length===4&&M._arm.every(g=>g.every(q=>q.visible))&&M.head.children.includes(M._arm[0][0])&&M.chestA.children.includes(M._arm[1][0])&&M.lL.children.includes(M._arm[2][0]));
+    ok('armour still goes on: four slots, the helmet turning with the head and the chestplate on the body',Array.isArray(M._arm)&&M._arm.length===4&&M._arm.every(g=>g.every(q=>q.visible))&&M.head.children.includes(M._arm[0][0])&&M.chestA.children.includes(M._arm[1][0])&&M._arm[2].some(q=>M.lL.children.includes(q)));   /* 6.36: the leggings are hips and two legs */
     P.armor=[null,null,null,null];V.syncArmorModel(M);
     ok('...and comes off',M._arm.every(g=>g.every(q=>!q.visible)));
     V.getScene().remove(M.G);}

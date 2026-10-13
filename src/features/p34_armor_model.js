@@ -8,6 +8,11 @@ function syncArmorModel(M){
   const sig=(P.armor||[]).map(a=>a?a.id:0).join(',');
   if(M._armSig===sig)return;
   M._armSig=sig;
+  if(M.skinned){   /* 6.36: a skinned figure wears the textured layer (features/p53c_armor_layer.js); the boxes below are for any other */
+    if(!M._al){M._al=armorLayer(M);M._arm=M._al.parts;for(const grp of M._arm)for(const q of grp)shadowify(q);}
+    M._al.sync((P.armor||[]).map(a=>a?a.id:0));
+    return;
+  }
   if(!M._arm){
     const mk=(w,h,d)=>new THREE.Mesh(new THREE.BoxGeometry(w,h,d),
       new THREE.MeshLambertMaterial({color:0xffffff}));

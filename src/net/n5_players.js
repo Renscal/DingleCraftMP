@@ -105,13 +105,10 @@ function ntPeerMesh(p){
   const mat=c=>{const m=new THREE.MeshLambertMaterial({color:c});m.ntOwn=true;return m;};
   /* armour: plates a little larger than the limb under them, hidden until worn. Slot 0 helmet, 1 chestplate (body and
      arms), 2 leggings, 3 boots; each slot has one material, tinted to what is worn (ntPeerArmor). */
-  const arm=[0,1,2,3].map(()=>({mat:mat(0xd8d8d8),parts:[],col:''}));
-  const plate=(slot,par,w,hh,d,y)=>{const me=new THREE.Mesh(new THREE.BoxGeometry(w,hh,d),arm[slot].mat);me.position.y=y;me.visible=false;par.add(me);arm[slot].parts.push(me);};
-  plate(0,head,0.54,0.54,0.54,0);
-  plate(1,S.chestA,0.54,0.74,0.32,0);plate(1,aL,0.29,0.42,0.29,-0.19);plate(1,aR,0.29,0.42,0.29,-0.19);
-  plate(2,lL,0.28,0.44,0.28,-0.2);plate(2,lR,0.28,0.44,0.28,-0.2);
-  plate(3,lL,0.3,0.2,0.3,-0.58);plate(3,lR,0.3,0.2,0.3,-0.58);
-  const M={G,head,aL,aR,lL,lR,tag:null,_toolId:0,_tool:null,arm,_arS:'',veh:null,_veh:'',skinCv:cv,skinTex:tex,_skin:p.skin||''};
+  /* 6.36: the same textured layer the player's own figure wears (features/p53c_armor_layer.js); its pictures and materials
+     are shared by everyone and are not this player's to throw away */
+  const AL=armorLayer(S),arm=[0,1,2,3].map(i=>({parts:AL.parts[i],col:''}));
+  const M={G,head,aL,aR,lL,lR,tag:null,_toolId:0,_tool:null,arm,al:AL,_arS:'',veh:null,_veh:'',skinCv:cv,skinTex:tex,_skin:p.skin||''};
   try{
     if(typeof THREE.Sprite==='function'&&typeof THREE.CanvasTexture==='function'&&typeof document!=='undefined'){
       const cv=document.createElement('canvas'),c=cv.getContext('2d');
@@ -147,11 +144,8 @@ function ntPeerArmor(p){
   const M=p.M,s=p.ar?p.ar.join(','):'';
   if(M._arS===s)return;
   M._arS=s;
-  for(let i=0;i<4;i++){
-    const d=p.ar&&p.ar[i]?DEFS[p.ar[i]]:null,a=d&&d.armor&&typeof ARM_M!=='undefined'?ARM_M[d.armor.m]:null;
-    if(a){M.arm[i].mat.color.set(a.col);M.arm[i].col=a.col;}
-    for(const me of M.arm[i].parts)me.visible=!!a;
-  }
+  const cols=M.al.sync(p.ar);
+  for(let i=0;i<4;i++)if(cols[i])M.arm[i].col=cols[i];
 }
 /* the vehicle under a riding player: the core's own model for that kind, built when they get on and dropped when they
    get off. It hangs off the body (so it shows, hides and leaves with it) and is turned to the vehicle's own heading. */

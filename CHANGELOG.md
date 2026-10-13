@@ -21,6 +21,17 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — Armour you can see through
+
+*Game version 6.36, released 2026-10-13.*
+
+- **ARMOUR YOU CAN SEE THROUGH.** Putting on armour used to turn you into a stack of plain coloured boxes. Whatever skin you had spent an evening on was simply gone, replaced by a diamond-coloured refrigerator. Armour is now a fitted layer with gaps in it, and you are still in there.
+- **The helmet has a face.** There is an opening at the front with a nose guard across it, so your eyes and that grin show through, a slot over each ear, and nothing underneath.
+- **The chestplate shows the shirt.** Plates front and back, straps over the shoulders, open at the sides and below the ribs. On the arms: a shoulder guard and a bracer, with the elbow and the hand bare.
+- **Leggings and boots.** A belt round the hips and each leg covered down to the boot, open at the back of the knee so you can still sit down in theory. Boots cover the ankle down and the sole.
+- **Four metals.** Iron, golden, diamond and dragon each have their own picture, drawn pixel by pixel in code. Mix a golden helmet with diamond boots and each piece keeps its own colour.
+- **Everyone matches.** Your own figure in third person and every other player on a server are dressed by the same piece of code from the same pictures, so what you see on yourself is what they see on you. The Hyperreal player keeps its own look.
+
 ## Release 1.1 — Ten pairs of trousers
 
 *Game version 6.35, released 2026-10-13.*
