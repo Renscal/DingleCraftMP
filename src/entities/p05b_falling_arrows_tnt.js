@@ -5,7 +5,7 @@ function checkFalling(x,y,z){
   if(!DEFS[id].gravity)return;
   const below=getBlock(x,y-1,z);
   const bd=DEFS[below];
-  if(below===B.AIR||below===B.WATER||bd.replace){
+  if(below===B.AIR||below===B.WATER||below===B.LAVA||bd.replace){
     setBlock(x,y,z,B.AIR);
     const m=new THREE.Mesh(mkCubeGeo(id,0.98),matOp);
     scene.add(m);
@@ -20,7 +20,7 @@ function updateFall(e,dt){
   if(e.onGround){
     const bx=Math.floor(e.x),by=Math.round(e.y),bz=Math.floor(e.z);
     const cur=getBlock(bx,by,bz);
-    if(cur===B.AIR||cur===B.WATER||DEFS[cur].replace)setBlock(bx,by,bz,e.id);
+    if(cur===B.AIR||cur===B.WATER||cur===B.LAVA||DEFS[cur].replace)setBlock(bx,by,bz,e.id);
     else spawnDrop(e.x,e.y+0.3,e.z,{id:e.id,count:1},0,1,0);
     removeEnt(e);
   }

@@ -21,6 +21,16 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — Lava is not a wall
+
+*Game version 6.28, released 2026-10-13.*
+
+- **LAVA IS NOT A WALL.** You could look through water. You could not look through lava: the crosshair stopped on it as if it were a brick, so a block aimed at the far bank of a lava pool landed on top of the lava, and a block aimed INTO the lava went nowhere at all. Lava is a liquid. The game has been told.
+- **Look through it.** The crosshair passes through lava, still or flowing, to whatever is behind it. Mobs see through it the same way, which is fair, because so do you.
+- **Build into it.** Put a block where lava is and the lava is gone: a source is plugged for good, and what had run out of it drains away. Plug a stream and it runs round your block. Bridging a lava lake no longer needs a ritual.
+- **Sand sinks.** Sand and gravel dropped onto lava fall through it to the bottom, as they do in water.
+- **The bucket still works.** An empty bucket scoops the lava you are looking at. It is the one thing that does not look through it.
+
 ## Release 1.1 — Two buttons at once
 
 *Game version 6.27, released 2026-10-13.*

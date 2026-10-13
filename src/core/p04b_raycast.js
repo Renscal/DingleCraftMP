@@ -9,7 +9,7 @@ function raycastB(ox,oy,oz,dx,dy,dz,max){
   let nx=0,ny=0,nz=0,t=0;
   for(let i=0;i<256;i++){
     const id=getBlock(x,y,z);
-    if(id!==B.AIR&&id!==B.WATER)return{x,y,z,nx,ny,nz,id,t};
+    if(id!==B.AIR&&id!==B.WATER&&id!==B.LAVA)return{x,y,z,nx,ny,nz,id,t};   /* 6.28: lava is looked through, like water */
     if(tmx<tmy&&tmx<tmz){x+=sx;t=tmx;tmx+=tdx;nx=-sx;ny=0;nz=0;}
     else if(tmy<tmz){y+=sy;t=tmy;tmy+=tdy;nx=0;ny=-sy;nz=0;}
     else{z+=sz;t=tmz;tmz+=tdz;nx=0;ny=0;nz=-sz;}

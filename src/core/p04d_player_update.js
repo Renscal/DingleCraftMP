@@ -665,7 +665,7 @@ function doUse(dt){
     if(DEFS[hit.id].replace){tx=hit.x;ty=hit.y;tz=hit.z;}
     const cur=getBlock(tx,ty,tz);
     const cd=DEFS[cur];
-    if(cur===B.AIR||cur===B.WATER||cd.replace){
+    if(cur===B.AIR||cur===B.WATER||cur===B.LAVA||cd.replace){   /* 6.28: a block goes into lava as it goes into water */
       const def=DEFS[st.id];
       let blocked=false;
       if(def.solid!==false){

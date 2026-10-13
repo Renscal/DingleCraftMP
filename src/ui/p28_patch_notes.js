@@ -3,7 +3,14 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Two buttons at once',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Lava is not a wall',lines:[
+    '<b>LAVA IS NOT A WALL.</b> You could look through water. You could not look through lava: the crosshair stopped on it as if it were a brick, so a block aimed at the far bank of a lava pool landed on top of the lava, and a block aimed INTO the lava went nowhere at all. Lava is a liquid. The game has been told.',
+    '<b>Look through it.</b> The crosshair passes through lava, still or flowing, to whatever is behind it. Mobs see through it the same way, which is fair, because so do you.',
+    '<b>Build into it.</b> Put a block where lava is and the lava is gone: a source is plugged for good, and what had run out of it drains away. Plug a stream and it runs round your block. Bridging a lava lake no longer needs a ritual.',
+    '<b>Sand sinks.</b> Sand and gravel dropped onto lava fall through it to the bottom, as they do in water.',
+    '<b>The bucket still works.</b> An empty bucket scoops the lava you are looking at. It is the one thing that does not look through it.',
+  ]},
+ {v:'6.27',label:'Release 1.1',title:'Two buttons at once',lines:[
     '<b>TWO BUTTONS AT ONCE.</b> Your mouse has two buttons and the game could only count to one. Hold right to look down the rifle scope, press left to fire: nothing. The browser only announces the FIRST button you press; the second one arrives disguised as a mouse movement, and nobody was reading those. Somebody reads them now.',
     '<b>Scope and shoot.</b> Hold right, squeeze left, and the rifle fires with the scope still up. Let go of either button first; the other one stays held, the way a held button should.',
     '<b>Mine and use.</b> Keep the left button down on a rock face and tap right to open a door, place a block or eat a sandwich. The mining does not drop the beat.',
