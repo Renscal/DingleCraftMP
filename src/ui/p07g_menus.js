@@ -4,6 +4,8 @@ function grFromCreate(){
   const on=id=>{const e=$(id);return !!(e&&e.checked);};
   if(!$('tr_keepInv'))return;
   GR.keepInv=on('tr_keepInv');GR.mobGrief=on('tr_mobGrief');GR.mobSpawn=!on('tr_peaceful');GR.fireTick=on('tr_fireTick');
+  GR.nether=on('tr_nether');GR.aether=on('tr_aether');GR.puppet=on('tr_puppet');   /* 6.33's three, which Create New World did not offer until 6.38 */
+  {const d=$('t_diff'),v=d?d.value:'normal';GR.difficulty=DIFF_NAMES[v]?v:'normal';drawStats();}   /* 6.38: the only place DingleCore can be chosen */
   GR.snail=on('tr_snail');GR.ghosts=on('tr_ghosts');GR.fbOK=on('tr_fbOK');GR.store=on('tr_store');GR.powers=on('tr_powers');GR.cheats=on('tr_cheats');
   if(!GR.snail&&typeof SNL!=='undefined'&&SNL){removeEnt(SNL);SNL=null;}
   grApplyUI();
@@ -53,6 +55,7 @@ function wireMenus(){
   $('p_help').onclick=()=>{hidePause();openHelp();};
   $('d_respawn').onclick=()=>{respawn();$('death').style.display='none';tryLock();};
   $('d_title').onclick=quitToTitle;
+  {const sb=$('d_spec');if(sb)sb.onclick=()=>{specStart();tryLock();};}
   uiBoot();   /* the UI scale (p06e) */
   tmBoot();   /* the title menu: views, keyboard, background (p07g_title) */
 }

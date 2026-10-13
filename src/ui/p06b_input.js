@@ -105,7 +105,7 @@ function setupInput(){
       if(modalOpen())closeModal();
       else if(!paused&&!P.dead)openModal(P.mode==='c'?'creative':'inv');
     }
-    if(e.code==='KeyQ'&&!modalOpen()&&!paused)dropSel(KEY.ControlLeft);
+    if(e.code==='KeyQ'&&!modalOpen()&&!paused&&!(P&&P.spec))dropSel(KEY.ControlLeft);
     if(dbgKeyDown(e))return;                               /* F3, and F3+B / F3+G while it is held (p06f_debug.js) */
     if(e.code==='KeyR'&&MODAL.kind==='inv')sortInv();
     if(e.code==='KeyP'&&playing&&!P.dead&&!paused){if(powOpen)closePow();else if(!modalOpen())openPow();}

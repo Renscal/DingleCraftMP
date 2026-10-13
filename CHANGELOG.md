@@ -21,6 +21,19 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — DingleCore
+
+*Game version 6.38, released 2026-10-13.*
+
+- **DIFFICULTY.** Worlds now have one: Easy, Normal or Hard. Normal is the game exactly as it was, and every world you already have is Normal. There is no Peaceful on the list: turning off mob spawning is still how you get a quiet life.
+- **Easy.** Mobs hit for half, plus one, and never harder than they would on Normal. Hunger stops chewing on you at five hearts.
+- **Hard.** Mobs hit half as hard again. A zombie that took three hearts takes four and a half. Hunger does not stop at half a heart any more. It finishes the job.
+- **DINGLECORE.** Hard, with one life. You choose it when you create the world and at no other time: a DingleCore world cannot be made gentler, and a gentle world cannot be made DingleCore. Your hearts know. Look at them closely. They are looking back.
+- **When you die in DingleCore.** There is no Respawn button. There is Spectate world and there is Back to title. As a spectator you fly, you pass through walls, the monsters lose all interest in you, and you cannot break, place, pick up or open a single thing. The world remembers: open it tomorrow and you are still a ghost in it.
+- **The one place it does not count.** Dying inside Puppet Purgatory is not the end, even in DingleCore. You were already in purgatory. There are limits.
+- **On a server.** Set "difficulty" in the rules. /gamerule difficulty switches between Easy, Normal and Hard; DingleCore is set in server.json and stays set. On a DingleCore server a player who dies becomes a spectator, by name, and stays one after reconnecting, until an operator runs /gamemode survival. There is a /gamemode spectator too.
+- **Also.** Create New World now offers the three dimension rules from two updates ago, which it should have done then. The debug screen shows the difficulty.
+
 ## Release 1.1 — A hand of your own
 
 *Game version 6.37, released 2026-10-13.*

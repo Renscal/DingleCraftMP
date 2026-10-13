@@ -9,7 +9,7 @@ function newPlayer(spawn){
     regenT:0,starveT:0,cactusT:0,voidT:0,airT:0,_sp:false,_tap:0,
     stox:{bal:0,sh:{},cb:{}},xp:0,armor:[null,null,null,null],
     db:0,own:[],cos:{hat:null,trail:null},bp:false,bpLvl:0,bpT:0,cmpT:null,pcmpT:null,
-    pow:{u:{},a:{}},aimT:0};
+    pow:{u:{},a:{}},aimT:0,spec:false};
 }
 function lookDir(){
   const cp=Math.cos(P.pitch);
@@ -28,7 +28,9 @@ function damageHeld(n){
 }
 function damagePlayer(n,kx,kz){
   if(NET.host){ntHostHurt(n,kx,kz);return;}   /* PART 58: on the server's game "the player" is a stand-in: the hit goes to the real one */
+  const byMob=diffFresh();                                 /* 6.38: a hit a mob has just made is scaled by the difficulty, once, here */
   if(P.dead||P.mode==='c'||P.hurtT>0||GR.god||(CUT.on&&CUT.script))return;
+  if(byMob)n=diffMobDmg(n);
   n=armorAbsorb(n);
   P.hp-=n;P.hurtT=0.6;hurtFlash=0.35;playS('hurt');
   if(kx!==undefined){
@@ -54,6 +56,7 @@ function die(){
   showDeath();
 }
 function respawn(){
+  if(diffCore()&&DIM!=='puppet'){specStart(true);return;}  /* 6.38: a DingleCore life does not come back, whoever asks (quitting while dead included) */
   {const dm=$('deathmsg');if(dm)dm.textContent='';}
   P.x=P.spawn[0];P.y=P.spawn[1];P.z=P.spawn[2];
   P.vx=P.vy=P.vz=0;P.hp=20;P.hunger=20;P.air=10;P.exh=0;

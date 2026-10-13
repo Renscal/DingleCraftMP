@@ -31,7 +31,7 @@ async function until(f,ms){const t0=Date.now();while(Date.now()-t0<(ms||3000)){i
 boot.run(async()=>{
   const lib=f=>import(pathToFileURL(path.join(REPO,'server',f)).href);
   const {createServer}=await lib('dinglecraft-server.mjs');
-  const {worldTick}=await lib('lib/protocol.mjs'),{adoptWorld}=await lib('lib/world.mjs'),{LIMITS}=await lib('lib/config.mjs');
+  const {worldTick}=await lib('lib/protocol.mjs'),{adoptWorld}=await lib('lib/world.mjs'),{LIMITS,cleanRules}=await lib('lib/config.mjs');
   let settingsCalls=0;
   const S=createServer({port:0,memory:true,world:'',noGame:true,quiet:true,seed:'77',maxPlayers:6,sleepPercent:100,rules:{dayCycle:false},onSettings:()=>{settingsCalls++;}});
   await S.listen();
@@ -157,6 +157,26 @@ boot.run(async()=>{
   ok('  ... but not one claimed far from where the attacker stands; junk becomes the attacker\'s own place',bob.by('crit').length===1&&bob.last('crit').x===0);
   await dee.quit();
 
+  /* 6.38: difficulty, DingleCore, spectators */
+  {ok('difficulty is a rule: normal by default, and only the four names pass the rule cleaner',W.gr.difficulty==='normal'&&cleanRules({difficulty:'hard'}).difficulty==='hard'&&!('difficulty' in cleanRules({difficulty:'brutal'}))&&!('difficulty' in cleanRules({difficulty:3})));
+    const eve=await join('Eve');await eve.pose(2,40,1);
+    const g1=await S.command('gamerule difficulty hard'),g2=await S.command('gamerule difficulty dinglecore'),g3=await S.command('gamerule difficulty silly');
+    ok('/gamerule difficulty switches Easy, Normal and Hard, and will not switch into DingleCore',/now hard/.test(g1)&&W.gr.difficulty==='hard'&&/locked/i.test(g2)&&/Usage/.test(g3)&&W.gr.difficulty==='hard');
+    a.send({t:'gr',gr:{difficulty:'easy'}});await sleep(60);
+    ok('a game cannot change it by sending its own rules',W.gr.difficulty==='hard');
+    eve.clear();eve.send({t:'death',how:'fall'});await sleep(80);
+    ok('on Hard a death is just a death: nobody is made a spectator',!eve.by('mode').length&&!(W.players.eve||{}).gm);
+    W.gr.difficulty='dinglecore';
+    ok('  ... and nobody is let out of DingleCore by a command either',/locked/i.test(await S.command('gamerule difficulty normal'))&&W.gr.difficulty==='dinglecore');
+    eve.clear();eve.send({t:'death',how:'fall'});await until(()=>eve.by('mode').length>0,1500);
+    ok('in DingleCore a death makes that player a spectator: their game is told, and it is kept with their name',(eve.last('mode')||{}).m==='spectator'&&W.players.eve.gm==='spectator');
+    await eve.quit();const eve2=await join('Eve');
+    ok('  ... still one after leaving and coming back (the world they are handed says so)',eve2.as==='Eve'&&(eve2.last('welcome')||{}).world.mode==='spectator');
+    eve2.clear();const out=await S.command('gamemode survival Eve');await until(()=>eve2.by('mode').length>0,1500);
+    ok('  ... until an operator says otherwise: /gamemode survival',/survival/.test(out)&&eve2.last('mode').m==='s'&&W.players.eve.gm==='s');
+    eve2.clear();await S.command('gamemode spectator Eve');await until(()=>eve2.by('mode').length>0,1500);
+    ok('/gamemode spectator exists for operators',eve2.last('mode').m==='spectator');
+    await S.command('gamemode survival Eve');W.gr.difficulty='normal';await eve2.quit();}
   /* ===== 6. dropped items ===== */
   a.send({t:'drop',id:'rules001.1',dim:'over',x:1,y:40,z:1,vx:0,vy:0,vz:0,st:{id:1,count:5}});await until(()=>'rules001.1' in W.drops,1500);
   ok('a new drop starts at age 0 (no wall-clock time in the record)',W.drops['rules001.1'].age===0&&!('born' in W.drops['rules001.1']));

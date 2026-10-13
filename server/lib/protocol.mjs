@@ -214,7 +214,7 @@ function hello(S, net, c, m) {
   c.rd = Math.round(num(m.rd, 4, 32, 0)) || o.viewChunks;
   S.clients.set(c.id, c);
   const saved = world.players[playerKey(c.name)] || null;
-  c.gm = saved && (saved.gm === 'c' || saved.gm === 's') ? saved.gm : null;
+  c.gm = saved && (saved.gm === 'c' || saved.gm === 's' || saved.gm === 'spectator') ? saved.gm : null;
   const { edits, be, players, drops, spawn, ...meta } = world;   // meta: seed, mode, time, rules and whatever else the save carried
   net.send(c, { t: 'welcome', proto: PROTO, id: c.id, name: c.name, server: o.name, motd: o.motd, pvp: !!o.pvp, host: S.hdims.length > 0, hdims: S.hdims,
     world: { ...meta, mode: c.gm || world.mode }, player: saved,
@@ -524,6 +524,15 @@ export function handleMessage(S, net, c, m, size) {
       S.log(`${c.name} died`);
       net.broadcast({ t: 'sys', txt: deathText(c, m, now) }, c);
       c.lastHit = null;
+      // 6.38: in a DingleCore world that was the player's one life. They watch from now on, by name, until an operator says otherwise
+      if (world.gr.difficulty === 'dinglecore' && c.gm !== 'spectator' && (!c.pose || c.pose.dim !== 'puppet')) {
+        c.gm = 'spectator';
+        const key = playerKey(c.name);
+        world.players[key] = { ...(world.players[key] || { name: c.name }), gm: 'spectator' };
+        S.dirty = true;
+        net.send(c, { t: 'mode', m: 'spectator' });
+        S.log(`${c.name} is out: a spectator from now on`);
+      }
       return;
     }
     case 'mobs': {                     // the mobs this player's game is running, for the players around them

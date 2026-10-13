@@ -2,7 +2,7 @@
 /* PART 27 — DEBUG MENU, GAMERULES & SETTINGS MEMORY  (2.3.1)            */
 /* ===================================================================== */
 function GR_DEF(){return {keepInv:false,god:false,mobGrief:true,mobSpawn:true,
-  dayCycle:true,fireTick:true,fallDmg:true,snail:true,jsc:0,instaKill:false,freezeMobs:false,ghosts:true,fbOK:true,store:true,powers:true,cheats:true,nether:true,aether:true,puppet:true};}
+  dayCycle:true,fireTick:true,fallDmg:true,snail:true,jsc:0,instaKill:false,freezeMobs:false,ghosts:true,fbOK:true,store:true,powers:true,cheats:true,nether:true,aether:true,puppet:true,difficulty:'normal'};}
 const GR=GR_DEF();
 let dbgmOpen=false;
 const GR_LABELS=[
@@ -33,6 +33,7 @@ function grApplyUI(){
 }
 function grToggle(k){
   if(!(k in GR))return false;
+  if(k==='difficulty'){const o=['easy','normal','hard'];diffSet(o[(o.indexOf(diffKey())+1)%3]);playS('click');renderDbgm();return GR[k];}
   GR[k]=!GR[k];
   if(k==='snail'&&!GR.snail&&SNL){removeEnt(SNL);SNL=null;} /* banish the one currently after you */
   if(k==='ghosts'&&!GR.ghosts)for(const e of entities)if(e.t==='ghost'&&!e.dead)removeEnt(e);
@@ -64,7 +65,9 @@ function fmtTime(t){
 function renderDbgm(){
   const list=$('grlist');
   if(list){
-    let h='';
+    /* 6.38: the difficulty, a rule with four values: its button steps Easy, Normal, Hard; DingleCore cannot be left or entered */
+    let h='<div class="sitem eq"><div class="sname">Difficulty</div><div class="sdesc">'+(diffCore()?'DingleCore: one life, and no way to change that.':'How hard mobs hit and whether hunger can kill.')+'</div>'+
+         '<button class="sbuy" data-k="difficulty"'+(diffCore()?' disabled':'')+'>'+DIFF_NAMES[diffKey()].toUpperCase()+'</button></div>';
     for(const [k,n,desc] of GR_LABELS){
       h+='<div class="sitem'+(GR[k]?' eq':'')+'"><div class="sname">'+n+'</div>'+
          '<div class="sdesc">'+desc+'</div>'+

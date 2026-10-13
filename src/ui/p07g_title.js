@@ -77,12 +77,25 @@ function tmKey(e){
 }
 /* ----- per-world game rules (Release 1.0): right-click a saved world ----- */
 const TGR={name:null,save:null};
+/* the rules editor's difficulty: what was asked for, unless either side of the change is DingleCore */
+function tgrDiff(was,want){
+  was=DIFF_NAMES[was]?was:'normal';
+  return (was==='dinglecore'||want==='dinglecore'||!DIFF_NAMES[want])?was:want;
+}
 async function tgrOpen(name){
   try{
     const r=await window.storage.get('vxw:'+name);if(!r)throw 0;
     const d=JSON.parse(r.value),g=Object.assign(GR_DEF(),d.gr||{});TGR.name=name;TGR.save=d;
     const w=$('tgr_world');if(w)w.textContent=name;
     const box=$('tgr_list');box.innerHTML='';
+    {/* 6.38: the difficulty. Easy, Normal or Hard may be swapped; a DingleCore world says so and offers nothing */
+      const core=g.difficulty==='dinglecore',lab=document.createElement('label');lab.className='ttoggle tsm';
+      const sel=document.createElement('select');sel.className='mc-in';sel.id='tgr_diff';
+      for(const k of (core?['dinglecore']:['easy','normal','hard'])){const o=document.createElement('option');o.value=k;o.textContent=DIFF_NAMES[k];sel.appendChild(o);}
+      sel.value=core?'dinglecore':(DIFF_NAMES[g.difficulty]?g.difficulty:'normal');sel.disabled=core;
+      const sp=document.createElement('span');sp.className='tlab';sp.textContent='Difficulty';
+      const sm=document.createElement('small');sm.textContent=core?'DingleCore worlds stay DingleCore':'A normal world cannot become DingleCore';sp.appendChild(sm);
+      lab.appendChild(sel);lab.appendChild(sp);box.appendChild(lab);}
     for(const [k,n,desc] of GR_LABELS){if(typeof g[k]!=='boolean')continue;
       const lab=document.createElement('label');lab.className='ttoggle tsm';
       const inp=document.createElement('input');inp.type='checkbox';inp.checked=!!g[k];inp.setAttribute('data-k',k);
@@ -96,6 +109,7 @@ async function tgrSave(){
   if(!TGR.save)return tmShow('load');
   const g=Object.assign(GR_DEF(),TGR.save.gr||{});
   for(const inp of $('tgr_list').querySelectorAll('input[data-k]'))g[inp.getAttribute('data-k')]=!!inp.checked;
+  g.difficulty=tgrDiff(g.difficulty,($('tgr_diff')||{}).value);
   TGR.save.gr=g;
   try{await window.storage.set('vxw:'+TGR.name,JSON.stringify(TGR.save));showToast('Game rules saved for "'+TGR.name+'"');}
   catch(e){showToast('Could not save the game rules');}

@@ -136,7 +136,8 @@ function updatePlayer(dt){
   }
   /* -- integrate -- */
   const wasG=P.onGround;
-  moveBody(P,P.vx*dt,P.vy*dt,P.vz*dt,P.sneak);
+  if(specTick()){P.x+=P.vx*dt;P.y=clamp(P.y+P.vy*dt,-8,WH+40);P.z+=P.vz*dt;P.onGround=false;}   /* 6.38: a spectator passes through blocks */
+  else moveBody(P,P.vx*dt,P.vy*dt,P.vz*dt,P.sneak);
   rampSnap(P,true,0.6);
   /* fall damage */
   if(!fly&&!P.inWater){
@@ -180,7 +181,7 @@ function updatePlayer(dt){
     }else P.regenT=0;
     if(P.hunger<=0){
       P.starveT+=dt;
-      if(P.starveT>=4){P.starveT=0;if(P.hp>1){P.hurtT=0;damagePlayer(1);}}
+      if(P.starveT>=4){P.starveT=0;if(P.hp>diffStarveFloor()){P.hurtT=0;LASTDMG={by:null,how:'starve'};damagePlayer(1);}}   /* 6.38: where it stops depends on the difficulty */
     }else P.starveT=0;
   }
   /* -- timers -- */
@@ -195,7 +196,7 @@ function updatePlayer(dt){
 
 /* left mouse: attack / mine */
 function doMine(dt){
-  if(!MB.l||modalOpen()){MINE.active=false;MINE.prog=0;return;}
+  if(!MB.l||modalOpen()||P.spec){MINE.active=false;MINE.prog=0;return;}   /* a spectator touches nothing */
   const hsg=heldStack();
   if(hsg&&DEFS[hsg.id].gun){MINE.active=false;MINE.prog=0;return;} /* LMB fires instead */
   const e=eyePos(),d=lookDir();
@@ -263,7 +264,7 @@ function critNow(){return !!(P&&P.vy<0&&!P.onGround&&!P.inWater&&!P.inLava&&!P.r
 function critFx(x,y,z){burstParticles(x,y,z,B.GLOWSTONE,14,1.5);if(typeof playSAt==='function')playSAt('crit',x,y,z);else playS('crit');}
 let rEdge=false;
 function doUse(dt){
-  if(modalOpen()){rEdge=false;P.bowT=0;P.eatT=0;return;}
+  if(modalOpen()||P.spec){rEdge=false;P.bowT=0;P.eatT=0;return;}
   const st=heldStack();
   const d=DEFS[st?st.id:0]||{};
   if(!d.gun)P.aimT=Math.max(0,(P.aimT||0)-dt*6);

@@ -53,7 +53,7 @@ function dbgMemory(){
 /* everything the debug screen says, as text */
 function dbgText(){
   const s=dbgSection(P.x,P.y,P.z),bi=colInfo(s.bx,s.bz);
-  const ld=dbgDifficulty(GR.mobSpawn===false?0:2,WAGE,INHAB.get(ckey(s.cx,s.cz))||0,1);
+  const ld=dbgDifficulty(GR.mobSpawn===false?0:diffLevel(),WAGE,INHAB.get(ckey(s.cx,s.cz))||0,1);
   const deg=v=>(v*180/Math.PI).toFixed(1);
   return 'DINGLECRAFT '+RELEASE_LABEL+'  '+fpsShow+' fps\n'+
     'XYZ: '+P.x.toFixed(3)+' / '+P.y.toFixed(3)+' / '+P.z.toFixed(3)+'\n'+
@@ -64,7 +64,8 @@ function dbgText(){
     'Local Difficulty: '+ld[0].toFixed(2)+' // '+ld[1].toFixed(2)+' (Day '+(Math.floor(WAGE/DAY_LEN)+1)+')\n'+
     'Memory: '+dbgMemory()+'\n'+
     'Chunks: '+chunks.size+'  Entities: '+entities.length+'\n'+
-    'Time: '+(timeOfDay%1).toFixed(2)+'  Mode: '+(P.mode==='c'?'Creative':'Survival')+'\n'+
+    'Time: '+(timeOfDay%1).toFixed(2)+'  Mode: '+(P.spec?'Spectator':P.mode==='c'?'Creative':'Survival')+'\n'+
+    'Difficulty: '+DIFF_NAMES[diffKey()]+'\n'+
     'Hitboxes (F3+B): '+(DBG.boxes?'on':'off')+'  Chunk borders (F3+G): '+(DBG.borders?'on':'off');
 }
 

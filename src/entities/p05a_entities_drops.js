@@ -85,7 +85,7 @@ function updateDrop(e,dt){
   e.vx*=fr;e.vz*=fr;
   moveBody(e,e.vx*dt,e.vy*dt,e.vz*dt,false);
   /* magnet + pickup */
-  if(!P.dead&&e.age>0.55&&!(e.by&&e.age<e.byT&&e.by===dropMe())){   /* 6.21: what this player threw waits out its 2 seconds */
+  if(!P.dead&&!P.spec&&e.age>0.55&&!(e.by&&e.age<e.byT&&e.by===dropMe())){   /* 6.21: what this player threw waits out its 2 seconds */
     const dx=P.x-e.x,dy=(P.y+0.6)-e.y,dz=P.z-e.z;
     const ds=Math.hypot(dx,dy,dz);
     if(ds<(GDG.mag?7.5:2.0)){

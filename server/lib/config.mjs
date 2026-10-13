@@ -73,12 +73,14 @@ export const DIM_PFX = { over: '', nether: 'n;', aether: 'a;', puppet: 'm;' };
    src/ui/p27_debug_gamerules_settings.js) with one difference: Cheats (the debug menu) is off unless the host turns it on.
    tests/net/n_static.js keeps this in step. */
 export const RULES = { keepInv: false, god: false, mobGrief: true, mobSpawn: true, dayCycle: true, fireTick: true, fallDmg: true, snail: true, jsc: 0,
-  instaKill: false, freezeMobs: false, ghosts: true, fbOK: true, store: true, powers: true, cheats: false, nether: true, aether: true, puppet: true };
+  instaKill: false, freezeMobs: false, ghosts: true, fbOK: true, store: true, powers: true, cheats: false, nether: true, aether: true, puppet: true, difficulty: 'normal' };
+/* the difficulties (6.38). dinglecore is hard with one life: it is set in server.json and cannot be changed while the server runs */
+export const DIFFICULTIES = ['easy', 'normal', 'hard', 'dinglecore'];
 
 /* only rules the game knows, each with the right type (numbers 0..100) */
 export function cleanRules(r) {
   const out = {};
-  if (r && typeof r === 'object') for (const k of Object.keys(RULES)) if (typeof r[k] === typeof RULES[k] && (typeof r[k] !== 'number' || (Number.isFinite(r[k]) && r[k] >= 0 && r[k] <= 100))) out[k] = r[k];
+  if (r && typeof r === 'object') for (const k of Object.keys(RULES)) if (typeof r[k] === typeof RULES[k] && (typeof r[k] !== 'number' || (Number.isFinite(r[k]) && r[k] >= 0 && r[k] <= 100)) && (typeof r[k] !== 'string' || DIFFICULTIES.includes(r[k]))) out[k] = r[k];
   return out;
 }
 

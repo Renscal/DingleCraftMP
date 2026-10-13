@@ -70,7 +70,7 @@ function snapshot(name,lite){   /* lite (6.34): leave the blocks, chests and ent
       armor:(P.armor||[]).map(a=>a?{id:a.id,...(a.dur!=null?{dur:a.dur}:{})}:0),
       db:Math.round(P.db||0),own:(P.own||[]).slice(),
       cos:{hat:P.cos&&P.cos.hat||null,trail:P.cos&&P.cos.trail||null},
-      bp:P.bp?1:0,bpl:P.bpLvl|0,cmp:P.cmpT||0,pcmp:P.pcmpT||0,
+      bp:P.bp?1:0,bpl:P.bpLvl|0,cmp:P.cmpT||0,pcmp:P.pcmpT||0,...(P.spec?{spec:1}:{}),
       pow:{u:{...(P.pow&&P.pow.u||{})},a:{...(P.pow&&P.pow.a||{})}}},
     market:{p:Object.fromEntries(STOX.map(s=>[s,+MKT.p[s].toFixed(3)])),
       mu:Object.fromEntries(STOX.map(s=>[s,+MKT.mu[s].toFixed(6)]))},
@@ -165,6 +165,7 @@ function applySave(d){
   P.x=pl.x;P.y=pl.y;P.z=pl.z;P.yaw=pl.yaw||0;P.pitch=pl.pitch||0;
   P.hp=pl.hp!=null?pl.hp:20;P.hunger=pl.hunger!=null?pl.hunger:20;P.sel=pl.sel|0;
   P.mode=d.mode==='c'?'c':'s';
+  if(pl.spec||d.mode==='spectator'){P.spec=true;P.mode='c';P.flying=true;}   /* 6.38: a life that ended in a DingleCore world (or a server says so) */
   P.inv=(pl.inv||[]).slice(0,36).map(s=>s?{id:s.id,count:s.count,...(s.dur!=null?{dur:s.dur}:{}),...(s.mob?{mob:s.mob}:{}),...(s.ench?{ench:{...s.ench}}:{})}:null);
   P.stox={bal:(pl.stox&&+pl.stox.bal)||0,sh:stoxMigrate((pl.stox&&pl.stox.sh)?{...pl.stox.sh}:{}),
     cb:stoxMigrate((pl.stox&&pl.stox.cb)?{...pl.stox.cb}:{})};

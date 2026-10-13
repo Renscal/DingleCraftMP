@@ -108,14 +108,15 @@ const COMMANDS = {
     S.log(`${to.name} was given ${count} of item ${id}`);
     return `Gave ${count} of item ${id} to ${to.name}.`;
   } },
-  gamemode: { op: true, use: '/gamemode <survival | creative> [player]', run: ({ S, net, c, a }) => {
-    const gm = /^(c|creative|1)$/i.test(a[0] || '') ? 'c' : /^(s|survival|0)$/i.test(a[0] || '') ? 's' : null;
+  gamemode: { op: true, use: '/gamemode <survival | creative | spectator> [player]', run: ({ S, net, c, a }) => {
+    const gm = /^(c|creative|1)$/i.test(a[0] || '') ? 'c' : /^(s|survival|0)$/i.test(a[0] || '') ? 's' : /^(sp|spectator|3)$/i.test(a[0] || '') ? 'spectator' : null;
     const to = a[1] ? findPlayer(S, a[1]) : c;
-    if (!gm || (!a[1] && !c)) return 'Usage: /gamemode <survival | creative> [player]';
+    if (!gm || (!a[1] && !c)) return 'Usage: /gamemode <survival | creative | spectator> [player]';
     if (!to) return 'No player called ' + a[1] + ' is online.';
     setMode(S, net, to, gm);
-    S.log(`${to.name} is now in ${gm === 'c' ? 'creative' : 'survival'} mode`);
-    return `${to.name} is now in ${gm === 'c' ? 'creative' : 'survival'} mode.`;
+    const word = gm === 'c' ? 'creative' : gm === 's' ? 'survival' : 'spectator';
+    S.log(`${to.name} is now in ${word} mode`);
+    return `${to.name} is now in ${word} mode.`;
   } },
   defaultgamemode: { op: true, use: '/defaultgamemode <survival | creative>', run: ({ S, a }) => {
     const gm = /^(c|creative|1)$/i.test(a[0] || '') ? 'c' : /^(s|survival|0)$/i.test(a[0] || '') ? 's' : null;
@@ -134,8 +135,10 @@ const COMMANDS = {
     const k = Object.keys(RULES).find((r) => r.toLowerCase() === String(a[0] || '').toLowerCase());
     if (!k) return 'Rules: ' + Object.keys(RULES).join(', ');
     if (a[1] === undefined) return `${k} is ${S.world.gr[k]}`;
-    const v = typeof RULES[k] === 'number' ? Number(a[1]) : a[1] === 'true' ? true : a[1] === 'false' ? false : null;
-    if (!(k in cleanRules({ [k]: v }))) return `Usage: /gamerule ${k} ` + (typeof RULES[k] === 'number' ? '<0..100>' : '<true | false>');
+    const v = typeof RULES[k] === 'number' ? Number(a[1]) : typeof RULES[k] === 'string' ? String(a[1]).toLowerCase() : a[1] === 'true' ? true : a[1] === 'false' ? false : null;
+    if (!(k in cleanRules({ [k]: v }))) return `Usage: /gamerule ${k} ` + (typeof RULES[k] === 'number' ? '<0..100>' : typeof RULES[k] === 'string' ? '<easy | normal | hard>' : '<true | false>');
+    // 6.38: DingleCore is chosen in server.json before the server starts; nobody is let into it, or out of it, mid-game
+    if (k === 'difficulty' && (v === 'dinglecore' || S.world.gr[k] === 'dinglecore')) return 'DingleCore is locked: it is set in server.json ("rules": { "difficulty": ... }) and needs a restart.';
     S.world.gr[k] = v; S.dirty = true;
     net.broadcast({ t: 'gr', gr: S.world.gr });
     if (typeof S.o.onRules === 'function') S.o.onRules(cleanRules(S.world.gr));

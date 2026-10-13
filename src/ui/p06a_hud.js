@@ -52,6 +52,7 @@ const PIX={
  heart:['.XX.XX.','XXXXXXX','XXXXXXX','.XXXXX.','..XXX..','...X...'],
  meat: ['..XXXX.','.XXXXXX','.XXXXXX','..XXXX.','...XX.o','......o'],
  bub:  ['..XXX..','.X...X.','.X...X.','.X...X.','..XXX..','.......'],
+ core: ['.XX.XX.','XoXXXoX','XXXXXXX','.XoXoX.','..XXX..','...X...'],   /* 6.38: a DingleCore heart has a face, and it is not smiling */
  legs: ['XXXXXXX','XXXXXXX','XXX.XXX','XX...XX','XX...XX','XX...XX']};   /* 6.35: the armour bar is trousers; half = the left leg */
 /* the armour bar: ten icons of 2 points each. 0 empty, 1 half, 2 full, for an armour value of 0 to 20 (a fraction goes to
    the nearest half icon: gold's 1.5 shows as one whole pair) */
@@ -85,9 +86,10 @@ function drawStats(){
   const q=Math.max(1,Math.round(2*k)),pitch=Math.round(8.5*q),m=Math.round(k),y=H-6*q-m;
   for(let i=0;i<10;i++){
     const x=m+i*pitch,v=P.hp-i*2;
+    const hp=diffCore()?PIX.core:PIX.heart,hc=diffCore()?'#b3122b':'#e23b3b';
     drawPat(g,PIX.heart,x,y,'#3a0d0d',null,q);
-    if(v>=2)drawPat(g,PIX.heart,x,y,'#e23b3b',null,q);
-    else if(v===1)drawPat(g,PIX.heart,x,y,'#e23b3b',null,q,0,4);
+    if(v>=2)drawPat(g,hp,x,y,hc,'#2a0508',q);
+    else if(v===1)drawPat(g,hp,x,y,hc,'#2a0508',q,0,4);
   }
   /* 6.35: the armour bar, one row above the hearts and in line with them; not drawn with no armour on */
   const ap=armorPts();

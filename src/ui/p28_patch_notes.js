@@ -3,7 +3,17 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'A hand of your own',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'DingleCore',lines:[
+    '<b>DIFFICULTY.</b> Worlds now have one: Easy, Normal or Hard. Normal is the game exactly as it was, and every world you already have is Normal. There is no Peaceful on the list: turning off mob spawning is still how you get a quiet life.',
+    '<b>Easy.</b> Mobs hit for half, plus one, and never harder than they would on Normal. Hunger stops chewing on you at five hearts.',
+    '<b>Hard.</b> Mobs hit half as hard again. A zombie that took three hearts takes four and a half. Hunger does not stop at half a heart any more. It finishes the job.',
+    '<b>DINGLECORE.</b> Hard, with one life. You choose it when you create the world and at no other time: a DingleCore world cannot be made gentler, and a gentle world cannot be made DingleCore. Your hearts know. Look at them closely. They are looking back.',
+    '<b>When you die in DingleCore.</b> There is no Respawn button. There is Spectate world and there is Back to title. As a spectator you fly, you pass through walls, the monsters lose all interest in you, and you cannot break, place, pick up or open a single thing. The world remembers: open it tomorrow and you are still a ghost in it.',
+    '<b>The one place it does not count.</b> Dying inside Puppet Purgatory is not the end, even in DingleCore. You were already in purgatory. There are limits.',
+    '<b>On a server.</b> Set &quot;difficulty&quot; in the rules. /gamerule difficulty switches between Easy, Normal and Hard; DingleCore is set in server.json and stays set. On a DingleCore server a player who dies becomes a spectator, by name, and stays one after reconnecting, until an operator runs /gamemode survival. There is a /gamemode spectator too.',
+    '<b>Also.</b> Create New World now offers the three dimension rules from two updates ago, which it should have done then. The debug screen shows the difficulty.',
+  ]},
+ {v:'6.37',label:'Release 1.1',title:'A hand of your own',lines:[
     '<b>A HAND OF YOUR OWN.</b> In first person, with nothing in your hand, there was nothing in your hand. Not even a hand. You punched trees with an idea. Now your empty hand is your own right arm, in your own skin, sleeve and all, reaching up from the corner of the screen where an arm ought to be.',
     '<b>It is really yours.</b> The arm wears the same picture your body wears. Change your skin in Settings and the arm changes with it on the spot.',
     '<b>It punches.</b> It swings when you swing and bobs when you walk, the same as anything else you hold.',

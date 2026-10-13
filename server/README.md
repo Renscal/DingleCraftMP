@@ -102,7 +102,8 @@ world each time the server starts. Stop the server, edit the file, start it agai
   "cheats": false,
   "nether": true,
   "aether": true,
-  "puppet": true
+  "puppet": true,
+  "difficulty": "normal"
 }
 ```
 
@@ -126,6 +127,7 @@ world each time the server starts. Stop the server, edit the file, start it agai
 | `nether` | `false` switches the Nether off: its frames do not light, its portals lead nowhere, `/tp` will not go there, the server starts no game for it, and a player found inside is put back at their Overworld spawn |
 | `aether` | the same for the Aether |
 | `puppet` | `false`: the Stage Door to Puppet Purgatory never arrives, and one already standing stays shut |
+| `difficulty` | `"easy"`, `"normal"`, `"hard"` or `"dinglecore"`. Easy: mobs hit for half plus one and hunger stops at 10 health. Hard: mobs hit half as hard again and hunger can kill. DingleCore is Hard with one life: a player who dies becomes a spectator on this server, by name, until an operator runs `/gamemode survival <player>`. `/gamerule difficulty` switches between the first three; DingleCore is set here and needs a restart |
 | `cheats` | the debug menu, for every player. Off by default on a server: with it on, anyone can change the rules and give themselves things |
 
 - The server writes this block itself: on the first run, and into an older `server.json` that does not have it yet.

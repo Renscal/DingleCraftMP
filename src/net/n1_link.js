@@ -154,7 +154,10 @@ function ntMsg(m){
         if(st.count>0)spawnDrop(P.x,P.y+1,P.z,st,0,2,0);ntSaveSoon();}
       return;
     case 'mode':
-      if(NET.on&&P){P.mode=m.m==='c'?'c':'s';if(P.mode==='s')P.flying=false;redrawHotbar();drawStats();showToast(P.mode==='c'?'Creative mode':'Survival mode');}
+      if(NET.on&&P){
+        if(m.m==='spectator'){if(!P.spec)specStart();return;}   /* 6.38: this server's world is DingleCore and this player's life is over */
+        specStop(m.m);
+        P.mode=m.m==='c'?'c':'s';if(P.mode==='s')P.flying=false;redrawHotbar();drawStats();showToast(P.mode==='c'?'Creative mode':'Survival mode');}
       return;
     case 'mobs':if(NET.on)ntMobsIn(m);return;
     case 'mgone':if(NET.on)ntMobsGone(m);return;

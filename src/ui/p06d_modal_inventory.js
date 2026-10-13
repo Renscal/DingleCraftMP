@@ -182,6 +182,7 @@ function addInvSlots(parent){
 }
 function arrowEl(){const a=document.createElement('div');a.className='marrow';a.textContent='\u2192';return a;}
 function openModal(kind,bek){
+  if(P&&P.spec)return;                                     /* 6.38: a spectator opens nothing */
   if(NET.on&&bek&&ntBeAsk(kind,bek))return;   /* PART 58: a shared chest is asked for first (one player at a time) */
   closeModal(true);
   MODAL.kind=kind;MODAL.slots=[];MODAL.grid=null;MODAL.gw=0;MODAL.be=null;MODAL.bek=bek||null;
@@ -393,6 +394,7 @@ function resumeGame(){
   tryLock();
 }
 function showDeath(){
+  diffDeathUI();                                           /* 6.38: a DingleCore death has no Respawn */
   document.exitPointerLock&&document.exitPointerLock();
   $('death').style.display='flex';
 }
