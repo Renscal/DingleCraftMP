@@ -222,7 +222,7 @@ function ntMelee(e,d,lim){
     P.atkT=0.32;P.swing=1;
     const st=heldStack(),tl=st&&DEFS[st.id].tool,E=st&&st.ench;
     let dmg=(tl?tl.dmg:1)+((P.bigT||0)>0?2:0);
-    const crit=critNow();
+    const crit=critNow()&&!(st&&DEFS[st.id].pg);
     if(crit)dmg*=CRIT_MUL;
     if(E&&E.sharp)dmg+=E.sharp*1.2;
     const pz=psnHit(st,null);                              /* 6.40: a coated blade poisons the player it hits */

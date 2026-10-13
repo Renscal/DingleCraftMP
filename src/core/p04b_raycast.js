@@ -1,5 +1,5 @@
 /* ----- DDA voxel raycast (Amanatides & Woo) ----- */
-function raycastB(ox,oy,oz,dx,dy,dz,max){
+function raycastB(ox,oy,oz,dx,dy,dz,max,lavaToo){   /* lavaToo (6.42): stop on lava as well (a bucket being poured: water beside lava, not into it) */
   let x=Math.floor(ox),y=Math.floor(oy),z=Math.floor(oz);
   const sx=dx>0?1:-1,sy=dy>0?1:-1,sz=dz>0?1:-1;
   const tdx=Math.abs(1/dx),tdy=Math.abs(1/dy),tdz=Math.abs(1/dz);
@@ -9,7 +9,7 @@ function raycastB(ox,oy,oz,dx,dy,dz,max){
   let nx=0,ny=0,nz=0,t=0;
   for(let i=0;i<256;i++){
     const id=getBlock(x,y,z);
-    if(id!==B.AIR&&id!==B.WATER&&id!==B.LAVA)return{x,y,z,nx,ny,nz,id,t};   /* 6.28: lava is looked through, like water */
+    if(id!==B.AIR&&id!==B.WATER&&(id!==B.LAVA||lavaToo))return{x,y,z,nx,ny,nz,id,t};   /* 6.28: lava is looked through, like water */
     if(tmx<tmy&&tmx<tmz){x+=sx;t=tmx;tmx+=tdx;nx=-sx;ny=0;nz=0;}
     else if(tmy<tmz){y+=sy;t=tmy;tmy+=tdy;nx=0;ny=-sy;nz=0;}
     else{z+=sz;t=tmz;tmz+=tdz;nx=0;ny=0;nz=-sz;}

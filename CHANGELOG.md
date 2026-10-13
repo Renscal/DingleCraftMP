@@ -21,6 +21,14 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — Two loose ends
+
+*Game version 6.42, released 2026-10-13.*
+
+- **TWO LOOSE ENDS.** The full test run after the last batch of updates found two things the quick runs had missed. Both are fixed here.
+- **Water against lava makes obsidian again.** Since lava stopped being a wall (6.28), pouring a water bucket at a lava pool put the water INTO the lava and simply replaced it. A poured bucket now lands against the lava, as it used to, and the lava turns to obsidian. Looking through lava and building into it are unchanged.
+- **The Stiletto is itself again.** Puppet Purgatory's dagger has always had its own bonus for a falling strike. When critical hits arrived (6.30) it got that bonus AND the new one. Purgatory's weapons keep their own rules and are left out of the general critical hit.
+
 ## Release 1.1 — The server gets a window
 
 *Game version 6.41, released 2026-10-13.*

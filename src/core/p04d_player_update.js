@@ -213,7 +213,7 @@ function doMine(dt){
       P.atkT=0.32;P.swing=1;
       const st=heldStack(),tl=st&&DEFS[st.id].tool;
       let dmg=(tl?tl.dmg:1)+((P.bigT||0)>0?2:0);
-      const E=st&&st.ench,crit=!tgt.car&&critNow();
+      const E=st&&st.ench,crit=!tgt.car&&critNow()&&!(st&&DEFS[st.id].pg);   /* 6.42: Purgatory's weapons have rules of their own for a falling hit */
       if(crit)dmg*=CRIT_MUL;                                 /* 6.30: before the enchantment's bonus, not after */
       if(E&&E.sharp)dmg+=E.sharp*1.2;
       if(crit){const cy=tgt.e.y+(tgt.e.h||1)*0.6;critFx(tgt.e.x,cy,tgt.e.z);if(NET.on)ntCrit(tgt.e.x,cy,tgt.e.z);}
@@ -519,7 +519,7 @@ function doUse(dt){
           redrawHotbar();playS('pop');P.swing=1;
         }
       }else{
-        const hit2=raycastB(be2[0],be2[1],be2[2],bl2[0],bl2[1],bl2[2],4.5);
+        const hit2=raycastB(be2[0],be2[1],be2[2],bl2[0],bl2[1],bl2[2],4.5,true);   /* 6.42: a poured bucket lands against lava, as it did before 6.28 */
         let tx2,ty2,tz2;
         if(hit2){tx2=hit2.x+hit2.nx;ty2=hit2.y+hit2.ny;tz2=hit2.z+hit2.nz;}
         else{tx2=Math.floor(be2[0]+bl2[0]*3);ty2=Math.floor(be2[1]+bl2[1]*3);tz2=Math.floor(be2[2]+bl2[2]*3);}

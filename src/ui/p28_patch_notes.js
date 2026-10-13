@@ -3,7 +3,12 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'The server gets a window',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Two loose ends',lines:[
+    '<b>TWO LOOSE ENDS.</b> The full test run after the last batch of updates found two things the quick runs had missed. Both are fixed here.',
+    '<b>Water against lava makes obsidian again.</b> Since lava stopped being a wall (6.28), pouring a water bucket at a lava pool put the water INTO the lava and simply replaced it. A poured bucket now lands against the lava, as it used to, and the lava turns to obsidian. Looking through lava and building into it are unchanged.',
+    '<b>The Stiletto is itself again.</b> Puppet Purgatory&#x27;s dagger has always had its own bonus for a falling strike. When critical hits arrived (6.30) it got that bonus AND the new one. Purgatory&#x27;s weapons keep their own rules and are left out of the general critical hit.',
+  ]},
+ {v:'6.41',label:'Release 1.1',title:'The server gets a window',lines:[
     '<b>THE SERVER GETS A WINDOW.</b> Running a DINGLECRAFT server has meant a black terminal, a blinking cursor and a list of commands you were expected to remember. There is now a proper program for it, laid out the way server managers are: your servers down the left, the one you picked on the right. The terminal server is still there, untouched, for people who like blinking cursors.',
     '<b>Servers, plural.</b> Keep a survival world for the group and a creative one for the builders. Each server has its own folder, its own port and its own dot: green for running, amber for starting, grey for stopped. New server makes one; Add existing folder adopts the one you already had.',
     '<b>Dashboard.</b> Status, players, memory and world on four cards, the address to give your friends with a Copy button, and Open in browser.',
