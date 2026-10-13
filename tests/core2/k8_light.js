@@ -120,8 +120,9 @@ boot.run(async()=>{
     const M=V.getMats();
     ok('the three world materials carry the patch, under one program key',['op','cut','wat'].every(k=>M[k].onBeforeCompile===V.blightObc&&M[k].customProgramCacheKey()==='blight1'));
     ok('the glow is full at night and a quarter by day, and changing the hour re-meshes nothing',V.lightDay(0.75)===0&&V.lightDay(0.25)===1&&(V.setTime(0.75),step(2),Math.abs(LGT.U.value.x-1)<1e-9)&&(V.setTime(0.25),step(2),Math.abs(LGT.U.value.x-0.25)<1e-9)&&Math.abs(LGT.U.value.z-0.12)<1e-9);
-    V.NET.host=true;const ch=V.chunkAt(ox+18,oz+8),keep=ch.lt;ch.lt=null;V.lightChunk(ch);const none=ch.lt===null;V.lightEdit(ox+18,oy+1,oz+8);V.NET.host=false;ch.lt=keep;
-    ok('the server\'s own game keeps no light map and does no light work',none);}
+    /* 6.44: the server's own game keeps the light map too (monsters spawn by it); only the drawing is left out there */
+    V.NET.host=true;const ch=V.chunkAt(ox+18,oz+8),keep=ch.lt;ch.lt=null;V.lightChunk(ch);const made=ch.lt instanceof Uint8Array&&ch.lt.length===keep.length;V.NET.host=false;ch.lt=keep;
+    ok('the server\'s own game builds a light map for a chunk as a player\'s game does',made);}
 
   /* ===== 11. the cost ===== */
   {const chs=[...V.chunks.values()].slice(0,60);

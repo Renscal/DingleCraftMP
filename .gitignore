@@ -54,3 +54,7 @@ desktop.ini
 server-gui/out/
 server-gui/server/
 server-gui/dinglecraft_v*.html
+
+# npm lock files of the two Electron apps (made by npm install)
+client/package-lock.json
+server-gui/package-lock.json

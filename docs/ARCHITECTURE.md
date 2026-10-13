@@ -482,7 +482,9 @@ buffer and writes `b.l`: for each vertex, the average light of the non-opaque ce
 side, skipping everything above `ch.ltTop`. `applyMesh` uploads it as `blight`; `blightObc` patches the three OG
 materials to add `diffuseColor * blight^1.6 * uBlCol` before fog, and `hrWPatch` adds the same to the Hyperreal
 emissive term. `uBlCol` is the warm colour times `1 - 0.75 * daylight`, set every frame, so the hour changes nothing
-in the meshes. The OG pool of six point lights (`TLIGHTS`) stays allocated but is lit only in Puppet Purgatory. Mobs get
+in the meshes. Since 6.44 the light map is also what "dark" means to the spawner (`spawnDark`, `src/entities/p05e_spawning_tick.js`:
+block light 0 and not daylit, `skyLit` being a short flood to open sky), so the server's own game keeps the map as well (no meshes,
+no uniforms). The OG pool of six point lights (`TLIGHTS`) stays allocated but is lit only in Puppet Purgatory. Mobs get
 an emissive tint from the cell they stand in. Not on the host; not in saves; not on the wire. A chunk whose light changed
 because a neighbour was built is marked `dirty=2`, not `true`: `updateChunks` builds every missing chunk before it redraws
 those (without that, lava country loads a fifth slower and the frozen Nether smoke fails).

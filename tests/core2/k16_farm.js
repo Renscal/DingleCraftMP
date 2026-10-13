@@ -49,6 +49,14 @@ boot.run(async()=>{
   V.setBlock(X,Y+1,Z+1,B.AIR);V.setBlock(X,Y,Z-1,B.STONE);useAt(...top(X,Z-1));const e2=V.getBlock(X,Y,Z-1);
   ok('the hoe: grass -> '+a2+' and dirt -> '+b2+' (dry farmland), worn by '+wear+' a use; under a block: left alone; on stone: nothing',
     a2===B.FARMLAND+':0'&&b2===B.FARMLAND+':0'&&wear===1&&c2===B.DIRT&&e2===B.STONE);
+  {/* 6.44: held down, the hoe tills every grass or dirt block the crosshair crosses */
+    clear();for(let i=0;i<4;i++)V.setBlock(X,Y,Z-1+i,i===2?B.STONE:B.GRASS);
+    hold(IT.HOE+2);const d1=D[IT.HOE+2].dur;V.MB.r=true;
+    for(let i=0;i<4;i++){boot.aim(V,X+0.5,Y+1,Z-1+i+0.5);step(2);}
+    V.MB.r=false;step(2);
+    const row=[0,1,2,3].map(i=>V.getBlock(X,Y,Z-1+i)),used=d1-(P().inv[0].dur===undefined?d1:P().inv[0].dur);
+    ok('the right button held and the crosshair swept along four blocks: the three of grass are farmland, the stone is stone, and the hoe is worn by 3 ('+used+')',
+      row[0]===B.FARMLAND&&row[1]===B.FARMLAND&&row[2]===B.STONE&&row[3]===B.FARMLAND&&used===3);}
   /* ===== 3 ===== */
   clear();V.setBlock(X,Y,Z,B.FARMLAND,0);
   st=hold(IT.WCAN);const u0=V.wcanUses(st);
@@ -125,6 +133,8 @@ boot.run(async()=>{
   {let wild={[B.CARROTS]:0,[B.HEMLOCK]:0},ripe=true,onGrass=true;const px=Math.floor(V.P.x),pz=Math.floor(V.P.z);
     const G=V.genChunk;let n=0;
     if(typeof G==='function'){const pcx=Math.floor(V.P.x/16),pcz=Math.floor(V.P.z/16);for(let cx=pcx-12;cx<pcx+12;cx++)for(let cz=pcz-12;cz<pcz+12;cz++){const bl=G(cx,cz);for(let i=0;i<bl.length;i++)if(bl[i]===B.CARROTS||bl[i]===B.HEMLOCK){wild[bl[i]]++;n++;}}}
-    ok('the world has wild carrots ('+wild[B.CARROTS]+') and wild hemlock ('+wild[B.HEMLOCK]+') in 576 chunks, and a generated plant (meta 0) is ripe',
-      typeof G!=='function'||(wild[B.CARROTS]>3&&wild[B.HEMLOCK]>3&&n<2000&&V.cropStage(0)===7));}
+    /* 6.44: hemlock is 50 times rarer than a wild carrot. Counted over four million columns by the generator's own rule */
+    let wc=0,wh=0;for(let x=0;x<2000;x++)for(let z=0;z<2000;z++){const w=V.farmWild(x*3+7,z*3-11);if(w===B.CARROTS)wc++;else if(w===B.HEMLOCK)wh++;}
+    ok('the world has wild carrots ('+wild[B.CARROTS]+' in 576 chunks nearby, ripe: a generated plant has meta 0); over 4,000,000 columns the rule gives '+wc+' carrots and '+wh+' hemlock, one hemlock to about 50 carrots',
+      typeof G!=='function'||(wild[B.CARROTS]>3&&n<2000&&V.cropStage(0)===7&&wc>2100&&wc<2700&&wh>25&&wh<80&&wc/wh>30&&wc/wh<90&&Math.round(V.FARM_WILD.carrot/V.FARM_WILD.hemlock)===50));}
 });

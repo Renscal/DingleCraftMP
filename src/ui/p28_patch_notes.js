@@ -3,7 +3,21 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Plant a tree',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Afraid of the dark',lines:[
+    '<b>AFRAID OF THE DARK.</b> Monsters used to follow a timetable: on the surface at night, somewhere underground by day, and never within eight blocks of a torch. They did not care how dark it actually was, and they did not check where they were standing. They do both now.',
+    '<b>Dark means dark.</b> A monster can appear anywhere there is no light at all: no torchlight reaching the spot, and no daylight. Build a sealed room with no torch in it and things will turn up in it at noon. Light it properly and nothing will.',
+    '<b>Torches work honestly.</b> A torch protects exactly as far as its light reaches, which is further than before, and one torch in the corner of a big hall no longer covers the far end. Lava and glowstone count too.',
+    '<b>Daylight comes in.</b> By day the sky lights not just what is under it but about eight blocks in through any opening: a doorway, a window, the mouth of a cave. Deeper than that, bring a torch.',
+    '<b>Somewhere to stand.</b> A monster needs solid ground under it and room for its whole body: two blocks of height for a zombie, a full three by three for a spider. Nothing appears in water, in lava, in mid-air, inside a block, or on glass or leaves.',
+    '<b>Not on top of you.</b> Nothing appears within 24 blocks of a player. They come in small packs of up to four, and they can turn up anywhere in the loaded world, caves included, so the caves under your feet fill up while you garden. Still never more than fourteen around you.',
+    '<b>Animals.</b> Still by day, on grass, in the open, and now only where they fit.',
+    '<b>The Nether.</b> Its monsters keep their own rules but need room too, and no longer appear in lava.',
+    '<b>On a server.</b> The server&#x27;s own game now keeps track of light as well, so dark means the same thing there.',
+    '<b>Hemlock went into hiding.</b> Wild hemlock is fifty times rarer than it was. Wild carrots are as common as ever, so nearly everything that looks like a carrot now is one. Nearly.',
+    '<b>And it bites harder.</b> Poison from something you ate, a Hemlock Root or a poisoned piece of food, now lasts two minutes instead of twelve seconds. A poisoned blade is still six seconds a hit.',
+    '<b>The hoe drags.</b> Hold the right button with a hoe and sweep the crosshair along: every grass or dirt block it crosses is tilled. One wear a block, as before.',
+  ]},
+ {v:'6.43',label:'Release 1.1',title:'Plant a tree',lines:[
     '<b>PLANT A TREE.</b> You could cut every tree in the world down and never grow one back. Forests were a thing you used up. Now there are saplings: oak, birch and spruce.',
     '<b>Where they come from.</b> Break leaves and about one in twenty drops a sapling of that tree. Oak leaves, very rarely, also drop an apple, which is how apples were always supposed to work.',
     '<b>Planting.</b> Right-click grass or dirt with a sapling. Give it sky or a decent light and it grows through four stages into a full tree of its own kind, the same shape as the wild ones, in about ten minutes. It needs room for its trunk: put a roof one block over it and it waits, politely, for as long as it takes.',

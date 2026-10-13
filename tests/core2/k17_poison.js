@@ -50,6 +50,8 @@ boot.run(async()=>{
   const eat=()=>{boot.aim(V,o.x+0.5,o.y+30,o.z+0.6);V.MB.r=true;for(let i=0;i<50&&P().inv[0];i++){const c=P().inv[0].count;step(1);if(!P().inv[0]||P().inv[0].count<c)break;}V.MB.r=false;step(1);};
   rest();P().hunger=10;P().inv[0]={id:IT.HROOT,count:2};P().sel=0;V.refreshHand();eat();
   ok('eating a hemlock root: poisoned, every time',V.fxPoisoned()&&P().inv[0]&&P().inv[0].count===1);
+  {const tRoot=P().fx.poison.t;P().fx={};const st={id:IT.BEEF,count:1,psn:1};V.psnBite(st,D[IT.BEEF]);const tFood=P().fx.poison?P().fx.poison.t:0;P().fx={};
+    ok('eaten poison lasts two minutes, from the root ('+Math.round(tRoot)+' s) and from a poisoned piece of food ('+Math.round(tFood)+' s); a coated blade still gives six seconds',tRoot>118&&tRoot<=120&&tFood===120&&PSN.hitT===6);}
   /* ===== 4 ===== */
   const pb=craft([IT.POISON,IT.BEEF]),ps=craft([IT.POISON,{id:IT.STEAK,count:7}]);
   ok('a jar and a food: one piece of that food, marked only by a number nobody is shown (same id, same name, same icon)',

@@ -104,6 +104,13 @@ idef(IT.CARROT,{name:'Carrot',icon:'i_carrot',food:3,plant:B.CARROTS});
 idef(IT.HROOT,{name:'Hemlock Root',icon:'i_hroot',plant:B.HEMLOCK});
 /* tall grass gives seeds now and then */
 DEFS[B.TALLGRASS].pdrop=()=>Math.random()<0.125?{id:IT.SEEDS,count:1}:null;
+/* the wild plant the world generator puts on a bare grass column, or 0: a carrot about 6 times in 10,000, hemlock 50
+   times more rarely than that (6.44; they were equally common in 6.39). Its own hash, so nothing else generated moves. */
+const FARM_WILD={carrot:0.0006,hemlock:0.000012};
+function farmWild(wx,wz){
+  const r=h2(wx,wz,SEED+7117);
+  return r<FARM_WILD.carrot?B.CARROTS:r<FARM_WILD.carrot+FARM_WILD.hemlock?B.HEMLOCK:0;
+}
 /* ---- the rules ---- */
 /* how many waterings a can holds (a can never filled holds none) */
 function wcanUses(st){return st&&st.dur!=null?Math.max(0,st.dur|0):0;}

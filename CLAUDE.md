@@ -131,7 +131,7 @@ Full map: `docs/ARCHITECTURE.md` (PART-to-file table, systems index, how each up
   `Uint8Array` (ids < 256), with a second byte per block beside it since 6.25 (`ch.mt`, "meta": a liquid's level,
   bits 0-2, and its falling bit, 8). `setBlock(x,y,z,id,meta)`; `getMeta`. In a save, on the wire and in a region file a
   block is one number, `id | meta << 8`: anything that reads an edit as an id must mask with `& 255`.
-  A third per-chunk array since 6.26 is block light (`ch.lt`, 0-15, never saved, absent on the server's game):
+  A third per-chunk array since 6.26 is block light (`ch.lt`, 0-15, never saved; since 6.44 the server's game keeps it too, because monsters spawn by it):
   `setBlock` keeps it up (`lightEdit`), the mesher bakes it into a `blight` vertex attribute for whatever faces a block
   has (`bufLight`, a pass after the mesh is built), and the world materials add it (`blightObc`). A new light-giving
   block only needs `light:true` in its def.

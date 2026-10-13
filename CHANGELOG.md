@@ -21,6 +21,23 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — Afraid of the dark
+
+*Game version 6.44, released 2026-10-13.*
+
+- **AFRAID OF THE DARK.** Monsters used to follow a timetable: on the surface at night, somewhere underground by day, and never within eight blocks of a torch. They did not care how dark it actually was, and they did not check where they were standing. They do both now.
+- **Dark means dark.** A monster can appear anywhere there is no light at all: no torchlight reaching the spot, and no daylight. Build a sealed room with no torch in it and things will turn up in it at noon. Light it properly and nothing will.
+- **Torches work honestly.** A torch protects exactly as far as its light reaches, which is further than before, and one torch in the corner of a big hall no longer covers the far end. Lava and glowstone count too.
+- **Daylight comes in.** By day the sky lights not just what is under it but about eight blocks in through any opening: a doorway, a window, the mouth of a cave. Deeper than that, bring a torch.
+- **Somewhere to stand.** A monster needs solid ground under it and room for its whole body: two blocks of height for a zombie, a full three by three for a spider. Nothing appears in water, in lava, in mid-air, inside a block, or on glass or leaves.
+- **Not on top of you.** Nothing appears within 24 blocks of a player. They come in small packs of up to four, and they can turn up anywhere in the loaded world, caves included, so the caves under your feet fill up while you garden. Still never more than fourteen around you.
+- **Animals.** Still by day, on grass, in the open, and now only where they fit.
+- **The Nether.** Its monsters keep their own rules but need room too, and no longer appear in lava.
+- **On a server.** The server's own game now keeps track of light as well, so dark means the same thing there.
+- **Hemlock went into hiding.** Wild hemlock is fifty times rarer than it was. Wild carrots are as common as ever, so nearly everything that looks like a carrot now is one. Nearly.
+- **And it bites harder.** Poison from something you ate, a Hemlock Root or a poisoned piece of food, now lasts two minutes instead of twelve seconds. A poisoned blade is still six seconds a hit.
+- **The hoe drags.** Hold the right button with a hoe and sweep the crosshair along: every grass or dirt block it crosses is tilled. One wear a block, as before.
+
 ## Release 1.1 — Plant a tree
 
 *Game version 6.43, released 2026-10-13.*

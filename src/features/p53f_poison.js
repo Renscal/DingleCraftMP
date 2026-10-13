@@ -14,7 +14,7 @@
                          chance (psnDraw). Every place that moves part of a stack calls psnSplit or psnMoved.
    Ids: items 377 Glass Bottle, 378 Jar of Poison. */
 IT.BOTTLE=377;IT.POISON=378;
-const PSN={hits:10,eatT:12,hitT:6,rootT:12,every:1.25,rnd:null};
+const PSN={hits:10,eatT:120,hitT:6,rootT:120,every:1.25,rnd:null};   /* 6.44: eaten poison lasts two minutes (it was 12 seconds); a blade's is still 6 */
 idef(IT.BOTTLE,{name:'Glass Bottle',icon:'i_bottle'});
 idef(IT.POISON,{name:'Jar of Poison',icon:'i_poison',stack:16});
 DEFS[IT.HROOT].food=1;DEFS[IT.HROOT].fxEat='poison';

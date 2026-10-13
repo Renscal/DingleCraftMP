@@ -556,7 +556,7 @@ function doUse(dt){
     rEdge=false;return;
   }
   /* 6.39: a hoe, a watering can, something to plant (above the food branch: a carrot aimed at farmland is planted) */
-  if(st&&(d.hoe||d.wcan||d.plant)&&rEdge&&farmUse(st,d,hit)){rEdge=false;return;}
+  if(st&&(d.hoe||d.wcan||d.plant)&&(rEdge||d.hoe)&&farmUse(st,d,hit)){rEdge=false;return;}   /* 6.44: a hoe held down tills whatever the crosshair crosses */
   if(st&&d.sap!==undefined&&rEdge&&treeUse(st,d,hit)){rEdge=false;return;}   /* 6.43: a sapling */
   /* food */
   if(st&&d.food&&P.hunger<20&&P.mode==='s'){

@@ -101,8 +101,7 @@ function lightFlush(soft){
 /* The setBlock hook: the block at a cell changed. What the cell gave or passed on is taken back, then the cell is lit
    afresh: by what it gives off itself, and (if light passes through it) by its neighbours. */
 function lightEdit(x,y,z){
-  if(NET.host)return;
-  LGT.ch=null;
+  LGT.ch=null;                                             /* 6.44: on the server's game too: monsters go by how dark it is */
   const ch=chunkAt(x,z);
   if(!ch||!ch.lt)return;
   const id=getBlock(x,y,z),was=getLight(x,y,z);
@@ -115,7 +114,6 @@ function lightEdit(x,y,z){
 /* The createChunk hook: a chunk was built. Its own lights are found and spread, and the light standing at the edges of
    the chunks around it flows in. */
 function lightChunk(ch){
-  if(NET.host)return;
   LGT.ch=null;
   const bl=ch.bl,lt=ch.lt=new Uint8Array(bl.length),x0=ch.cx*CH,z0=ch.cz*CH;
   ch.ltTop=-1;
@@ -196,6 +194,31 @@ function blightPatch(m){
   m.onBeforeCompile=blightObc;
   m.customProgramCacheKey=()=>'blight1';
   return m;
+}
+/* ----- daylight, for whoever asks if a place is dark (6.44) -----
+   There is no map of the sky's light. Instead: a cell is daylit if open sky can be reached from it within n steps through
+   cells light passes through, which is what sky light fading by one a block comes to. A short flood, done on demand (a
+   spawn attempt asks a handful of times a second), not kept. */
+function skyLit(x,y,z,n){
+  if(y>=WH)return true;
+  if(y<0||DEFS[getBlock(x,y,z)].opq)return false;
+  if(skyOpen(x,y,z))return true;
+  const seen=new Set([x+','+y+','+z]);
+  let ring=[[x,y,z]];
+  for(let d=0;d<n;d++){
+    const next=[];
+    for(const c of ring)for(const o of LGT_N){
+      const X=c[0]+o[0],Y=c[1]+o[1],Z=c[2]+o[2],k=X+','+Y+','+Z;
+      if(seen.has(k))continue;
+      seen.add(k);
+      if(Y<0||Y>=WH||DEFS[getBlock(X,Y,Z)].opq)continue;
+      if(skyOpen(X,Y,Z))return true;
+      next.push([X,Y,Z]);
+    }
+    ring=next;
+    if(!ring.length)break;
+  }
+  return false;
 }
 /* how much of the torch glow shows: all of it at night, a quarter by day (0 night .. 1 day) */
 function lightDay(t){return dayLight(t);}
