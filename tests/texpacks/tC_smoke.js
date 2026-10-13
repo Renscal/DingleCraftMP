@@ -29,7 +29,7 @@ boot.run(async()=>{
   V.setCam(1);step(2);const plOG=X.pl();
   ok('the OG player model exists in third person',!!plOG&&!plOG.hr);
   V.setCam(0);V.P.inv[V.P.sel]=null;V.refreshHand();step(2);
-  ok('the OG empty hand is empty',V.getHand().kind===-1&&V.getHand().n===0);
+  ok('the OG empty hand is the skin\'s own arm (6.37), not a fist',V.getHand().kind===-1&&V.getHand().n===1&&X.hand().children[0].isArm===true);
   const hand0=JSON.stringify([X.hand().position.x,X.hand().position.y,X.hand().position.z]);
 
   /* ---- OG -> Hyperreal (ents only, Medium so the corpse cap is 8) ---- */
@@ -162,7 +162,7 @@ boot.run(async()=>{
   ok('a mob born in Hyperreal gets an OG body',!!zOG&&!zOG.hrM&&zOG.legs.length>0&&inScene(zOG.mesh));
   ok('the OG player model is back (identity)',X.pl()===plOG&&inScene(plOG.G));
   V.P.inv[V.P.sel]=null;V.refreshHand();   /* a drop from the mobs killed above may have landed in the hand slot (the removed AI section used to run before the slot was emptied) */
-  ok('the hand is OG again (empty hand: no fist)',V.getHand().kind===-1&&V.getHand().n===0);
+  ok('the hand is OG again (empty hand: the arm, no fist)',V.getHand().kind===-1&&V.getHand().n===1&&X.hand().children[0].isArm===true);
   step(30);
   ok('no Hyperreal mesh is left in the scene',hrMeshesInScene()===0);
   ok('OG updateHand runs again',JSON.stringify([X.hand().position.x,X.hand().position.y,X.hand().position.z])!==JSON.stringify([0,0,0])||hand0==='[0,0,0]');

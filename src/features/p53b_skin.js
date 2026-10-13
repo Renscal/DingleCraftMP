@@ -178,6 +178,23 @@ function skinBoot(){
   }catch(e){}
 }
 
+/* ----- the first-person arm (6.37) -----
+   With nothing in the hand, the OG view shows the player's own right arm: the skin's 4 x 12 x 4 arm box and its sleeve
+   layer, wearing the very texture the body wears, so a new skin shows on it at once with nothing rebuilt. It hangs in
+   the hand group like any held thing (refreshHand), so it swings and bobs as they do. Made once and kept. The arm
+   reaches from the bottom right of the view up and inward, the hand end forward. */
+function skinArm(){
+  if(SKINS.arm)return SKINS.arm;
+  const S=skinOwn(),B=SKIN_BOXES.armR,G=new THREE.Group();
+  const base=new THREE.MeshLambertMaterial({map:S.tex}),over=new THREE.MeshLambertMaterial({map:S.tex,alphaTest:0.5,side:THREE.DoubleSide});
+  G.add(new THREE.Mesh(skinBoxGeo(B.u,B.v,B.w,B.h,B.d,0,0,0,0),base));
+  G.add(new THREE.Mesh(skinBoxGeo(B.ou,B.ov,B.w,B.h,B.d,B.grow,0,0,0),over));
+  G.position.set(0.06,-0.16,-0.04);
+  G.rotation.set(1.95,-0.2,0.28);                          /* the hand (the bottom of the box) forward and a little up, leaning inward */
+  G.scale.set(1.15,1.15,1.15);
+  G.isArm=true;
+  return SKINS.arm=G;
+}
 /* ----- the body ----- */
 /* A player's body wearing the skin in tex. The same handles as ever: G (the whole figure, feet at its origin), head,
    aL, aR, lL, lR; and helmA / chestA for armour. Nothing is added to the scene here. */

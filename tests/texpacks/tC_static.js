@@ -47,7 +47,7 @@ boot.run(async()=>{
     C9:'if(TP.hr)hrEntFrame(dt);',C10:'if(HRE.corpses.length)hrTickCorpses(dt);',C11:'  hrClearCorpses();\n  for(const e of entities)removeEnt(e);',
     C12:'function stashEnts(){\n  hrClearCorpses();',C13:'if(HRE.on&&P){const M=hrPlayerModel();if(M)return M;}',C14:'if(M.hr){hrPlayerTick(M,paused?0:dt);return;}',
     C15:'helm.position.y=M.helmA?0:1.62;',C16:'chest.position.y=M.chestA?0:1.0;',C17:'(M.helmA||M.G).add(helm);(M.chestA||M.G).add(chest);',
-    C18:'if(!st){if(HRE.on&&P)hrFistAttach();return;}',C19:'if(HRE.on&&hrFistTick(dt))return;'};   /* C20-C25 were the AI players' bodies */
+    C18:'if(!st){if(HRE.on&&P)hrFistAttach();else if(P)handG.add(skinArm());return;}',C19:'if(HRE.on&&hrFistTick(dt))return;'};   /* C20-C25 were the AI players' bodies */
   for(const k in HOOKS)ok('hook '+k+' is spliced exactly once',G.split(HOOKS[k]).length===2);
   ok('in the core, only spawnMob asks for a Hyperreal body (figurines and every other caller stay OG)',(G.slice(0,G.indexOf('/* ---- PART 54: t0_contract.js ---- */')).match(/makeMobMesh\([^)]*\{hr:1\}\)/g)||[]).length===1&&G.indexOf('const {G}=makeMobMesh(be.fig.t);')>0);
 

@@ -3,7 +3,13 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Armour you can see through',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'A hand of your own',lines:[
+    '<b>A HAND OF YOUR OWN.</b> In first person, with nothing in your hand, there was nothing in your hand. Not even a hand. You punched trees with an idea. Now your empty hand is your own right arm, in your own skin, sleeve and all, reaching up from the corner of the screen where an arm ought to be.',
+    '<b>It is really yours.</b> The arm wears the same picture your body wears. Change your skin in Settings and the arm changes with it on the spot.',
+    '<b>It punches.</b> It swings when you swing and bobs when you walk, the same as anything else you hold.',
+    '<b>It knows when to leave.</b> Pick up a block, a tool or a rifle and the arm steps aside for it, as before. Hyperreal keeps its fist.',
+  ]},
+ {v:'6.36',label:'Release 1.1',title:'Armour you can see through',lines:[
     '<b>ARMOUR YOU CAN SEE THROUGH.</b> Putting on armour used to turn you into a stack of plain coloured boxes. Whatever skin you had spent an evening on was simply gone, replaced by a diamond-coloured refrigerator. Armour is now a fitted layer with gaps in it, and you are still in there.',
     '<b>The helmet has a face.</b> There is an opening at the front with a nose guard across it, so your eyes and that grin show through, a slot over each ear, and nothing underneath.',
     '<b>The chestplate shows the shirt.</b> Plates front and back, straps over the shoulders, open at the sides and below the ribs. On the arms: a shoulder guard and a bracer, with the elbow and the hand bare.',

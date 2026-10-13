@@ -21,6 +21,15 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — A hand of your own
+
+*Game version 6.37, released 2026-10-13.*
+
+- **A HAND OF YOUR OWN.** In first person, with nothing in your hand, there was nothing in your hand. Not even a hand. You punched trees with an idea. Now your empty hand is your own right arm, in your own skin, sleeve and all, reaching up from the corner of the screen where an arm ought to be.
+- **It is really yours.** The arm wears the same picture your body wears. Change your skin in Settings and the arm changes with it on the spot.
+- **It punches.** It swings when you swing and bobs when you walk, the same as anything else you hold.
+- **It knows when to leave.** Pick up a block, a tool or a rifle and the arm steps aside for it, as before. Hyperreal keeps its fist.
+
 ## Release 1.1 — Armour you can see through
 
 *Game version 6.36, released 2026-10-13.*

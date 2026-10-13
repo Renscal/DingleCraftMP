@@ -8,7 +8,7 @@ function refreshHand(){
   if(key===handKind)return;
   handKind=key;
   while(handG.children.length)handG.remove(handG.children[0]);
-  if(!st){if(HRE.on&&P)hrFistAttach();return;}
+  if(!st){if(HRE.on&&P)hrFistAttach();else if(P)handG.add(skinArm());return;}   /* 6.37: an empty hand in OG is the skin's own right arm (features/p53b_skin.js) */
   const dd=DEFS[st.id];
   if(!dd.item&&dd._t){
     const m=(dd.cross||dd.wt)?new THREE.Mesh(mkCrossGeo(st.id,0.6),matCut)
