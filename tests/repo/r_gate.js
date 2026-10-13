@@ -38,7 +38,6 @@ const unlisted = SUITE_DIRS.flatMap((d) => walk(d)).filter((f) => f.endsWith('.j
 ok('every .js under the suite dirs is a gate entry or a listed helper' + (unlisted.length ? ' (unlisted: ' + unlisted.join(', ') + ')' : ''), unlisted.length === 0);
 ok('helpers exist', (G.helpers || []).every(exists));
 ok('steps: the changelog check runs (scripts/changelog.mjs --check)', S.some((s) => s.name === 'changelog' && s.cmd.join(' ') === 'node scripts/changelog.mjs --check') && exists('scripts/changelog.mjs'));
-ok('the brain selftest step runs with every key variable unset', S.some((s) => s.name === 'brain selftest' && ['ANTHROPIC_API_KEY', 'ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_BASE_URL', 'FAL_KEY'].every((k) => (s.unsetEnv || []).includes(k))));
 const stepCmd = (n) => ((S.find((s) => s.name === n) || {}).cmd || []).join(' ');
 ok('steps: the tools self-tests and the secrets scan run (scan_selftest, fal_selftest with FAL_KEY unset, scan_secrets)',
   stepCmd('scan selftest') === 'node tools/scan_selftest.mjs' && stepCmd('fal selftest') === 'node tools/art/fal_selftest.mjs' &&
@@ -47,12 +46,12 @@ ok('steps: the tools self-tests and the secrets scan run (scan_selftest, fal_sel
 
 // ---- the legacy gate's repeats and counts
 const rep = (n) => (E.find((e) => e.name === n) || {}).repeat;
-const smokes = E.filter((e) => /\/[tpcm][0-9A-C]_smoke\.js$/.test(e.suite) || /p4_boss|p5_bots/.test(e.suite));
-ok('legacy repeats kept: smoke.js x6, botsmoke.js x3, every feature smoke + p4_boss + p5_bots x2 (' + smokes.length + '), everything else x1',
-  rep('smoke.js') === 6 && rep('botsmoke.js') === 3 && smokes.length === 18 && smokes.every((e) => e.repeat === 2) &&
-  E.filter((e) => !smokes.includes(e) && !['smoke.js', 'botsmoke.js'].includes(e.name)).every((e) => e.repeat === 1));
-ok('the core quartet runs next to the built game.js (runIn build), the feature suites from the repo',
-  ['test.js', 'smoke.js', 'botsmoke.js'].every((n) => (E.find((e) => e.name === n) || {}).runIn === 'build') && E.filter((e) => e.group !== 'core').every((e) => !e.runIn));
+const smokes = E.filter((e) => /\/[tpcm][0-9A-C]_smoke\.js$/.test(e.suite) || /p4_boss/.test(e.suite));
+ok('legacy repeats kept: smoke.js x6, every feature smoke + p4_boss x2 (' + smokes.length + '), everything else x1',
+  rep('smoke.js') === 6 && smokes.length === 17 && smokes.every((e) => e.repeat === 2) &&
+  E.filter((e) => !smokes.includes(e) && e.name !== 'smoke.js').every((e) => e.repeat === 1));
+ok('the core trio runs next to the built game.js (runIn build), the feature suites from the repo',
+  ['test.js', 'smoke.js'].every((n) => (E.find((e) => e.name === n) || {}).runIn === 'build') && E.filter((e) => e.group !== 'core').every((e) => !e.runIn));
 const L = (G.legacy || {}).counts || {}, RT = (G.legacy || {}).retired || {};
 const AD = Object.fromEntries(Object.entries(G.added || {}).filter(([k]) => k !== '_doc'));   /* suites added after the split, each with its reason */
 const noLegacy = E.filter((e) => e.group !== 'repo' && !/_real\.js$/.test(e.name) && !(e.name in L) && !(e.name in AD)).map((e) => e.name);
@@ -60,11 +59,11 @@ ok('every gate suite has its legacy count recorded or is listed in added (with a
 ok('every suite in added is in the gate, has no legacy count and gives a reason', Object.entries(AD).every(([n, why]) => names.includes(n) && !(n in L) && typeof why === 'string' && why.length > 20));
 const legacyOnly = Object.keys(L).filter((n) => !names.includes(n));
 ok('every legacy suite is still in the gate or recorded as retired (' + legacyOnly.join(', ') + ')', legacyOnly.every((n) => RT[n] === L[n]));
-ok('the retired legacy checks total 156 (63 splice-era checks + 93 og_trace parity checks)', Object.values(RT).reduce((a, b) => a + b, 0) === 156);
+ok('the retired legacy checks total 435 (63 splice-era checks + 93 og_trace parity checks + the 279 of the AI players, removed in 6.10)', Object.values(RT).reduce((a, b) => a + b, 0) === 435);
 
-// ---- the frozen core quartet
+// ---- the frozen core files (a quartet until 6.10: botsmoke.js went with the AI players it tested, the owner's call)
 const PINS = { 'stubs.js': ['e2be2e4ef146026285c55641a1e007c6', 10664], 'test.js': ['85d8df887b9429546693add63f898876', 12036],
-  'smoke.js': ['9ef6d1bd0d73ec7fd42ec7d14c5e27b3', 62050], 'botsmoke.js': ['3f613a13692b6ddb1c8448f217c8f25b', 72130] };
+  'smoke.js': ['9ef6d1bd0d73ec7fd42ec7d14c5e27b3', 62050] };
 /* v6.8 (Release 1.0 final cut): smoke.js re-pinned after the lead removed its one Watcher check (5 lines) with the Watcher
    (was 81986500187de6aab529a3afea713bdb, 62246 B; the legacy count 221 in tests/gate.json is the v6.3 log and stays) */
 for (const [f, [m, b]] of Object.entries(PINS)) {

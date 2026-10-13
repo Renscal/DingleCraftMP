@@ -9,8 +9,7 @@ function grFromCreate(){
   grApplyUI();
 }
 function wireMenus(){
-  $('t_new').onclick=()=>{const bots=!!($('t_bots')&&$('t_bots').checked);
-    startNewWorld($('t_name').value,$('t_seed').value,$('t_mode').value,bots);grFromCreate();};
+  $('t_new').onclick=()=>{startNewWorld($('t_name').value,$('t_seed').value,$('t_mode').value);grFromCreate();};
   $('t_import').onclick=()=>$('fileIn').click();
   $('fileIn').addEventListener('change',e=>{
     if(e.target.files[0])importWorldFile(e.target.files[0]);

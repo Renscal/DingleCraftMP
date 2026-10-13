@@ -10,8 +10,7 @@ prints `N passed, M failed`. Nothing touches the network and nothing makes a sou
 ```
 npm run test:quick         # about 45 s: build, the repo checks, every static suite, test.js, the UI suites, one og_trace session
 npm test                   # about 11 min: build, every suite once
-npm run gate               # about 20 min: the release gate, smokes repeated (smoke.js x6, botsmoke.js x3, feature smokes x2)
-npm run test:brain         # the brain's self-test (needs `npm ci --prefix brain` once)
+npm run gate               # about 20 min: the release gate, smokes repeated (smoke.js x6, feature smokes x2)
 ```
 
 `scripts/gate.mjs` reads `tests/gate.json` and:
@@ -52,9 +51,9 @@ Outputs (boss logs, speed-run records) go to `out/` (or `$DC_OUT_DIR`). Nothing 
 | group | suites | what they cover |
 |---|---|---|
 | repo | `tests/repo/r_build.js`, `r_gate.js`, and the Release 1.0 scans `r_ipscan.js`, `r_ipassets.js`, `r_other_ip.js`, `r_privacy.js` (below); steps: `changelog --check`, `tools/scan_selftest.mjs`, `tools/art/fal_selftest.mjs` (key variables unset, network blocked), `tools/scan_secrets.mjs`, and the brain self-test when `brain/node_modules` exists | the build contract, parity, order files, markers, version sites, guards, asset hashes, hygiene; every suite listed in `gate.json`; no banned name, removed image, other-IP leftover or personal data anywhere; the changelog is current; the scanners work and the would-be-committed files have no secrets or personal paths. Every suite and step except the brain self-test is also in the quick tier |
-| core | `tests/core/test.js`, `smoke.js`, `botsmoke.js`; `tests/ui/u_scale.js`, `tests/ui/u_title.js` | the original game's logic (ids, tables), a full-simulation smoke of a real world, and the AI players (seeded, fake clock); the UI scale and the title menu (Release 1.0) |
+| core | `tests/core/test.js`, `smoke.js`; `tests/ui/u_scale.js`, `tests/ui/u_title.js` | the original game's logic (ids, tables), a full-simulation smoke of a real world, and the AI players (seeded, fake clock); the UI scale and the title menu (Release 1.0) |
 | texpacks | `t0_static`, `t0_smoke`, `tA_*`, `tB_*`, `tC_*`, and `t?_real` (against the bundled three.js r128) | the texture-pack contract, world and assets, light and post, the cast |
-| purgatory | `p_static`, `p2_static`, `p0`-`p4_smoke`, `p4_boss`, `p5_bots`, `p7_hr`, `p8_saves`, `p8_recast` | Puppet Purgatory, its headliners, the bots inside, its Hyperreal cast; old saves after the Release 1.0 recast, and the recast itself |
+| purgatory | `p_static`, `p2_static`, `p0`-`p4_smoke`, `p4_boss`, `p7_hr`, `p8_saves`, `p8_recast` | Puppet Purgatory, its headliners, the bots inside, its Hyperreal cast; old saves after the Release 1.0 recast, and the recast itself |
 | pilot | `tests/pilot/speedrun.js --fast --to=auto` | an honest test pilot plays purgatory from the door to the EXIT with no free items |
 | creativity | `c_static`, `c1_static`, `c2_static`, `c0`-`c2_smoke`, `c2_audio`, `c3_found` | easels, paintings, record players, jukeboxes; an offline "ear" that measures every note; Dan's found works as rare loot (the seeded 1-in-40 roll, minting, caps, saves) |
 | malgorath | `m_static`, `m1`-`m3_static`, `m0`-`m3_smoke`, `m_harness`, `m2_fight`, `m2_audio`, `m3_model`, `m4_hr` | the Bite, the fight (a skilled pilot must win, a careless one must lose), audio, the model, Hyperreal |
@@ -64,7 +63,7 @@ Per-suite check counts, before and after the move into this repo, are in [PARITY
 
 ### The frozen core quartet
 
-`tests/core/stubs.js`, `test.js`, `smoke.js` and `botsmoke.js` are byte-identical to the files the game was developed
+`tests/core/stubs.js`, `test.js` and `smoke.js` are byte-identical to the files the game was developed
 against for most of its history (one owner-made exception: in 6.8 `smoke.js` lost its Watcher check when the Watcher was
 removed; `tests/repo/r_gate.js` pins its new bytes). **Never edit them.** New behaviour gets new suites. If a new feature needs a THREE or DOM method the
 stubs lack, add it in a feature stub (`tests/lib/stubs_X.js`, which only adds what is missing) or make the game code
@@ -159,7 +158,7 @@ boot.run(async () => {                              // when this resolves: "(k s
   multi-substep weirdness.
 - **Determinism:** pass a `seed`; use the fake clock (`clock:true`) unless real time is the point; use
   `boot.detClock(V)` for anything long and timing-sensitive (chunk meshing is budgeted by wall time).
-- **Never** touch the network (`fetch` throws, the brain points at a dead port), never turn sound on, and never print
+- **Never** touch the network (`fetch` throws), never turn sound on, and never print
   source text.
 - **Register** the suite in `tests/gate.json` with its repeat count and clock kind. `r_gate` fails if a suite file is not
   listed.
@@ -194,7 +193,6 @@ list.
   killable (deterministic kill loops: `hurtT=0; inv=0; hurtMob(...)`).
 - **A right-click needs a frame with the button up first** (press for one frame, then step a couple more after closing
   an editor).
-- **Live AI bots grief.** Run them last, in their own area.
 - `getObjectByName`/`setScalar` do not exist on the stubs: assert through entity fields, not mesh internals.
 
 ## Debugging protocol

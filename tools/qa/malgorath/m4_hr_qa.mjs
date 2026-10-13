@@ -40,12 +40,12 @@ const HELP=`window.__m4={T:700000,
     P.vx=P.vy=P.vz=0;P.fallD=0;P.flying=true;this.look(1000.5,F+(lookY==null?8:lookY),1000.5);this.stp(3);},
   info(){const V=__vox;return {hr:V.getTP().hr,q:V.getTP().qr,mg:V.mgInfo(),hrmg:V.getHRMG?V.getHRMG():null,light:V.tpLightCount?V.tpLightCount().key:null};}};`;
 const boot=async()=>{for(let i=0;i<240;i++){let v=false;try{v=await ev("return typeof window.__vox==='object'&&document.readyState==='complete'");}catch(e){}if(v)break;await sleep(500);}
-  await ev(HELP+"try{usePLock=false;lockWanted=false;}catch(e){}Object.assign(__vox.BRAIN,{mock:null,ok:false,off:true,url:'http://127.0.0.1:9'});if(__vox.setBrainMock)__vox.setBrainMock(null);");};
+  await ev(HELP+"try{usePLock=false;lockWanted=false;}catch(e){}");};
 await send('Runtime.enable');await send('Page.enable');await send('Network.enable');await send('Network.setCacheDisabled',{cacheDisabled:true});
 await send('Emulation.setDeviceMetricsOverride',{width:1280,height:720,deviceScaleFactor:1,mobile:false});
 await send('Page.addScriptToEvaluateOnNewDocument',{source:"try{const k='vx_vox_settings';let s={};try{s=JSON.parse(localStorage.getItem(k)||'{}')||{};}catch(e){}"+
   "s.snd=0;s.mus=0;s.tp='og';localStorage.setItem(k,JSON.stringify(s));}catch(e){}"+
-  "window.__DINGLE_BRAIN={url:'http://127.0.0.1:9',token:null};window.requestAnimationFrame=function(){return 0;};"});
+  "window.requestAnimationFrame=function(){return 0;};"});
 await send('Page.navigate',{url:`http://127.0.0.1:${SRV}/${BUILD}?b=${Date.now()}`});await boot();
 const I0=await ev("return {ver:__vox.GAME_VERSION,stubs:__vox.mgInfo().stubs,sound:soundOn,hr:typeof __vox.setPack==='function'}");
 check('v'+WANT+' loaded, sound off ('+JSON.stringify(I0)+')',I0.ver===WANT&&I0.sound===false&&I0.hr);

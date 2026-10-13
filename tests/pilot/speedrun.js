@@ -46,7 +46,6 @@ boot.run(async()=>{
     pilot.allowJump('load',40);pilot.frame(40);log('resumed from '+FROM+' in '+V.getDim());}
   else{
     leg('world',()=>{boot.world(V,'speedrun',String(SEED),null);if(flag('mobs'))V.GR.mobSpawn=true;pilot.allowJump('new world',4);pilot.frame(160);return V.getDim()==='over';});
-    if(flag('bots')){V.GR.bots=true;V.agJoinAll(false);for(let i=0;i<40;i++){pilot.expect(V.IT.PCOMPASS,1);pilot.frame(1);}}   /* the overworld hands Dan a Player Compass when the bots join */
     leg('door',()=>{const d=V.mpDoorHere();pilot.allowJump('door stamped',2);pilot.frame(2);
       const f=[d.x+0.5+d.f[0]*3,d.z+0.5+d.f[1]*3];return pilot.walkTo(f[0],f[1],{tol:1.0,max:30});});
     leg('ritual',()=>{const d=MP().door;pilot.emptyHand();pilot.lookAt(d.x+0.5,d.y+1,d.z+0.5);pilot.use();pilot.lookAt(d.x+0.5,d.y+1,d.z+0.5);pilot.use();

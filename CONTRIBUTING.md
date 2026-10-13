@@ -30,16 +30,16 @@ These are not style preferences. Each one exists because breaking it once cost r
 2. **Shipped versions are frozen.** Once a version is in `tests/fixtures/shipped.json`, its html must stay byte for
    byte what was shipped. If your change alters the output, bump the version first (`npm run bump`). The build warns,
    and the gate and `npm run release` refuse.
-3. **The core quartet is frozen.** Never edit `tests/core/stubs.js`, `test.js`, `smoke.js` or `botsmoke.js`. New
+3. **The core suites are frozen.** Never edit `tests/core/stubs.js`, `test.js` or `smoke.js`. New
    behaviour gets new suites. (The one exception was the owner's: in 6.8 `smoke.js` lost its Watcher check along with
    the Watcher; `tests/repo/r_gate.js` pins the new bytes.)
 4. **Never hand-edit generated files**: `build/`, `dist/`, `out/`, `DINGLECRAFT.html` (the play file: `npm run release`
    copies each release there) and the generated part of `CHANGELOG.md` (edit the patch notes in
    `src/ui/p28_patch_notes.js` and run `npm run changelog`).
-5. **Never commit secrets or personal data.** No `.env`, no keys, no `brain/data/`, no absolute paths, no email
+5. **Never commit secrets or personal data.** No `.env`, no keys, no absolute paths, no email
    addresses, no local timezone in a commit (commit with `TZ=UTC0`). Run `npm run scan` before you commit (the
    pre-commit hook does it for you) and `npm run scan:history` before you push (the pre-push hook does that).
-6. **No paid API calls** from tests, CI or anything automatic. The art tools and the brain spend real money: run them
+6. **No paid API calls** from tests, CI or anything automatic. The art tools spend real money: run them
    only on purpose, with your own key and a budget.
 7. **Bytes matter.** The build is plain concatenation and md5-pinned. Use LF line endings, do not let your editor strip
    trailing whitespace or add final newlines to files you did not mean to change (`.editorconfig` sets this up), and
@@ -117,7 +117,7 @@ Every build has two version names, and they never mix:
 |---|---|---|
 | example | `'6.9'` | `'Release 1.0'` |
 | defined in | `src/core/p01a_prologue.js` | the line right below it |
-| used by | saves (`v` in every world file), save migrations, every version comparison, the dist file name `dinglecraft_v6.9.html`, the brain (it serves `dinglecraft_vX.Y.html`), `tests/fixtures/shipped.json`, `package.json` (`6.9.0`), the git tag `v6.9` | everything a player or reader sees: the title screen (`#t_ver` in `html/dom/title.html`), the win screen (`#winsmall` in `html/dom/panels_b.html`), the F3 debug line, README, CHANGELOG headings, the git tag `release-1.0` |
+| used by | saves (`v` in every world file), save migrations, every version comparison, the dist file name `dinglecraft_v6.9.html`, `tests/fixtures/shipped.json`, `package.json` (`6.9.0`), the git tag `v6.9` | everything a player or reader sees: the title screen (`#t_ver` in `html/dom/title.html`), the win screen (`#winsmall` in `html/dom/panels_b.html`), the F3 debug line, README, CHANGELOG headings, the git tag `release-1.0` |
 | shape | two-part `maj.min`, strictly increasing, never reused | one short line of letters, digits, spaces, dots and dashes; consecutive versions may share it, but it never comes back once a newer label has shipped |
 
 - **`GAME_VERSION` only ever goes up** (6.3, 6.4, 6.5 ... 7.0), so old worlds can always be recognised and migrated, and
@@ -150,6 +150,6 @@ Patch notes are playful and per feature; the announcement adds the test counts t
 - Small, logical commits with a prefix: `feat:`, `fix:`, `test:`, `build:`, `tools:`, `docs:`, `release:`.
 - Commit in UTC (`TZ=UTC0 git commit ...`): a local timezone in a public commit says where and when you work.
 - Say what changed and why. A release commit quotes the gate counts.
-- Never commit `build/`, `dist/`, `out/`, `.env`, `brain/data/`, `node_modules/` or `*.gen.js` (all gitignored).
+- Never commit `build/`, `dist/`, `out/`, `.env`, `node_modules/` or `*.gen.js` (all gitignored).
 - `.gitattributes` keeps line endings untouched (`* -text`) and hides the generated og_trace goldens from diffs. Do not
   change that.

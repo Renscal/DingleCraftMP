@@ -27,14 +27,13 @@ function studio(V,step,o){o=o||{};if(!o.keep){V.startNewWorld(o.name||'crtest',S
   for(let dx=-2;dx<=6;dx++)for(let dz=-6;dz<=6;dz++){V.setBlock(x+dx,y-1,z+dz,B.STONE);
     for(let dy=0;dy<=6;dy++)V.setBlock(x+dx,y+dy,z+dz,(dx===6||dx===-2||dz===-6||dz===6)?B.STONE:B.AIR);}
   P.x=x+0.5;P.z=z+0.5;P.y=y;P.vx=P.vy=P.vz=0;P.fallD=0;P.mode=o.mode||'s';step(10);
-  for(const e of V.entities)if(e.t==='mob'&&!e.dead&&!e.bot&&Math.hypot(e.x-P.x,e.z-P.z)<64){e.hurtT=0;V.hurtMob(e,99999,0,0);}
+  for(const e of V.entities)if(e.t==='mob'&&!e.dead&&Math.hypot(e.x-P.x,e.z-P.z)<64){e.hurtT=0;V.hurtMob(e,99999,0,0);}
   step(5);return {x,y,z};}
 function works(V){const W=V.getCR().CRW;return Object.keys(W).map(k=>({n:+k,id:V.crItemId(+k),rec:W[k]}));}
 function invIds(V){return V.P.inv.filter(Boolean).map(s=>s.id);}
-/* no network, ever: the game's brain client would otherwise talk to Dan's brain server on 127.0.0.1:8644 when bots join */
+/* no network, ever */
 function noNet(){global.fetch=async()=>{throw new Error('no network in the creativity suites');};}
 function boot(o){noNet();const V=pg(o||{});noNet();
-  if(V&&V.BRAIN){V.setBrainMock(null);Object.assign(V.BRAIN,{mock:null,ok:false,off:true});}
   if(V&&typeof V.getCRFD==='function')V.getCRFD().off=true;   /* rare found works off by default in the suites (c3_found turns them on) */
   return V;}
 module.exports=boot;

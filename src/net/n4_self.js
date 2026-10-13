@@ -55,7 +55,7 @@ function ntFrame(dt){
     ntBeScan();
     ntDropsScan();
     const g=JSON.stringify(GR);
-    if(g!==NET.grS){NET.grS=g;const o={...GR};delete o.bots;ntSend({t:'gr',gr:o});}
+    if(g!==NET.grS){NET.grS=g;ntSend({t:'gr',gr:{...GR}});}
     if(RD!==NET.rdS){NET.rdS=RD;ntSend({t:'rd',v:RD+3});}
   }
   /* a jump in the clock that the server did not send (a bed, the debug menu) is this player's doing: tell everyone */

@@ -52,7 +52,7 @@ function updateArrow(e,dt){
   }
   if(e.owner!=='p'&&!P.dead&&e.age>0.1){
     if(nx>P.x-P.hw-0.1&&nx<P.x+P.hw+0.1&&ny>P.y&&ny<P.y+P.h+0.1&&nz>P.z-P.hw-0.1&&nz<P.z+P.hw+0.1){
-      LASTDMG={by:e.owner==='m'?'Skeleton':(e.owner||null),how:'arrow',t:AG_T};damagePlayer(e.dmg,e.vx,e.vz);removeEnt(e);return;
+      LASTDMG={by:e.owner==='m'?'Skeleton':(e.owner||null),how:'arrow'};damagePlayer(e.dmg,e.vx,e.vz);removeEnt(e);return;
     }
   }
   if(NET.on&&e.owner==='p'&&ntShot(nx,ny,nz,e.dmg,e.vx,e.vz)){removeEnt(e);return;}   /* PART 58: another player */
@@ -125,6 +125,6 @@ function explode0(x,y,z,r,byMob){
     }
   }
   const pd=Math.hypot(P.x-x,P.y+0.9-y,P.z-z);
-  if(pd<r*1.6){P.hurtT=0;LASTDMG={by:EXPL_BY,how:'tnt',t:AG_T};damagePlayer(Math.round((1-pd/(r*1.6))*22),P.x-x,P.z-z);}
+  if(pd<r*1.6){P.hurtT=0;LASTDMG={by:EXPL_BY,how:'tnt'};damagePlayer(Math.round((1-pd/(r*1.6))*22),P.x-x,P.z-z);}
 }
 

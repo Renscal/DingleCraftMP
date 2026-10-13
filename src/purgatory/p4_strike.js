@@ -113,7 +113,7 @@ function hnSkPose(){const S=HN.strike,Pp=HN_SK.parts;if(!S||!Pp)return;const z=S
 
 /* ---- the Hand: the stagehand's other hand, picking up litter (5 times on a full run) ---- */
 function hnSkLeader(){let best=null,bz=1e9;if(P&&!P.dead){best=P;bz=P.z;}
-  if(typeof AG_ACTIVE!=='undefined'&&AG_ACTIVE)for(const a of AGENTS){const b=a.e;if(b&&!a.dead&&a.online&&a.dim===DIM&&b.z<bz){bz=b.z;best=b;}}return best;}
+  return best;}
 function hnSkHandTick(dt){const S=HN.strike;if(S.ph!=='run')return;
   if(!S.hand){const L=hnSkLeader();if(!L)return;for(let i=0;i<5;i++)if(!S.handDone[i]&&L.z<HN_SK_HANDZ[i]){S.handDone[i]=1;hnSkHandStart(L,i);break;}return;}}
 function hnSkHandStart(t,i){const S=HN.strike,tb=hnFoeBody(t),lead=1.2,px=tb.x+(tb.vx||0)*lead,pz=tb.z+(tb.vz||(t===P?-4:-3))*lead;

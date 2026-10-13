@@ -89,7 +89,7 @@ boot.run(async()=>{
 
   /* ===== 6. the title ===== */
   ok('#t_ver says RELEASE_LABEL ('+V.RELEASE_LABEL+')',(/id="t_ver"[^>]*>([^<]*)</.exec(HH)||[])[1]===V.RELEASE_LABEL&&typeof V.RELEASE_LABEL==='string'&&!/v\d/.test(V.RELEASE_LABEL));
-  const IDS=['title','tlogo','t_ver','t_name','t_seed','t_mode','t_bots','t_continue','t_new','t_worlds','t_import','t_help','t_patch',
+  const IDS=['title','tlogo','t_ver','t_name','t_seed','t_mode','t_continue','t_new','t_worlds','t_import','t_help','t_patch',
     't_go_new','t_go_load','t_back_new','t_back_load','t_mode_s','t_mode_c','tbgc','tmain','tnew','tload'];
   {const bad=IDS.filter(id=>HH.split('id="'+id+'"').length!==2);ok('every title id is in head.html exactly once'+(bad.length?' (not: '+bad.join(' ')+')':''),bad.length===0);}
   {const logo=fs.readFileSync(boot.P.ASSETS+'logo.png').toString('base64');
@@ -102,9 +102,9 @@ boot.run(async()=>{
   el('t_go_new').onclick();ok('Create New World (main menu) opens the form',V.getTM().view==='new');
   el('t_mode_c').onclick();ok('the Creative button sets #t_mode to c',el('t_mode').value==='c');
   el('t_mode_s').onclick();ok('the Survival button sets it back to s',el('t_mode').value==='s');
-  V.tmMode('c');el('t_name').value='uscale';el('t_seed').value='4242';el('t_bots').checked=false;
+  V.tmMode('c');el('t_name').value='uscale';el('t_seed').value='4242';
   el('t_new').onclick();step(60);
-  ok('Create World starts a world from the form (name, creative mode, no bots)',V.playing===true&&V.P&&V.P.mode==='c'&&!V.getAG().active);
+  ok('Create World starts a world from the form (name, creative mode)',V.playing===true&&V.P&&V.P.mode==='c');
   ok('the title background never starts in node',V.getTBG().on===false);
 
   /* ===== 7. the HUD layout ===== */
@@ -121,5 +121,5 @@ boot.run(async()=>{
   {V.showToast('u_scale toast');V.hudLayout();const hl=V.getHL();
     ok('hudLayout does nothing in node (no push, nothing hidden, the toast keeps its CSS place)',!hl.push&&hl.hid.length===0&&!hl.dirty);}
   {const src=fs.readFileSync(boot.P.SRC.ui+'p06a_hud.js','utf8'),loop=fs.readFileSync(boot.P.SRC.core+'p07h_boot_loop.js','utf8');
-    ok('showToast and the frame loop call hudLayout',/function showToast\(t\)\{[^}]*hudLayout\(\);/.test(src)&&/tickAgHud\(dt\);\n\s*hudLayout\(\);/.test(loop));}
+    ok('showToast and the frame loop call hudLayout',/function showToast\(t\)\{[^}]*hudLayout\(\);/.test(src)&&/tickChatHud\(dt\);\n\s*hudLayout\(\);/.test(loop));}
 });

@@ -20,7 +20,8 @@ const PATCH_LOG=[
     'Quietly better: big worlds join faster (the server sends the chunks around you and the rest as you travel), water is flowed by one game instead of all of them, and dropped items no longer age while the server is empty.',
     'Still your own: vehicles, bosses, dragons, villagers, the Purgatory and Malgorath casts and the AI players are played by each player&#x27;s own game and are not shared yet.',
     'Hosting: the new server/ folder has the server (nothing to install, it needs only Node.js). On Windows, double-click Start Server.bat. It keeps the world, saves it every 30 seconds, hands the game to anyone who opens its address in a browser, and can host a world you exported from single player.',
-    'Single player is exactly as it was. Server worlds never touch your saved worlds.',
+    'THE AI PLAYERS HAVE LOGGED OFF. BunkerBrad, xx_lilcreepah_xx and honeybee_mc have left the building, taking their brain server, their grudges and their bunker with them. You have real friends now. Old worlds still load; the three of them are simply not in them. The chat box, the player list and the Player Compass stay, and the compass now points at actual people.',
+    'Single player is otherwise exactly as it was. Server worlds never touch your saved worlds.',
   ]},
  {v:'6.9',label:'Release 1.0',title:'Replays',lines:[
     'REPLAYS: the game keeps your last 30 seconds ready. Press F8 and it saves as an MP4 video, sound, records and paintings included. Turn it on or off in Settings.',

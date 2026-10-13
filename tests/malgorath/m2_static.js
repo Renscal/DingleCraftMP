@@ -16,7 +16,7 @@ boot.run(async()=>{
   const src=segs.map(s=>s[1]).join('\n'),strip=t=>t.replace(/\/\*[\s\S]*?\*\//g,'');
 
   /* ---- the API (plan 5.2) ---- */
-  const need=['tick','wake','dormant','brain','preHurt','onKill','onDie','onRespawn','steal','botShield','botKeep','botSpawn','blinkFail','grapCut','swingMiss','hit','skipTo','inhaling','fed','chomp'];
+  const need=['tick','wake','dormant','brain','preHurt','onKill','onDie','onRespawn','steal','blinkFail','grapCut','swingMiss','hit','skipTo','inhaling','fed','chomp'];
   ok('MGREG.fight carries every member of plan 5.2 (+ fed for M1, chomp)'+(need.filter(n=>typeof F[n]!=='function').join(',')),need.every(n=>typeof F[n]==='function'));
   const ML=F.mechList,TB=F.timeBound;
   ok('mechList names mechanics for all three rounds (R1 '+(ML[1]||[]).join(' ')+')',[1,2,3].every(r=>Array.isArray(ML[r])&&ML[r].length>=4));
@@ -66,6 +66,6 @@ boot.run(async()=>{
   ok('the m2 files never name PART 54 state (TP, HRE, HRL, HRW, tpOn...) nor build a makeMobMesh({hr:1}) body',!/\b(TP|TPEX|HRE|HRL|HRW|HR_MOB|HR_CAST|tpRegister|tpOn|hrSky)\b/.test(strip(src))&&!/makeMobMesh\([^)]*\{hr:1\}\)/.test(src));
   ok('every damaging drawing goes through mgDraw (no fx.draw call in m2) and every attack frees its drawings (mg2Begin attaches free)',!/fx\.draw\(/.test(strip(src))&&/function mg2Begin\(a\)\{[^\n]*a\.free=T\.free/.test(src));
   const files=segs.map(s=>s[0]);
-  ok('the m2 files in the build: '+files.join(' '),['m2_core.js','m2_r1.js','m2_r2.js','m2_r3.js','m2_adds.js','m2_scenes.js','m2_loot.js','m2_hud.js','m2_bots.js','m2_audio.js'].every(f=>files.includes(f)));
+  ok('the m2 files in the build: '+files.join(' '),['m2_core.js','m2_r1.js','m2_r2.js','m2_r3.js','m2_adds.js','m2_scenes.js','m2_loot.js','m2_hud.js','m2_audio.js'].every(f=>files.includes(f))&&!files.includes('m2_bots.js'));
   ok('m2 is '+Buffer.byteLength(src)+' B of PART 57 (budget 200,000)',Buffer.byteLength(src)<=200000);
 });

@@ -136,7 +136,7 @@ function ntMsg(m){
         if(Math.abs(d)>0.003){timeOfDay+=d;NET.tPrev=timeOfDay;}}
       return;
     case 'gr':
-      if(NET.on&&m.gr&&typeof m.gr==='object'){Object.assign(GR,m.gr);GR.bots=false;NET.grS=JSON.stringify(GR);if(typeof grApplyUI==='function')grApplyUI();}
+      if(NET.on&&m.gr&&typeof m.gr==='object'){Object.assign(GR,m.gr);NET.grS=JSON.stringify(GR);if(typeof grApplyUI==='function')grApplyUI();}
       return;
     case 'kick':NET.why=''+(m.why||'Disconnected by the server.');return;
     default:
@@ -155,7 +155,7 @@ function ntEnter(){
   try{
     /* a new player starts at the world spawn; the first one of all finds it (the server has no terrain) and reports it */
     if(!pl){resetWorld();SEED=w.seed|0;const ws=NET.spawn,sp=ws?[ws.x,ws.y,ws.z]:findSpawn();pl={x:sp[0],y:sp[1],z:sp[2],spawn:sp};if(!ws)found=sp;}
-    const d={...w,f:w.f||SAVE_FORMAT,edits:W.edits,be:W.be,player:pl,dim:pl.dim||'over',ents:[],bots:null};
+    const d={...w,f:w.f||SAVE_FORMAT,edits:W.edits,be:W.be,player:pl,dim:pl.dim||'over',ents:[]};
     if('mp' in pl){d.mp=pl.mp;d.stash=pl.stash;}else{delete d.mp;delete d.stash;}   /* purgatory progress is per player */
     applySave(d);
   }catch(e){
@@ -164,7 +164,6 @@ function ntEnter(){
     const ws=NET.ws;if(ws){try{ws.close();}catch(e2){}}
     return;
   }
-  GR.bots=false;
   NET.on=true;NET.st='on';NET.q.length=0;NET.acc=0;NET.poseT=0;NET.poseS='';NET.scanT=0;
   NET.grS=JSON.stringify(GR);NET.tPrev=timeOfDay;
   NET.beS.clear();for(const [k,b] of blockEnts)NET.beS.set(k,ntBeSig(b));

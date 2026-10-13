@@ -25,7 +25,7 @@ function closeSet(noBack){setOpen=false;const el=$('settings');if(el)el.style.di
   const c=$('s_close');if(c)c.onclick=()=>{closeSet();};
   const fv=$('s_fov');if(fv&&fv.addEventListener)fv.addEventListener('input',e=>{FOVB=clamp(+e.target.value|0,50,110);const l=$('s_fovv');if(l)l.textContent=FOVB;saveSettings();});
   const slide=(id,f)=>{const r=$(id);if(r&&r.addEventListener)r.addEventListener('input',e=>{const v=+e.target.value;f(v);const l=$(id+'v');if(l)l.textContent=v;saveSettings();});};
-  {const pn=$('s_pname');if(pn&&pn.addEventListener)pn.addEventListener('change',()=>{if(!pnSet(pn.value)){if(pnClean(pn.value))showToast('Pick another name: 2 or more letters, and not an AI player\u2019s name');pn.value=PNAME;}});}
+  {const pn=$('s_pname');if(pn&&pn.addEventListener)pn.addEventListener('change',()=>{if(!pnSet(pn.value)){if(pnClean(pn.value))showToast('Pick another name: 2 or more letters, and not a common word');pn.value=PNAME;}});}
   slide('s_sens',v=>{MSENS=clamp(v/100,0.1,3);});
   slide('s_sfx',v=>{SFXVOL=clamp(v/100,0,1);acVol();});
   slide('s_mus',v=>{MUSVOL=clamp(v/100,0,1);acVol();});

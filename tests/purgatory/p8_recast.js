@@ -42,10 +42,6 @@ boot.run(async()=>{
   { const b=bad(HN,NAMES),miss=['pgbomber','pgbigpig','pgbigfrog','pghog'].filter(k=>!(k in HN));
     ok('HN_NAMES: the Demolitionist, the Pig, the Frog, the Hero Hog'+(b.length||miss.length?' (wrong: '+b.concat(miss).join(' ')+')':''),!b.length&&!miss.length);
     ok('HN_NAMES keeps Fallen Piglet, Chorus Pig and Followspot',bad(HN,KEEP).length===0); }
-  { const src=fnSrc('purgMtName');let f=null;try{f=src&&(new Function(src+';return purgMtName;'))();}catch(e){f=null;}
-    const b=f?Object.keys(NAMES).filter(k=>!(f(k)===NAMES[k]||(k==='pghen'&&f(k)==='Hen'))):['(not found)'];
-    ok('purgMtName (the bots\' names for mobs) follows the name contract'+(b.length?' (wrong: '+b.join(' ')+')':''),!!f&&!b.length);
-    ok('purgMtName: the bots\' reflex target is the lower-cased name of the Pig (the pig)',!!f&&f('pgbigpig').toLowerCase()==='the pig'&&/'the pig'/.test(fnSrc('purgReflex')||G)); }
   { const all={};for(const [k,v] of [...Object.entries(PM),...Object.entries(HN)])(all[v]=all[v]||new Set()).add(k);
     const dup=Object.entries(all).filter(([n,s])=>s.size>1&&!(n==='Lab Rat Clone'&&[...s].every(k=>/^pgrat[24]?$/.test(k)))&&!(n==='Chorus Pig'&&[...s].every(k=>k==='pgpig'||k==='pgtoss'))).map(([n])=>n);
     ok('display names are unique across PM_NAMES and HN_NAMES (only the rat clones and the chorus pigs share one; death messages key on them)'+(dup.length?' ('+dup.length+' shared)':''),dup.length===0); }
@@ -55,9 +51,6 @@ boot.run(async()=>{
   { const T=lit(/var HN_TITLE=(\{[^;]*\});/);
     ok('intro titles: LADIES AND GENTLEMEN... THE DEMOLITIONIST. / ...THE PIG. / AND NOW... THE MANAGEMENT.',!!T&&T.bomber==='LADIES AND GENTLEMEN... THE DEMOLITIONIST.'&&
       T.bigpig==='LADIES AND GENTLEMEN... THE PIG.'&&T.bigfrog==='AND NOW... THE MANAGEMENT.'); }
-  { const N=lit(/var purgBiomeN=(\{[\s\S]*?\});/);
-    ok('places: the Felt Forest, the Kitchen, the Prop Lab, the Back Swamp; the Pork Palace and the Grand Staircase stay',!!N&&N.woods==='the Felt Forest'&&N.kitchen==='the Kitchen'&&
-      N.labs==='the Prop Lab'&&N.swamp==='the Back Swamp'&&N.palace==='the Pork Palace'&&N.stair==='the Grand Staircase'); }
   { const TR=V.getHNTRUNK()||{};
     ok('the Headliner Trunks: The Demolitionist\'s Trunk, The Pig\'s Trunk',!!TR.bomber&&TR.bomber.name==='The Demolitionist\'s Trunk'&&!!TR.bigpig&&TR.bigpig.name==='The Pig\'s Trunk'); }
   { const D=V.DEFS,I=V.IT,BB=V.B,nm=id=>id!=null&&D[id]?D[id].name:null;
@@ -117,7 +110,7 @@ boot.run(async()=>{
   const arg=JSON.stringify({variants,fields:RC?RC.fields:{}});
   const res=cp.spawnSync(process.execPath,[path.join(__dirname,'..','lib','hr_models_child.js'),arg],{encoding:'utf8',timeout:120000,env:process.env});
   let H=null;try{H=JSON.parse(String(res.stdout||'').trim().split('\n').pop());}catch(e){H=null;}
-  ok('the Hyperreal model harness ran (every model source loaded in build order)'+(H&&H.fatal?' ('+H.fatal.split('\n')[0]+')':''),!!H&&!H.fatal&&H.load.every(x=>x[1]===1)&&H.load.length>=25);
+  ok('the Hyperreal model harness ran (every model source loaded in build order)'+(H&&H.fatal?' ('+H.fatal.split('\n')[0]+')':''),!!H&&!H.fatal&&H.load.every(x=>x[1]===1)&&H.load.length>=22);
   if(!H||H.fatal){skip('Hyperreal model checks','the harness did not run');return;}
   const M=H.models;
   const missNew=NEW_MODELS.filter(n=>!M[n]),oldLeft=OLD_MODELS.filter(n=>M[n]);

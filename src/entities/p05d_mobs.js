@@ -185,7 +185,6 @@ function spawnMob(mt,x,y,z){
 }
 function hurtMob(e,dmg,kx,kz){
   if(e.pup){ntMobHit(e,dmg,kx,kz);return;}   /* PART 58: its owner's game takes the hit */
-  if(e.bot){agHurt(e.A,dmg,HIT_BY||'Dan',kx,kz,HIT_HOW||'melee');return;}
   if(MOBT[e.mt].mg){dmg=mgPreHurt(e,dmg,kx,kz);if(dmg<0)return;}
   if(MOBT[e.mt].pmob){dmg=mpPreHurt(e,dmg,kx,kz);if(dmg<0)return;}
   if(e.mt==='alien'&&e.hp>0&&dmg>0)alienAggro(e);
@@ -252,9 +251,8 @@ function updateMob(e,dt){
   /* AI state */
   if(e.mt==='alien')alienBrain(e,dt,pd,pdx,pdz);
   const hostileNow=e.mt==='alien'?e.mood==='h':T.hostile;
-  const _tb=hostileNow?mobBotTarget(e,T,pd):null;
-  const tdx=_tb?_tb.x-e.x:pdx,tdz=_tb?_tb.z-e.z:pdz,td=_tb?Math.hypot(tdx,tdz):pd,tty=_tb?_tb.y:P.y;
-  const aggro=hostileNow&&(_tb||(!P.dead&&(P.mode!=='c'||T.nuke)))&&td<(T.boss?26:(T.nuke?22:16))&&(!T.nightOnly||!sunUp()||e.mode==='chase');
+  const tdx=pdx,tdz=pdz,td=pd,tty=P.y;
+  const aggro=hostileNow&&!P.dead&&(P.mode!=='c'||T.nuke)&&td<(T.boss?26:(T.nuke?22:16))&&(!T.nightOnly||!sunUp()||e.mode==='chase');
   if(aggro)e.mode='chase';
   else if(e.mode==='chase')e.mode='idle';
   e.tT-=dt;
@@ -274,13 +272,12 @@ function updateMob(e,dt){
   if(e.mode==='chase'){
     if(T.dmg&&td<(T.boss?2.4:1.7)&&Math.abs(tty-e.y)<(T.boss?3:2)&&e.atkT<=0){
       e.atkT=T.boss?1.4:1.1;
-      if(_tb)mobHitBot(_tb,e,T,T.dmg,tdx,tdz);
-      else{LASTDMG={by:mobNameOf(e.mt),how:'mob',t:AG_T};damagePlayer(T.dmg,pdx,pdz);
-      if(T.boss&&!P.dead){P.vy=Math.max(P.vy,9.5);playS('thud');}}
+      LASTDMG={by:mobNameOf(e.mt),how:'mob'};damagePlayer(T.dmg,pdx,pdz);
+      if(T.boss&&!P.dead){P.vy=Math.max(P.vy,9.5);playS('thud');}
     }
-    if(T.ranged&&e.atkT<=0&&td<15&&(_tb?agSees(_tb.A,e.x,e.y+e.h*0.8,e.z):mobSees(e))){
+    if(T.ranged&&e.atkT<=0&&td<15&&mobSees(e)){
       e.atkT=1.9;
-      const a=[e.x,e.y+e.h*0.8,e.z],b=_tb?[_tb.x,_tb.y+1.4,_tb.z]:eyePos();
+      const a=[e.x,e.y+e.h*0.8,e.z],b=eyePos();
       const dx=b[0]-a[0],dy=b[1]-a[1]+td*0.06,dz=b[2]-a[2];
       const dl=Math.hypot(dx,dy,dz);
       spawnArrow(a[0],a[1],a[2],dx/dl*18,dy/dl*18,dz/dl*18,'m',3);
@@ -326,7 +323,7 @@ function updateMob(e,dt){
   if(e.mode!=='idle'||hostileNow)e.yaw+=(((want-e.yaw+Math.PI*3)%(Math.PI*2))-Math.PI)*Math.min(1,dt*8);
   e.mesh.position.set(e.x,e.y,e.z);
   e.mesh.rotation.y=e.yaw;
-  if(e.hrM){hrMobTick(e,dt,T,tdx,tdz,td,_tb,hostileNow);return;}
+  if(e.hrM){hrMobTick(e,dt,T,tdx,tdz,td,null,hostileNow);return;}
   const hv=Math.hypot(e.vx,e.vz);
   e.anim+=dt*hv*3.2;
   for(const L of e.legs){

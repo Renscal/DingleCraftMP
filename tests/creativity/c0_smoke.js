@@ -3,7 +3,7 @@
    lifecycles through the real doUse and doMine, hanging paintings of all three sizes on walls of all four facings, taking them
    down (one drop, same data), and the METADATA AUDIT: a painting and a disc survive every inventory path (no merge, split, chest,
    furnace slot, sort, Q drop + no despawn, pickup, death + respawn, keepInventory, creative palette, save/load + GC, ENT_STASH across
-   a dimension change, Puppet Purgatory's strip / trunk / save inside / customs / trunk return, bots refusing them), orphan recovery
+   a dimension change, Puppet Purgatory's strip / trunk / save inside / customs / trunk return), orphan recovery
    (explosion, missing cell, missing wall, a chest on a stale entity, an editor bound to a destroyed easel), caps and titles, reset. */
 'use strict';
 const boot=require('../lib/c_boot.js'),{ok,skip}=boot;
@@ -189,20 +189,6 @@ boot.run(async()=>{
     for(const q of C.MODAL.slots.filter(q=>q.home==='be'))if(q.get())C.quickMove(q);V.closeModal(true);step(3);
     ok('customs leaves them alone and the trunk gives both back (same ids, same data)',V.getDim()==='over'&&both()&&keep()===K);});
 
-  /* ===== 10. AI players never take, break or place creativity things ===== */
-  sec('bots',()=>{V.setBrainMock(null);Object.assign(V.BRAIN,{mock:null,ok:false,off:true});if(!V.AGENTS.length||!V.AGENTS[0].e)V.agJoinAll(false);step(10);const a=V.AGENTS[0];if(!a){skip('bots','no agents');return;}
-    const inv0=JSON.stringify(a.inv),led=JSON.stringify(a.led||null);
-    ok('agGive refuses a work (returns the count, inventory and ledger untouched)',V.agGive(a,{id:artId,count:1},'pickup')===1&&JSON.stringify(a.inv)===inv0&&JSON.stringify(a.led||null)===led);
-    V.spawnDrop(P.x+3,P.y+1,P.z,{id:B.DIRT,count:1},0,0,0);const dd=V.entities[V.entities.length-1];dd.age=1;
-    const ad=(()=>{V.spawnDrop(P.x+3,P.y+1,P.z,{id:artId,count:1},0,0,0);return V.entities[V.entities.length-1];})();ad.age=1;
-    const wasA=global.__vox.getAG().active;
-    ok('agTryPickup leaves a work drop alone',V.agTryPickup(ad)===false&&!ad.dead);
-    C.removeEnt(ad);C.removeEnt(dd);
-    give(B.CR_JUKE,2);tp(o.x+0.5,o.z+0.5,o.y);aim(o.x+3.5,o.y-0.02,o.z-2.5);rclick();
-    ok('agBreakBlock refuses an easel, a record player and a jukebox (the blocks stay)',[[o.x+2,o.y,o.z],[o.x+2,o.y,o.z+2],[o.x+3,o.y,o.z-3]].every(c=>V.agBreakBlock(a,c[0],c[1],c[2])===false&&V.getBlock(c[0],c[1],c[2])!==B.AIR));
-    ok('bots never pick a creativity block as building material or a dig target',[213,214,215,216].every(i=>!C.agPlaceable(i))&&C.agBreaking(a,1/60,o.x+2,o.y,o.z)===false);
-    V.agLeaveAll();step(5);});
-
   /* ===== 11. blocks that hold a work: break, load, refuse ===== */
   sec('holders',()=>{tp(o.x+0.5,o.z+0.5,o.y);const ek=(o.x+2)+','+o.y+','+o.z,eb=V.blockEnts.get(ek);
     aim(o.x+2.5,o.y+0.5,o.z+0.5);emptyHand();rclick();const w=V.crStartWork(CR().CRF.ctx,{w:128,h:64,d:'wip'});const wid=V.crItemId(w);esc();
@@ -277,32 +263,11 @@ boot.run(async()=>{
     ok('the work-count cap ('+CRC.MAX_WORKS+') stops new works',V.crInfo().works===CRC.MAX_WORKS&&/gallery is full/.test(CR().CRF.toast));
     for(const k of few)V.crDiscard(k);});
 
-  /* ===== 15. live bots: griefing on, three bots loose for 400 frames in a fresh studio around an easel, a record player, a hung
-     painting, a playing jukebox and a work on the floor. Nothing may crash, no bot may end up holding a work, everything stays. ===== */
-  sec('live bots',()=>{const a=V.AGENTS[0];V.setBrainMock(null);Object.assign(V.BRAIN,{mock:null,ok:false,off:true});
-    const o2=boot.studio(V,step,{dx:-70,keep:1});V.GR.botGrief=true;
-    give(B.CR_EASEL,0);aim(o2.x+2.5,o2.y-0.02,o2.z+0.5);rclick();give(B.CR_DECK,1);aim(o2.x+2.5,o2.y-0.02,o2.z+2.5);rclick();
-    give(B.CR_JUKE,2);aim(o2.x+3.5,o2.y-0.02,o2.z-2.5);rclick();
-    const pw=V.crNew('art',{w:64,h:64,d:'p'});V.crFinish(pw,'Bot Bait','Dan');const pid=V.crItemId(pw);V.crGiveDan({id:pid,count:1});
-    const sw=V.crNew('song',{d:{v:1}});V.crFinish(sw,'Bot Tune','Dan');const sid=V.crItemId(sw);V.crGiveDan({id:sid,count:1});
-    select(sid);aim(o2.x+3.5,o2.y+0.5,o2.z-2.5);rclick();
-    const hang=(()=>{tp(o2.x+3.5,o2.z+0.5,o2.y);select(pid);aim(o2.x+6.01,o2.y+1.5,o2.z+0.5);rclick();return cells(pid).length;})();tp(o2.x+0.5,o2.z+0.5,o2.y);
-    const fw=V.crNew('art',{w:64,h:64,d:'f'});V.crFinish(fw,'Floor Piece','Dan');const fid=V.crItemId(fw);V.spawnDrop(o2.x+1.5,o2.y+0.5,o2.z-1.5,{id:fid,count:1},0,0,0);
-    if(!V.AGENTS.length||!V.AGENTS[0].e)V.agJoinAll(false);step(5);
-    for(const b of V.AGENTS)if(b.e){b.e.x=o2.x+1.5+V.AGENTS.indexOf(b);b.e.z=o2.z-1.5;b.e.y=o2.y;}
-    let crash=null;try{step(400);}catch(e){crash=e;}
-    const botWorks=V.AGENTS.some(b=>b.inv.some(q=>q&&q.id>CRC.ID0));
-    ok('three bots loose for 400 frames (griefing on): no crash, no bot holds a work'+(crash?' ('+String(crash.message).slice(0,80)+')':''),!crash&&!botWorks&&hang===4);
-    const jb=V.blockEnts.get((o2.x+3)+','+o2.y+','+(o2.z-3));
-    ok('  ... the easel, record player, jukebox (still playing), the hung painting and the floor work are all still there',
-      V.getBlock(o2.x+2,o2.y,o2.z)===B.CR_EASEL&&V.getBlock(o2.x+2,o2.y,o2.z+2)===B.CR_DECK&&jb&&jb.id===sid&&cells(pid).length===4&&drops(fid).length===1);
-    V.GR.botGrief=false;V.agLeaveAll();step(5);});
-
   /* ===== 15b. fix lead (v6.2 review): works far from Dan, the Big Dingle, a world re-saved by v6.1 ===== */
   const mkArt=t=>{const n=V.crNew('art',{w:64,h:64,d:'f'});V.crFinish(n,t,'Dan');return V.crItemId(n);};
   const mkDisc=t=>{const n=V.crNew('song',{d:{v:1}});V.crFinish(n,t,'Dan');return V.crItemId(n);};
   const ckOf=(x,z)=>Math.floor(x/16)+','+Math.floor(z/16),loaded=(x,z)=>V.chunks.has(ckOf(x,z));
-  const purge=()=>{for(const e of V.entities)if(e.t==='mob'&&!e.dead&&!e.bot&&Math.hypot(e.x-V.P.x,e.z-V.P.z)<80){e.hurtT=0;V.hurtMob(e,99999,0,0);}};
+  const purge=()=>{for(const e of V.entities)if(e.t==='mob'&&!e.dead&&Math.hypot(e.x-V.P.x,e.z-V.P.z)<80){e.hurtT=0;V.hurtMob(e,99999,0,0);}};
   /* a work lying on the ground at x,z (Dan walks there, leaves it 6 blocks away to settle, comes back): its resting y */
   const lay=(id,x,z)=>{V.forceChunksNear(x,z);step(25);const y=V.surfaceTop(x,z)+1;tp(x-6.5,z+0.5,V.surfaceTop(x-7,z)+1);purge();
     V.spawnDrop(x+0.5,y+0.3,z+0.5,{id,count:1},0,0,0);step(40);const e=drops(id)[0];return e?e.y:-1;};

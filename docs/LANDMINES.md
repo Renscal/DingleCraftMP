@@ -64,7 +64,7 @@ Grep for names with `tools/grep-safe.sh`.
   music starts for a player with Sound: Off.
 - **The player's name is a display mapping.** Internally the player is always `'Dan'`; `pnText` maps `Dan` (any case) to
   the chosen name on screen and `pnBack` maps replies back. It must never touch the credit "Dan Dingle" on Dan's found
-  works, and `pnValid` refuses names the mapping would confuse (one letter, the AI players' names and nicknames, common
+  works, and `pnValid` refuses names the mapping would confuse (one letter, common
   short words).
 - **The UI rig checks every pair**: `tools/qa/ui/ui_qa.mjs` shows a toast in every title view and every menu and counts
   F3 and the player list in the HUD overlap pairs. A widget `hudLayout` hides (`visibility:hidden`) is not visible, so it
@@ -83,7 +83,7 @@ Grep for names with `tools/grep-safe.sh`.
 - **Hyperreal bodies are opt-in per call**: only `spawnMob` asks `makeMobMesh(mt,{hr:1})`. Figurines and other callers
   stay OG.
 - **No THREE constructors, `Math.random`, `Date.now`, `performance.now` or `fetch`** at the top level of PART 54 or in an
-  OG per-frame path. Never run Hyperreal under `botsmoke.js` (the cast models use `Math.random`).
+  OG per-frame path.
 - **Exports go in `TPEX`, never `TPX`** (`TPX` is the number 16, the atlas tile size).
 - **`vox_settings` is shared by every page on an origin**: a saved `tp:'hr'` makes every later page boot into
   Hyperreal. Put `tp:'og'` back after browser QA.
@@ -156,12 +156,6 @@ Grep for names with `tools/grep-safe.sh`.
 - **Nobody has heard his music or sound effects.** Verify offline (`m2_audio`) or with the parity rig in a muted browser.
 - A world that met him, opened in v6.2 or older, loses his state on the next autosave.
 
-## AI players (PART 53) and the brain
-
-- **Never run live bots early in a test**: they grief. Run them last, in their own area.
-- Point `window.__DINGLE_BRAIN` at a dead port in every browser rig. The brain spends real money.
-- The brain serves only files named `dinglecraft_v<X>.<Y>.html`: versions stay two-part.
-
 ## Tests and QA
 
 - Some update statics count exact lines that the update added to core files. If you rewrite one of those lines, run that
@@ -188,5 +182,5 @@ Grep for names with `tools/grep-safe.sh`.
   touching nothing: do it for private block entities only (`ntBeShared` false), as the purgatory trunk does.
 - The suites: a raw test player must send a `pose` before it can hit, pick up, hold a lock at a distance, or receive
   mobs. Commands are limited to 8 a second per player. `n_rules` freezes the day cycle so it can compare times exactly.
-- `AG_T` does not advance on a server (the AI players are off), so nothing in PART 58 may use it as a clock: `NET.acc` is
-  the clock, and `NET.dmgRef` is how a death tells a fresh `LASTDMG` from a stale one.
+- PART 58's clock is `NET.acc` (summed frame time), never the wall clock. `LASTDMG` carries no time: every hurt makes a
+  new object, and `NET.dmgRef` (the one from before the current hurt) is how a death tells a fresh record from a stale one.

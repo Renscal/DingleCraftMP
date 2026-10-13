@@ -82,15 +82,6 @@ function mg1Chew(dt,g){if(MGF.live||DEMON.dead||MGF.d>MGC.R_CHEW)return;MG1.chew
   if(MGF.band)nukeShake(0.06,0.25);
   if(MG1.L==='L0'&&MGF.band&&MGF.d<40)burstParticles(MGC.X,g.F+0.1,MGC.Z,B.CLOUDSTONE,4,0.3);}
 
-/* a bot left in the gut while he is dormant (no pluck runs then) is fished out after 3 s and tossed onto the Bone Pile in a heap */
-function mg1BotRescue(dt,g){MG1.botT=(MG1.botT||0)-dt;if(MG1.botT>0)return;MG1.botT=0.5;
-  if(MGF.live||typeof AGENTS==='undefined'||!AGENTS.length){if(MG1.botGut)MG1.botGut={};return;}
-  const gut=MG1.botGut||(MG1.botGut={}),b=mg1BonePile();
-  for(const a of AGENTS){const e=a&&a.e;if(!e||e.dead||a.dead||!a.online){delete gut[a&&a.name];continue;}
-    if(mgZone(e.x,e.y,e.z)!=='gut'){delete gut[a.name];continue;}
-    gut[a.name]=(gut[a.name]||0)+0.5;if(gut[a.name]<3)continue;delete gut[a.name];
-    const k=(MG1.tossed=(MG1.tossed||0)+1);e.x=b.x-1-(k%3);e.z=b.z+((k%3)-1)*1.2;e.y=b.y+0.2;e.vx=e.vy=e.vz=0;if(e.fallD!=null)e.fallD=0;a.x=e.x;a.y=e.y;a.z=e.z;
-    a.path=null;a.pf=null;burstParticles(e.x,e.y+0.5,e.z,B.NETHROCK,8,0.8);playSAt('thud',e.x,e.y,e.z);}}
 /* a ridden dragon refuses the lip: it flares, lands on the lip and sets Dan down (no damage, no text) */
 function mg1Dragon(g){const d=P.ride;if(!d||d.t!=='mob'||(d.mt!=='dragon'&&d.mt!=='dking'))return false;
   if(P.y>g.G+MGC.BAND_UP||P.y<g.GF-MGC.BAND_DN)return false;

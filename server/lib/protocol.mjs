@@ -34,7 +34,7 @@
 // The server also sends on its own: time (every 5 s), undrop (an item's 5 minutes are up), leave, sys, kick, and to one
 // player tp / give / mode (commands).
 import crypto from 'node:crypto';
-import { PROTO, DAY_LEN, MIN_GAME, LIMITS, CK_RE, LK_RE, BK_RE, DROP_ID_RE, DIMS, DIM_PFX, cleanRules, cmpVer } from './config.mjs';
+import { PROTO, DAY_LEN, MIN_GAME, LIMITS, RULES, CK_RE, LK_RE, BK_RE, DROP_ID_RE, DIMS, DIM_PFX, cleanRules, cmpVer } from './config.mjs';
 import { num, cleanName, cleanText, cleanStack, playerKey } from './world.mjs';
 import { runCommand, isOp, protRadius, permOf } from './commands.mjs';
 
@@ -331,7 +331,7 @@ export function handleMessage(S, net, c, m, size) {
       if (!isOp(S, c) && world.gr.cheats !== true) return net.send(c, { t: 'gr', gr: world.gr });   // put theirs back
       for (const k of Object.keys(m.gr)) {
         const v = m.gr[k];
-        if (/^[A-Za-z]\w{0,23}$/.test(k) && (typeof v === 'boolean' || typeof v === 'number') && k !== 'bots') world.gr[k] = v;
+        if (/^[A-Za-z]\w{0,23}$/.test(k) && (typeof v === 'boolean' || typeof v === 'number') && k in RULES) world.gr[k] = v;   // only rules this game has
       }
       S.dirty = true;
       net.broadcast({ t: 'gr', gr: world.gr }, c);

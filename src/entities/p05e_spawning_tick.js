@@ -2,7 +2,7 @@
 let spawnT=0;
 function countMobs(){
   let h=0,p=0;
-  for(const e of entities)if(e.t==='mob'&&!e.dead&&!e.bot&&!MOBT[e.mt].pnc){if(e.hostile)h++;else p++;}
+  for(const e of entities)if(e.t==='mob'&&!e.dead&&!MOBT[e.mt].pnc){if(e.hostile)h++;else p++;}
   return [h,p];
 }
 function torchNear(x,y,z){
@@ -20,7 +20,7 @@ function mobsTick(dt){
   spawnT=1.4;
   const [h,p]=countMobs();
   /* despawn far */
-  for(const e of entities)if(e.t==='mob'&&!e.dead&&!e.bot&&!MOBT[e.mt].boss&&!MOBT[e.mt].pnc&&!e.pkeep&&mobFarFromAll(e))removeEnt(e);
+  for(const e of entities)if(e.t==='mob'&&!e.dead&&!MOBT[e.mt].boss&&!MOBT[e.mt].pnc&&!e.pkeep&&mobFarFromAll(e))removeEnt(e);
   if(!GR.mobSpawn)return;
   const _an=mobAnchor();
   const ang=Math.random()*6.28,dist=14+Math.random()*22;
@@ -42,7 +42,7 @@ function mobsTick(dt){
     }
     return;
   }
-  if(h<14&&(P.mode!=='c'||_an!==P)){
+  if(h<14&&P.mode!=='c'){
     let y=-1;
     if(!sunUp()){
       const sy=surfaceTop(x,z);
@@ -73,7 +73,7 @@ function updateEntities(dt){
     if(e.dead)continue;
     /* the aether has no floor: things that tumble into the void are lost to it,
        not left standing on the invisible bottom of the world */
-    if(DIM==='aether'&&e.y<2&&AETHER_VOID_DESPAWN[e.t]&&!e.bot&&!(P&&P.ride===e)){
+    if(DIM==='aether'&&e.y<2&&AETHER_VOID_DESPAWN[e.t]&&!(P&&P.ride===e)){
       burstParticles(e.x,e.y+0.4,e.z,B.CLOUDSTONE,e.t==='drop'?4:8,0.5);
       if(P&&P.ride===e)P.ride=null;
       removeEnt(e);
@@ -108,7 +108,7 @@ function updateEntities(dt){
     else if(e.t==='abomb')updateBomb(e,dt);
     else if(e.t==='mcloud')updateMcloud(e,dt);
     else if(e.t==='pproj')puUpdate(e,dt);
-    else if(e.t==='mob'){if(e.bot)agBodyTick(e,dt);else if(e.pup)ntMobPup(e,dt);else updateMob(e,dt);}   /* e.pup: PART 58, a mob another player's game runs */
+    else if(e.t==='mob'){if(e.pup)ntMobPup(e,dt);else updateMob(e,dt);}   /* e.pup: PART 58, a mob another player's game runs */
   }
   if(HRE.corpses.length)hrTickCorpses(dt);
   pruneEnts();

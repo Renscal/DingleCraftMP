@@ -64,9 +64,7 @@ function mg2Stand(x,z){const cx=Math.floor(x),cz=Math.floor(z),F=mgF();
   return mg2Solid(cx,F-1,cz)&&!mg2Solid(cx,F,cz)&&!mg2Solid(cx,F+1,cz);}
 function mg2Mech(n){mgMech(n);}
 
-/* ---- the players he can see: Dan and the bots inside the arena (or the gut) ---- */
-function mg2Bots(){const out=[];if(typeof AGENTS==='undefined'||!AG_ACTIVE)return out;
-  for(const a of AGENTS){const e=a.e;if(!e||e.dead||a.dead||!a.online||a.dim!=='over')continue;out.push(a);}return out;}
+/* ---- the player he can see ---- */
 function mg2TId(t){return t===P?'Dan':(t&&t.name)||'?';}
 function mg2TPos(t){return t===P?P:(t.e||t);}
 function mg2Alive(t){if(t===P)return !!P&&!P.dead;return !!t&&!t.dead&&t.online&&!!t.e&&!t.e.dead;}
@@ -75,12 +73,11 @@ function mg2Eaten(t){return MG2.eaten.some(q=>q.a===t);}
 function mg2Targetable(t){if(!mg2InPlay(t)||mg2Eaten(t))return false;if(t===P&&(P.mode==='c'))return false;
   const g=MG2.grace[mg2TId(t)];if(g!=null&&g>mg2Now())return false;return true;}
 function mg2Who(){const by=HIT_BY;if(by==='Dan')return {k:'dan',id:'Dan',x:P.x,y:P.y,z:P.z,t:P};
-  if(by&&typeof agByName==='function'){const a=agByName(by);if(a&&a.e&&!a.dead)return {k:'bot',id:a.name,x:a.e.x,y:a.e.y,z:a.e.z,t:a};}
   return null;}
 /* the target score (bible 7.4): (Dan ? 1.4 : 1) x (damage dealt in the last 8 s + 10) / (distance + 4); Dan gets >= 70% of the tokens */
 function mg2Dealt(id){const now=mg2Now();let s=0;for(const h of MG2.dmg8)if(h[1]===id&&now-h[0]<8)s+=h[2];return s;}
 function mg2Pick(ox,oz){ox=ox==null?(MGF.boss?MGF.boss.x:MGC.X):ox;oz=oz==null?(MGF.boss?MGF.boss.z:MGC.Z):oz;
-  const c=[];if(mg2Targetable(P))c.push(P);for(const a of mg2Bots())if(mg2Targetable(a))c.push(a);
+  const c=[];if(mg2Targetable(P))c.push(P);
   if(!c.length)return null;const danIn=c.indexOf(P)>=0;
   if(danIn&&c.length>1){const tot=MG2.tokD+MG2.tokB;if(tot>0&&MG2.tokD/tot<MG_K.DAN_TOKENS)return P;}
   let best=null,bs=-1;for(const t of c){const p=mg2TPos(t),d=Math.hypot(p.x-ox,p.z-oz),s=(t===P?1.4:1)*(mg2Dealt(mg2TId(t))+10)/(d+4);if(s>bs){bs=s;best=t;}}
@@ -88,7 +85,7 @@ function mg2Pick(ox,oz){ox=ox==null?(MGF.boss?MGF.boss.x:MGC.X):ox;oz=oz==null?(
 function mg2Token(t){if(t===P)MG2.tokD++;else MG2.tokB++;MGT.tokens[mg2TId(t)]=(MGT.tokens[mg2TId(t)]||0)+1;}
 
 /* ---- damage to players (bible 7.1): pierce through the engine's absorb, ticks, the spacing rule, attribution ---- */
-function mg2Armor(t){if(t===P)return Math.min(0.8,armorPts()*0.04);return Math.min(0.8,(typeof agArmorPts==='function'?agArmorPts(t):0)*0.04);}
+function mg2Armor(t){return t===P?Math.min(0.8,armorPts()*0.04):0;}
 function mg2Hit(t,n,p,how,opt){opt=opt||{};if(!t||!mg2Alive(t))return 0;
   if(CUT.on&&CUT.script)return 0;                                                          /* his scenes: players are invulnerable */
   if(t!==P&&mg2Eaten(t))return 0;
@@ -98,22 +95,20 @@ function mg2Hit(t,n,p,how,opt){opt=opt||{};if(!t||!mg2Alive(t))return 0;
   const A=mg2Armor(t),pp=p==null?MG_K.PIERCE:p,eff=n*(1-A*(1-pp)),pre=A<1?eff/(1-A):eff;
   let lost=0;
   const force=opt.tick||opt.atk;                                                           /* his impacts and ticks always land; adds respect i-frames */
-  if(t===P){if(P.mode==='c')return 0;LASTDMG={by:'Malgorath',how:'mg:'+(how||'hit'),t:AG_T};const h0=P.hp,s=P.hurtT;if(force)P.hurtT=0;
+  if(t===P){if(P.mode==='c')return 0;LASTDMG={by:'Malgorath',how:'mg:'+(how||'hit')};const h0=P.hp,s=P.hurtT;if(force)P.hurtT=0;
     if(opt.kx!=null)damagePlayer(pre,opt.kx,opt.kz);else damagePlayer(pre);
     if(opt.tick&&!P.dead)P.hurtT=s;lost=h0-P.hp;}
-  else{const e=t.e,h0=t.hp,s=e.hurtT;if(force)e.hurtT=0;try{agHurt(t,pre,'Malgorath',opt.kx,opt.kz,'mg:'+(how||'hit'));}catch(err){mgFail('agHurt',err);}
-    if(opt.tick&&t.e)t.e.hurtT=s;lost=h0-(t.hp||0);}
   if(opt.atk&&!opt.tick)MG2.imp[id]={t:now,big:n>=12};
   if(lost>0){MGT.events.push('hit:'+id+':'+how+':'+lost.toFixed(1));if(MGT.events.length>64)MGT.events.shift();}
   return lost;}
 /* the chomp: 10 true damage (no absorb, no chew, ignores i-frames), the POV beat, then the spit 12-16 m onto a solid cell, 1.0 s
    of i-frames and no fall damage. Bots are never chomped: they are swallowed (bible 7.5, 17.1) */
 function mg2Chomp(t,how,o){o=o||{};if(!t||!mg2Alive(t))return 0;
-  if(t!==P){mg2Swallow(t,o.why||'chomp');return 0;}
+  if(t!==P)return 0;
   if((CUT.on&&CUT.script)||P.mode==='c')return 0;
   MGT.chomps++;mg2Mech('chomp');MG2.chompHow=how||'chomp';
   let lost=0;
-  if(P.mode!=='c'&&!GR.god){LASTDMG={by:'Malgorath',how:'mg:chomp',t:AG_T};P.hurtT=0;const h0=P.hp;P.hp-=MG_K.CHOMP;hurtFlash=0.5;playS('hurt');
+  if(P.mode!=='c'&&!GR.god){LASTDMG={by:'Malgorath',how:'mg:chomp'};P.hurtT=0;const h0=P.hp;P.hp-=MG_K.CHOMP;hurtFlash=0.5;playS('hurt');
     if(P.hp<=0){P.hp=0;die();}drawStats();lost=h0-P.hp;}
   MGA.jaw=0;MGA.split=0;MG2.pov=0.35;mg2S('mg_chomp');mg2Shake(0.6,0.4);{const f=mg2Fx('chomp');if(f)try{f(0.35);}catch(err){}}
   if(!P.dead){const m=mg2Mouth(),dir=o.dir!=null?o.dir:Math.atan2(P.z-MGC.Z,P.x-MGC.X);
@@ -206,7 +201,6 @@ function mg2PlaceIdle(e,r){const F=mgF();e.yaw=e.yaw||0;
   else{e.x=MGC.X;e.z=MGC.Z;e.y=r===3?F-13:F-8;}}
 function mg2Wake(cause){if(DEMON.dead||MG2.scene)return false;if(MGF.live&&cause!=='skip')return false;
   cause=cause||'plate';const first=!MALG.met;MALG.met=1;MGF.why=cause;
-  try{mg2Bus('wake',cause);}catch(err){}
   if(cause==='skip'){mg2StartRound(MALG.round,'skip');return true;}
   if(first){mg2Intro(cause);return true;}
   mg2StartRound(MALG.round,cause);return true;}
@@ -220,11 +214,11 @@ function mg2StartRound(r,cause){r=Math.max(1,Math.min(3,r|0||1));const W=mg2W();
   if(cause!=='skip'&&cause!=='scene'){if(W.door)try{W.door(false);}catch(err){mgFail('door',err);}}
   else if(W.door)try{W.door(false);}catch(err){}
   if(W.clearTable)try{W.clearTable();}catch(err){mgFail('clearTable',err);}
-  mg2Grace(P);for(const a of mg2Bots())mg2Grace(a);
+  mg2Grace(P);
   MGL.live=1;MGL.round=r;MGL.phase='round';MGA.round=r;
   if(cause!=='skip'&&cause!=='scene'){mg2S('mg_roar');mg2Shake(0.35,0.6);MG2.beat=1.2;}
   if(r===3){MG2.edge=MG2K.R3.EDGE0;mg2Wave('3a');}
-  mgEmit('onRound',r,'start');mg2Bus('round',r);return true;}
+  mgEmit('onRound',r,'start');return true;}
 function mg2Dormant(why){if(!MGF.live&&!MG2.scene&&!mg2Boss())return;why=why||'away';
   if(MG2.scene&&why!=='dim'&&why!=='far')return;                                           /* a scene finishes first */
   MGF.live=0;MGF.phase='idle';MGF.why=why;mg2Clear();
@@ -234,21 +228,19 @@ function mg2Dormant(why){if(!MGF.live&&!MG2.scene&&!mg2Boss())return;why=why||'a
   const W=mg2W();if(W.reset)try{W.reset(MALG.round,{why,instant:why==='death'||why==='skip'});}catch(err){mgFail('reset',err);}
   if(W.door)try{W.door(true);}catch(err){}
   if(why!=='death'&&why!=='skip'&&why!=='far'&&why!=='dim'){mg2Burst('dust',MGC.X,mgF()+1,MGC.Z,{id:B.STONE,n:20,pw:2});mg2S('mg_bury');}
-  mg2Bus('dormant',why);}
+}
 function mg2Clear(){mg2CloseWin('reset');if(MG2.atk&&MG2.atk.free)try{MG2.atk.free(MG2.atk);}catch(err){}MG2.atk=null;mg2FreeAll();
   MG2.r3=null;MG2.inh=null;MG2.swat=null;
   MG2.throws.length=0;MG2.holds.length=0;MG2.haz.length=0;MG2.addQ.length=0;if(MG2.ride)mg2RideEnd();MG2.pluck=null;MG2.spit=null;MG2.holdDan=null;MG2.ride=null;MG2.pov=0;
-  for(const q of MG2.eaten.splice(0))mg2Belch(q,1);
   for(const a of MG2.adds.splice(0))if(!a.dead)removeEnt(a);MG2.parts.length=0;MG2.warn=null;MGT.atk=null;MGT.hint=null;
   {const f=mg2Fx('props');if(f)try{f();}catch(err){}}
   MGA.tel=[0,0,0,0,0];MGA.commit=0;MGA.vuln=0;MGA.jaw=0;MGA.split=0;MGA.tongue=0;MGA.armL={pose:'rest',t:0};MGA.armR={pose:'rest',t:0};}
 function mg2RoundEnd(){const e=mg2Boss();if(!e)return;const r=MGF.round||MALG.round,preview=P.mode==='c'||!!GR.instaKill;
   mg2CloseWin('end');if(MG2.atk&&MG2.atk.free)try{MG2.atk.free(MG2.atk);}catch(err){}MG2.atk=null;mg2FreeAll();
   for(const a of MG2.adds.splice(0))if(!a.dead){mg2Burst('ash',a.x,a.y+0.8,a.z,{id:B.STONE,n:6});removeEnt(a);}
-  MALG.deaths[r-1]=0;MG2.hide=0;mg2Bus('roundEnd',r);
+  MALG.deaths[r-1]=0;MG2.hide=0;
   if(r<3){MALG.round=r+1;e.hp=mg2Start(r+1);mg2Trans(r,preview);return;}
   mg2Death(e,preview);}
-function mg2Bus(ev,a){try{if(typeof mg2BotEvent==='function')mg2BotEvent(ev,a);}catch(err){mgFail('bots',err);}}
 
 /* ---- Dan's death in a live round (bible 15.2): the vacuum, the hat, the heads, the reset, the Bone Pile, the gloat and the belch ---- */
 function mg2OnDie(){if(DIM!=='over'||DEMON.dead)return false;
@@ -264,14 +256,12 @@ function mg2OnDie(){if(DIM!=='over'||DEMON.dead)return false;
   if(!GR.keepInv){const g=[];for(let i=0;i<36;i++){const st=P.inv[i];if(st){g.push([i,JSON.parse(JSON.stringify(st))]);P.inv[i]=null;}}
     if(g.length){MALG.gut=(MALG.gut||[]).concat(g);took=true;mg2Vacuum(g.length);}}
   mg2Dormant('death');
-  for(const a of mg2Bots()){const p=a.e;if(p&&mgIn(p.x,p.y,p.z))mg2BotToPile(a);}
-  mg2Bus('danDeath',r);
+  
   return took;}
 function mg2OnRespawn(){const d=MG2.deathAt;MG2.deathAt=null;if(!d||DEMON.dead)return;
   const b=mgBonePile();P.x=b.x;P.y=b.y;P.z=b.z;P.yaw=b.yaw||0;P.pitch=0;P.vx=P.vy=P.vz=0;P.fallD=0;
   MG2.belchT=MG_K.BELCH;MG2.gloat={t:MG_K.GLOAT,d};mg2S('mg_chew');}
 function mg2Vacuum(n){const m=mg2Mouth();for(let i=0;i<Math.min(8,n);i++)MG2.fly.push({x:P.x,y:P.y+1,z:P.z,tx:m.x,ty:m.y,tz:m.z,t:0,d:0.9+i*0.08,k:'in'});mg2S('mg_vacuum');}
-function mg2Belch(q,instant){if(q&&q.a){mg2BotOut(q.a,instant);return;}}
 function mg2DoBelch(){const g=MALG.gut;MALG.gut=null;if(!g||!g.length)return;let spill=0;
   for(const [i,st] of g){if(i>=0&&i<36&&!P.inv[i])P.inv[i]=st;else{const left=invAddTo(P.inv,st);if(left>0){spawnDrop(P.x,P.y+0.6,P.z,{...st,count:left},0,2,0);spill++;}}}
   try{redrawHotbar();refreshHand();}catch(err){}
@@ -311,14 +301,14 @@ function mg2Tick(dt){
     else if(!near||!band){const e=mg2Boss();if(e&&MGF.d>MGC.R_GRADE){removeEnt(e);MGF.boss=null;}}
     if(inArena&&band&&MG2.reform<=0&&!(CUT.on&&CUT.script)&&!MG2.gloat){
       if(MALG.met)mg2Wake('plate');else if(mg2W().stub)mg2Wake('plate');}
-    mg2Hud(dt);mg2Fly(dt);mg2BotTick(dt);return;}
+    mg2Hud(dt);mg2Fly(dt);return;}
   const e=mg2EnsureBoss(MGF.round);
   MGF.attT+=dt;if(MG2.beat>0)MG2.beat=Math.max(0,MG2.beat-dt);
   mg2Away(dt);if(!MGF.live){mg2Hud(dt);return;}
   if(MGF.d>MGC.R_GRADE){mg2Dormant('far');return;}
   mg2Waves(e);mg2AddsTick(dt);mg2Eat(dt);
   if(MGF.round===3)mg2R3Tick(e,dt);
-  mg2BotTick(dt);mg2Hud(dt);mg2Fly(dt);mg2Hint();}
+  mg2Hud(dt);mg2Fly(dt);mg2Hint();}
 /* his wave triggers by HP (bible 11) */
 function mg2Waves(e){const r=MGF.round;for(const k in MG2K.WAVES){const w=MG2K.WAVES[k];if(w.r!==r||MG2.waves[k])continue;if(e.hp<=w.at)mg2Wave(k);}}
 
@@ -360,7 +350,7 @@ function mg2Anim(e,dt,r){const A=MGA;A.round=r;A.x=e.x;A.y=e.y;A.z=e.z;A.yaw=e.y
   A.crack.hue=r-1;A.crack.i=MG2.scene&&MG2.scene.k==='death'?A.crack.i:(0.55+0.25*Math.sin(MG2.vis.t*A.heart/60*Math.PI*2));
   A.rim=1;A.hat=MALG.hat;A.heads=MALG.heads|0;A.strata.tree=r===3?1:0;
   if(A.stance!=='stun'&&A.stance!=='slump'&&A.stance!=='dead'){const lt=MG2.lookT;A.lookX=lt?lt.x:P.x;A.lookY=lt?lt.y:P.y+1.5;A.lookZ=lt?lt.z:P.z;}
-  const items=(MG2.bellyLit&&MG2.bellyLit>mg2Now())?[{k:'tnt'}]:[];for(const q of MG2.eaten)items.push({k:'bot',id:q.a.name});if(MALG.offer)items.push({k:'item',id:MALG.offer.id});
+  const items=(MG2.bellyLit&&MG2.bellyLit>mg2Now())?[{k:'tnt'}]:[];if(MALG.offer)items.push({k:'item',id:MALG.offer.id});
   if((MALG.deaths[(r||1)-1]|0)>=4)items.push({k:'dan'});if(MG2.bellyCows>mg2Now())items.push({k:'cow'});if(r===3&&MG2.r3&&MG2.r3.ph==='swallow')items.push({k:'sun'});A.belly.items=items.slice(-3);
   MGL.heart=A.heart;MGL.pulse=0.5+0.5*Math.sin(MG2.vis.t*A.heart/60*Math.PI*2);MGL.flash=Math.max(0,MGL.flash-dt*4);MGL.light=A.light;
   MGL.live=MGF.live?1:0;MGL.round=r;MGL.w=Math.max(0,Math.min(1,(MGC.R_GRADE-MGF.d)/100));
@@ -418,8 +408,8 @@ function mg2GutRules(dt){if(!MGF.live||MG2.scene)return;const F=mgF(),GF=mgGF();
     if(p.onGround||p.y<GF+0.6)g.t+=dt;
     if(p.y<GF+0.6&&Math.hypot(p.x-MGC.X,p.z-MGC.Z)>6.5){g.bile+=dt;if(g.bile>=MG_K.BILE_T){g.bile=0;if(t===P&&P.mode!=='c'&&!GR.god){mg2True(P,MG_K.BILE,'bile');}}}
     if(g.t>=MG_K.PLUCK&&!MG2.pluck&&!(MG2.holdDan&&MG2.holdDan.k==='hold'))mg2StartPluck(t);};
-  check(P);for(const a of mg2Bots())check(a);}
-function mg2True(t,n,how){if(t!==P||P.dead||P.mode==='c'||GR.god||(CUT.on&&CUT.script))return 0;LASTDMG={by:'Malgorath',how:'mg:'+how,t:AG_T};
+  check(P);}
+function mg2True(t,n,how){if(t!==P||P.dead||P.mode==='c'||GR.god||(CUT.on&&CUT.script))return 0;LASTDMG={by:'Malgorath',how:'mg:'+how};
   const s=P.hurtT;P.hurtT=0;P.hp-=n;hurtFlash=Math.max(hurtFlash,0.25);if(P.hp<=0){P.hp=0;die();}else P.hurtT=s;drawStats();return n;}
 
 /* ---- the swat (bible 7.6): flying, hovering and perching over his plate are answered with a clap ---- */
@@ -462,7 +452,7 @@ function mg2Pluck(e,dt){const q=MG2.pluck;if(!q)return;const p=mg2TPos(q.tg),F=m
     if(q.tg===P){P.x=x;P.y=y;P.z=z;P.vx=P.vy=P.vz=0;P.fallD=0;}else{q.tg.e.x=x;q.tg.e.y=y;q.tg.e.z=z;q.tg.e.vy=0;}
     MGA.armR.x=x;MGA.armR.y=y;MGA.armR.z=z;
     if(k>=1){MG2.pluck=null;MGA.armR={pose:'rest',t:0};
-      if(r===3){if(q.tg===P){MG2.chompHow='fall';mg2Chomp(P,'fall');}else mg2Swallow(q.tg,'pluck');return;}
+      if(r===3){if(q.tg===P){MG2.chompHow='fall';mg2Chomp(P,'fall');}return;}
       const land=mg2PluckLand(p);
       if(q.tg===P){mg2True(P,MG_K.PLUCK_DMG,'bile');MG2.daze=MG_K.DAZE;mg2Grace(P,1.5);}else mg2Grace(q.tg,1.5);
       mg2Throw(q.tg,land.x,land.z,0.45,1.0,{noFall:1});mg2S('mg_slap',land.x,F,land.z);mg2Shake(0.3,0.3);}}}
@@ -532,7 +522,6 @@ var MG2DEATH={slap:'was slapped flat by Malgorath',swat:'was swatted by Malgorat
 function mg2DeathMsg(name,by,how){const s=MG2DEATH[how];return s?name+' '+s:null;}
 MGREG.fight={tick:mg2Tick,fed:mg2Fed,wake:mg2Wake,dormant:mg2Dormant,brain:mg2Brain,preHurt:mg2PreHurt,onKill:function(e){mg2AddKilled(e);},
   onDie:mg2OnDie,onRespawn:mg2OnRespawn,steal:mg2Steal,deathMsg:mg2DeathMsg,
-  botShield:function(a,by,how){return mg2BotShield(a,by,how);},botKeep:function(a){return mg2BotKeep(a);},botSpawn:function(a){return mg2BotSpawn(a);},
   blinkFail:function(){return mg2BlinkFail();},grapCut:function(){return mg2GrapCut();},swingMiss:function(e,d,hit){mg2SwingMiss(e,d,hit);},
   hit:mg2Hit,chomp:mg2Chomp,skipTo:mg2SkipTo,inhaling:function(){return mg2Inhaling();},
   get mechList(){const stub=!!(MGREG.world&&MGREG.world.stub);

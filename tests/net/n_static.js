@@ -56,16 +56,16 @@ boot.run(async()=>{
     ['core/p07h_boot_loop.js',' ntFrame(dt);'],   /* the space: hrEntFrame(dt); ends the same way */
     ['core/p04d_player_update.js','if(NET.on&&ntMelee(e,d,Math.min(tgt?tgt.t:9,hit?hit.t:9))){MINE.active=false;MINE.prog=0;return;}'],
     ['core/p04c_player.js','if(NET.on)ntDied();'],
-    ['ai_players/a9_ui.js','if(NET.on)ntChat(t);'],
-    ['ai_players/a9_ui.js','if(NET.on)ntTabRows(rows);'],
+    ['ui/p53_chat.js','if(NET.on)ntChat(t);'],
+    ['ui/p53_chat.js','if(NET.on)ntTabRows(rows);'],
     ['entities/p05a_entities_drops.js','if(NET.on)ntDropSpawned();'],
     ['entities/p05a_entities_drops.js','if(ds<0.75&&!(e.nid&&ntDropTake(e))){'],
-    ['ai_players/a9_ui.js','if(NET.on){ntCmd(t);return;}'],
+    ['ui/p53_chat.js','if(NET.on){ntCmd(t);return;}'],
     ['features/p17_beds.js','if(NET.on&&ntSleep())return;'],
     ['ui/p06d_modal_inventory.js','if(NET.on&&bek&&ntBeAsk(kind,bek))return;'],
     ['core/p04d_player_update.js','||(NET.on&&ntGuard(hit.x,hit.z))){MINE.active=false;MINE.prog=0;return;}'],
     ['core/p04d_player_update.js','if(!blocked&&NET.on&&ntGuard(tx,tz))blocked=true;'],
-    ['entities/p05e_spawning_tick.js','else if(e.pup)ntMobPup(e,dt);else updateMob(e,dt);}'],
+    ['entities/p05e_spawning_tick.js',"else if(e.t==='mob'){if(e.pup)ntMobPup(e,dt);else updateMob(e,dt);}"],
     ['entities/p05d_mobs.js','if(e.pup){ntMobHit(e,dmg,kx,kz);return;}'],
     ['entities/p05b_falling_arrows_tnt.js','if(NET.on)ntBoom(x,y,z,r,byMob);'],
     ['entities/p05b_falling_arrows_tnt.js',"if(NET.on&&e.owner==='p'&&ntShot(nx,ny,nz,e.dmg,e.vx,e.vz)){removeEnt(e);return;}"],
@@ -79,7 +79,7 @@ boot.run(async()=>{
       count(readSrc('world/p37_dimensions.js'),"e.t==='drop'&&e.st&&!e.nid){out.push(")===1&&count(readSrc('entities/p05a_entities_drops.js'),'&&e.st.dur==null&&!NET.on){')===1);
     ok('e.nid is only ever set by PART 58',!/\.nid\s*=[^=]/.test(outside));
     ok('e.pup and e.rid are only ever set by PART 58, and another player\'s mob never goes into the dimension stash',!/\.(pup|rid)\s*=[^=]/.test(outside)&&count(readSrc('world/p37_dimensions.js'),"if(e.t==='mob'&&e.pup){removeEnt(e);continue;}")===1);
-    ok('only the ordinary mobs are shared (no boss, dragon, villager, Purgatory or Malgorath cast)',Object.keys(V.MOBT).filter(mt=>V.ntMobShared({t:'mob',mt})).every(mt=>{const T=V.MOBT[mt];return !T.boss&&!T.fly&&!T.pmob&&!T.mg&&!T.pnc&&!T.nuke&&mt!=='alien';})&&V.ntMobShared({t:'mob',mt:'zombie'})&&!V.ntMobShared({t:'mob',mt:'zombie',bot:1})&&!V.ntMobShared({t:'drop'}));
+    ok('only the ordinary mobs are shared (no boss, dragon, villager, Purgatory or Malgorath cast)',Object.keys(V.MOBT).filter(mt=>V.ntMobShared({t:'mob',mt})).every(mt=>{const T=V.MOBT[mt];return !T.boss&&!T.fly&&!T.pmob&&!T.mg&&!T.pnc&&!T.nuke&&mt!=='alien';})&&V.ntMobShared({t:'mob',mt:'zombie'})&&!V.ntMobShared({t:'mob',mt:'zombie',pkeep:1})&&!V.ntMobShared({t:'drop'}));
     ok('ntFrame and ntLeave guard themselves; every other hook is behind NET.on',/function ntFrame\(dt\)\{\n  if\(!NET\.on\|\|!P\)return;/.test(N)&&/function ntLeave\(\)\{\n  if\(!NET\.on&&NET\.st==='off'&&!NET\.ws\)return;/.test(N));}
 
   /* ---- 5. the title ---- */

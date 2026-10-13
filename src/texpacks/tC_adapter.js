@@ -1,9 +1,9 @@
 /* ---- PART 54: tC_adapter.js ---- */
 /* ===================================================================== */
 /* PART 54 — tC_adapter.js (Package C): the Hyperreal cast               */
-/* 11 models (src/texpacks/models, spliced into hrLoadModels())          */
-/* replace 7 mob types, Dan (third person + the first-person fist) and   */
-/* the three AI players, with corpses so the death animations play.       */
+/* 8 models (src/texpacks/models, spliced into hrLoadModels())           */
+/* replace 7 mob types and Dan (third person + the first-person fist),   */
+/* with corpses so the death animations play.                            */
 /* ===================================================================== */
 /* Module 'ents' (order 30, optional: if the cast cannot install, Hyperreal runs with OG mobs).
    Opt-in per call: only spawnMob asks makeMobMesh for a Hyperreal body ({hr:1}); figurines and every
@@ -17,8 +17,7 @@ var HRE={on:false,installed:false,broken:false,t:0,n:0,corpses:[],cx:0,cz:0,far2
   F:null,MX:null,SP:null,shared:null,uses:null,ogPl:null,dummy:null,img:null,tex:null,texs:[],es:1,aniso:8,
   emb:false,devBase:null,warmG:null,prewarmed:false,ps:null,pH:null,psF:-1,pAtk:0,pSw:0,mineT:0};
 const HR_MOB={zombie:'zombie',skel:'skeleton',boomer:'boomer',spider:'spider',pig:'pig',cow:'cow',sheep:'sheep'};   /* alien: no HR model (renders OG in Hyperreal) */
-const HR_BOT={BunkerBrad:'bunkerbrad',xx_lilcreepah_xx:'lilcreepah',honeybee_mc:'honeybee'};   /* names = AG_DEF keys */
-const HR_CAST=['player','bunkerbrad','lilcreepah','honeybee','zombie','boomer','skeleton','spider','pig','cow','sheep'];
+const HR_CAST=['player','zombie','boomer','skeleton','spider','pig','cow','sheep'];
 const HR_SUF={_basecolor:'b',_normal:'n',_roughness:'r'};
 const hrWrap=a=>a-6.283185307179586*Math.round(a/6.283185307179586);   /* e.yaw is unbounded; OG ((x+3π)%2π)−π breaks below −3π */
 const hrC25=v=>v>25?25:(v<-25?-25:v);
@@ -41,7 +40,7 @@ function hrBuild(name){if(!HRE.installed||HRE.broken||!window.HR||!HR.MODELS||!H
   for(const o of own)hrEntUse(o);                          /* once per instance: a material on 5 meshes is still this instance's own */
   return {hr,name,s:hrS(1+(Math.random()*997|0)),pv:new THREE.Vector3(),k:HRE.n++,acc:0,lod:-1,meshes,tiny,G:null,r:2,
     pSw:0,pinT:0,pPl:-1,hfT:0,vm:null,tagM};}
-/* the materials the game may flash (hurtMob red, boomer white strobe, agHurt): this instance's own clones only,
+/* the materials the game may flash (hurtMob red, boomer white strobe): this instance's own clones only,
    never a shared cache, never one with authored emissive (the boomer's core, Brad's lenses, eyeshine) */
 function hrEntFlashMats(H){const out=[];for(const m of H.hr.mats||[]){if(!m||!m.emissive||HRE.shared.has(m)||out.includes(m))continue;
   const e=m.emissive;if(e.r+e.g+e.b>0||m.emissiveMap)continue;out.push(m);}return out;}
@@ -169,7 +168,6 @@ function hrEntSwapIn(q){
   HRE.on=true;hrEntRescale((HRQ[q]&&HRQ[q].entScale)||1);
   hrEntPrewarm();                                           /* removed again on the 'pack' event, after TP.warm(scene) */
   for(const e of entities){if(e.t!=='mob'||e.dead||!e.mesh)continue;
-    if(e.bot){hrBotSwapIn(e);continue;}
     if(!HR_MOB[e.mt]||e.hrM)continue;
     const r=makeMobMesh(e.mt,{hr:1});if(!r||!r.hrM)continue;
     e._og={G:e.mesh,legs:e.legs,mats:e.mats};scene.remove(e.mesh);
@@ -180,7 +178,6 @@ function hrEntDisable(){
   hrEntWarmDone();
   if(HRE.corpses.length)hrClearCorpses();
   for(const e of entities){if(e.t!=='mob'||e.dead)continue;
-    if(e.bot){hrBotSwapOut(e);continue;}
     if(!e.hrM)continue;
     if(e.mesh)scene.remove(e.mesh);hrFree(e.hrM);e.hrM=null;
     let G,legs,mats;
@@ -213,6 +210,6 @@ Object.assign(TPEX,{
   hrCorpseCount:()=>HRE.corpses.length,
   hrInstallFake,
   /* test seams (headless suites and browser QA): internals, never used by the game */
-  hrEnt:{HRE,HR_MOB,HR_BOT,HR_CAST,hrWrap,hrS,hrBuild,hrStep,hrFree,hrAccel,hrMobAmax,hrMobPitch,hrHeadroom,hrNearestCow,
+  hrEnt:{HRE,HR_MOB,HR_CAST,hrWrap,hrS,hrBuild,hrStep,hrFree,hrAccel,hrMobAmax,hrMobPitch,hrHeadroom,hrNearestCow,
     hrEntFlashMats,hrEntTexURL,hrEntLoadTex,hrEntRescale,hrClearCorpses,hrPlayerState,
     mk:(mt,o)=>makeMobMesh(mt,o),pl:()=>plModel,hand:()=>handG,cam:()=>camMode}});

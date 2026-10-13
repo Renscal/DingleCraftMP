@@ -310,9 +310,7 @@ function piMittTick(dt){const r=piS.raise,held=heldStack(),hasM=held&&held.id===
       const K=PREG.proj[e.kind],pj={kind:e.kind,pcatch:e.pcatch,mesh:null};puRemove(e);
       if(K&&K.mesh&&typeof THREE!=='undefined'&&scene){try{pj.mesh=K.mesh({kind:pj.kind,pcatch:pj.pcatch,held:1});if(pj.mesh)scene.add(pj.mesh);}catch(err){pj.mesh=null;}}
       piCatch({proj:pj});break;}
-    if(!piS.held&&typeof AG_ACTIVE!=='undefined'&&AG_ACTIVE)for(const a of AGENTS){const g=a.pgrab,b=a.e;if(!g||g.k!=='thrown'||!b||b.dead||a.dim!==DIM)continue;
-      const dx=b.x-P.x,dz=b.z-P.z,d=Math.hypot(dx,b.y+0.9-(P.y+1.2),dz);if(d>2.0||(dx*fx+dz*fz)/Math.max(0.01,Math.hypot(dx,dz))<0.3)continue;
-      a.pgrab={k:'held',by:'Dan',src:P,x:P.x+fx*0.8+rx*0.5,y:P.y+0.9,z:P.z+fz*0.8+rz*0.5,vx:0,vy:0,vz:0,spd:0,until:MP.clock+4,onEnd:null};piCatch({a});break;}}
+    }
   const H=piS.held;if(!H)return;
   if(!hasM||P.dead){piRelease(false);return;}
   const age=MP.clock-H.t;
@@ -431,10 +429,10 @@ PREG.overTick.push(function piOverTick(dt){piS.ot+=dt;
       T.m.position.set(E[0]+dx*0.5,E[1]-0.2+dy*0.5,E[2]+dz*0.5);T.m.scale.set(0.06,0.06,d);T.m.lookAt&&T.m.lookAt(T.x,T.y,T.z);}
     if(T.t<=0){if(T.m)scene.remove(T.m);piS.tongue=null;}}});
 function piUseSvPlunger(st,hit,dt,rEdge){if(!rEdge||DIM==='puppet')return DIM!=='puppet';P.swing=1;P.useT=0.4;mwS('pg_plunger',P.x,P.y+1,P.z);
-  const me=typeof ownIdx==='function'?ownIdx('Dan'):-1,cx0=Math.floor((P.x-48)/CH),cx1=Math.floor((P.x+48)/CH),cz0=Math.floor((P.z-48)/CH),cz1=Math.floor((P.z+48)/CH);let n=0;
+  const cx0=Math.floor((P.x-48)/CH),cx1=Math.floor((P.x+48)/CH),cz0=Math.floor((P.z-48)/CH),cz1=Math.floor((P.z+48)/CH);let n=0;
   for(let cx=cx0;cx<=cx1;cx++)for(let cz=cz0;cz<=cz1;cz++){const ch=chunks.get(ckey(cx,cz));if(!ch)continue;const bl=ch.bl;
     for(let i=0;i<bl.length;i++){if(bl[i]!==B.TNT)continue;const lx=(i/(WH*CH))|0,rem=i-lx*WH*CH,y=(rem/CH)|0,lz=rem-y*CH,x=cx*CH+lx,z=cz*CH+lz;
-      if(Math.hypot(x+0.5-P.x,y+0.5-P.y,z+0.5-P.z)>48)continue;const o=typeof BOWN!=='undefined'?BOWN.get(bkey(x,y,z)):undefined;if(o!==undefined&&o!==me)continue;
+      if(Math.hypot(x+0.5-P.x,y+0.5-P.y,z+0.5-P.z)>48)continue;
       piS.tnt.push({x,y,z,t:0.5});n++;}}
   showToast(n?'Something, somewhere, goes click.':'Nothing of yours is wired to it.');return true;}
 function piUseSvGlove(st,hit,dt,rEdge){if(DIM==='puppet')return false;if(!rEdge)return true;

@@ -22,7 +22,7 @@ function mg2Cut(k,o){const s=Object.assign({k,t:0,beats:o.beats||[],end:o.end,sh
      hides while the scene runs (applyCamMode puts it back on the first ordinary frame) */
   const hide=function(){if(typeof handG!=='undefined'&&handG)handG.visible=false;};
   mgCut({lines:o.lines||[],end:o.end,cam:f3?function(t){hide();try{f3(t);}catch(err){f3=null;mgFail('cam:'+k,err);mg2Cam(s,t);}}:function(t){hide();mg2Cam(s,t);},onEnd:function(){mg2SceneDone(s);}});
-  mg2Bus('scene',k);return s;}
+  return s;}
 function mg2SceneTick(dt){const s=MG2.scene;if(!s)return;
   s.t=(CUT.on&&CUT.script)?CUT.t:s.t+dt;
   if(s.noSkip&&CUT.on)CUT._sk=true;                                                         /* the first burst cannot be skipped */
@@ -54,7 +54,7 @@ function mg2SafeEveryone(){const F=mgF(),W=mg2W();
     if(z==='arena'&&mg2Stand(p.x,p.z)&&p.y>=F-0.6)continue;
     const s=mg2Land(p.x,p.z,{rmin:MALG.round===3?12.8:9,rmax:MALG.round===3?22.5:22.5});p.x=s.x;p.y=s.y+0.05;p.z=s.z;p.vx=p.vy=p.vz=0;if(t===P)P.fallD=0;}
   if(typeof NUKE!=='undefined')NUKE.flash=Math.max(NUKE.flash,0.5);}
-function mg2HealAll(){if(P&&!P.dead){P.hp=20;drawStats();}for(const a of mg2Bots())a.hp=20;}
+function mg2HealAll(){if(P&&!P.dead){P.hp=20;drawStats();}}
 
 /* ---- the intro (bible 6) ---- */
 function mg2Intro(cause){const full=!(MALG.seen&1),F=mgF();MALG.seen|=1;MGF.live=0;
@@ -99,7 +99,7 @@ function mg2Trans(r,preview){const F=mgF(),W=mg2W();mg2HealAll();MGF.live=1;
   mg2Cut('light',{end:full?10:4,full,lines:full?[{at:5,n:'MALGORATH',t:'I SAVED THE LIGHT FOR LAST.'}]:[],pose,done,
     beats:[[0,function(s,sk){if(!sk){mg2S('mg_crack');mg2Shake(0.4,0.5);}}],[full?2.0:0.8,function(s,sk){if(!sk){mg2Shake(0.6,0.6);mg2S('mg_stomp');}}],
       [full?3.5:1.4,function(s,sk){lay('L3');if(!sk)mg2S('mg_crack');}],[full?5.5:2.0,function(s,sk){if(!sk)mg2S('mg_sun');}],
-      [full?9.4:3.8,function(){MGL.eclipse=1;MGA.strata.tree=1;mg2Bus('sun',1);}]],
+      [full?9.4:3.8,function(){MGL.eclipse=1;MGA.strata.tree=1;}]],
     shots:full?[{t:0,p:[-16,5,-10],l:[0,2,0]},{t:2,p:[-20,2,8],l:[0,0,0]},{t:3.5,p:[-22,1.2,-2],l:[0,0,0]},{t:5,p:[-3,-2,-6],l:[0,20,0]},{t:5.5,p:[-24,3,-14],l:[0,10,0]},{t:9.5,p:[-20,2,-12],l:[0,1,0]},{t:10,p:mg2DanRel(),l:[0,0.5,0]}]
       :[{t:0,p:[-16,5,-10],l:[0,2,0]},{t:2,p:[-18,3,-12],l:[0,10,0]},{t:4,p:mg2DanRel(),l:[0,0.5,0]}]});}
 
@@ -113,11 +113,11 @@ function mg2Death(e,preview){const F=mgF(),full=!(MALG.seen&8)&&!preview,W=mg2W(
     if(s.t>4.5)e2.y=(F-13)-Math.min(6,(s.t-4.5)*1.6);};
   const done=function(){const b=mg2Boss();if(b)removeEnt(b);MGF.boss=null;MGL.eclipse=0;MGL.dawn=0;
     if(preview){MALG.round=1;MG2.reform=4;MGF.phase='idle';if(W.reset)try{W.reset(1,{why:'preview',instant:1});}catch(err){mgFail('reset',err);}if(W.door)try{W.door(true);}catch(err){}
-      mg2Say('He sinks back into the dark.',2.4);mg2Bus('preview',1);return;}
-    mg2PaySpill();if(typeof WIN!=='undefined')WIN.pend=1.5;mg2Bus('kill',1);};
+      mg2Say('He sinks back into the dark.',2.4);return;}
+    mg2PaySpill();if(typeof WIN!=='undefined')WIN.pend=1.5;};
   mg2Cut('death',{end:14,full,noSkip:full,lines:[{at:6,n:'MALGORATH',t:'I have eaten ten thousand w—'},{at:6.9,n:'',t:''}],pose,done,
     beats:[[0,function(){MG2.silence=1.5;mg2S('mg_silence');}],
-      [1.5,function(s,sk){if(!sk){NUKE.flash=1;mg2Shake(1.0,1.2);mg2S('mg_burst');}MGL.dawn=1;mg2Bus('burst',1);}],
+      [1.5,function(s,sk){if(!sk){NUKE.flash=1;mg2Shake(1.0,1.2);mg2S('mg_burst');}MGL.dawn=1;}],
       [1.6,function(s,sk){mg2Geyser(preview,sk);}],
       [4.5,function(s,sk){if(!preview)lay('Ldead');if(!sk)mg2S('mg_bury');}],
       [8.0,function(s,sk){if(!sk)mg2S('mg_chord');}],
@@ -127,7 +127,6 @@ function mg2Death(e,preview){const F=mgF(),full=!(MALG.seen&8)&&!preview,W=mg2W(
       {t:10,p:mg2DanRel(2),l:[0,-2,0]},{t:14,p:mg2DanRel(),l:[0,-2,0]}]});}
 /* everything he ate comes back out (bible 13 t 1.6-4.5) */
 function mg2Geyser(preview,sk){const F=mgF();
-  for(const q of MG2.eaten.slice())mg2BotOut(q.a,1);
   for(const a of MG2.adds.splice(0))if(!a.dead){mg2Burst('ash',a.x,a.y+0.6,a.z,{id:B.STONE,n:5});removeEnt(a);}
   if(MALG.hat){if(!preview&&P&&P.cos){P.cos.hat=MALG.hat;}MALG.hat=null;}
   MALG.heads=0;

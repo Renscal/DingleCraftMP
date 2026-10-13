@@ -7,8 +7,6 @@
 /* the newest lines stay; the oldest are clipped under the top HUD band (toasts, boss bars, coordinates: 180 px) */
 #chatlog{display:flex;flex-direction:column;justify-content:flex-end;gap:1px;overflow:hidden;
   max-height:max(58px,calc(100vh / var(--uih) - 132px - 180px - 64px))}
-#aibadge{display:none;width:max-content;max-width:100%;margin-bottom:5px;font:bold 12px 'Courier New',monospace;color:#ffd27a;
-  background:rgba(40,22,0,.66);border:1px solid rgba(255,190,80,.55);padding:3px 8px;border-radius:4px;text-shadow:1px 1px 0 #000}
 #chatlog .cl{font:14px 'Courier New',monospace;color:#fff;background:rgba(0,0,0,.38);padding:2px 6px;
   text-shadow:1px 1px 0 #000;white-space:pre-wrap;word-break:break-word}
 #chatlog .cl-sys{color:#ffe14d}

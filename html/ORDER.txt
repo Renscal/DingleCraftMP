@@ -4,7 +4,7 @@
 00_open.html
 css/core.css
 css/features.css
-css/ai_players.css
+css/chat.css
 css/purgatory.css
 css/creativity.css
 css/malgorath.css

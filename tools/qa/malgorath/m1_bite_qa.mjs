@@ -46,12 +46,12 @@ const HELP=`window.__m1={T:900000,
   wet(){const V=__vox,G=V.mgG(),GF=V.mgGF();let w=0;for(let k=0;k<64;k++){const a=k*Math.PI/32,rw=V.mgRw(a);for(let r=0;r<rw-0.6;r+=2){const x=Math.floor(1000.5+Math.cos(a)*r),z=Math.floor(1000.5+Math.sin(a)*r);
     for(let y=GF-2;y<=G+2;y++)if(V.getBlock(x,y,z)===V.B.WATER)w++;}}return w;}};`;
 const boot=async()=>{for(let i=0;i<240;i++){let v=false;try{v=await ev("return typeof window.__vox==='object'&&document.readyState==='complete'");}catch(e){}if(v)break;await sleep(500);}
-  await ev(HELP+"try{usePLock=false;lockWanted=false;}catch(e){}Object.assign(__vox.BRAIN,{mock:null,ok:false,off:true,url:'http://127.0.0.1:9'});if(__vox.setBrainMock)__vox.setBrainMock(null);");};
+  await ev(HELP+"try{usePLock=false;lockWanted=false;}catch(e){}");};
 await send('Runtime.enable');await send('Page.enable');await send('Network.enable');await send('Network.setCacheDisabled',{cacheDisabled:true});
 await send('Emulation.setDeviceMetricsOverride',{width:1280,height:720,deviceScaleFactor:1,mobile:false});
 await send('Page.addScriptToEvaluateOnNewDocument',{source:"try{const k='vx_vox_settings';let s={};try{s=JSON.parse(localStorage.getItem(k)||'{}')||{};}catch(e){}"+
   "s.snd=0;s.mus=0;s.tp='og';localStorage.setItem(k,JSON.stringify(s));}catch(e){}"+
-  "window.__DINGLE_BRAIN={url:'http://127.0.0.1:9',token:null};window.requestAnimationFrame=function(){return 0;};"});
+  "window.requestAnimationFrame=function(){return 0;};"});
 await send('Page.navigate',{url:`http://127.0.0.1:${SRV}/${BUILD}?b=${Date.now()}`});await boot();
 const info=await ev("return {ver:__vox.GAME_VERSION,stubs:__vox.mgInfo().stubs,sound:soundOn,title:document.title}");
 check('the v'+gameVersion()+' build loaded with M1 real and the sound off',info.ver===gameVersion()&&info.stubs.indexOf('1')<0&&info.sound===false,info);

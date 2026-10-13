@@ -162,8 +162,7 @@ function pcanVolley(stacks,canPos,who,opts){opts=opts||{};const L=(stacks||[]).f
   if(duck&&who==='Dan'){mpTickOff('duck');piS.stats.ducks++;}
   mwS('pg_lid',v.can[0]+0.5,v.can[1]+1,v.can[2]+0.5);
   return v;}
-function piVolleyTarget(who){if(who==='Dan')return P&&!P.dead?{x:P.x,y:P.y,z:P.z,h:1.6,sneak:P.sneak,yaw:P.yaw,e:P}:null;
-  const a=typeof agByName==='function'?agByName(who):null;const b=a&&a.e;if(!b||b.dead||a.dim!==DIM)return null;return {x:b.x,y:b.y,z:b.z,h:1.5,sneak:false,yaw:b.yaw||0,e:b,a};}
+function piVolleyTarget(who){return who==='Dan'&&P&&!P.dead?{x:P.x,y:P.y,z:P.z,h:1.6,sneak:P.sneak,yaw:P.yaw,e:P}:null;}
 function piVolleyTick(dt){
   for(let i=piS.vols.length-1;i>=0;i--){const v=piS.vols[i];v.t-=dt;if(v.t>0)continue;
     const st=v.q.shift();if(!st){if(v.bin&&v.hits>=3&&typeof pmHeckle==='function')try{pmHeckle('volley',{who:v.who,hits:v.hits});}catch(e){}
@@ -328,7 +327,7 @@ function piTransSpawnTick(){const L=piSpots('trans'),s=L&&L[0];if(!s)return;
 /* ---- Burners (bible 7.5): drops resting on a coil sizzle (no pickup), one item every 4 s becomes its smelted form and pops 1.5 m
    toward the nearest player, owned by whoever dropped it. Non-smeltables pop off unchanged. Standing on it hurts (engine hurts). ---- */
 function piNearestPlayer(x,z){let best=null,bd=1e9;if(P&&!P.dead){bd=Math.hypot(P.x-x,P.z-z);best={x:P.x,z:P.z,who:'Dan'};}
-  if(typeof AG_ACTIVE!=='undefined'&&AG_ACTIVE)for(const a of AGENTS){const b=a.e;if(!b||b.dead||a.dim!==DIM)continue;const d=Math.hypot(b.x-x,b.z-z);if(d<bd){bd=d;best={x:b.x,z:b.z,who:a.name};}}
+  
   return best;}
 function piBurnerTick(dt){
   for(const e of entities){if(e.dead||e.t!=='drop'||e.ppop!=null)continue;   /* PZ: a pop is done; landing on the next coil of a 2x2 must not sizzle it again */
@@ -438,4 +437,4 @@ function piCraftSeam(outId,kind){if(DIM!=='puppet'||!P)return false;kind=kind||'
 Object.assign(PGEX,{piCanReady,piProfHint,piCraftSeam,piRecipeSet,piRecipeSetAll,piRevealed,piVolleyBusy,pcanVolley,piCanBoot,piTake,piS:()=>piS,PI_DEMO,piBig,piHas});
 /* live internals the P2 suites read (tests only; read at call time) */
 PGEX.p2Core=()=>({isTorch,mulberry32,torches,MINE,tryFill,takeResult,redrawHotbar,dropSel,handG:()=>handG,MP_LIGHTS,ICONS,getIcon,primeTNT,
-  BOWN:typeof BOWN!=='undefined'?BOWN:null,ownIdx:typeof ownIdx==='function'?ownIdx:null,chunks,piSpots,drawStats,updateTorchLights,TLIGHTS});
+  chunks,piSpots,drawStats,updateTorchLights,TLIGHTS});

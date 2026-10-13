@@ -114,32 +114,6 @@ boot.run(async()=>{
   ok('the boomer fused (s.fuse rose) with the white strobe on its own materials',maxFuse>0.5&&strobe);
   ok('the detonation leaves no corpse and frees the model',bm.dead&&V.hrCorpseCount()===0&&FAKE.disposed.has(bmH.hr.mats[0]));
 
-  /* ---- AI players ---- */
-  V.setBrainMock(null);V.BRAIN.ok=false;V.BRAIN.off=true;
-  V.GR.bots=true;V.agJoinAll(true);
-  for(let i=0;i<40&&!V.AGENTS.every(a=>a.e);i++)step(1);
-  const bots=V.AGENTS;
-  ok('three AI players joined with bodies',bots.length===3&&bots.every(a=>a.e&&!a.e.dead));
-  ok('their bodies are Hyperreal (born while the cast is live)',bots.every(a=>a.e.hrM&&a.e.M.hr===true&&a.e.M.tag.position.y===2.62));
-  ok('each body is its own model (bunkerbrad, lilcreepah, honeybee)',bots.map(a=>a.e.hrM.name).sort().join()==='bunkerbrad,honeybee,lilcreepah');
-  ok('M.aR is an OG-frame pivot under the model arm',bots.every(a=>a.e.M.aR.rotation.y===Math.PI&&a.e.M.aR.parent===a.e.hrM.hr.handles.aR));
-  step(4);
-  const a0=bots[0],a1=bots[1],r0=recOf(a0.e.hrM.hr.root);
-  ok('hrBotTick runs: s.hp from the agent',r0.updates>0&&Math.abs(r0.last.hp-a0.hp/20)<1e-9);
-  a0.e.hurtT=0;a0.spawnProt=0;V.agHurt(a0,1,'Dan',1,0,'melee');
-  ok('agHurt flashes only that body',a0.e.mats.every(m=>Math.abs(m.emissive.r-0.45)<1e-9)&&a1.e.mats.every(m=>m.emissive.r===0));
-  a0.hrPlT=V.getAG().t+0.001;a0.hrPlId=V.B.DIRT;const bu=r0.updates;step(2);
-  ok('a placement is a build edge for one update',FAKE.log.some(l=>l.root===a0.e.hrM.hr.root&&l.build===true)&&r0.last.build===false&&r0.updates>bu);
-  const bee=bots.find(a=>a.e.hrM.name==='honeybee'),beer=recOf(bee.e.hrM.hr.root);
-  bee.hrPlT=V.getAG().t+0.002;bee.hrPlId=V.B.FLOWER_R;step(2);
-  ok('a flower is a plant for the bee',FAKE.log.some(l=>l.root===bee.e.hrM.hr.root&&l.plant===true));
-  const deadE=a1.e,deadRoot=deadE.mesh;
-  V.agDie(a1,'Dan','melee');
-  ok('a bot death leaves a corpse and clears a.e',V.hrCorpseCount()===1&&a1.e===null&&deadE.dead===true&&inScene(deadRoot)&&deadE.M===null);
-  step(110);
-  ok('the bot respawns with a Hyperreal body',!!a1.e&&!a1.dead&&!!a1.e.hrM&&a1.e.M.hr===true);
-  ok('the bot corpse is gone',V.hrCorpseCount()===0&&!inScene(deadRoot));
-
   /* ---- the player: hat, armour and tool anchors, hand switching ---- */
   V.P.cos=V.P.cos||{};V.P.cos.hat='tophat';V.P.armor=[{id:V.armorId(2,0)},{id:V.armorId(2,1)},null,null];
   V.setCam(1);step(2);
@@ -176,22 +150,20 @@ boot.run(async()=>{
   V.setDim('nether',300.5,40,300.5);step(5);
   ok('setDim clears corpses',V.hrCorpseCount()===0);
   V.setDim('over',home[0],home[1],home[2]);step(20);
-  ok('mobs come back from the stash as Hyperreal',V.entities.filter(e=>e.t==='mob'&&!e.dead&&!e.bot&&X.HR_MOB[e.mt]).every(e=>!!e.hrM));
+  ok('mobs come back from the stash as Hyperreal',V.entities.filter(e=>e.t==='mob'&&!e.dead&&X.HR_MOB[e.mt]).every(e=>!!e.hrM));
 
   /* ---- Hyperreal -> OG ---- */
   const zOG=V.entities.find(e=>e.t==='mob'&&!e.dead&&e.mt==='zombie');
   V.spawnMob('sheep',...near(2,2));const sh=V.entities[V.entities.length-1];step(1);V.hurtMob(sh,999,1,0);
   ok('a corpse exists before the switch',V.hrCorpseCount()===1);
-  const botE=V.AGENTS[0].e;
   ok('setPack(og) resolves true',await V.setPack('og')===true);
   h=V.getHRE();
   ok('the cast is off; corpses cleared',h.on===false&&h.corpses===0&&V.getTP().id==='og');
   ok('a mob born in Hyperreal gets an OG body',!!zOG&&!zOG.hrM&&zOG.legs.length>0&&inScene(zOG.mesh));
   ok('the OG player model is back (identity)',X.pl()===plOG&&inScene(plOG.G));
+  V.P.inv[V.P.sel]=null;V.refreshHand();   /* a drop from the mobs killed above may have landed in the hand slot (the removed AI section used to run before the slot was emptied) */
   ok('the hand is OG again (empty hand: no fist)',V.getHand().kind===-1&&V.getHand().n===0);
-  ok('Hyperreal-born bot bodies were dropped',botE.dead===true);
   step(30);
-  ok('bots respawn with OG bodies',V.AGENTS.every(a=>a.dead||(a.e&&!a.e.hrM&&!a.e.M.hr)));
   ok('no Hyperreal mesh is left in the scene',hrMeshesInScene()===0);
   ok('OG updateHand runs again',JSON.stringify([X.hand().position.x,X.hand().position.y,X.hand().position.z])!==JSON.stringify([0,0,0])||hand0==='[0,0,0]');
   ok('no contract misuse',V.getTP().errs.length===0);

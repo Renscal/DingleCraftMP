@@ -53,8 +53,8 @@ export const DIMS = new Set(['over', 'nether', 'aether', 'puppet']);
 export const DIM_PFX = { over: '', nether: 'n;', aether: 'a;', puppet: 'm;' };
 
 /* The world's game rules, as server.json's "rules" lists them. Names and defaults are the game's own (GR_DEF in
-   src/ui/p27_debug_gamerules_settings.js) with two differences: Cheats (the debug menu) is off unless the host turns it on,
-   and the AI-player rules are left out because AI players never run on a server. tests/net/n_static.js keeps this in step. */
+   src/ui/p27_debug_gamerules_settings.js) with one difference: Cheats (the debug menu) is off unless the host turns it on.
+   tests/net/n_static.js keeps this in step. */
 export const RULES = { keepInv: false, god: false, mobGrief: true, mobSpawn: true, dayCycle: true, fireTick: true, fallDmg: true, snail: true, jsc: 0,
   instaKill: false, freezeMobs: false, ghosts: true, fbOK: true, store: true, powers: true, cheats: false };
 

@@ -45,7 +45,6 @@ function hollowOut(){const A=V.hnA();const p=nav.plan((x,y,z)=>y>=A.ky+1&&Math.h
 /* the game moving Dan's body (a throw, a grab, a reel, the Strike Hand, a cutscene, a knockback): the ledger's allowed jumps */
 function scripted(){const p=V.P;if(!p)return false;const H=V.getHNS&&V.getHNS(),S=V.getPMS&&V.getPMS();
   const f=V.getMPF().fight;
-  if(V.AGENTS&&V.AGENTS.some(a=>a.online&&a.e&&!a.dead&&Math.hypot(a.e.x-p.x,a.e.z-p.z)<1.1&&Math.abs(a.e.y-p.y)<2))return true;   /* a bot's body shoves ours */
   if(V.entities.some(e=>!e.dead&&e.grab&&e.grab.who===p))return true;      /* the Comic has our wrist and does his act at us */
   {const f=V.getBlock(Math.floor(p.x),Math.floor(p.y+0.05),Math.floor(p.z));if(f&&D[f]&&D[f].solid!==false)return true;}   /* half inside a rake step: the engine pushes the body out */
   return (p.hurtT>0.2)||!!(H&&H.strike&&H.strike.hand)||V.mpInfo().cut||!!(S&&S.flight)||!!(f&&!f.over)||!!MP().strike;}   /* the Strike: walls shove, the Hand carries, the broom sweeps you back */   /* a live headliner fight: his pushes, reels and curtains move Dan */

@@ -18,7 +18,7 @@ function findSpawn(){
   }
   return [0.5,Math.max(colInfo(0,0).h,SEA)+2,0.5];
 }
-function startNewWorld(name,seedStr,mode,bots){
+function startNewWorld(name,seedStr,mode){
   resetWorld();
   SEED=hashSeed(seedStr);
   timeOfDay=0.3;
@@ -26,7 +26,6 @@ function startNewWorld(name,seedStr,mode,bots){
   P.mode=mode==='c'?'c':'s';
   WORLD.name=(name||'world').trim()||'world';
   enterGame();
-  if(bots){GR.bots=true;agJoinAll(false);}
 }
 function enterGame(){
   playing=true;paused=false;

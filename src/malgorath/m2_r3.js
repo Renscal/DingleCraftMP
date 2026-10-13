@@ -56,10 +56,9 @@ function mg2R3Pull(v,dt,supper){const K=MG2K.R3,F=mgF(),m=mg2R3Mouth(),q=MG2.r3;
     if(!supper){if(!body.onGround)s*=K.AIR;if(isP&&P.sneak)s*=K.SNEAK;if(mg2Covered(body))s*=K.COVER;}else if(!body.onGround)s*=K.AIR;
     moveBody(body,dx/d*s*dt,0,dz/d*s*dt,false);
     const r=Math.hypot(body.x-MGC.X,body.z-MGC.Z);
-    if(r<12&&body.y<F-0.3){if(t===P){if(supper){mg2True(P,999,'supper');return;}MG2.chompHow='inhale';mg2Chomp(P,'chomp',{dir:Math.atan2(P.z-MGC.Z,P.x-MGC.X)+Math.PI});q.chomped=1;}
-      else if(t&&t.name){mg2Swallow(t,'inhale');}}};
+    if(r<12&&body.y<F-0.3){if(t===P){if(supper){mg2True(P,999,'supper');return;}MG2.chompHow='inhale';mg2Chomp(P,'chomp',{dir:Math.atan2(P.z-MGC.Z,P.x-MGC.X)+Math.PI});q.chomped=1;}}};
   if(mg2Alive(P)&&P.mode!=='c'&&!MG2.holdDan&&!MG2.throws.some(w=>w.t===P)){const z=mgZone(P.x,P.y,P.z);if(z==='arena'||z==='gut'||z==='void')pullOne(P,P,true);}
-  for(const a of mg2Bots()){if(mg2Eaten(a))continue;const z=mgZone(a.e.x,a.e.y,a.e.z);if(z==='arena'||z==='gut'||z==='void')pullOne(a,a.e,false);}
+  
   for(const a of MG2.adds){if(a.dead||a.lob)continue;const dx=m.x-a.x,dz=m.z-a.z,d=Math.hypot(dx,dz)||1;let s=(a.demo===2||(a.mt==='mghusk'&&!a.demo))?v*0.5:v;if(mg2Covered(a))s*=K.COVER;   /* Husks brace and slide */
     moveBody(a,dx/d*s*dt,0,dz/d*s*dt,false);}
   for(const o of entities){if(o.dead||(o.t!=='drop'&&o.t!=='tnt'&&o.t!=='nade'&&o.t!=='arrow'))continue;if(o.t==='drop'&&(o.mgNoBot||(DEFS[o.st.id]&&DEFS[o.st.id].crw)))continue;
@@ -159,7 +158,7 @@ function mg2R3Gag(e,dt,q){const K=MG2K.R3,F=mgF();
     if(!q.locked&&q.t>=K.GAG_T-MG_K.CHOMP_LOCK){q.locked=1;mg2Lock(q.h);}
     if(!q.com&&q.t>=K.GAG_T-MG_K.COMMIT){q.com=1;mg2Commit(q.front.x,F+1,q.front.z);MGA.tel[4]=1;}
     if(q.closed==='cap'||q.t>=K.GAG_T){
-      if(q.closed!=='cap'){mg2Impact();mg2S('mg_chomp',q.front.x,F+1,q.front.z);for(const t of mg2Players()){if(mg2R3InMouth(mg2TPos(t),q)){if(t===P){MG2.chompHow='gag';mg2Chomp(P,'chomp',{dir:q.th});}else mg2Swallow(t,'gag');}}}
+      if(q.closed!=='cap'){mg2Impact();mg2S('mg_chomp',q.front.x,F+1,q.front.z);for(const t of mg2Players()){if(mg2R3InMouth(mg2TPos(t),q)){if(t===P){MG2.chompHow='gag';mg2Chomp(P,'chomp',{dir:q.th});}}}}
       if(MG2.win&&MG2.win.kind==='sun')mg2CloseWin('time');
       if(q.hit)mg2R3Recede(MG2K.R3.RECEDE);
       mg2Free(q.h);q.h=null;MG2.gag=0;MG2.gagLit=0;MGA.tel[2]=0;MGA.tel[4]=0;MGA.jaw=0;MGA.split=0;q.locked=q.com=0;q.closed=null;
@@ -197,7 +196,7 @@ function mg2R3Supper(e,dt,q){const K=MG2K.R3,F=mgF();q.t+=dt;MGA.stance='headup'
   if(q.t<K.SUPPER_WARN)return;
   if(q.t<K.SUPPER_WARN+K.SUPPER_T){MG2.inh={pull:K.SUPPER_V};mg2R3Pull(K.SUPPER_V,dt,true);return;}
   MG2.inh=null;mg2Free(q.h);q.h=null;mg2S('mg_chomp');mg2Shake(0.8,0.6);
-  for(const t of mg2Players()){const p=mg2TPos(t),z=mgZone(p.x,p.y,p.z);if(z!=='arena'&&z!=='gut'&&z!=='void')continue;if(t===P)mg2True(P,999,'supper');else mg2Swallow(t,'supper');}
+  for(const t of mg2Players()){const p=mg2TPos(t),z=mgZone(p.x,p.y,p.z);if(z!=='arena'&&z!=='gut'&&z!=='void')continue;if(t===P)mg2True(P,999,'supper');}
   q.ph='idle';q.t=0;}
 
 /* ---- the self-demo (bible 7.8 III): two of his Husks stand between Dan and his mouth at the first inhale; one stands and is eaten,

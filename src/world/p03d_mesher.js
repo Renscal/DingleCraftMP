@@ -163,8 +163,7 @@ function updateChunks(){
   if(frameCount%180===0){
     for(const [k,ch] of chunks){
       if(Math.max(Math.abs(ch.cx-pcx),Math.abs(ch.cz-pcz))>RD+2){
-        if(AG_ACTIVE&&ticketHeld(k)){if(ch.meshes){disposeChunkMeshes(ch);}ch.dirty=true;continue;}
-        disposeChunkMeshes(ch);
+          disposeChunkMeshes(ch);
         chunks.delete(k);
       }
     }

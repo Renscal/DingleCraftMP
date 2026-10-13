@@ -82,7 +82,6 @@ when it is set (else `out/qa/sheets`), so lanes working at once do not overwrite
 - **Put `tp:'og'` back** when you finish. `vx_vox_settings` is shared by every page on the same origin, so a saved
   Hyperreal setting makes every later page on that origin boot into Hyperreal.
 - **All versions on one origin share one world list.** Test in your own worlds; do not open the player's worlds.
-- **Never point a rig at the brain.** It spends real money ([BRAIN.md](BRAIN.md)).
 - **Stepping a live page:** `__vox.frameStep` calls `frame()`, which re-arms `requestAnimationFrame`. Freeze rAF (the
   shared driver does) or you will run several game loops at once.
 - **Judge Hyperreal on a full build** in a real GPU browser, at more than one quality tier.

@@ -83,17 +83,8 @@ features/replay.js
 features/p51_prop_plane.js
 features/p52_big_dingle.js
 
-# PART 53: AI players
-ai_players/a1_core.js
-ai_players/a2_world.js
-ai_players/a3_nav.js
-ai_players/a4_body.js
-ai_players/a5_skills.js
-ai_players/a6_build.js
-ai_players/a7_combat.js
-ai_players/a8_mind.js
-ai_players/a9_ui.js
-ai_players/mob_helpers.js
+# PART 53: chat, the player list and shared helpers (what is left of the AI Players update, removed in 6.10)
+ui/p53_chat.js
 
 # PART 58: multiplayer (the client for server/dinglecraft-server.mjs)
 net/n0_contract.js
@@ -113,7 +104,6 @@ malgorath/m1_summon.js
 malgorath/m1_world.js
 malgorath/m2_adds.js
 malgorath/m2_audio.js
-malgorath/m2_bots.js
 malgorath/m2_core.js
 malgorath/m2_hud.js
 malgorath/m2_loot.js
@@ -162,7 +152,6 @@ purgatory/p4_bomber.js
 purgatory/p4_bigfrog.js
 purgatory/p4_bigpig.js
 purgatory/p4_strike.js
-purgatory/p5_bots.js
 
 # PART 54: texture packs
 texpacks/t0_contract.js
@@ -174,7 +163,6 @@ texpacks/tB_post.js
 texpacks/tC_adapter.js
 texpacks/tC_mobs.js
 texpacks/tC_player.js
-texpacks/tC_bots.js
 texpacks/tC_corpse.js
 
 # PART 57 HR block + Hyperreal model loaders
@@ -190,9 +178,6 @@ malgorath/hr/loaders/mmodels_close.js
 texpacks/loaders/cast_open.js
 texpacks/models/rig.js
 texpacks/models/player.js
-texpacks/models/bunkerbrad.js
-texpacks/models/lilcreepah.js
-texpacks/models/honeybee.js
 texpacks/models/zombie.js
 texpacks/models/boomer.js
 texpacks/models/skeleton.js

@@ -43,7 +43,7 @@ function hnPOnPlat(x,y,z){const A=hnA();if(y<A.platY+0.5)return false;if(Math.hy
   return x>=-9.2&&x<=10.2&&z>=122&&z<=A.plat[1]+1;}
 function hnPTopAt(x,z){const t=hnTreadTop(Math.floor(x),Math.floor(z));return t>0?t:deckY(Math.floor(z));}
 function hnPFoes(){const o=[];if(P&&!P.dead&&P.mode!=='c'&&DIM==='puppet')o.push(P);
-  if(typeof AG_ACTIVE!=='undefined'&&AG_ACTIVE)for(const a of AGENTS)if(a.e&&!a.dead&&a.online&&a.dim===DIM&&!(a.pgrab&&a.pgrab.until>MP.clock))o.push(a.e);return o;}
+  return o;}
 function hnPSequins(t){const ar=t===P?P.armor:(t.A&&t.A.armor)||[];let n=0;for(const s of ar)if(s&&s.id>=IT.PG_GOWN_H&&s.id<=IT.PG_GOWN_B)n++;return n;}
 /* she always targets the player wearing the most Sequin Gown pieces (a liability you can hand to a bot), else the nearest */
 function hnPTarget(e,range){let best=null,bs=-1,bd=1e9;for(const t of hnPFoes()){const d=Math.hypot(t.x-e.x,t.z-e.z);if(d>(range||40))continue;
@@ -76,7 +76,7 @@ function hnPHop(p,bx,by,bz){const z=Math.floor(p.z),top=hnPTopAt(p.x,z),nz=z-2,n
   const lx=p.lane!=null?hnA().laneX[p.lane]+0.5:p.x,vx=(lx-p.x)*1.2;
   return hnPCompBounce(p,vx,(dy+0.5*GRAV*T*T)/T,-2/T);}
 function hnPPigHit(p,t,dmg,kind){const e=hnAlive('bigpig'),T=t.t==='mob'?MOBT[t.mt]:null;
-  const byPlayer=p.owner==='Dan'||hnIsBot(p.owner);
+  const byPlayer=p.owner==='Dan';
   if(byPlayer){
     if(e&&t===e){const F=e.hf;if(F){const d=kind==='link'?36:kind==='porkbomb'?20:18;hnWin(F,2.2,'thrown '+kind);hnHit(e,d,p.owner,'pig');
         HN_P.stopT=2;hnSay(kind==='link'?'NOT YOU!':'HOW DARE—',1.4,'howdare');hnLog(F,'pigBack',{kind,by:p.owner});}
@@ -128,7 +128,7 @@ function hnPThrowAt(e,t,mode){const tb=hnFoeBody(t),T=mode==='storm'?0.75:0.6,fx
 
 /* ---- platform pigs (her ammunition, pgtoss props): mill, dazed 2 s after landing, scurry back; hit a scurrier and it bolts ---- */
 function hnPPlatPig(x,y,z,st){spawnMob('pgtoss',x,y,z);const m=entities[entities.length-1];Object.assign(m,{kind:'plat',pst:st||'mill',pT:0,pkeep:1,hnArena:'bigpig',yaw:0});
-  m.relay=(d,by)=>{if(m.pst==='scurry'&&(by==='Dan'||hnIsBot(by))){m.pst='bolt';m.pT=0;mwS('pg_squeak',m.x,m.y,m.z);}};return m;}
+  m.relay=(d,by)=>{if(m.pst==='scurry'&&by==='Dan'){m.pst='bolt';m.pT=0;mwS('pg_squeak',m.x,m.y,m.z);}};return m;}
 function hnPPlatPigs(){const o=[];for(const m of entities)if(!m.dead&&m.t==='mob'&&m.mt==='pgtoss'&&m.kind==='plat'&&m.pst!=='bolt')o.push(m);return o;}
 PREG.brain.pgtoss=function(e,dt){if(puBatMove(e,dt)){hnPPigAnim(e,dt);return;}
   if(e.pheld){hnPPigAnim(e,dt);return;}                                         /* in P2's Pig Mitt: P2 moves it */
@@ -166,7 +166,7 @@ function hnPThrownFly(e,dt){e.onGround=false;e.vy-=GRAV*dt;moveBody(e,e.vx*dt,e.
 function hnPLineStart(e){const A=hnA();const line={x:A.plat[0]+0.5-10.5,dir:1,z0:A.plat[1]+0.5-4.9,pigs:[],tell:1.0,fallen:false,fallT:0,done:false,kicked:new Map()};
   for(let i=0;i<8;i++){spawnMob('pgtoss',line.x,A.platY+1.02,line.z0+i*1.4);const m=entities[entities.length-1];
     Object.assign(m,{kind:'chorus',ci:i,pkeep:1,hnArena:'bigpig',yaw:Math.PI/2,seed:i*1.3});
-    m.relay=(d,by)=>{if((m.ci===0||m.ci===7)&&(by==='Dan'||hnIsBot(by))&&!line.fallen&&line.tell<=0)hnPDominoes(by);};line.pigs.push(m);}
+    m.relay=(d,by)=>{if((m.ci===0||m.ci===7)&&by==='Dan'&&!line.fallen&&line.tell<=0)hnPDominoes(by);};line.pigs.push(m);}
   HN_P.line=line;hnSay('And-a-one... and-a-two...',1.2,'count');mwS('pg_gasp');return line;}
 function hnPDominoes(by){const ln=HN_P.line;if(!ln||ln.fallen)return;ln.fallen=true;ln.fallT=0;mwS('pg_squeak');
   const e=hnAlive('bigpig');if(e&&e.hf){hnLog(e.hf,'dominoes',{by});e.st='stormOver';e.stT=0;}}
@@ -185,7 +185,7 @@ function hnPLineTick(dt,e){const ln=HN_P.line;if(!ln)return;const A=hnA();
     if(e&&e.hf){e.storm=6;e.stormT=0;hnLog(e.hf,'lineDone',{});}}}
 
 /* ---- the Big Lamp: the Lamp Cleat (Shears, or a player's Charge + the Plunger) drops it; winched back up in 12 s ---- */
-function hnPCleat(cl,d,by){const how=HIT_HOW||'';const ok=hnShears(by,0)||((by==='Dan'||hnIsBot(by))&&/blast|charge|plunger/.test(how));
+function hnPCleat(cl,d,by){const how=HIT_HOW||'';const ok=hnShears(by,0)||(by==='Dan'&&/blast|charge|plunger/.test(how));
   if(!ok){hnSay('The rope holds. It wants cutting.',1.6,'cleat');return;}
   if(HN_P.lamp.st!=='up')return;HN_P.lamp={st:'fall',t:0,y:HN_P.lamp.y,by};mwS('pg_creak',cl.x,cl.y,cl.z);cl.pulled=1.5;
   if(MPF.fight)hnLog(MPF.fight,'lampDrop',{by});}
@@ -199,7 +199,7 @@ function hnPLampTick(dt,e){const L=HN_P.lamp,A=hnA();L.t+=dt;
   else if(L.st==='winch'){L.y=A.platY+1.6+(69.5-A.platY-1.6)*Math.min(1,L.t/12);if(L.t>=12){L.st='up';L.y=69.5;const cl=hnProp('bigpig','cleat');if(cl)cl.pulled=0;}}}
 
 /* ---- the followspots: three beams, on her unless a tower was hit (then on the hitter for 20 s) ---- */
-function hnPSpot(sp,d,by){const i=sp.si|0;if(!(by==='Dan'||hnIsBot(by)))return;HN_P.beams[i]={who:by,until:MP.clock+20};mwS('pg_clicks',sp.x,sp.y,sp.z);
+function hnPSpot(sp,d,by){const i=sp.si|0;if(!by==='Dan')return;HN_P.beams[i]={who:by,until:MP.clock+20};mwS('pg_clicks',sp.x,sp.y,sp.z);
   if(MPF.fight)hnLog(MPF.fight,'upstage',{i,by});}
 function hnPBeamOn(i){const b=HN_P.beams[i];if(!b||b.until<=MP.clock){HN_P.beams[i]=null;return 'bigpig';}return b.who;}
 function hnPBeamsOnHer(e){const F=e.hf;if(!F)return 0;if(F.phase<2||e.st==='admire'||e.st==='lampStun'||e.st==='preen')return 0;
@@ -214,7 +214,7 @@ PREG.mesh.pgspot=function(G,mats){const iron=hnMat(0x26262c),lens=hnBasic(0xfff4
   const yoke=new THREE.Group();G.add(yoke);hnB(yoke,0.1,0.4,0.6,iron,0,0.2,0);const can=new THREE.Group();can.position.y=0.4;yoke.add(can);
   hnB(can,0.42,0.42,0.8,iron,0,0,0);hnB(can,0.36,0.36,0.04,lens,0,0,0.42);const legs=[];legs.can=can;legs.yoke=yoke;return {G,legs,mats};};
 PREG.brain.pgspot=function(e,dt){e.vx=e.vy=e.vz=0;if(!e.mesh)return;e.mesh.position.set(e.x,e.y,e.z);
-  const w=hnPBeamOn(e.si|0),tg=w==='bigpig'?hnAlive('bigpig'):(w==='Dan'?P:(agByName(w)&&agByName(w).e));
+  const w=hnPBeamOn(e.si|0),tg=w==='bigpig'?hnAlive('bigpig'):(w==='Dan'?P:null);
   const L=e.legs;if(L&&L.yoke&&tg){const dx=tg.x-e.x,dz=tg.z-e.z,dy=(tg.y+1)-e.y;L.yoke.rotation.y=Math.atan2(dx,dz);if(L.can)L.can.rotation.x=-Math.atan2(dy,Math.hypot(dx,dz));}
   e.beamTo=tg||null;};
 HN_DECO.bigpig=function(d){const A=hnA(),g=d.g,gold=hnMat(0xc9a43a),vel=hnMat(0x8e1424),blk=hnMat(0x141418);
@@ -304,7 +304,7 @@ function hnPAnim(e,dt,tx,ty,tz,lock){if(!e.mesh)return;e.mesh.position.set(e.x,e
   hnLook(L.eyes,e,tx,ty,tz,lock,t);}
 
 /* ---- damage rules: -25% per beam on her, x2 while admiring / preening / chopping her chorus, x1.5 melee under the lamp ---- */
-HN_MULT.pgbigpig=function(e,F,d,by,how){if(hnIsBot(by)&&HN_P.held)HN_P.allyT=MP.clock;
+HN_MULT.pgbigpig=function(e,F,d,by,how){
   if(e.st==='admire'||e.st==='preen'||e.st==='chorusChop')return d*2;
   if(e.st==='lampStun')return how==='melee'?d*1.5:d;
   const n=hnPBeamsOnHer(e);return d*(1-0.25*n);};
@@ -334,8 +334,7 @@ function hnPCleanup(keepPiglets){for(const m of entities){if(m.dead||m.t!=='mob'
 /* ---- summon: Dan steps over the velvet rope ---- */
 HN_SUMMON.bigpig=function(){const A=hnA();if(!P||P.dead)return;if(P.z>A.rope+0.6&&P.z<A.rope+3&&Math.abs(P.x-0.5)<9.6&&P.y<deckY(70)+4&&(HN.ropeLast||0)<=A.rope+0.6)hnFightStart('bigpig');HN.ropeLast=P.z;};
 /* bots never cross the rope while she is unbeaten and Dan is outside (P5 also refuses); one that does gets nudged back */
-HN_IDLE.bigpig=function(dt){const A=hnA();if(MP.dead.bigpig||(MPF.fight&&!MPF.fight.over))return;if(typeof AG_ACTIVE==='undefined'||!AG_ACTIVE)return;
-  for(const a of AGENTS){const b=a.e;if(!b||a.dead||!a.online||a.dim!==DIM)continue;if(b.z>A.rope+0.2&&b.z<A.rope+4&&Math.abs(b.x-0.5)<9.6){b.z=A.rope-0.6;b.vz=Math.min(0,b.vz||0);}}};
+HN_IDLE.bigpig=function(dt){};
 
 /* ---- the brain ---- */
 function hnPMove(e,tx,tz,spd,dt){const dx=tx-e.x,dz=tz-e.z,d=Math.hypot(dx,dz);if(d<0.06)return true;const s=Math.min(d,spd*dt);e.x+=dx/d*s;e.z+=dz/d*s;e.yaw=Math.atan2(dx,dz);
@@ -357,11 +356,9 @@ PREG.brain.pgbigpig=function(e,dt,T){e.vx=e.vy=e.vz=0;hnDanKTick(dt);
   if(F.phase===1&&P&&!P.dead&&hnPOnPlat(P.x,P.y,P.z)&&!F.pend){const hp=e.hp;hnPhaseUp(F);F.topOv=hp;F.capOv=Math.max(1,Math.floor(0.45*(hp-105)));hnLog(F,'earlyP2',{hp});}
   hnPLineTick(dt,e);
   /* player-thrown bots hitting her (P2's Pig Mitt throw writes a.pgrab.k='thrown', by a player) */
-  if(typeof AG_ACTIVE!=='undefined'&&AG_ACTIVE)for(const a of AGENTS){const g=a.pgrab,b=a.e;if(!g||!b||g.k!=='thrown'||g.until<=MP.clock)continue;
-    if(g.by==='the Pig'){if(P&&!P.dead&&Math.hypot(b.x-P.x,b.z-P.z)<1.2&&Math.abs(b.y-P.y)<1.8){purgHit(P,6,'the Pig','toss',{force:1,src:b});purgHit(b,6,'the Pig','toss',{force:1});g.until=0;}continue;}
-    if(Math.hypot(b.x-e.x,b.z-e.z)<1.4&&Math.abs(b.y-e.y)<2.2){hnWin(F,2.2,'thrown bot');hnHit(e,18,g.by||'Dan','pig');HN_P.stopT=2;g.until=0;hnSay('HOW DARE—',1.4,'howdare');hnLog(F,'botBack',{by:g.by});}}
+  
   /* pig mobs or the Hero Hog thrown at her by a player (P2's Pig Mitt): 18, the Hero Hog x2 ("NOT YOU"), and she stops throwing for 2 s */
-  for(const m of entities){if(m.dead||m.t!=='mob'||!m.pthrown||m.pheld)continue;const by=m.pthrown.by;if(!(by==='Dan'||hnIsBot(by)))continue;
+  for(const m of entities){if(m.dead||m.t!=='mob'||!m.pthrown||m.pheld)continue;const by=m.pthrown.by;if(!by==='Dan')continue;
     if(m.mt!=='pgtoss'&&m.mt!=='pgpiglet'&&m.mt!=='pghog'&&m.mt!=='pgpig')continue;
     if(Math.hypot(m.x-e.x,m.z-e.z)<1.5&&m.y>e.y-0.8&&m.y<e.y+2.6){m.pthrown=null;const link=m.mt==='pghog';hnWin(F,2.2,'thrown '+m.mt);hnHit(e,link?36:18,by,'pig');
       HN_P.stopT=2;hnSay(link?'NOT YOU!':'HOW DARE—',1.4,'howdare');hnLog(F,'pigBack',{kind:m.mt,by});
@@ -396,7 +393,7 @@ PREG.brain.pgbigpig=function(e,dt,T){e.vx=e.vy=e.vz=0;hnDanKTick(dt);
       HN_P.fastT-=dt;if(HN_P.fastT<=0&&HN_P.stopT<=0&&!(e.storm>0)){HN_P.fastT=3;const pigs=hnPPlatPigs().filter(m=>m.pst==='mill');
         if(pigs.length&&tg){let best=pigs[0],bd=1e9;for(const m of pigs){const d=Math.hypot(m.x-e.x,m.z-e.z);if(d<bd){bd=d;best=m;}}removeEnt(best);
           const t2=blind?hnPFoes()[(MPF.tick*3)%Math.max(1,hnPFoes().length)]:tg;if(t2)hnPThrowAt(e,t2,'fast');hnLog(F,'fastball',{});}
-        else if(!hnPPlatPigs().length&&HN_P.botCd<=0){const bot=hnPNearestBot(e);if(bot){HN_P.botCd=6;hnPThrowBot(e,bot,tg);}}}
+    }
       /* a slap if you stand next to her between moves */
       if(tb&&HN_P.slapT<=0&&Math.hypot(tb.x-e.x,tb.z-e.z)<1.3&&Math.abs((tg===P?P.y:tb.y)-e.y)<1.6){HN_P.slapT=1.4;purgHit(tg,4,'the Pig','slap',{src:e});}
       /* strut */
@@ -433,9 +430,7 @@ PREG.brain.pgbigpig=function(e,dt,T){e.vx=e.vy=e.vz=0;hnDanKTick(dt);
     default:e.st='idle';e.stT=0;}
   if(e.st!=='pose')F.fullLit=hnPBeamsOnHer(e)>=3?1:0;
   hnPAnim(e,dt,tx,ty,tz,lock);};
-function hnPByName(n){if(n==='Dan')return P&&!P.dead?P:null;const a=agByName(n);return a&&a.e&&!a.dead?a.e:null;}
-function hnPNearestBot(e){let best=null,bd=1e9;if(typeof AG_ACTIVE==='undefined'||!AG_ACTIVE)return null;
-  for(const a of AGENTS){const b=a.e;if(!b||a.dead||!a.online||a.dim!==DIM||(a.pgrab&&a.pgrab.until>MP.clock))continue;const d=Math.hypot(b.x-e.x,b.z-e.z);if(d<bd){bd=d;best=b;}}return best;}
+function hnPByName(n){return n==='Dan'&&P&&!P.dead?P:null;}
 function hnPThrowBot(e,bot,tg){const tb=tg?hnFoeBody(tg):P;const T=0.8,v=aimLob(e.x,e.y+2,e.z,tb.x,(tg===P?P.y:tb.y)+0.6,tb.z,T);
   hnGrabBot(bot,'thrown',{by:'the Pig',src:e,vx:v[0],vy:v[1],vz:v[2],x:e.x,y:e.y+2,z:e.z,dur:3});mwS('pg_whoosh',e.x,e.y+2,e.z);
   hnSay('Catch!',1,'catchbot');if(e.hf)hnLog(e.hf,'throwBot',{bot:bot.A&&bot.A.name});}

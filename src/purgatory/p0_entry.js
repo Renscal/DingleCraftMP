@@ -27,7 +27,6 @@ function mpDoorSiteOK(cx,cz,f){const r=[f[1],-f[0]];let mn=999,mx=-999;
   for(const k of MP_DOOR_AVOID){const d=cmpDef(k);if(!d||!d.cell)continue;const gx=Math.floor(cx/d.grid),gz=Math.floor(cz/d.grid);
     for(let ix=gx-1;ix<=gx+1;ix++)for(let iz=gz-1;iz<=gz+1;iz++){const c=d.cell(ix,iz);if(c&&Math.hypot(c.cx-cx,c.cz-cz)<48)return null;}}
   if(Math.hypot(DEMON_X-cx,DEMON_Z-cz)<75)return null;
-  if(typeof agStructs==='function')for(const s of agStructs())if(Math.hypot(s.x-cx,s.z-cz)<24)return null;
   return {y:mx+1};}
 function mpFindDoorSite(){const fw=[-Math.sin(P.yaw),-Math.cos(P.yaw)];
   for(const da of [0,Math.PI/2,-Math.PI/2,Math.PI]){const c=Math.cos(da),s=Math.sin(da),d=[fw[0]*c-fw[1]*s,fw[0]*s+fw[1]*c];
@@ -57,9 +56,7 @@ function mpStampDoor(o){o=o||{};if(!P||DIM!=='over')return MP.door;
   }finally{ACTOR=pa;}
   MP.door={x,y,z,f:[f[0],f[1]]};mpDS.dirty=1;
   if(!o.quiet)showToast('Somewhere nearby, a searchlight is sweeping the sky.');
-  if(typeof AG_ACTIVE!=='undefined'&&AG_ACTIVE)for(const a of AGENTS){
-    if(a.name==='honeybee_mc')agEvent(a,'There is a door standing on its own in a field nearby, with a frog puppet lying on a stool beside it and a searchlight behind it',7);
-    if(a.name==='BunkerBrad')agEvent(a,'A backstage door appeared out of nowhere in a field nearby, with a searchlight sweeping the sky behind it',7);}
+  
   return MP.door;}
 
 /* ---- the door set (OG prop meshes, built lazily once a door exists; animated by mpOverTick) ---- */
@@ -148,8 +145,7 @@ function mpFrogAnim(dt){const S=mpDS,h=S.head;if(!h)return;
     if(P&&S.g){const q=mpFrogDir(P.x,P.z),reach=Math.min(q[2]-0.9,2.2)*u;ry=Math.atan2(q[0],q[1]);px=q[0]*reach;pz=0.2+q[1]*reach;}
     rx=-0.25*u;sc=1+2.4*u;py=0.06+0.75*u;}
   if(S.biteT>0){S.biteT=Math.max(0,S.biteT-dt);const u=Math.sin(Math.min(1,(2.5-S.biteT)/2.5)*Math.PI);
-    const a=typeof agByName==='function'?agByName(S.biteName):null,b=a&&a.e;rx=-0.2*u;sc=1+0.6*u;pz=0.2+0.6*u;
-    if(b&&S.g){const q=mpFrogDir(b.x,b.z);ry=Math.atan2(q[0],q[1])*u;px=q[0]*0.5*u;pz=0.2+q[1]*0.5*u;}}
+    rx=-0.2*u;sc=1+0.6*u;pz=0.2+0.6*u;}
   h.rotation.x=rx;h.rotation.y=ry;h.position.x=px;h.position.y=py;h.position.z=pz;h.scale.set(sc,sc,sc);}
 /* the stool frog bites somebody at the trunks (P5's exit epilogue calls this for xx_lilcreepah_xx) */
 function mpDoorFrogBite(name){mpDS.biteName=name||null;mpDS.biteT=2.5;const d=MP.door;if(d)mwS('pg_bite',d.x,d.y,d.z);return !!d;}
@@ -219,7 +215,6 @@ function mpStrip(){const loot=[],take=st=>{if(st&&st.count>0)loot.push(st);};
   for(let i=0;i<4;i++){const a=P.armor[i];if(a){a.count=1;take(a);}P.armor[i]=null;}  /* by reference: dur/ench/mob ride along */
   const notable=mpNotable(loot);
   mpPlaceTrunk('Dan',0,loot);
-  if(typeof purgBotsStash==='function')try{purgBotsStash();}catch(err){mpFail('purgBotsStash',err);}
   MP.keep={mode:P.mode,cos:{hat:P.cos&&P.cos.hat||null,trail:P.cos&&P.cos.trail||null},spawn:P.spawn.slice()};
   P.mode='s';P.flying=false;P.cos={hat:null,trail:null};
   if(typeof plModel!=='undefined'&&plModel&&typeof applyHat==='function')try{applyHat(plModel);}catch(e){}
@@ -246,7 +241,6 @@ function mpArrive(){if(DIM==='puppet')return;
   const E=MPC.ENTRY,M=MPC.MARK;
   setDim('puppet',E.x,E.y,E.z);forceChunksNear(M[0],M[2]);
   P.x=M[0]+0.5;P.z=M[2]+0.5;P.y=mpSafeY(P.x,M[1],P.z);P.yaw=Math.PI;P.pitch=0;P.vx=P.vy=P.vz=0;P.fallD=0;
-  if(typeof purgBotsEnter==='function')try{purgBotsEnter();}catch(err){mpFail('purgBotsEnter',err);}
   for(const f of PREG.onEnter)try{f();}catch(err){mpFail('onEnter',err);}
   if(typeof hrPgPrewarm==='function')try{hrPgPrewarm();}catch(err){mpFail('hrPgPrewarm',err);}
   redrawHotbar();drawStats();}
@@ -351,7 +345,6 @@ function mpExit(o){o=o||{};if(DIM!=='puppet'||!P)return false;const abandon=!!o.
   setDim('over',px,R.y,pz);forceChunksNear(px,pz);
   P.y=mpSafeY(px,d?d.y:R.y,pz);P.vx=P.vy=P.vz=0;P.fallD=0;P.hurtT=1;if(d)P.yaw=Math.atan2(-d.f[0],-d.f[1]);
   for(const id of sv)mpGive({id,count:1},'souvenir');                       /* logged: the speed-run ledger explains it */
-  if(typeof purgBotsExit==='function')try{purgBotsExit();}catch(err){mpFail('purgBotsExit',err);}
   redrawHotbar();updateArmorHud();if(typeof plModel!=='undefined'&&plModel)syncArmorModel(plModel);drawStats();
   burstParticles(P.x,P.y+1.2,P.z,B.WOOL,10,0.6);mwS('pg_thunk');
   showToast(abandon?'Purgatory abandoned. The show will reopen.':'Everything from in there stays in there.');
@@ -367,9 +360,6 @@ function mpWipe(){const isM=k=>typeof k==='string'&&k.charCodeAt(0)===109&&k[1]=
   for(const k of [...torches])if(isM(k))torches.delete(k);
   for(const k of [...SPW.keys()])if(isM(k))SPW.delete(k);
   if(typeof LWN!=='undefined')for(const k of [...LWN.keys()])if(isM(k))LWN.delete(k);
-  if(typeof BOWN!=='undefined')for(const k of [...BOWN.keys()])if(isM(k))BOWN.delete(k);
-  if(typeof OWNC!=='undefined')for(const k of [...OWNC.keys()])if(k.startsWith('puppet|'))OWNC.delete(k);
-  if(typeof TICKETS!=='undefined')for(const k of [...TICKETS.keys()])if(isM(k))TICKETS.delete(k);
   for(let i=NUKES.length-1;i>=0;i--)if(NUKES[i].d==='puppet')NUKES.splice(i,1);
   for(const k of [...MP_LIGHTS])if(isM(k))MP_LIGHTS.delete(k);
   delete ENT_STASH.puppet;

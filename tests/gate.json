@@ -19,7 +19,6 @@
 
     { "group": "core", "name": "test.js", "suite": "tests/core/test.js", "runIn": "build", "repeat": 1, "clock": "static", "tiers": ["quick"] },
     { "group": "core", "name": "smoke.js", "suite": "tests/core/smoke.js", "runIn": "build", "repeat": 6, "clock": "real" },
-    { "group": "core", "name": "botsmoke.js", "suite": "tests/core/botsmoke.js", "runIn": "build", "repeat": 3, "clock": "fake" },
     { "group": "core", "name": "u_scale.js", "suite": "tests/ui/u_scale.js", "repeat": 1, "clock": "real", "tiers": ["quick"] },
     { "group": "core", "name": "u_title.js", "suite": "tests/ui/u_title.js", "repeat": 1, "clock": "real", "tiers": ["quick"] },
     { "group": "core", "name": "n_static.js", "suite": "tests/net/n_static.js", "repeat": 1, "clock": "static", "tiers": ["quick"] },
@@ -46,7 +45,6 @@
     { "group": "purgatory", "name": "p3_smoke.js", "suite": "tests/purgatory/p3_smoke.js", "repeat": 2, "clock": "real" },
     { "group": "purgatory", "name": "p4_smoke.js", "suite": "tests/purgatory/p4_smoke.js", "repeat": 2, "clock": "fake" },
     { "group": "purgatory", "name": "p4_boss.js", "suite": "tests/purgatory/p4_boss.js", "repeat": 2, "clock": "fake" },
-    { "group": "purgatory", "name": "p5_bots.js", "suite": "tests/purgatory/p5_bots.js", "repeat": 2, "clock": "fake" },
     { "group": "purgatory", "name": "p7_hr.js", "suite": "tests/purgatory/p7_hr.js", "repeat": 1, "clock": "real" },
     { "group": "purgatory", "name": "p8_saves.js", "suite": "tests/purgatory/p8_saves.js", "repeat": 1, "clock": "real" },
     { "group": "purgatory", "name": "p8_recast.js", "suite": "tests/purgatory/p8_recast.js", "repeat": 1, "clock": "static", "tiers": ["quick"] },
@@ -104,10 +102,7 @@
       "unsetEnv": ["FAL_KEY", "DINGLE_ENV_PATH", "FAL_LEDGER_DIR", "FAL_BUDGET_USD", "ANTHROPIC_API_KEY"],
       "note": "the fal client's key order and fail-closed budget, $0: fetch throws, temp folders and fake keys only, main() never runs" },
     { "group": "repo", "name": "secrets scan", "cmd": ["node", "tools/scan_secrets.mjs"], "tiers": ["quick"],
-      "note": "the would-be-committed file list (git ls-files, or a probe repo in the OS temp folder); prints path:line rule only, never a value" },
-    { "group": "repo", "name": "brain selftest", "cmd": ["node", "brain/selftest.mjs"], "when": { "file": "brain/node_modules" },
-      "unsetEnv": ["ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_BASE_URL", "FAL_KEY", "DINGLE_ENV_PATH", "DINGLE_UPSTREAM"],
-      "note": "hermetic (fake upstream, ephemeral ports, a sentinel key); needs brain/node_modules (npm ci --prefix brain)" }
+      "note": "the would-be-committed file list (git ls-files, or a probe repo in the OS temp folder); prints path:line rule only, never a value" }
   ],
   "helpers": [
     "tests/core/stubs.js", "tests/pilot/pilot.js", "tests/pilot/nav.js", "tests/pilot/route.js", "tests/pilot/boss_scripts.js"
@@ -130,6 +125,7 @@
     },
     "retired": {
       "p_static.js": 27, "p0_smoke.js": 4, "c_static.js": 11, "c0_smoke.js": 1, "m_static.js": 18, "m0_smoke.js": 2,
+      "botsmoke.js": 199, "p5_bots.js": 80,
       "og_trace_parity.js": 31, "og_trace_nocrea.js": 31, "og_trace_nomalg.js": 31
     }
   }

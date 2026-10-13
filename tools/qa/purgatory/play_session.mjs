@@ -8,7 +8,7 @@
 // so the page never contacts a brain server on this machine (the bots play on their autopilot). Sound is never turned on.
 import fs from 'fs';
 const A=process.argv.slice(2),pos=A.filter(a=>!a.startsWith('--')),opt=(k,d)=>{const a=A.find(x=>x.startsWith('--'+k+'='));return a?a.slice(k.length+3):d;};
-const url=pos[0],out=pos[1],port=+(pos[2]||9350),BOTS=!A.includes('--no-bots'),HREV=+opt('hr-every','4'),SHOTS=+opt('shot-every','45'),ONLY=opt('legs',''),PRE=opt('pre',''),STOP=opt('stop-after','');
+const url=pos[0],out=pos[1],port=+(pos[2]||9350),HREV=+opt('hr-every','4'),SHOTS=+opt('shot-every','45'),ONLY=opt('legs',''),PRE=opt('pre',''),STOP=opt('stop-after','');
 if(!url||!out){console.log('usage: node play_session.mjs <build-url> <outDir> [port] [--no-bots] [--hr-every=N] [--shot-every=S] [--seed=N] [--pre=file.js] [--stop-after=leg]');process.exit(2);}
 fs.mkdirSync(out,{recursive:true});
 const pg=await (await fetch(`http://127.0.0.1:${port}/json/new?about:blank`,{method:'PUT'})).json();
@@ -22,7 +22,7 @@ await send('Runtime.enable');await send('Page.enable');
 await send('Network.enable');await send('Network.setCacheDisabled',{cacheDisabled:true});   /* SimpleHTTP sends no Cache-Control: never test a stale build or pilot */
 await send('Emulation.setDeviceMetricsOverride',{width:1280,height:720,deviceScaleFactor:1,mobile:false});
 await send('Page.addScriptToEvaluateOnNewDocument',{source:"try{const k='vx_vox_settings';let s={};try{s=JSON.parse(localStorage.getItem(k)||'{}')||{};}catch(e){}s.snd=0;s.tp='og';localStorage.setItem(k,JSON.stringify(s));}catch(e){}"+
-  "window.__DINGLE_BRAIN={url:'http://127.0.0.1:9',token:null};window.requestAnimationFrame=function(){return 0;};"+
+  "window.requestAnimationFrame=function(){return 0;};"+
   /* a seeded Math.random from the first line of the page: the session is reproducible */
   "(function(){let s="+(+opt('seed','1337')>>>0)+";Math.random=function(){s=(s+0x6D2B79F5)>>>0;let t=s;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;};})();"});
 await send('Page.navigate',{url});
@@ -51,12 +51,11 @@ async function runLeg(name,code){const t0=Date.now();const r=await ev(`const {pi
     try{r=await (async()=>{${code}})();}catch(e){err=String(e&&e.message||e);}R.end();
     const fm=PS.frameMs.slice(n0).sort((a,b)=>a-b),med=fm.length?fm[Math.floor(fm.length/2)]:0,p99=fm.length?fm[Math.floor(fm.length*0.99)]:0,mx=fm.length?fm[fm.length-1]:0;
     PS.snap('end of ${name}');return {leg:'${name}',ok:r===true,pending:r==='pending',clock_s:+(MP().clock-c0).toFixed(1),frames:pilot.S.frames-f0,err,frameMs:{median:+med.toFixed(2),p99:+p99.toFixed(2),max:+mx.toFixed(1)},
-      bots:V.AGENTS.filter(a=>a.online).map(a=>({name:a.name,dim:a.dim,dead:!!a.dead,hp:a.hp,deaths:(MP().bots[a.name]||{}).deaths||0})),fails:pilot.S.fails.length};`,true);
+      fails:pilot.S.fails.length};`,true);
   r.wall_s=+((Date.now()-t0)/1000).toFixed(1);await pull();return r;}
 const LEGS=[];
-/* the overworld: a fresh world, the bots join (brain off), the door, the frog, the cutscene */
+/* the overworld: a fresh world, the door, the frog, the cutscene */
 LEGS.push(await runLeg('world',`V.startNewWorld('ps','1337','s');V.GR.snail=false;V.GR.jsc=0;V.GR.mobSpawn=false;
-  Object.assign(V.BRAIN,{mock:null,ok:false,off:true,url:'http://127.0.0.1:9'});${BOTS?"V.GR.bots=true;V.agJoinAll(false);":""}
   pilot.allowJump('new world',4);for(let i=0;i<40;i++){pilot.expect(V.IT.PCOMPASS,1);pilot.frame(1);}pilot.frame(120);return V.getDim()==='over';`));
 LEGS.push(await runLeg('door',`const d=V.mpDoorHere();pilot.allowJump('door stamped',2);pilot.frame(2);PS.snap('the Stage Door appears');
   return pilot.walkTo(d.x+0.5+d.f[0]*3,d.z+0.5+d.f[1]*3,{tol:1.0,max:30});`));
@@ -74,11 +73,11 @@ for(const lid of ids){if(ONLY&&!ONLY.split(',').includes(lid))continue;
       PS.snap('Hyperreal Medium: after ${lid} ('+V.getTP().id+')',true);await V.setPack('og');await idle();for(let i=0;i<4;i++)PS.step(1);`,true);await pull();hrN++;}
   if(!r.ok&&!r.pending)break;if(STOP&&lid===STOP)break;}
 const tail=await ev(`const V=__vox;const P=V.P;return {dim:V.getDim(),clock:+V.getMP().clock.toFixed(1),fails:PS.pilot.S.fails.slice(0,10),deaths:PS.R.ST.deaths,meals:PS.R.ST.eats,
-  dmg:PS.R.DMG,frames:PS.pilot.S.frames,log:PS.log.slice(-3000),extra:PS.extra||null,bots:V.AGENTS.map(a=>({name:a.name,online:a.online,dim:a.dim,inv:(a.inv||[]).filter(Boolean).length})),
+  dmg:PS.R.DMG,frames:PS.pilot.S.frames,log:PS.log.slice(-3000),extra:PS.extra||null,
   hpMp:V.getMP().bots,results:V.presOn&&V.presOn()};`,true);
 try{await ev(`try{const k='vx_vox_settings';let s=JSON.parse(localStorage.getItem(k)||'{}')||{};s.tp='og';s.snd=0;localStorage.setItem(k,JSON.stringify(s));}catch(e){}`,true);}catch(e){}
 const allMs=LEGS.map(l=>l.frameMs.median);
-const rep={url,bots:BOTS,legs:LEGS,tail,shots,consoleErrors:logs.slice(0,200)};
+const rep={url,legs:LEGS,tail,shots,consoleErrors:logs.slice(0,200)};
 fs.writeFileSync(out+'/session.json',JSON.stringify(rep,null,1));
 console.log('\n| leg | ok | game s | wall s | frame ms median | p99 | max |\n|---|---|---|---|---|---|---|');
 for(const l of LEGS)console.log('| '+l.leg+' | '+(l.ok?'yes':l.pending?'PENDING':'NO')+' | '+l.clock_s+' | '+l.wall_s+' | '+l.frameMs.median+' | '+l.frameMs.p99+' | '+l.frameMs.max+' |');

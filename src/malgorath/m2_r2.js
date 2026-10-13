@@ -107,7 +107,7 @@ var MG2R2={
         for(let s=s0;s<=a.s;s+=0.5)mg2R2Trench(L,s);                                        /* he eats a trench behind his jaw */
         for(const t of mg2Players()){const id=mg2TId(t);if(a.hit[id])continue;const p=mg2TPos(t),rx=p.x-L.x,rz=p.z-L.z,al=rx*L.ux+rz*L.uz,sd=Math.abs(-rx*L.uz+rz*L.ux);
           if(al<0||al>a.s+0.4||al>end+0.6||p.y<F-1||p.y>F+3)continue;
-          if(sd<=1.5){a.hit[id]=1;if(t===P){MG2.chompHow='lunge';mg2Chomp(P,'chomp',{dir:Math.atan2(p.z-MGC.Z,p.x-MGC.X)});}else mg2Swallow(t,'lunge');}
+          if(sd<=1.5){a.hit[id]=1;if(t===P){MG2.chompHow='lunge';mg2Chomp(P,'chomp',{dir:Math.atan2(p.z-MGC.Z,p.x-MGC.X)});}}
           else if(sd<=3.5){a.hit[id]=1;mg2Hit(t,K.LUNGE_SIDE,MG_K.PIERCE,'side',{atk:1,kx:p.x-(L.x+L.ux*al),kz:p.z-(L.z+L.uz*al)});}}
         for(const m of MG2.adds){if(m.dead)continue;const rx=m.x-L.x,rz=m.z-L.z,al=rx*L.ux+rz*L.uz,sd=Math.abs(-rx*L.uz+rz*L.ux);if(al>=0&&al<=a.s&&sd<=1.8)mg2R2Swallow(m);}
         mg2R2Lit(a,L,a.s);if(MG2.atk!==a)return true;                                  /* he swallowed something lit: the bellyache took over */

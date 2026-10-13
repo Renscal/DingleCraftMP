@@ -57,14 +57,14 @@ function frame(t){
     updateDisaster(paused?0:dt);
     if(playing&&!paused)updateStocks(dt);
     trickFrame(paused?0:dt);
-    if(playing&&!paused){if(DIM==='over'){processVillages(dt);processParks(dt);processWD(dt);processCells(dt);tickTitans(dt);processRoosts(dt);tickMalg(dt);tickCompass(dt);}tickSpawners(dt);updateBossBar();updateXPHud();tickFlow(dt);updateArmorHud();tickDragons(dt);tickTrail(dt);tickBPass(dt);updateCut(dt);tickWin(dt);tickNuke(dt);tickMega(dt);tickTerr(dt);tickXray(dt);tickGadgets(dt);tickBig(dt);tickDisp(dt);tickLawns(dt);tickCine(dt);tickSnail(dt);tickScare(dt);tickHorror(dt);processNether(dt);processAether(dt);processPuppet(dt);tickPortal(dt);tickBots(dt);tickPCompass(dt);processCrea(dt);}
+    if(playing&&!paused){if(DIM==='over'){processVillages(dt);processParks(dt);processWD(dt);processCells(dt);tickTitans(dt);processRoosts(dt);tickMalg(dt);tickCompass(dt);}tickSpawners(dt);updateBossBar();updateXPHud();tickFlow(dt);updateArmorHud();tickDragons(dt);tickTrail(dt);tickBPass(dt);updateCut(dt);tickWin(dt);tickNuke(dt);tickMega(dt);tickTerr(dt);tickXray(dt);tickGadgets(dt);tickBig(dt);tickDisp(dt);tickLawns(dt);tickCine(dt);tickSnail(dt);tickScare(dt);tickHorror(dt);processNether(dt);processAether(dt);processPuppet(dt);tickPortal(dt);tickPCompass(dt);processCrea(dt);}
     const hideCur=playing&&!paused&&P&&!P.dead&&!modalOpen();
     if(hideCur!==curHidden){curHidden=hideCur;$('gl').style.cursor=hideCur?'none':'default';}
     engineSnd(!paused&&!!P.ride&&(P.ride.t==='car'||P.ride.t==='plane'),P.ride?P.ride.spd:0);
     drawRing();
     drawDebug(dt);
     ntFrame(dt);   /* PART 58: multiplayer (runs while paused too) */
-    tickAgHud(dt);
+    tickChatHud(dt);
     hudLayout();   /* toasts clear of menus, F3 and the player list clear of the HUD (p06e) */
     $('vignette').style.opacity=clamp(hurtFlash*2,0,0.55)+(P.hp<=4&&P.mode==='s'?0.12:0);
     $('waterov').style.opacity=P.eyeWater?(TP.hr&&HRL.on?0.12:0.35):0;

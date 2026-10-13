@@ -142,7 +142,7 @@ function mg1Tick(dt){if(DIM!=='over'||!P)return;
   mg1Drain(dt);
   if(MGF.d<MGC.R_SPAWN+20){mg1EyeTick(dt,g);mg1Offer(g);mg1PlateWake();}
   else if(MG1.eye.ent){removeEnt(MG1.eye.ent);MG1.eye.ent=null;}
-  mg1Cows(dt,g);mg1Chew(dt,g);mg1Dragon(g);mg1BotRescue(dt,g);
+  mg1Cows(dt,g);mg1Chew(dt,g);mg1Dragon(g);
   MG1.orphT-=dt;if(MG1.orphT<=0){MG1.orphT=2;if(!DEMON.dead&&MGF.d<MGC.R_GRADE)mg1Orphans();}
   mg1DeliverSpill();
   mg1Glows(dt);mg1Decals(dt);}

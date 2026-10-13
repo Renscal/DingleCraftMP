@@ -188,7 +188,7 @@ boot.run(async()=>{
    const toIsland=()=>{tp(isl[0],isl[1],V.mpCol(isl[0],isl[1]).g+1.05);};
    const [x,z]=cell,h=V.mpCol(x,z).g;
    ok('the sheet: Taut Felt Sheet at h, the 4-deep Bog Hollow under it, Pond Scum at h-5 over Foam',gb(x,h,z)===B.PG_SHEET&&[1,2,3,4].every(k=>gb(x,h-k,z)===0)&&gb(x,h-5,z)===B.PG_SCUM&&gb(x,h-6,z)===B.PG_FOAM);
-   toIsland();boot.purge(V);V.GR.bots=false;MP().tears.length=0;
+   toIsland();boot.purge(V);MP().tears.length=0;
    P.x=x+0.5;P.z=z+0.5;P.y=h+1.02;P.vx=P.vy=P.vz=0;P.fallD=0;step(30);
    ok('standing still on the sheet for 1.2 s: still taut',gb(x,h,z)===B.PG_SHEET&&MP().tears.length===0);
    step(10);ok('after 1.5 s it sags one block under Dan (MP.tears records it)',gb(x,h,z)===0&&gb(x,h-1,z)===B.PG_SHEET&&MP().tears.length===1);
@@ -200,13 +200,7 @@ boot.run(async()=>{
    ok('a mob standing on the sheet never sags it (only Dan does)',gb(x,h,z)===B.PG_SHEET&&MP().tears.length===0);if(!pig.dead)V.hurtMob(pig,999,0,0);
    ok('mwTearSheet tears for anyone (Shears, the croak ripple, the Daredevil)',V.mwTearSheet(x,h,z,'BunkerBrad')===true&&gb(x,h,z)===0&&MP().tears.length===1);
    MP().clock+=61;step(30);ok('...and that tear re-tensions too',gb(x,h,z)===B.PG_SHEET&&MP().tears.length===0);
-   /* never under a bot: a bot body standing on the same sheet cell for 4 s leaves it taut */
-   toIsland();V.GR.bots=true;try{V.agJoinAll(true);}catch(e){}step(30);const a=V.agByName&&V.agByName('BunkerBrad');
-   if(a){a.dim='puppet';a.x=x+0.5;a.y=h+1.05;a.z=z+0.5;a.spawnProt=0;step(20);}
-   let held=0;if(a&&a.e)for(let i=0;i<100;i++){if(!a.e)break;a.e.x=x+0.5;a.e.z=z+0.5;a.e.y=Math.max(a.e.y,h+1);a.e.vx=a.e.vz=0;step(1);held++;}
-   if(held<100)skip('a bot on the sheet','no bot body held inside (P5 stub or bots unavailable)');
-   else ok('a bot standing on the sheet for 4 s never sags it',gb(x,h,z)===B.PG_SHEET&&MP().tears.length===0);
-   try{V.agLeaveAll();}catch(e){}V.GR.bots=false;step(10);}
+   toIsland();step(160);}   /* the 160 frames the removed AI-player check used to take: the timed sections below start on the same clock phase as before */
 
   /* ===== 9. the flinch ===== */
   {tp(20,-100);boot.purge(V);const ky=3,kx=20,kz=-100;

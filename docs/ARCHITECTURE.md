@@ -43,7 +43,7 @@ The original game was written as numbered `PART`s, 1 to 52. Every big update sin
 
 ```
 src/core, world, entities, ui, features   PARTs 1-52    the original sandbox (v1.0 to v5.8), with every update's core hooks in place
-src/ai_players/                           PART 53       AI players (v5.9)
+src/ui/p53_chat.js                        PART 53       chat, the Tab list, shared helpers (the AI players of v5.9 were removed in v6.10)
 src/net/                                  PART 58       multiplayer (v6.10)                <- newest update
 src/malgorath/                            PART 57       the Malgorath Update (v6.3)
 src/creativity/                           PART 56       the Creativity Update (v6.2)
@@ -128,13 +128,13 @@ Line ranges are where each piece sat in the shipped v6.3 `game.js`, handy when a
 
 | PART | update | src | v6.3 lines |
 |---|---|---|---|
-| 53 | AI players (v5.9) | `ai_players/a1_core.js` … `a9_ui.js` (core, world, nav, body, skills, build, combat, mind, UI) + `mob_helpers.js` | 12336-16352 |
+| 53 | what is left of AI players (v5.9; the bots themselves were removed in v6.10) | `ui/p53_chat.js` (chat, the Tab list, the Player Compass, the biome flowers, damage attribution, the mob-spawner helpers) | 12336-16352 held ten files then |
 | 57 | the Malgorath Update (v6.3) | `malgorath/m0_contract.js`, `m1_*` the Bite, `m2_*` the fight, `m3_*` the OG model and effects | 16353-20577 |
 | 56 | the Creativity Update (v6.2) | `creativity/c0_contract.js`, `c1_*` paintings, `c2_*` music | 20578-22058 |
 | 55 | Puppet Purgatory (v6.1) | `purgatory/p0_*` contract, entry, guide; `p1_*` audio, rules, world; `p2_*` craft, gear, items, tiles; `p3_*` mobs, NPCs, rig, spawn; `p4_*` arena and the three headliners; `p5_bots.js` | 22059-30218 |
 | 54 | texture packs (v6.0) | `texpacks/t0_contract.js`, `tA_*` world and assets, `tB_*` light and post, `tC_*` the cast | 30219-31965 |
 | 57 HR | Malgorath in Hyperreal | `malgorath/hr/m4_*.js` + `hr/loaders/` + `hr/models/mg_malgorath.js` | 31966-32702 |
-| 54 | the Hyperreal cast and the purgatory cast | `texpacks/loaders/*` + `texpacks/models/*.js` (rig, Dan, the three bots, seven mobs, fifteen `pg_*`) | 32703-41009 |
+| 54 | the Hyperreal cast and the purgatory cast | `texpacks/loaders/*` + `texpacks/models/*.js` (rig, Dan, seven mobs, fifteen `pg_*`) | 32703-41009 |
 | - | export branch and boot | `boot/export_boot.js` | 41010-41029 |
 
 Every file of PARTs 54-57 starts with a marker line such as `/* ---- PART 55: p0_contract.js ---- */`. The markers are
@@ -216,7 +216,7 @@ live). The order of that line is load-bearing. A new per-frame system is appende
 
 Because everything shares one scope, the codebase runs on conventions instead of imports:
 
-- **Prefixes own names.** Each update declares names only with its own prefixes: `ag*`/`AG_*` (AI players), `tp*`,
+- **Prefixes own names.** Each update declares names only with its own prefixes: `tp*`,
   `hr*`, `HR*`, `TP*` (texture packs), `mp*`, `pi*`, `pm*`, `pg*`, `PG*` and friends (purgatory), `cr*`/`CR*`
   (creativity), `mg*`/`MG*` (Malgorath). The update statics enforce this.
 - **Contracts.** Each update has a contract file (`t0_contract.js`, `p0_contract.js`, `c0_contract.js`,
@@ -237,10 +237,10 @@ Because everything shares one scope, the codebase runs on conventions instead of
 - **Hook globals declared first.** `HIT_HOW`, `EXPL_BY` and `TP` are declared on lines 19-20 of the prologue so any hook
   can read them at any time.
 - **Load-time purity.** No THREE constructors, `Math.random`, `Date.now`, `performance.now` or `fetch` at the top level
-  of an update or on an OG per-frame path: the node stubs lack them, and the deterministic suites (botsmoke, og_trace)
+  of an update or on an OG per-frame path: the node stubs lack them, and the deterministic suites (og_trace)
   would drift.
 - **Global facades the browser relies on**: `window.__vox` (tests and QA rigs), `window.storage` (saves),
-  `window.HR` (models), `window.__DINGLE_BRAIN` (where the brain is), `THREE`. QA rigs also set bare globals such as
+  `window.HR` (models), `THREE`. QA rigs also set bare globals such as
   `soundOn` and `AC` through the devtools protocol.
 
 ## 6. How each update hooks in
@@ -249,17 +249,19 @@ All five updates were originally applied by text-substitution "hooks" at build t
 the core files simply contain the calls, and the update files contain everything else. When you change an update, the
 places it touches in the core are ordinary code you can grep for.
 
-### AI players (PART 53, `src/ai_players/`)
+### Chat, the player list and shared helpers (PART 53, `src/ui/p53_chat.js`)
 
-Three bots (`AGENTS`: BunkerBrad, xx_lilcreepah_xx, honeybee_mc) with real survival rules. `a1_core` (agents, events,
-relationships), `a2_world`, `a3_nav` (pathfinding, `MinHeap`), `a4_body`, `a5_skills`, `a6_build`, `a7_combat`,
-`a8_mind` (talks to the brain server), `a9_ui` (chat, commands, tab list, player compass). Damage attribution goes through
-`HIT_BY`, `ACTOR`, `HIT_HOW`.
+PART 53 was the AI Players update (v5.9): three bots with their own brains, run by a local server. Multiplayer (v6.10)
+brought real players and the bots were removed, with their brain server, their suites and their hooks. What the rest of
+the game had come to rely on stayed, in one file: the chat box and its log (`CHAT`, `chatPush`, `sysMsg`,
+`chatSubmit`), the Tab player list (`renderTab`), the Player Compass (item 284, which now tracks the other players on a
+server), the nine biome flowers (block ids 140-148: worldgen places them), positional sound (`playSAt`), mob display
+names (`MOB_NAME`), the mob spawner's `mobAnchor` / `mobFarFromAll` / `mobClearOfPlayers`, and damage attribution:
+`HIT_BY`, `ACTOR`, `HIT_HOW`, `EXPL_BY` and `LASTDMG` (a new object for every hurt).
 
-In the core: deaths and respawns (`agOnDanDeath`), pickups (`agTryPickup`), mob targeting and hurting (`agSees`,
-`agHurt`), the per-frame body tick (`agBodyTick`), chests (`agChestOpen`/`agChestClose`), saves (`agSnapshot`,
-`agRestore`, `agReset`), joining a new world (`agJoinAll`), dimensions (`agSyncFromBody`), the debug menu. Their minds
-live outside the game: the brain server in `brain/` ([BRAIN.md](BRAIN.md)). Without it they run on autopilot.
+Old saves still carry a `bots` table and four `bot*` game rules; `applySave` ignores the first and deletes the rest.
+Purgatory's headliner code still has branches for "the target is a bot body" (`t.bot`, `a.pgrab`): nothing sets those
+any more, so they never run.
 
 ### Texture packs (PART 54, `src/texpacks/`)
 
@@ -268,7 +270,7 @@ Settings → Texture pack **OG | Hyperreal**, with quality Auto/Low/Medium/High/
 supported, prepare, enable, disable, setQuality, frame})`). Three modules: `world` (`tA_*`: the art as two texture arrays,
 the chunk shader, material swap, cube drops), `light` (`tB_*`: sun and moon shadows, torch and lava lights, sky, presets
 per dimension, the bloom/SSAO/tone-mapping chain), `ents` (`tC_*`: the cast models for eight mobs, Dan, the fist and
-the three bots, and corpses). The art comes from `hrAssets()` in `hrassets.js`.
+and corpses). The art comes from `hrAssets()` in `hrassets.js`.
 
 In the core, every hook is guarded (`TP.hr`, `HRW.on`, `HRL.on`, `HRE.on`, `e.hrM`...) and its OG branch is the original
 code, character for character: mesher (`tpEmit`), drops (`tpCubeDrop`), mob meshes and ticks (`hrMobMesh`, `hrMobTick`,
@@ -283,7 +285,7 @@ A Stage Door appears in the overworld; inside is a whole dimension with its own 
 three headliner bosses and an exit. All state is one saved object `MP` (plus `ENT_STASH`), written only once it differs
 from `mpDefault()`. Every purgatory timer runs on `MP.clock`, never on wall time. Purgatory mobs (`pmob:1`) are never
 saved. Packages: P0 contract, entry and guide; P1 world, rules and audio; P2 items, crafting, gear and tiles; P3 mobs and
-NPCs; P4 the headliners and the Strike; P5 the bots inside.
+NPCs; P4 the headliners and the Strike.
 
 In the core: block break and place (`mpOnBreak`, `mpOnPlace`, `mpPlaceOK`), death and respawn (`mpOnDeath`,
 `mpRespawn`), mobs (`mpBrain`, `mpMobMesh`, `mpPreHurt`, `mpOnKill`, `mpAmbient`), physics tweaks (`piSpeed`, `piLand`,
@@ -322,7 +324,7 @@ built-in muxer `rpMux`; F2 (`rpShotNow`) saves a PNG. Settings `s_replay`, the o
 The boss at X 1000, Z 1000, rebuilt: the Bite (a 77 m hole in the world), a three-round fight, scenes, loot. State is one
 object `MALG` saved as `save.mg` (only when it differs from `mgDefault()`); the fight itself (`MG2`) is rebuilt from the
 checkpoint `MALG.round`. Packages: m0 contract (`MALG`, `MGREG`, the telegraph channel `mgDraw`, saves, migration), M1
-the Bite (layouts, a 250-cells-per-frame write queue, the summon), M2 the fight (rounds, waves, scenes, loot, HUD, bots,
+the Bite (layouts, a 250-cells-per-frame write queue, the summon), M2 the fight (rounds, waves, scenes, loot, HUD,
 audio), M3 the OG model and effects, M4 Hyperreal (the `hr/` block: grading, the skinned model, effects).
 
 In the core: world stamping (`mgStampChunk`), protection of his site (`MGP_ON`, `mgProtected`, `mgProtect`,
@@ -386,7 +388,7 @@ everyone else, which is what the Tab list needs.
 | block edits, all dimensions | `setBlock` queues `[ckey, "lx,y,lz", id]`; `ntFlush` sends about 15 times a second; `ntApplyEdit` applies a received edit through `setBlock` under `NET.ap` (so it is not sent back), or straight into `chunkEdits` when the chunk is not loaded |
 | chests, furnaces, terrariums, displays | `ntBeScan` once a second compares each block entity with its last sent signature (`ntBeSig`: a furnace's timers are left out, each client ticks its own copy); `ntApplyBE` updates the object in place so an open window keeps working |
 | dropped items | every drop made while connected gets an id (`ntDropSpawned`, the tail of `spawnDrop`) and is sent once with its velocity; `NET.drops` is the client's copy of the server's table, in every dimension. A drop has a body (an ordinary `'drop'` entity tagged `e.nid`) only while its chunk is loaded here (`ntDropsScan`, once a second and on a dimension change); each client runs the physics of its own copy. Pickup is asked of the server (`ntDropTake` -> `take` -> `took` for one player, `undrop` for the rest), so nothing is duplicated. Drops spawned while a remote edit is being applied (`NET.ap`) are suppressed, networked drops never go into `ENT_STASH`, and drops do not merge online |
-| time of day, game rules | the server's clock is sent every 5 s; a local jump (the debug menu) is sent up and `GR` is polled once a second (`bots` never travels), and the server takes either only from an operator or with Cheats on, otherwise it sends its own value back. A bed sends `sleep`: a vote that lasts 30 s, counted against `sleepPercent` |
+| time of day, game rules | the server's clock is sent every 5 s; a local jump (the debug menu) is sent up and `GR` is polled once a second, and the server takes either only from an operator or with Cheats on, otherwise it sends its own value back. A bed sends `sleep`: a vote that lasts 30 s, counted against `sleepPercent` |
 | chest locks | `openModal` asks first (`ntBeAsk` sends `open`); the server answers with the latest contents and `lock`; `ntLockTick` sends the contents and `close` the frame the window shuts. A holder who left or walked 12 blocks away has let go |
 | ordinary mobs (`NT_MOBS`) | one owner each: the nearest player's game runs the mob (so its brain, which only knows the local player, chases the nearest player) and sends `mobs` 8 times a second; everyone else has a puppet (`e.pup`: `ntMobPup` instead of `updateMob`, and `hurtMob` forwards the hit as `mhit`). Twice a second an owner hands a mob to a clearly nearer player (`mgive`), or to anyone in range while its own game is paused. A puppet silent for 3 s is removed. Never saved |
 | explosions, arrows, bullets | `explode` tells the players nearby (`boom`: the bang and the damage; the holes are ordinary edits); the player's own arrows and bullets test other players (`ntShot`) and send a `hit` |
@@ -397,7 +399,7 @@ everyone else, which is what the Tab list needs.
 | chat, PvP | `chatSubmit` to `ntChat`; `doMine` asks `ntMelee` whether another player is the nearest thing on the look ray |
 
 **Not shared:** vehicles, bosses, dragons, villagers, snakes, blocklings, titans, the Purgatory and Malgorath casts, the
-AI players (forced off), XP orbs, creativity works, the stock market and the structure SEEN sets. Each client simulates
+XP orbs, creativity works, the stock market and the structure SEEN sets. Each client simulates
 those itself. Fire, falling blocks and structure processing also still run on every client: their block writes travel as
 ordinary edits and converge on the last writer.
 

@@ -89,7 +89,6 @@ function updateDrop(e,dt){
       if(e.st.count<=0){removeEnt(e);return;}
     }
   }
-  if(AG_ACTIVE&&agTryPickup(e))return;
   /* merge with nearby same drops occasionally */
   if(((frameCount+(e.bob*10|0))%30)===0&&e.st.count<stackMax(e.st.id)&&e.st.dur==null&&!NET.on){
     for(const o of entities){

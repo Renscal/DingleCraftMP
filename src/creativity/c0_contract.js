@@ -70,7 +70,7 @@ var CR_TDEF={
   cr_juke_b:(c,R)=>crWood(c,R,'#4a2c14'),
   cr_c1a:c=>c.clearRect(0,0,16,16),cr_c1b:c=>c.clearRect(0,0,16,16),cr_c2a:c=>c.clearRect(0,0,16,16),cr_c2b:c=>c.clearRect(0,0,16,16)};
 
-/* ---- blocks (plan 2.1). Every block carries cr:<kind> and interact:'crea' (bots' nBreakable skips interact blocks; living
+/* ---- blocks (plan 2.1). Every block carries cr:<kind> and interact:'crea' (living
    blocks skip them too). The painting cell is hidden (never in the creative palette, never an item). ---- */
 def(B.CR_EASEL,{name:'Easel',tiles:{top:'cr_easel_t',side:'cr_easel_s',bot:'cr_easel_t'},hard:1,toolClass:'axe',
   solid:true,opq:false,bucket:'cut',cross:true,crm:'easel',interact:'crea',cr:'easel'});   /* cross: icon, hand and the stub render */
@@ -151,8 +151,6 @@ function crGiveDan(st,x,y,z){const s={id:st.id,count:st.count||1};const left=inv
   if(left>0)spawnDrop(x!=null?x:P.x,y!=null?y:P.y+1,z!=null?z:P.z,{id:s.id,count:left},0,1.5,0);redrawHotbar();return left;}
 function crTakeHeld(st){for(let i=0;i<P.inv.length;i++)if(P.inv[i]===st){P.inv[i]=null;break;}redrawHotbar();}
 function crSpawnWork(id,x,y,z,nx,nz){if(!crWorkN(id))return;spawnDrop(x,y,z,{id,count:1},(nx||0)*1.2+(Math.random()-0.5)*0.8,2.2,(nz||0)*1.2+(Math.random()-0.5)*0.8);}
-/* bots never hold works (hooks C0-11/12): agGive refuses them, agTryPickup leaves their drops alone */
-function crBotNo(st){const d=st&&DEFS[st.id];return !!(d&&d.crw);}
 function crKeepDrop(e){const d=e&&e.st&&DEFS[e.st.id];return !!(d&&d.crw);}       /* work drops never despawn (hook C0-10) */
 
 /* ---- block entities (plan 5) ---- */
@@ -199,7 +197,7 @@ function crRemovePainting(be,drop){const g=crPaintGeom(be);
   for(const c of crPaintCells(be)){const k=bkey(c[0],c[1],c[2]),b=blockEnts.get(k);
     if(b&&b.t==='crpaint'&&b.a===be.a&&b.id===be.id){blockEnts.delete(k);crUnindex(k);if(getBlock(c[0],c[1],c[2])===B.CR_PAINT)setBlock(c[0],c[1],c[2],B.AIR);}}
   if(drop)crSpawnWork(be.id,g.x+g.nx*0.35,g.y-0.3,g.z+g.nz*0.35,g.nx,g.nz);}
-/* a block of ours is being broken through breakBlock/agBreakBlock (hook C0-06: scatterBE dispatches here) */
+/* a block of ours is being broken through breakBlock (hook C0-06: scatterBE dispatches here) */
 function crScatter(x,y,z,be){const k=bkey(x,y,z);
   if(crOn&&CRF.ctx&&CRF.ctx.bek===k)crUIClose(true);
   if(be.t==='crpaint'){crRemovePainting(be,true);return;}
@@ -368,9 +366,9 @@ function crInfo(){const s=crStats();return {...s,ui:crOn,clock:+CRF.clock.toFixe
 Object.assign(CREX,{crInfo,crStats,getCR:()=>({CRW,CRN,CRBE,CRF,CRSZ}),CRC,CRREG,CR_TILES,CR_RECIPE_N,crNew,crRec,crRecOf,crSetData,crFinish,
   crDiscard,crItemId,crWorkN,crTitle,crName,crBytes,crPlacePainting,crPaintCells,crPaintGeom,crPaintFits,crPaintSupported,crPaintLoaded,crCellsAt,
   crRight,crFaceOf,crInteract,crUseHeld,crEnsureBE,crBE,crOnPlace,crScatter,crOrphan,crSweep,crRemovePainting,crCtx,crCtxRec,
-  crStartWork,crEndWork,crDropWork,crUIOpen,crUIClose,crKey,crAsk,crAskDone,crGiveDan,crSpawnWork,crBotNo,crKeepDrop,crSaveFields,
+  crStartWork,crEndWork,crDropWork,crUIOpen,crUIClose,crKey,crAsk,crAskDone,crGiveDan,crSpawnWork,crKeepDrop,crSaveFields,
   crLoad,crReset,crDefSync,crIcon,processCrea,crOn:()=>crOn,crLost,crLostDef,getCRLOST:()=>CRLOST,
   crCore:()=>({Tl,ATLAS,tn:_tn,ICONS,ICONTEX,MODAL,getCursor:()=>cursorStack,setCursor:s=>{cursorStack=s;},slotClick,quickMove,die,
     scatterBE,breakBlock,explode0,nukeExplode,doMine,doUse:()=>doUse,getIcon,keyDim,keyCore,bkey,chunkAt,removeEnt,closeModal,
     stashEnts,unstashEnts,setDim,modalOpen,lookDir,eyePos,raycastB,meshChunk,ENT_STASH,handKind:()=>handKind,sortInv,dropSel,
-    resetWorld,tileUV,mulberry32,agPlaceable,agBreaking,setHandKind:v=>{handKind=v;}})});
+    resetWorld,tileUV,mulberry32,setHandKind:v=>{handKind=v;}})});

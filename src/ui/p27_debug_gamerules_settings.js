@@ -2,7 +2,7 @@
 /* PART 27 — DEBUG MENU, GAMERULES & SETTINGS MEMORY  (2.3.1)            */
 /* ===================================================================== */
 function GR_DEF(){return {keepInv:false,god:false,mobGrief:true,mobSpawn:true,
-  dayCycle:true,fireTick:true,fallDmg:true,snail:true,jsc:0,instaKill:false,freezeMobs:false,ghosts:true,bots:false,botPvP:true,botGrief:true,botPurg:true,fbOK:true,store:true,powers:true,cheats:true};}
+  dayCycle:true,fireTick:true,fallDmg:true,snail:true,jsc:0,instaKill:false,freezeMobs:false,ghosts:true,fbOK:true,store:true,powers:true,cheats:true};}
 const GR=GR_DEF();
 let dbgmOpen=false;
 const GR_LABELS=[
@@ -17,10 +17,6 @@ const GR_LABELS=[
   ['instaKill','Instant Kill',              'Any hit you land kills a mob outright \u2014 guns, blades, tools, all of it.'],
   ['freezeMobs','Freeze All Mobs',          'Every mob stops where it stands \u2014 no moving, no attacking \u2014 until you turn this off.'],
   ['ghosts',  'Guilt Ghosts',              'Slain mobs sometimes return to guilt-trip you. Off keeps them away for good.'],
-  ['bots',    'AI Players',                'BunkerBrad, xx_lilcreepah_xx and honeybee_mc live in this world. Off makes them log out.'],
-  ['botPvP',  'AI Player PvP',             'The AI players can fight you and each other.'],
-  ['botGrief','AI Player Griefing',        'The AI players can break, blow up and raid anyone\u2019s stuff.'],
-  ['botPurg', 'AI Players Follow Into Purgatory','The AI players are dragged in with you, and out again. Off leaves them frozen at the door.'],
   ['fbOK',    'Fullbright Toggle',         'Off removes the Fullbright button from Settings and turns it off.'],
   ['store',   'Dingle Store',              'Off closes the shop and removes it from the pause menu.'],
   ['powers',  'Superpowers',               'Off disables the P menu and its button.'],
@@ -37,7 +33,6 @@ function grToggle(k){
   GR[k]=!GR[k];
   if(k==='snail'&&!GR.snail&&SNL){removeEnt(SNL);SNL=null;} /* banish the one currently after you */
   if(k==='ghosts'&&!GR.ghosts)for(const e of entities)if(e.t==='ghost'&&!e.dead)removeEnt(e);
-  if(k==='bots'){if(GR.bots)agJoinAll(false);else agLeaveAll();}
   if(k==='fbOK'||k==='store'||k==='powers'||k==='cheats')grApplyUI();
   playS('click');
   renderDbgm();
@@ -116,14 +111,13 @@ function renderDbgm(){
   });
 }
 /* ----- the player's name (Release 1.0): asked on first launch, 2-16 characters. Internally the player is still 'Dan'
-   (saves, AI-player relations, ownership); every name shown on screen or sent to the AI players goes through
-   pnShow/pnText, and replies are mapped back with pnBack. A name the mapping would confuse is refused (pnValid): one
-   letter, an AI player's name or nickname, or a common short word ('grab a pick' must not become 'grab Dan pick').
-   pnText maps 'Dan' in any case (the creep's lowercase 'dan' too) and never touches the credit 'Dan Dingle'. ----- */
+   (saves, ownership); every name shown on screen goes through pnShow/pnText, and text is mapped back with pnBack. A
+   name the mapping would confuse is refused (pnValid): one letter, or a common short word ('grab a pick' must not
+   become 'grab Dan pick'). pnText maps 'Dan' in any case and never touches the credit 'Dan Dingle'. ----- */
 let PNAME='Dan',PNAME_SET=false;
 const PN_NO=new Set(['a','i','an','and','all','are','as','at','be','but','by','do','for','go','he','her','here','him','his','if','in','is','it',
   'its','me','my','no','not','of','ok','on','one','or','she','so','that','the','them','there','they','this','to','up','us','we','who','yes','you',
-  'everyone','someone','nobody','brad','bunkerbrad','creep','creepah','lilcreepah','lil creep','xx_lilcreepah_xx','bee','honey','honeybee','honeybee_mc']);
+  'everyone','someone','nobody']);
 function pnClean(s){return (''+(s||'')).replace(/[\u0000-\u001f<>]/g,'').replace(/\s+/g,' ').trim().slice(0,16);}
 function pnValid(n){return typeof n==='string'&&n.length>=2&&!PN_NO.has(n.toLowerCase());}
 function pnShow(who){return who==='Dan'?PNAME:who;}

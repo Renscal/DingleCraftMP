@@ -1,6 +1,5 @@
 /* p4_boss.js (P4, gate x2): the boss-fight harness (the purgatory build plan section 9.2). Deterministic: seeded
-   Math.random, a counting clock, GR.mobSpawn off, the AI players online but left in the overworld (so a bot NAME exists for the
-   bot rules without bodies in the arena). One fight per section, entered with hnSkipTo(n). Then the scripted optimal play of
+   Math.random, a counting clock, GR.mobSpawn off. One fight per section, entered with hnSkipTo(n). Then the scripted optimal play of
    qa/boss_scripts.js per headliner with the time-to-kill bounds and >= 2 counter windows per phase; the per-fight timelines go to
    out/purgatory/boss_<name>.json ($DC_OUT_DIR/purgatory/ when set). Prints "N passed, M failed" last. */
 'use strict';
@@ -28,8 +27,8 @@ function inv(id){return V.invCount(V.P.inv,id);}
 function pin(e,st){e.st=st||'dazed';e.stT=0;e.dazeT=999;e.dazeMul=1;e.pinv=0;}
 
 boot.run(async()=>{
-  boot.world(V,'p4boss','1337',step);V.GR.mobSpawn=false;V.GR.bots=true;if(typeof V.agJoinAll==='function'){V.agJoinAll(false);step(10);}
-  const bot=['BunkerBrad','xx_lilcreepah_xx','honeybee_mc'].find(n=>{try{return !!(V.agByName&&V.agByName(n));}catch(e){return false;}})||null;
+  boot.world(V,'p4boss','1337',step);V.GR.mobSpawn=false;
+  const bot=null;   /* the AI players are gone (6.10): the "anyone but Dan" checks below use a plain name */
   const A=V.hnA();
   ok('the three arenas are laid out (12 plate groups, 4 stations, a 121-cell fuse line, 32 lily pads, the staircase)',Object.keys(A.groups).length===12&&A.st.length===4&&A.fuse.length>=110&&A.pads.length>=28&&V.hnTreadTop(0,121)===63);
   /* every Demolitionist network feeds exactly its own three plate groups (the conduction rule, bible 4) */

@@ -56,7 +56,7 @@ function pmPre(e,dt){if(!e.pi)pmInit(e);if(PMS.flF!==frameCount)pmFlightStep(dt)
 /* nearest target: Dan or a bot body (purgFoe); in BLACKOUT hostiles go for the followspot's player within 48 m, else 8 m */
 function pmFoe(e,range,opt){opt=opt||{};if(e.pblind>MP.clock)return null;     /* a Custard Pie in the face: it wanders 4 s */
   if(pmBlackout()&&!opt.noSpot){let f=null;try{f=mwFollowTarget();}catch(err){}
-    if(f){const a=f.who==='Dan'?null:agByName(f.who),t=f.who==='Dan'?((P&&!P.dead&&P.mode!=='c')?P:null):(a&&a.online&&!a.dead&&a.dim===DIM?a.e:null);
+    if(f){const t=f.who==='Dan'&&P&&!P.dead&&P.mode!=='c'?P:null;
       if(t&&!t.dead&&Math.hypot(t.x-e.x,t.z-e.z)<=48&&(!opt.danOnly||t===P)&&t!==opt.skip)return t;}
     range=Math.min(range,8);}
   return purgFoe(e,range,opt);}
@@ -109,7 +109,7 @@ hurtMob=function(e,dmg,kx,kz){
   if(DIM==='puppet'&&e&&e.t==='mob'&&!e.bot&&!e.dead&&dmg>0&&e.hurtT<=0.25&&PM_NAMES[e.mt]&&!MOBT[e.mt].npc){
     let r=dmg;try{r=pmPreHit(e,dmg,kx,kz);}catch(err){mpFail('p3 prehit '+e.mt,err);r=dmg;}if(r<0)return;dmg=r;}
   return pmHurtMob0(e,dmg,kx,kz);};
-function pmHeldOf(by){if(!by||by==='Dan')return P?heldStack():null;const a=agByName(by);return a?a.inv[a.sel]:null;}
+function pmHeldOf(by){return (!by||by==='Dan')&&P?heldStack():null;}
 function pmPreHit(e,dmg,kx,kz){if(!e.pi)pmInit(e);const by=HIT_BY||'Dan',how=HIT_HOW,mel=how==null||how==='melee';
   const st=mel?pmHeldOf(by):null;
   if(st&&st.id===IT.PG_GAUNTLET&&e.mt==='pghand')dmg*=3;          /* x3 against flesh; UNHAND itself is P2's (piMeleeTick) */
@@ -284,8 +284,7 @@ PREG.brain.pgfeltdan=function(e,dt,T){if(pmPre(e,dt))return;
   if(!pmBlackout()){e.limp=(e.limp||0)+dt;if(e.pr&&e.pr.root){e.pr.root.rotation.x=-Math.min(1.5,e.limp*2.4);}
     e.mesh.position.set(e.x,e.y,e.z);if(e.limp>1.4)removeEnt(e);return;}
   const doc=pmDocile();let t=null;
-  if(!doc){t=purgFoe(e,64,{danOnly:true});if(e.grudge)for(const nm in e.grudge){const a=agByName(nm),g=a&&a.online&&!a.dead&&a.dim===DIM?a.e:null;   /* a bot that hit it */
-      if(g&&!g.dead&&Math.hypot(g.x-e.x,g.z-e.z)<24&&(!t||Math.hypot(g.x-e.x,g.z-e.z)<Math.hypot(t.x-e.x,t.z-e.z)))t=g;}}
+  if(!doc)t=purgFoe(e,64,{danOnly:true});
   let mx=0,mz=0,look=null,lock=false;const pr=e.pr;
   if(t){const dx=t.x-e.x,dz=t.z-e.z,d=Math.hypot(dx,dz)||1;look=[t.x,t.y+1.5,t.z];
     if(e.plock>0){lock=true;e.plock-=dt;const pull=clamp((0.5-e.plock)/0.5,0,1);if(pr&&pr.armR)pr.armR.rotation.x=e.plock<0.5?pull*1.3:0;
@@ -296,7 +295,7 @@ PREG.brain.pgfeltdan=function(e,dt,T){if(pmPre(e,dt))return;
   if(e.punchT>0){e.punchT-=dt;if(e.punchT<=0&&pr&&pr.armR)pr.armR.rotation.x=0;}
   pmWalk(e,dt,mx,mz,T.spd*2.2);if(look)pmTurn(e,look[0]-e.x,look[2]-e.z,dt,9);else pmTurn(e,e.vx,e.vz,dt,6);
   pmPost(e,dt,{look,lock});};
-PM_HURT.pgfeltdan=(e,dmg,by)=>{if(by&&by!=='Dan'&&agByName(by)){e.grudge=e.grudge||{};e.grudge[by]=1;}return dmg;};
+PM_HURT.pgfeltdan=(e,dmg,by)=>dmg;
 
 /* ===================================================================== */
 /* rubber hens, Chorus Pigs, Thieving Frogs                                                                               */
@@ -473,7 +472,7 @@ function pmRatPop(e){if(e.dead)return;burstParticles(e.x,e.y+e.h,e.z,B.PG_BURNER
   try{e.hurtT=0;pmHurtMob0(e,99999,0,0);}finally{HIT_BY=h;HIT_HOW=w;}}
 function pmRatSplit(e,by){const nx=PM_BKSPLIT[e.mt];if(!nx)return false;const g=e.grp,x=e.x,y=e.y,z=e.z;
   if(pmRatCount()>=16)return false;
-  if(MOBT[e.mt].drop&&Math.random()<0.5)mpDrop(x,y+0.5,z,{id:IT.PG_COPPER,count:1},(agByName(by)||by==='Dan')?by:null,0,2,0);
+  if(MOBT[e.mt].drop&&Math.random()<0.5)mpDrop(x,y+0.5,z,{id:IT.PG_COPPER,count:1},by==='Dan'?by:null,0,2,0);
   e.pnodrop=1;removeEnt(e);burstParticles(x,y+0.6,z,B.PG_LINO,8,0.5);mwS('pg_alarm',x,y,z);
   for(const s of [-1,1]){spawnMob(nx,x+s*0.3,y+0.05,z+s*0.1);const c=entities[entities.length-1];c.grp=g;c.vx=s*3;c.vy=4;c.hurtT=0.35;c.pangry=MP.clock+40;}
   if(g!=null)PMS['bkg'+g]=MP.clock+40;return true;}
@@ -575,7 +574,7 @@ function pmFireDare(target){if(DIM!=='puppet'||!target)return null;const side=ta
 /* ===================================================================== */
 /* the kill event: extra loot owned by the killer, Felt Dan's half-kit, the Daredevil's helmet, the frog's stolen stack, the hen rule */
 /* ===================================================================== */
-function pmKiller(){const w=HIT_BY;if(w==='Dan')return 'Dan';return w&&agByName(w)?w:null;}
+function pmKiller(){return HIT_BY==='Dan'?'Dan':null;}
 function pmDropAt(e,st,owner){const a=e.seed+(PMS.seq++);return mpDrop(e.x,e.y+0.5,e.z,st,owner,Math.sin(a)*1.5,2.2,Math.cos(a)*1.5);}
 PREG.onKill.push(function(e){if(!PM_NAMES[e.mt]||MOBT[e.mt].npc)return;const who=pmKiller();
   if(e.parmG&&e.pwd==null){e.pwd=0.7;}
@@ -592,4 +591,4 @@ PREG.onKill.push(function(e){if(!PM_NAMES[e.mt]||MOBT[e.mt].npc)return;const who
   pmStructDied(e);});
 /* a player killing 4+ hens within 3 minutes of MP.clock gets the Daredevil fired in from the nearest wing */
 function pmHenRule(who){const L=PMS.henKills[who]||(PMS.henKills[who]=[]);L.push(MP.clock);while(L.length&&MP.clock-L[0]>180)L.shift();
-  if(L.length>=4){L.length=0;const t=who==='Dan'?P:(agByName(who)||{}).e;if(t&&!t.dead){pmFireDare(t);pmLog({pid:0,mt:'pgdare'},'henrule');}}}
+  if(L.length>=4){L.length=0;const t=who==='Dan'?P:null;if(t&&!t.dead){pmFireDare(t);pmLog({pid:0,mt:'pgdare'},'henrule');}}}

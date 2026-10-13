@@ -177,7 +177,7 @@ function hrPgPrewarm(){
 /* a pack switch while inside purgatory: live purgatory mobs get their Hyperreal bodies (OG meshes stashed in e._og, so
    hrEntDisable puts the identical objects back on the way out) */
 function hrPgSwapIn(){if(!HRE.on||HRE.broken||DIM!=='puppet'||!hrPgInstall())return 0;let n=0;
-  for(const e of entities){if(e.t!=='mob'||e.dead||e.bot||!e.mesh||e.hrM||!HR_PMOB[e.mt])continue;
+  for(const e of entities){if(e.t!=='mob'||e.dead||!e.mesh||e.hrM||!HR_PMOB[e.mt])continue;
     const T=MOBT[e.mt];if(!T||!T.pmob)continue;
     const r=makeMobMesh(e.mt,{hr:1});if(!r||!r.hrM)continue;     /* P0-32 -> hrPgMobMesh */
     if(T.boss&&e.mt!=='demon')r.G.scale.set(1.5,1.4,1.5);

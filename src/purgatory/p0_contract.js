@@ -133,7 +133,7 @@ function mpBossLoot(e){const f=PREG.loot[e.mt];if(f)f(e);}               /* neve
 function mpOnBreak(x,y,z,id,who){for(const f of PREG.onBreak)try{f(x,y,z,id,who);}catch(err){mpFail('onBreak',err);}}
 function mpOnPlace(x,y,z,id,who){for(const f of PREG.onPlace)try{f(x,y,z,id,who);}catch(err){mpFail('onPlace',err);}}
 function mpOnKill(e){mpTagKillDrops(e);for(const f of PREG.onKill)try{f(e);}catch(err){mpFail('onKill',err);}}  /* tags fresh drops pown=last hitter for 60 s */
-function mpTagKillDrops(e){const w=HIT_BY||'Dan';if(w!=='Dan'&&!agByName(w))return;     /* only players own drops (a boss-blast kill stays unowned) */
+function mpTagKillDrops(e){const w=HIT_BY||'Dan';if(w!=='Dan')return;     /* only players own drops (a boss-blast kill stays unowned) */
   for(let i=entities.length-1;i>=0&&i>=entities.length-12;i--){const d=entities[i];
     if(d.t==='drop'&&!d.dead&&d.age===0&&Math.abs(d.x-e.x)<1.6&&Math.abs(d.z-e.z)<1.6){d.pown=w;d.pownT=MP.clock+60;}}}
 function mpOnModalClose(kind,be,bek){if(be&&be.t==='stash')mpStashClosed(be,bek);
@@ -166,18 +166,14 @@ function purgFoe(e,range,opt){opt=opt||{};let best=null,bd=range==null?1e9:range
   const sk=opt.skip,skN=typeof sk==='string'?sk:null;
   const dist=(x,y,z)=>opt.flat?Math.hypot(x-e.x,z-e.z):Math.hypot(x-e.x,(y+0.9)-(e.y+(e.h||1)*0.5),z-e.z);
   if(P&&!P.dead&&P.mode!=='c'&&sk!==P&&skN!=='Dan'){const d=dist(P.x,P.y,P.z);if(d<bd){bd=d;best=P;}}
-  if(!opt.danOnly&&typeof AG_ACTIVE!=='undefined'&&AG_ACTIVE)for(const a of AGENTS){const b=a.e;
-    if(!b||b.dead||a.dead||!a.online||a.dim!==DIM||b===sk||a.name===skN)continue;
-    const d=dist(b.x,b.y,b.z);if(d<bd){bd=d;best=b;}}
+  
   return best;}
-/* purgHit: t is P, a bot body (e.bot/e.A), an agent record, or a mob entity. who = attacker display name, how = cause (stored as
+/* purgHit: t is P or a mob entity. who = attacker display name, how = cause (stored as
    'pg:'+how so death messages and heckles can match it). opt.force zeroes the target's i-frames first (scripted hits).
    Knockback from opt.kx/opt.kz, or from opt.src={x,z} (away from it); none if neither. Returns true if it reached a target. */
 function purgHit(t,dmg,who,how,opt){if(!t)return false;opt=opt||{};
   let kx=opt.kx,kz=opt.kz;if(kx===undefined&&opt.src&&t.x!==undefined){kx=t.x-opt.src.x;kz=t.z-opt.src.z;}
-  if(t===P){if(P.dead)return false;LASTDMG={by:who,how:'pg:'+how,t:AG_T};if(opt.force)P.hurtT=0;damagePlayer(dmg,kx,kz);return true;}
-  const A=t.bot?t.A:(t.led&&t.inv&&t.name?t:null);
-  if(A){if(opt.force&&A.e)A.e.hurtT=0;agHurt(A,dmg,who,kx===undefined?0:kx,kz===undefined?0:kz,'pg:'+how);return true;}
+  if(t===P){if(P.dead)return false;LASTDMG={by:who,how:'pg:'+how};if(opt.force)P.hurtT=0;damagePlayer(dmg,kx,kz);return true;}
   if(t.t==='mob'&&!t.dead){const h=HIT_BY,w=HIT_HOW;HIT_BY=who;HIT_HOW=how;if(opt.force)t.hurtT=0;
     try{hurtMob(t,dmg,kx===undefined?0:kx,kz===undefined?0:kz);}finally{HIT_BY=h;HIT_HOW=w;}return true;}
   return false;}
@@ -256,7 +252,6 @@ function puHit(e,dmg,kx,kz){const by=HIT_BY||'Dan';
   if(typeof e.relay==='function'){try{e.relay(dmg,by);}catch(err){mpFail('relay '+e.mt,err);}return -1;}
   let st=null,lk=null;
   if(by==='Dan'){st=heldStack();lk=lookDir();}
-  else{const a=agByName(by);if(a){st=a.inv[a.sel];const b=a.e;if(b){const dx=e.x-b.x,dz=e.z-b.z,l=Math.hypot(dx,dz)||1;lk=[dx/l,0.1,dz/l];}}}
   const bat=!!(st&&DEFS[st.id]&&DEFS[st.id].bat);
   if(bat&&lk){e.pbat={vx:lk[0]*18,vy:lk[1]*18,vz:lk[2]*18,d:40};e.owner=by;e.vx=e.pbat.vx;e.vy=e.pbat.vy;e.vz=e.pbat.vz;return -1;}
   const l=Math.hypot(kx,kz)||1,k=6*(bat?3:1);e.vx+=kx/l*k;e.vz+=kz/l*k;e.vy=Math.max(e.vy||0,3);

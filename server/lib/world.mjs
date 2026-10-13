@@ -54,8 +54,8 @@ export function newWorld(o) {
   return { f: 1, v: null, name: o.name, seed: hashSeed(o.seed), mode: o.mode === 'c' ? 'c' : 's', time: 0.3, gr: {}, edits: {}, be: {}, players: {}, drops: {}, spawn: null };
 }
 
-/* a save from the game (or our own file) -> the server's world. Per-client things are dropped: the exporter's own player,
-   and that save's local mobs, vehicles and AI players. */
+/* a save from the game (or our own file) -> the server's world. Per-client things are dropped: the exporter's own player
+   and that save's local mobs and vehicles (and the AI players and their rules, which saves from 5.9 to 6.9 still carry). */
 export function adoptWorld(d, o) {
   if (!d || typeof d !== 'object' || typeof d.seed !== 'number') throw new Error('not a DINGLECRAFT world file');
   const w = { ...d };
@@ -74,7 +74,7 @@ export function adoptWorld(d, o) {
   w.spawn = sp && typeof sp === 'object' && [sp.x, sp.y, sp.z].every(Number.isFinite) ? { x: sp.x, y: sp.y, z: sp.z } : null;
   w.name = o.name || d.name || 'world';
   delete w.player; delete w.dim; delete w.ents; delete w.bots;
-  w.gr.bots = false;
+  for (const k of ['bots', 'botPvP', 'botGrief', 'botPurg']) delete w.gr[k];
   return w;
 }
 
@@ -99,7 +99,6 @@ export function openWorld(worldFile, o, log) {
 export function applySettings(world, rules, mode) {
   world.gr = { ...RULES, ...world.gr, ...cleanRules(rules) };
   if (mode !== undefined) world.mode = mode === 'c' ? 'c' : 's';
-  world.gr.bots = false;                 // AI players never run on a server
 }
 
 /* write the world next to itself and rename it into place: a crash never leaves a half-written world behind */

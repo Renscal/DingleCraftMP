@@ -38,7 +38,6 @@ function damagePlayer(n,kx,kz){
   drawStats();
 }
 function die(){
-  if(AG_ACTIVE&&!P.dead)agOnDanDeath();
   P.dead=true;
   if(NET.on)ntDied();
   P.deathPos=[Math.floor(P.x),Math.floor(P.y),Math.floor(P.z)];
@@ -68,7 +67,6 @@ function dropSel(all){
   const d=lookDir();
   const e=eyePos();
   spawnDrop(e[0]+d[0]*0.5,e[1]-0.3,e[2]+d[2]*0.5,{id:st.id,count:n,dur:st.dur,...(st.ench?{ench:st.ench}:{})},d[0]*6,d[1]*6+2,d[2]*6);
-  {const _de=entities[entities.length-1];if(_de&&_de.t==='drop'){_de.thrower='Dan';_de.thrownT=AG_T;}}
   st.count-=n;
   if(st.count<=0)P.inv[P.sel]=null;
   redrawHotbar();playS('pop');

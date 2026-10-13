@@ -6,14 +6,14 @@
 const real3=require('../lib/real3.js');
 if(!real3.available()){console.log('SKIP (no vendored three r128)');console.log('0 passed, 0 failed');process.exit(0);}
 const boot=require('../lib/hr_boot.js'),{ok}=boot;
-const NAMES=['player','bunkerbrad','lilcreepah','honeybee','zombie','boomer','skeleton','spider','pig','cow','sheep'];
+const NAMES=['player','zombie','boomer','skeleton','spider','pig','cow','sheep'];
 boot.run(async()=>{
   const {THREE,loadModels,win}=real3.models();
   Object.assign(win.HR,{EMBEDDED:true,TEXBASE:'embedded:',texURL:()=>'',loadImg:()=>{}});
   let HR=null,err='';try{HR=loadModels();}catch(e){err=e&&e.stack||String(e);}
   ok('hrLoadModels() runs in strict mode on real r128'+(err?' ('+err.split('\n')[0]+')':''),!!HR&&!!HR.MODELS);
   if(!HR)return;
-  ok('all 12 models registered',NAMES.every(n=>typeof HR.MODELS[n]==='function'));
+  ok('all '+NAMES.length+' cast models registered',NAMES.every(n=>typeof HR.MODELS[n]==='function'));
   const S=(seed)=>({speed:0,attack:0,hurt:0,dead:0,yaw:0,pitch:0,seed,fuse:0,cd:0,near:99,accel:new THREE.Vector3(),
     fired:false,woodHit:false,blockHit:false,build:false,plant:false,grief:false,mood:undefined,talk:false,hp:1,periscope:false,headroom:3});
   for(const n of NAMES){let a,b,thrown='';

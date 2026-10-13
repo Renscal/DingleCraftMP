@@ -10,7 +10,7 @@
 function mg2Haz(dt){if(!MG2.haz)MG2.haz=[];for(const h of MG2.haz.slice()){h.t-=dt;h.next-=dt;
     if(h.next<=0){h.next+=h.dt||0.5;for(const t of mg2Players()){const p=mg2TPos(t);const d=Math.hypot(p.x-h.x,p.z-h.z);if(d<=h.r&&p.y>=h.y0&&p.y<=h.y1){mg2Hit(t,h.n,MG_K.PIERCE,h.how,{tick:1});MGT.events.push('haz:'+h.k+':'+d.toFixed(2));}}}
     if(h.t<=0)MG2.haz.splice(MG2.haz.indexOf(h),1);}}
-function mg2Players(){const out=[];if(mg2Alive(P)&&!(P.mode==='c'))out.push(P);for(const a of mg2Bots())if(!mg2Eaten(a))out.push(a);return out;}
+function mg2Players(){const out=[];if(mg2Alive(P)&&!(P.mode==='c'))out.push(P);return out;}
 
 /* ---- the brain of Round I ---- */
 function mg2R1Brain(e,dt){const F=mgF(),K=MG2K.R1;e.x=MGC.X;e.z=MGC.Z;e.y=F-8;
@@ -175,7 +175,6 @@ function mg2R1Lift(a,hx,hz){const K=MG2K.R1,F=mgF(),tg=a.caught;
     off:tg?{x:mg2TPos(tg).x-(cx+0.5),z:mg2TPos(tg).z-(cz+0.5)}:{x:0,z:0}};
   MG2.ride=R;MGA.stance='lean';
   if(tg===P){mg2HoldDan(P.x,F,P.z,{ease:0.6,look:R.mouth,rel:function(why){mg2RideRelease(why);}});mg2Mech('ride');}
-  else if(tg){mg2Swallow(tg,'scoop');R.tg=null;}
   mg2S('mg_chew',hx,F,hz);mg2Shake(0.3,0.4);}
 function mg2SlabMesh(cells,cx,cz){if(typeof THREE==='undefined')return null;const ch=mg2Fx('chunk');
   if(ch&&cells.length){try{const h=ch(cells.map(c=>({id:c[3],x:c[0],y:c[1],z:c[2]})));const o=[h.c[0]-(cx+0.5),h.c[1]-mgF(),h.c[2]-(cz+0.5)];

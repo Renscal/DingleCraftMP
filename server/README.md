@@ -142,7 +142,7 @@ Changes to the operators, the bans, the whitelist and the default mode are writt
 
 Export the world from the game's pause menu (Export World), save the file as `server/data/world.vxw.json` and start the
 server. The seed, the game rules, every block edit and every chest come along. The exporter's own inventory does not (a
-player's things are stored per name once they have joined), and neither do that world's mobs, vehicles or AI players.
+player's things are stored per name once they have joined), and neither do that world's mobs or vehicles.
 
 The server's world file is still a normal save with a `players` table added, so it can be imported back into the game.
 
@@ -169,7 +169,6 @@ Not shared yet: each player's own game still plays these by itself, so two playe
 - the special mobs: bosses, dragons, villagers, snakes, blocklings, titans and the Puppet Purgatory and Malgorath casts.
   What a mob drops when you kill it is shared like any other dropped item; the XP goes to the player whose game ran it
 - vehicles, and arrows as things you can see (the hit arrives, the arrow in the air is only in the archer's game)
-- the AI players (they are switched off on a server)
 - paintings and records from the Creativity Update (the works are stored per player)
 - the stock market
 

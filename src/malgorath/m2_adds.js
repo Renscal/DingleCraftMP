@@ -13,7 +13,7 @@ function mg2Wave(k){const w=MG2K.WAVES[k];if(!w||MG2.waves[k])return;MG2.waves[k
   for(const mt of list){let demo=0;if(k==='2a'&&mt==='mgbloat'&&!MG2.L.demo2b){MG2.L.demo2b=1;demo=1;}else if(k==='3a')demo=1;MG2.addQ.push({mt,r:w.r,demo});}
   if(w.r===1){MGA.stance='lean';MG2.cough=1.0;mg2S('mg_cough');}
   else if(w.r===2)mg2S('mg_cough');
-  mg2Bus('wave',k);}
+}
 function mg2AddsTick(dt){if(MG2.cough>0)MG2.cough-=dt;
   for(let i=MG2.adds.length-1;i>=0;i--)if(MG2.adds[i].dead)MG2.adds.splice(i,1);
   if(MG2.addQ.length&&MG2.adds.length<MG2K.ADDS.CAP&&!MG2.scene){MG2.addT=(MG2.addT||0)-dt;if(MG2.addT<=0){MG2.addT=0.35;mg2SpawnAdd(MG2.addQ.shift());}}}

@@ -41,8 +41,8 @@ boot.run(async()=>{
 
   /* ===== 2. the player's name ===== */
   V.setPName('Dan');V.setPNSet(false);
-  ok('pnValid refuses one letter, the AI players and their nicknames, common short words; takes ordinary names',
-    !V.pnValid('a')&&!V.pnValid('I')&&!V.pnValid('')&&!V.pnValid('bee')&&!V.pnValid('BunkerBrad')&&!V.pnValid('xx_lilcreepah_xx')&&!V.pnValid('Creep')&&
+  ok('pnValid refuses one letter and common short words; takes ordinary names (the AI players\' names are free again)',
+    !V.pnValid('a')&&!V.pnValid('I')&&!V.pnValid('')&&V.pnValid('bee')&&V.pnValid('BunkerBrad')&&
     !V.pnValid('the')&&!V.pnValid('you')&&V.pnValid('Bob')&&V.pnValid('Al')&&V.pnValid('Dan')&&V.pnValid('Big Steve'));
   ok('pnSet("a") is refused and the name stays',V.pnSet('a')===false&&V.getPName()==='Dan'&&V.getPNSet()===false);
   ok('pnSet("  <Bob>  ") cleans to Bob and sets PNAME_SET',V.pnSet('  <Bob>  ')===true&&V.getPName()==='Bob'&&V.getPNSet()===true);
@@ -52,9 +52,6 @@ boot.run(async()=>{
     V.pnText('DAN!')==='BOB!'&&V.pnText('Danger at the Dangle')==='Danger at the Dangle');
   ok('pnText never touches the credit on Dan’s found works ("Dan Dingle")',V.pnText('“my art” by Dan Dingle (64×128)')==='“my art” by Dan Dingle (64×128)'&&
     V.pnText('“mine” by Dan (64×64)')==='“mine” by Bob (64×64)');
-  {const r0=Math.random;Math.random=()=>0.99;   /* no typo */
-    const t=V.pnText(V.agStyle({name:'xx_lilcreepah_xx'},V.pnBack('hello Bob, nice name')));Math.random=r0;
-    ok('the creep’s lowercase styling shows the chosen name, not "dan" (got "'+t+'")',t==='hello bob nice name');}
   ok('pnBack maps the chosen name back to the internal Dan, whole words, any case',JSON.stringify(V.pnBack({out:['hi Bob','bob, come here','Bobby stays']}))===JSON.stringify({out:['hi Dan','Dan, come here','Bobby stays']}));
   {const s=await read();await write(Object.assign({},s,{pn:'a'}));V.setPName('Dan');V.setPNSet(false);await V.loadSettings();
     ok('a saved name the mapping would confuse ("a") is not restored: the prompt asks again',V.getPName()==='Dan'&&V.getPNSet()===false);

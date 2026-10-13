@@ -169,17 +169,4 @@ boot.run(async()=>{
     ok('reload: the R2 checkpoint, at most one boss',M().round===2&&V.entities.filter(e=>!e.dead&&e.mgBoss).length<=1);
     boot.bite(V,step,{r:15});until(()=>info().live,200);ok('stepping onto the plate re-erupts him into Round II',info().live===1&&V.getMGF().round===2);});
 
-  /* ===== 13. bots (run last: they grief) ===== */
-  sec('bots',()=>{if(V.setBrainMock)V.setBrainMock(null);if(V.BRAIN)Object.assign(V.BRAIN,{mock:null,ok:false,off:true});
-    boot.world(V,'m2l','1337',step);boot.kit(V,'A');const e=live(1);V.GR.god=true;if(!V.AGENTS.length||!V.AGENTS[0].e)V.agJoinAll(false);step(10);
-    const bots=V.AGENTS.filter(a=>a.e&&!a.dead);if(!bots.length){skip('bots','no agents joined');return;}
-    bots.forEach((a,i)=>{a.e.x=1000.5-12-i;a.e.z=1000.5+2*i;a.e.y=F();a.x=a.e.x;a.z=a.e.z;});step(5);
-    const h=e.hp;for(const a of bots)V.mgHitAs(e,99,a.name,'melee');step(8);ok('bots deal 0 to the hide',e.hp===h);
-    const a=bots[0];V.MGREG.fight.chomp(a);step(2);
-    ok('a chomped bot is swallowed instead: hidden, invulnerable, in his belly window',G().eaten.some(q=>q.a===a)&&V.MGREG.fight.botShield(a,'Malgorath','mg:slap')===true&&V.getMGA().belly.items.some(q=>q.k==='bot'));
-    G().eaten.find(q=>q.a===a).t=0.05;step(5);ok('...and belched back onto the plate later',!G().eaten.some(q=>q.a===a)&&a.e.mesh.visible!==false);
-    e.hp=40;until(()=>!!winOf('handeye'),500);const w=winOf('handeye');if(w){for(const b of bots){V.mgHitAs(w.part,13,b.name,'melee');step(2);}}
-    ok('bots on a weak point deal x0.5 and can never take him below 30 ('+e.hp+')',e.hp>=30);
-    ok('a bot that dies in the Bite keeps its kit and wakes at the Bone Pile',V.MGREG.fight.botKeep(a.e)===true&&Array.isArray(V.MGREG.fight.botSpawn(Object.assign({},a,{lastDeath:{x:990,z:1000}}))));
-    V.GR.god=false;});
 });

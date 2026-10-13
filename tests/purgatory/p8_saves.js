@@ -65,7 +65,7 @@ boot.run(async()=>{
   L.be[tk2]={t:'stash',inv:Array(54).fill(null),who:'Dan',name:OLD.trunk.bigpig+' (renamed by hand)',hn:OLD.hn.bigpig};
   L.player.stox.sh=renameKeys(L.player.stox.sh,OLD.stox);L.player.stox.cb=renameKeys(L.player.stox.cb,OLD.stox);
   L.market.p=renameKeys(L.market.p,OLD.stox);L.market.mu=renameKeys(L.market.mu,OLD.stox);
-  L.gr=Object.assign({},L.gr,{bots:false});
+  L.gr=Object.assign({},L.gr,{bots:true,botPvP:true,botGrief:true,botPurg:true});
   L.bots={v:1,t:5,seeded:0,own:{},list:[{name:'BunkerBrad',dim:OLD.dim,x:P.x+2,y:P.y,z:P.z+2,yaw:0,hp:20,inv:[],armor:[],sel:0,spawn:[0,40,0],home:null,dead:0,
     rel:{},mem:[],ev:[],proj:null,projHist:[],flowers:[],thoughts:[],stats:{},mood:60,base:null,notes2:[],hunger:20,exh:0}]};
   ok('the crafted save really is old-shaped',writesLegacy(L)&&L.dim!=='puppet'&&!('squeak' in L.mp));
@@ -85,10 +85,10 @@ boot.run(async()=>{
     ok('old save: any stored trunk name is replaced by the current one',!!be2&&be2.hn==='bigpig'&&be2.name===T.bigpig.name);}
   ok('old save: holdings and cost basis converted share for share',V.P.stox.sh.DIRTCO===3.5&&V.P.stox.sh.CACTUS===1.25&&V.P.stox.cb.DIRTCO===120.5&&
     Object.values(OLD.stox).every(o=>!(o in V.P.stox.sh)&&!(o in V.P.stox.cb)));
-  {const a=V.AGENTS.find(x=>x.name==='BunkerBrad');ok('old save: a bot saved inside comes back inside (dim puppet)',!!a&&a.dim==='puppet');}
+  ok('old save: its AI players (a "bots" table, the bot rules) are left behind without a complaint',V.playing!==undefined&&!('bots' in V.GR)&&!V.entities.some(e=>e.bot));
   const again=JSON.parse(JSON.stringify(V.snapshot('pg8')));
   ok('saving the loaded old world writes no old key, name or symbol',!writesLegacy(again)&&again.dim==='puppet'&&again.mp.dead.bomber===1&&again.be[tk].hn==='bomber');
-  {const b=(again.bots&&again.bots.list||[]).find(x=>x.name==='BunkerBrad');ok('...and the bot is saved with dim puppet',!!b&&b.dim==='puppet');}
+  ok('...and the world is saved without them',!('bots' in again)&&!('bots' in again.gr));
 
   /* ===== 3. new -> new: the converted world round-trips unchanged ===== */
   V.applySave(again);

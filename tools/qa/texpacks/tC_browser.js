@@ -88,14 +88,6 @@ window.castQA=async function(o){
   for(let i=0;i<24;i++){sk.hrM.hr.update(1/30,HRE.t+3+i/30,ss);ss.fired=false;}
   tile('skeleton: rib shot',front(sk,3.0,0.6,1.4));
   V.GR.freezeMobs=false;
-  /* 17-19: the AI players */
-  V.setBrainMock(null);V.BRAIN.ok=false;V.BRAIN.off=true;V.GR.bots=true;V.agJoinAll(true);
-  for(let i=0;i<60&&!V.AGENTS.every(a=>a.e);i++)step(1);
-  V.GR.freezeMobs=true;
-  const place=()=>V.AGENTS.forEach((a,i)=>{if(!a.e)return;a.x=a.e.x=SX+9+i*5;a.y=a.e.y=fy+0.05;a.z=a.e.z=cz+3;a.e.vx=a.e.vz=0;a.yaw=a.e.yaw=Math.PI*0.9;});
-  for(let i=0;i<o.settle;i++){place();step(1);}
-  ok('three AI players with Hyperreal bodies',V.AGENTS.length===3&&V.AGENTS.every(a=>a.e&&a.e.hrM&&a.e.M.hr&&a.e.M.tag.position.y===2.62));
-  for(const a of V.AGENTS){if(!a.e)continue;tile(a.name+(a.e.hrM?'':' (OG!)'),front(a.e,3.2,0.35,1.7,Math.PI));}
   /* 20-21: Dan in third person (back, pickaxe) and front view (hat + armour) */
   const P=V.P;P.cos=P.cos||{};P.cos.hat='tophat';P.armor=[{id:V.armorId(2,0)},{id:V.armorId(2,1)},null,null];
   P.inv[P.sel]={id:V.toolId(3,0),count:1};V.refreshHand();

@@ -55,7 +55,6 @@ function tmKey(e){
   if((typeof helpOpen!=='undefined'&&helpOpen)||(typeof patchOpen!=='undefined'&&patchOpen))return;
   if(k==='Enter'&&a&&(a.id==='t_name'||a.id==='t_seed')){e.preventDefault();const b=$('t_new');if(b)b.click();return;}
   if(k==='Enter'&&a&&a.id==='t_pname'){e.preventDefault();const b=$('t_pname_ok');if(b)b.click();return;}
-  if(k==='Enter'&&a&&a.id==='t_bots'){e.preventDefault();a.click();return;}
   const vert=k==='ArrowDown'||k==='ArrowUp',hor=k==='ArrowLeft'||k==='ArrowRight';
   if(!vert&&!hor)return;
   const L=tmItems();if(!L.length)return;
@@ -130,7 +129,7 @@ function tmBoot(){
   on('tgr_back',()=>{tmShow('load');playS('click');});
   on('tgr_save',()=>{tgrSave();playS('click');});
   on('t_pname_ok',()=>{const i=$('t_pname');if(pnSet(i&&i.value)){tmShow('main');playS('click');if(typeof rpIntro==='function')rpIntro();}
-    else if(i){if(pnClean(i.value))showToast('Pick another name: 2 or more letters, and not an AI player\u2019s name');i.focus();}});
+    else if(i){if(pnClean(i.value))showToast('Pick another name: 2 or more letters, and not a common word');i.focus();}});
   tmShow('main');
   if(!TM.live)return;
   /* the saved settings arrive asynchronously (loadSettings, p27). The first-launch name prompt and the menu music wait for

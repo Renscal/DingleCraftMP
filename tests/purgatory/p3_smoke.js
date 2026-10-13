@@ -23,7 +23,7 @@ const invTotal=id=>V.P.inv.reduce((a,s)=>a+(s&&s.id===id?s.count:0),0);
 const have=(id,near,r)=>invTotal(id)+dropTotal(id,near,r);
 const dropTotal=(id,near,r)=>drops().filter(d=>d.st.id===id&&(!near||Math.hypot(d.x-near.x,d.z-near.z)<(r||6))).reduce((a,d)=>a+d.st.count,0);
 const log=()=>PS().log;
-function wipe(){for(const e of V.entities){if(e.dead)continue;if((e.t==='mob'&&!e.bot&&/^pg/.test(e.mt))||e.t==='drop'||e.t==='pproj'||e.t==='xp')C.removeEnt(e);}step(1);}
+function wipe(){for(const e of V.entities){if(e.dead)continue;if((e.t==='mob'&&/^pg/.test(e.mt))||e.t==='drop'||e.t==='pproj'||e.t==='xp')C.removeEnt(e);}step(1);}
 function tp(x,z,y){const P=V.P;V.forceChunksNear(x,z);P.x=x+0.5;P.z=z+0.5;P.y=y!=null?y:V.mpSafeY(x+0.5,(Math.abs(x-SITE.x)<=28&&Math.abs(z-SITE.z)<=28?Y0:V.surfaceTop(x,z))+3,z+0.5);P.vx=P.vy=P.vz=0;P.fallD=0;step(25);}
 function heal(){const P=V.P;if(P.dead){V.respawn();step(2);}P.hp=20;P.hunger=20;P.hurtT=0;P.mode='s';}
 function at(mt,dx,dz,props){const P=V.P,x=P.x+dx,z=P.z+dz;return V.pmSpawnAt(mt,x,V.mpSafeY(x,P.y+3,z),z,props);}
@@ -48,8 +48,6 @@ const ALL=['pgwhat','pghollow','pghand','pgposs','pgfeltdan','pgcomic','pghen','
 
 boot.run(async()=>{
   boot.world(V,'p3a','1337',step);
-  V.setBrainMock&&V.setBrainMock((lane)=>{if(lane==='mind')return {project:{title:'x',kind:'BUILD',why:'t',steps:['wait']},announce:''};
-    if(lane==='act')return {thought:'t',say:[],actions:[{skill:'wait',count:3}],relations:[],project:'continue'};return null;});
   V.mpDoorHere();step(2);V.mpEnterNow();step(30);V.GR.mobSpawn=false;
   ok('inside purgatory',V.mpInfo().dim==='puppet');
   PS().logOn=true;PS().cueO='show';PS().holesO=[];PS().spotO=Object.assign({},NOSITES);
@@ -117,24 +115,6 @@ boot.run(async()=>{
     ok('a Possessed Hollow hit is attributed: LASTDMG {by:"Possessed Hollow", how:"pg:possessed"}',P.hp<20&&ld&&ld.by==='Possessed Hollow'&&ld.how==='pg:possessed');
     PS().cueO='show';wipe();}
 
-  /* ===== 4. a bot is hit with the right attribution (Dan out of reach in creative) ===== */
-  {heal();tp(SITE.x,SITE.z);wipe();const P=V.P;V.GR.bots=true;V.agJoinAll(true);step(60);const a=V.agByName('BunkerBrad');
-    if(a){a.dim='puppet';a.x=P.x+3;a.y=P.y;a.z=P.z+3;a.spawnProt=0;step(30);if(a.e){a.e.x=P.x+3;a.e.y=P.y;a.e.z=P.z+3;a.e.vx=a.e.vz=0;}a.spawnProt=0;step(3);}
-    if(!a||!a.e){skip('bot attribution','no bot body inside');}
-    else{P.mode='c';const relDan=JSON.stringify(a.rel&&a.rel.Dan);a.hp=20;a.lastHurtBy=null;
-      const x=Math.floor(a.e.x)+2,z=Math.floor(a.e.z);V.setBlock(x,FY(z),z,B.PG_ARMHOLE);V.pmSpawnTether('what',x,FY(z),z);
-      runUntil(()=>a.lastHurtBy!=null,200);
-      ok('a Blank bites BunkerBrad: lastHurtBy "Blank", how "pg:blank" ('+a.lastHurtBy+'/'+a.lastHurtHow+')',a.lastHurtBy==='Blank'&&a.lastHurtHow==='pg:blank');
-      ok('...and the hit is never Dan\'s (a.rel.Dan unchanged)',JSON.stringify(a.rel&&a.rel.Dan)===relDan);
-      wipe();
-      const fd=at('pgfeltdan',-2,2);PS().cueO='blackout';P.mode='s';const bx=P.x+3,bz=P.z+3;P.x+=40;step(30);a.hp=20;a.lastHurtBy=null;a.spawnProt=0;
-      const pin=n=>{for(let i=0;i<n;i++){if(a.e){a.e.x=bx;a.e.z=bz;a.e.vx=a.e.vz=0;}a.spawnProt=0;step(1);}};   /* hold the bot still (its own autopilot would follow Dan) */
-      pin(60);ok('Felt Dan ignores bots until one hits it',a.lastHurtBy!=='Felt Dan');
-      V.purgHit(fd,1,'BunkerBrad','melee',{force:1});fd.atkT=0;for(let q=0;q<8&&a.lastHurtBy!=='Felt Dan';q++)pin(40);
-      ok('...then it goes for that bot ('+a.lastHurtBy+')',a.lastHurtBy==='Felt Dan');
-      PS().cueO='show';P.x-=40;step(10);wipe();}
-    V.GR.bots=false;V.agLeaveAll();step(10);}
-
   /* ===== 5. tethers: reach, strain, the flinch lunge, the Arm Hole kill ===== */
   {heal();tp(SITE.x,SITE.z);wipe();const P=V.P;const x=Math.floor(P.x),z=Math.floor(P.z)+10,y=FY(z);V.setBlock(x,y,z,B.PG_ARMHOLE);
     const w=V.pmSpawnTether('what',x,y,z);let maxR=0,strained=false;
@@ -165,7 +145,7 @@ boot.run(async()=>{
     click();step(3);click();step(3);ok('two attack presses: still on',!!PS().wrap);click();step(3);
     ok('three attack presses pull it off; the overlay clears',!PS().wrap&&PS().wrapEl.style.display==='none');
     hw.atkT=0;hw.x=P.x+2;hw.z=P.z;runUntil(()=>!!PS().wrap,200);
-    const a=V.agByName('BunkerBrad');V.purgHit(hw,2,a?a.name:'BunkerBrad','melee',{force:1});step(2);
+    V.purgHit(hw,2,'BunkerBrad','melee',{force:1});step(2);
     ok('an ally\'s hit pulls it off too',!PS().wrap);
     PS().cueO='show';wipe();
     /* Performer's Sneakers squeak: in BLACKOUT a Hand out of reach follows the footprints toward Dan */
@@ -363,21 +343,21 @@ boot.run(async()=>{
 
   /* ===== 19. ambient spawning: caps 8 / 12 / 8, exclusion zones, never an overworld mob ===== */
   {heal();tp(SITE.x,SITE.z);wipe();const P=V.P;P.mode='c';V.GR.mobSpawn=true;
-    const H=()=>V.entities.filter(e=>e.t==='mob'&&!e.dead&&!e.bot&&e.hostile&&!V.MOBT[e.mt].pnc).length;
-    const Pa=()=>V.entities.filter(e=>e.t==='mob'&&!e.dead&&!e.bot&&!e.hostile&&!V.MOBT[e.mt].pnc).length;
+    const H=()=>V.entities.filter(e=>e.t==='mob'&&!e.dead&&e.hostile&&!V.MOBT[e.mt].pnc).length;
+    const Pa=()=>V.entities.filter(e=>e.t==='mob'&&!e.dead&&!e.hostile&&!V.MOBT[e.mt].pnc).length;
     let maxH=0,maxP=0;PS().biomeO='swamp';for(let i=0;i<1400;i++){step(1);maxH=Math.max(maxH,H());maxP=Math.max(maxP,Pa());}
     ok('SHOW: hostile cap 8 (frogs and the Pelican in the swamp, max '+maxH+')',maxH>=4&&maxH<=8+5);
     PS().biomeO='woods';PS().cueO='blackout';let mb=0;for(let i=0;i<1600;i++){step(1);mb=Math.max(mb,H());}
     ok('BLACKOUT: the Hands come up and the cap rises to 12 (max '+mb+')',mb>8&&mb<=12+5);
-    const nearL=V.entities.filter(e=>e.t==='mob'&&!e.dead&&!e.bot&&/^pg/.test(e.mt)&&!V.MOBT[e.mt].npc&&Math.hypot(e.x-MPC.MARK[0],e.z-MPC.MARK[2])<16);
-    const owL=V.entities.filter(e=>e.t==='mob'&&!e.dead&&!e.bot&&!V.MOBT[e.mt].pmob);
+    const nearL=V.entities.filter(e=>e.t==='mob'&&!e.dead&&/^pg/.test(e.mt)&&!V.MOBT[e.mt].npc&&Math.hypot(e.x-MPC.MARK[0],e.z-MPC.MARK[2])<16);
+    const owL=V.entities.filter(e=>e.t==='mob'&&!e.dead&&!V.MOBT[e.mt].pmob);
     ok('never an overworld mob in purgatory; none spawned within 16 m of the Mark'+(nearL.length||owL.length?' ('+nearL.concat(owL).map(e=>e.mt+'@'+e.x.toFixed(0)+','+e.z.toFixed(0)).join(' ')+')':''),owL.length===0&&nearL.length===0);
     PS().cueO='show';PS().biomeO='woods';wipe();let mp=0;for(let i=0;i<1600;i++){step(1);mp=Math.max(mp,Pa());}
     ok('passive cap 8 (hens in the Woods, max '+mp+')',mp>=1&&mp<=8);
     PS().biomeO='labs';wipe();for(let i=0;i<700;i++)step(1);const bk=V.entities.filter(e=>!e.dead&&/^pgrat/.test(e.mt)).length;
     ok('Labs: Lab Rat Clones in groups of 3 ('+bk+')',bk>=3&&bk%1===0&&bk<=10);
     PS().biomeO=null;wipe();PS().hnO={name:null,inter:true};for(let i=0;i<300;i++)step(1);
-    ok('no ambient spawns during Intermission',V.entities.filter(e=>e.t==='mob'&&!e.dead&&!e.bot&&/^pg/.test(e.mt)&&!V.MOBT[e.mt].pnc).length===0);
+    ok('no ambient spawns during Intermission',V.entities.filter(e=>e.t==='mob'&&!e.dead&&/^pg/.test(e.mt)&&!V.MOBT[e.mt].pnc).length===0);
     PS().hnO=null;V.GR.mobSpawn=false;P.mode='s';wipe();}
 
   /* ===== 20. structure spawns from P1's sites (seams while P1 is on its stub): Arm Holes, heaps, Band Rooms, posts ===== */

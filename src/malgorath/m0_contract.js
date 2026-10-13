@@ -215,10 +215,6 @@ function mgEggUse(st,hit,x,y,z){const W=MGREG.world;                            
 function mgBall(e,m){if(!m||!MOBT[m.mt]||!MOBT[m.mt].mg)return false;                    /* M0-30: balls bounce off everything of his */
   e.vx=-e.vx*0.5;e.vz=-e.vz*0.5;e.vy=Math.max(e.vy,2);burstParticles(e.x,e.y,e.z,B.STONE,4,0.4);playS('thud');return true;}
 function mgSwingMiss(e,d,hit){const F=MGREG.fight;if(F&&F.swingMiss)try{F.swingMiss(e,d,hit);}catch(err){mgFail('swing',err);}}   /* M0-35 */
-function mgBotShield(a,by,how){const F=MGREG.fight;return !!(F&&F.botShield&&F.botShield(a,by,how));}   /* M0-49 */
-function mgBotKeep(a){const F=MGREG.fight;return !!(F&&F.botKeep&&F.botKeep(a));}        /* M0-50 */
-function mgBotSpawn(a){const F=MGREG.fight;return F&&F.botSpawn?F.botSpawn(a):null;}      /* M0-51 */
-function mgBotNo(st){return !!st&&st.id===MGC.JAW;}                                       /* M0-53: bots never hold the Jaw */
 function mgDeathMsg(name,by,how){const F=MGREG.fight;if(F&&F.deathMsg){const s=F.deathMsg(name,by,how);if(s)return s;}   /* M0-58 */
   const L={slap:'was slapped flat by',swat:'was swatted by',tail:'was thrown by the tail of',squat:'was squashed under',stomp:'was stomped by',
     drag:'was dragged by',grind:'was ground up by',crumb:'was spat on by',debris:'was hit by the leftovers of',bile:'was digested by',
@@ -337,7 +333,7 @@ function mgMech(name){const r=MGF.round||MALG.round||1;const m=MGT.mech[r]||(MGT
 function mgHit(t,n,p,how,opt){const F=MGREG.fight;if(F&&F.hit)return F.hit(t,n,p,how,opt);
   opt=opt||{};if(t!==P||P.dead||P.mode==='c'||GR.god||(CUT.on&&CUT.script))return 0;
   const A=Math.min(0.8,armorPts()*0.04),pp=p==null?MG_K.PIERCE:p,eff=n*(1-A*(1-pp)),pre=A<1?eff/(1-A):eff;
-  LASTDMG={by:'Malgorath',how:'mg:'+(how||'hit'),t:AG_T};
+  LASTDMG={by:'Malgorath',how:'mg:'+(how||'hit')};
   const h0=P.hp;if(opt.tick){const s=P.hurtT;P.hurtT=0;damagePlayer(pre);if(!P.dead)P.hurtT=s;}else damagePlayer(pre,opt.kx,opt.kz);
   return h0-P.hp;}
 

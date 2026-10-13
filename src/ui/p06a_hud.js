@@ -138,6 +138,6 @@ function drawDebug(dt){
     'XYZ: '+P.x.toFixed(1)+' / '+P.y.toFixed(1)+' / '+P.z.toFixed(1)+'\n'+
     'Biome: '+BIOME_NAME[bi.b]+'  Seed: '+SEED+'\n'+
     'Chunks: '+chunks.size+'  Entities: '+entities.length+'\n'+
-    'Time: '+(timeOfDay%1).toFixed(2)+'  Mode: '+(P.mode==='c'?'Creative':'Survival')+agDebugStr();
+    'Time: '+(timeOfDay%1).toFixed(2)+'  Mode: '+(P.mode==='c'?'Creative':'Survival');
 }
 

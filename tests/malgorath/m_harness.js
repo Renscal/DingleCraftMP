@@ -93,12 +93,5 @@ boot.run(async()=>{
      for(let i=0;i<6;i++){const t=boot.targets?null:null;V.mgHitAs(e,13,'Dan','melee');step(8);}
      const bled=h0-e.hp;boot.lip(V,step);step(250);const back=e.hp;boot.bite(V,step,{r:21});
      ok('(d) leave to heal: after '+bled.toFixed(1)+' damage, 10 s out on the stair head gives his bar back ('+back.toFixed(1)+' >= '+h0+')',back>=h0-0.01||bled<=0);}}
-  {V.setBrainMock&&V.setBrainMock(null);if(V.BRAIN)Object.assign(V.BRAIN,{mock:null,ok:false,off:true});
-   if(!V.AGENTS.length||!V.AGENTS[0].e)V.agJoinAll(false);step(10);const bots=V.AGENTS.filter(a=>a.e&&!a.dead);
-   if(!bots.length)skip('(d) bots','no agents joined');
-   else{const e=boot.boss(V);boot.lip(V,step);const r0=M().round;
-     bots.forEach((a,i)=>{a.e.x=1000.5-8-i;a.e.z=1000.5+i;a.e.y=F;a.x=a.e.x;a.z=a.e.z;a.y=F;});step(5);
-     let minHp=1e9;for(let k=0;k<160;k++){for(const a of bots){const b=boot.boss(V);if(b){V.mgHitAs(b,99,a.name,'melee');}}step(4);const b=boot.boss(V);if(b)minHp=Math.min(minHp,b.hp);}
-     ok('(d) three bots spamming him for 25 s (Dan outside) never end the round and never take him below 30 (lowest '+(minHp===1e9?'-':minHp.toFixed(1))+')',M().round===r0&&minHp>=30);}}
   V.GR.god=false;
 });

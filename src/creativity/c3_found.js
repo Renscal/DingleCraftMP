@@ -5,7 +5,7 @@
    so the loot RNG stream (and every seeded trace) is exactly what it was: 1 chest in CRFC.RATE (40) gets ONE found work, picked
    uniformly by a second hash, in an empty slot picked by a third. The same seed and chest always roll the same way.
    Every find MINTS a fresh 1/1 work through the registry (crNew + crFinish, credited to CRFC.BY), so it hangs, plays, saves, survives
-   the GC (the chest references it), never despawns and never reaches a bot (crBotNo), exactly like a work made at an easel or a record
+   the GC (the chest references it), never despawns, exactly like a work made at an easel or a record
    player. Skipped silently in Puppet Purgatory (creativity items never appear there), when the registry is full (works, serials or
    bytes: crNew's own caps, checked first so a chest never fires a "gallery full" toast) and when the chest has no empty slot.
    CR_FOUND is copied byte for byte from Dan's world (its creativity registry, works 1-7 and 10). Work 8 ('Untitled') is a blank

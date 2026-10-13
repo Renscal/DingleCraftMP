@@ -117,7 +117,7 @@ function pmSplatClear(id){for(let i=PMS.splats.length-1;i>=0;i--){const s=PMS.sp
 function pmBooBarrage(x,z){if(DIM!=='puppet')return false;if(PMS.boo&&PMS.boo.t>0)return false;PMS.boo={t:5,x,z,acc:0,n:0};mwS('pg_boo',x,deckY(z)+2,z);pmLog({pid:0,mt:'boo'},'boo');return true;}
 function pmBooTick(dt){const b=PMS.boo;if(!b||b.t<=0)return;b.t-=dt;b.acc+=dt;const H=MPC.HOUSE;
   while(b.acc>=1/3&&b.t>-0.01){b.acc-=1/3;b.n++;let tg=null,td=40;
-    const cand=[P].concat(typeof AG_ACTIVE!=='undefined'&&AG_ACTIVE?AGENTS.filter(a=>a.e&&!a.dead&&a.online&&a.dim==='puppet').map(a=>a.e):[]);
+    const cand=[P];
     for(const c of cand){if(!c||c.dead||(c===P&&P.dead))continue;const d=Math.hypot(c.x-b.x,c.z-b.z);if(d<td){td=d;tg=c;}}
     const a=b.n*2.39,r=6+(b.n*7)%24,sx=clamp(Math.floor(b.x+Math.sin(a)*r),H.x0,H.x1),sz=clamp(Math.floor(b.z+Math.cos(a)*r),H.z0,H.z1);
     const sy=pmSurfY(sx,sz)+1.2;
@@ -168,7 +168,7 @@ function pmHeckle(kind,opts){opts=opts||{};if(DIM!=='puppet')return false;
   if(MP.quiet>MP.clock)return false;const who=opts.who||'Dan';
   if(kind==='hint'){const H=PM_HINT[opts.boss]||PM_HINT.bomber;kind=H[clamp((opts.phase|0)-1,0,2)];
     if(MP.clock-(PMS.deathSaidAt||-99)<3.5)return false;PMS.hintAt=MP.clock;}
-  if(PM_EMBARRASS[kind]){const t=who==='Dan'?P:((agByName(who)||{}).e||null);if(!t||(t===P&&P.dead))return false;
+  if(PM_EMBARRASS[kind]){const t=who==='Dan'?P:null;if(!t||(t===P&&P.dead))return false;
     if(PMS.tomCool&&PMS.tomCool[who]>MP.clock)return false;(PMS.tomCool||(PMS.tomCool={}))[who]=MP.clock+2.5;
     pmTomatoFromDark(t,{dmg:0,food:true,delay:opts.delay||0.3});pmLog({pid:0,mt:'balcony'},'tomato:'+kind);return true;}
   if(!PM_HECK[kind])return false;const L=PM_HECK[kind];pmSayPair(pmForName(L[0],who),pmForName(L[1],who));pmLog({pid:0,mt:'balcony'},'heckle:'+kind);
@@ -222,7 +222,7 @@ function pmInHut(k,x,y,z){const h=k.hut;if(!h)return Math.hypot(x-k.post[0],z-k.
 function pmInPot(k,x,y,z){const p=k.pot;if(!p||!p.length)return false;const fx=Math.floor(x),fz=Math.floor(z);   /* p[0] is the inside step: the way out */
   for(let i=p.length>1?1:0;i<p.length;i++){const c=p[i];if(c[0]===fx&&c[2]===fz&&y>c[1]-0.6&&y<c[1]+1.2)return true;}return false;}
 function pmPlayersNear(x,z,r){const out=[];if(P&&!P.dead&&P.mode!=='c'&&Math.hypot(P.x-x,P.z-z)<r)out.push(P);
-  if(typeof AG_ACTIVE!=='undefined'&&AG_ACTIVE)for(const a of AGENTS){const b=a.e;if(b&&!b.dead&&!a.dead&&a.online&&a.dim===DIM&&Math.hypot(b.x-x,b.z-z)<r)out.push(b);}return out;}
+  return out;}
 function pmArcDrop(x,y,z,to,st,owner,T){const q=pmPos(to)||[x,y,z];T=T||1.0;const a=(PMS.seq++)*2.1,ox=Math.sin(a)*0.9,oz=Math.cos(a)*0.9;
   const dx=q[0]+ox-x,dz=q[2]+oz-z,dy=(q[1]-0.6)-y,fac=(1-Math.exp(-0.6*T))/0.6;
   return mpDrop(x,y,z,st,owner,dx/fac,(dy+0.35*GRAV*T*T)/T,dz/fac);}
@@ -372,7 +372,7 @@ function pmNewsLoot(kind,z,x){let b='woods';try{b=mwBiomeAt(x,z);}catch(err){}if
   if(b==='swamp')return [{id:IT.PG_PINS,count:4}];return [{id:IT.PG_FOAMCHUNK,count:6},{id:IT.PG_GOOGLIES,count:3}];}
 function pmNewsTick(dt){const N=PMS.news;
   if(!N){if(pmCue()==='show'&&!MP.strike){PMS.newsT=(PMS.newsT||0)+dt;if(!PMS.newsNext)PMS.newsNext=300+Math.random()*120;
-      if(PMS.newsT>=PMS.newsNext){const L=[P].concat(typeof AG_ACTIVE!=='undefined'&&AG_ACTIVE?AGENTS.filter(a=>a.e&&!a.dead&&a.online&&a.dim==='puppet').map(a=>a.e):[]).filter(t=>t&&!(t===P&&P.dead));
+      if(PMS.newsT>=PMS.newsNext){const L=[P].filter(t=>t&&!(t===P&&P.dead));
         const t=L[Math.floor(Math.random()*L.length)];if(t&&pmNewsStart(t)){PMS.newsT=0;PMS.newsNext=300+Math.random()*120;}else PMS.newsT=PMS.newsNext-20;}}
     return;}
   N.t+=dt;const e=N.e;

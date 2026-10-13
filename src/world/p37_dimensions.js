@@ -168,7 +168,6 @@ function stashEnts(){
   const out=[];
   for(const e of entities){
     if(e.dead)continue;
-    if(e.t==='mob'&&e.bot){if(e.A){agSyncFromBody(e.A);e.A.e=null;}removeEnt(e);continue;}
     if(e.t==='mob'&&MOBT[e.mt].pmob){mpSnapMob(e,null);removeEnt(e);continue;}
     if(e.t==='mob'&&MOBT[e.mt].mg){mgStashed(e);continue;}
     if(e.t==='mob'&&e.pup){removeEnt(e);continue;}   /* PART 58: another player's mob is never ours to keep */

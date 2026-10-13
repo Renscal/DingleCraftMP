@@ -70,13 +70,13 @@ const HELP=`window.__rq={T:600000,
       for(let dy=0;dy<=Hh;dy++)V.setBlock(x,y+dy,z,(x===x0-1||x===x0+W||z===z0-1||z===z0+D)?(dy===Hh?B.STONE:B.PLANK_O||B.STONE):B.AIR);}}};`;
 const waitPack=async want=>{for(let i=0;i<160;i++){if(await ev(`const t=__vox.getTP();return !t.busy&&(!!t.hr)===${want==='hr'};`))return true;await sleep(500);}return false;};
 const boot=async()=>{for(let i=0;i<240;i++){let v=false;try{v=await ev("return typeof window.__vox==='object'&&document.readyState==='complete'");}catch(e){}if(v)break;await sleep(500);}
-  await ev(HELP+"try{usePLock=false;lockWanted=false;}catch(e){}Object.assign(__vox.BRAIN,{mock:null,ok:false,off:true,url:'http://127.0.0.1:9'});if(__vox.setBrainMock)__vox.setBrainMock(null);");
+  await ev(HELP+"try{usePLock=false;lockWanted=false;}catch(e){}");
   return await waitPack(PACK);};
 await send('Runtime.enable');await send('Page.enable');await send('Network.enable');await send('Network.setCacheDisabled',{cacheDisabled:true});
 await send('Emulation.setDeviceMetricsOverride',{width:1280,height:720,deviceScaleFactor:1,mobile:false});
 await send('Page.addScriptToEvaluateOnNewDocument',{source:"try{const k='vx_vox_settings';let s={};try{s=JSON.parse(localStorage.getItem(k)||'{}')||{};}catch(e){}"+
   "s.snd=0;s.mus=0;s.tp='"+PACK+"';localStorage.setItem(k,JSON.stringify(s));}catch(e){}"+
-  "window.__DINGLE_BRAIN={url:'http://127.0.0.1:9',token:null};window.requestAnimationFrame=function(){return 0;};"});
+  "window.requestAnimationFrame=function(){return 0;};"});
 await send('Page.navigate',{url:`http://127.0.0.1:${SRV}/${BUILD}?b=${Date.now()}`});
 const packOk=await boot();
 const info=await ev("return {ver:__vox.GAME_VERSION,label:__vox.RELEASE_LABEL||null,stubs:__vox.crInfo().stubs,sound:soundOn,tp:__vox.getTP().hr?'hr':'og',busy:__vox.getTP().busy,title:document.title,ac:typeof AC==='undefined'?'none':(AC?AC.state:'null')}");

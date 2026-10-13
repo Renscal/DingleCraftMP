@@ -7,7 +7,7 @@
 
 A fan-made, Minecraft-style voxel sandbox that ships as **one HTML file**. Punch trees, build a house, then find out
 the game also has a casino, a stock market, rideable dragons, a microtransaction store that sells "Remove Ads" (there
-are no ads), walking Nuke Kegs, a nuclear bomb you drop from a prop plane, three AI players with their own grudges, a
+are no ads), walking Nuke Kegs, a nuclear bomb you drop from a prop plane, multiplayer with your actual friends, a
 photoreal texture pack, a trip to Puppet Purgatory, an easel and a record player, and a sixteen-metre demon who has
 taken a bite out of the world.
 
@@ -41,8 +41,8 @@ texture is inside it). Then either:
 - **double-click it** (it works straight from disk), or
 - **serve it:** `npm run serve`, then open the `dist/` link it prints (`http://127.0.0.1:8643/...`).
 
-Your worlds are saved in the browser, per site: the `file://` page, `http://127.0.0.1:8643` (`npm run serve`) and the
-brain's `http://127.0.0.1:8644` each have their own save list. Clearing your browsing data deletes them, so use Export
+Your worlds are saved in the browser, per site: the `file://` page and `http://127.0.0.1:8643` (`npm run serve`) each
+have their own save list. Clearing your browsing data deletes them, so use Export
 World (pause menu) to keep a copy.
 
 **Controls** (the full list is in Help & Controls on the title screen): WASD to move, Space to jump, Shift to sneak,
@@ -51,7 +51,6 @@ scroll wheel for the hotbar, E for the inventory, Q to drop, F to change camera,
 F3 for the debug overlay. Settings → Texture pack switches between **OG** (16 px, the classic look) and **Hyperreal**;
 Settings → UI Scale makes the whole interface bigger or smaller (Auto picks a size for your screen); the sliders set the
 field of view, mouse sensitivity and the sound and music volume.
-
 
 ## Multiplayer (game 6.10 and up)
 
@@ -97,7 +96,6 @@ rebuilds that release's file byte for byte (`git checkout <tag> && npm run build
 | `npm run test:quick` | build + the repo checks + every static suite + the core logic suite + the UI suites + one og_trace session | about 45 s |
 | `npm test` | build + every suite once | about 11 min |
 | `npm run gate` | the release gate: every suite, smokes repeated to catch flakes | about 20 min |
-| `npm run test:brain` | the brain's self-test (fake upstream, no key, free; run `npm ci --prefix brain` once first) | about 8 s |
 
 Every suite is a plain Node script that boots the real game against stubs and prints `N passed, M failed`. There are
 no test frameworks and no network calls. How to write one: [docs/TESTING.md](docs/TESTING.md).
@@ -110,7 +108,6 @@ no test frameworks and no network calls. How to write one: [docs/TESTING.md](doc
 ```
 src/                 the game's JavaScript, one file per system (about 190 files), joined in src/ORDER.txt order
   core/ world/ entities/ ui/ features/     the original sandbox, PARTs 1-52
-  ai_players/        PART 53, the AI players
   texpacks/          PART 54, OG | Hyperreal texture packs (models/ = the Hyperreal cast)
   purgatory/         PART 55, Puppet Purgatory
   creativity/        PART 56, easels, record players, jukeboxes
@@ -122,7 +119,6 @@ assets/              the title logo, title/ (the menu panorama), vendor/ (three.
 scripts/             build, serve, bump, release, gate, changelog (Node, no dependencies)
 tests/               every test suite, fixtures, and the repo's own checks
 tools/               art packers and art tools, muted browser QA rigs, the secrets scan
-brain/               the AI players' local server (bring your own key)
 server/              the multiplayer server (game 6.10+): dinglecraft-server.mjs + lib/, Start Server.bat for Windows, its own README
 docs/                how everything works (start with ARCHITECTURE.md)
 ```
@@ -140,7 +136,6 @@ ghosts and "the others" (a few rare, unsettling events). They are ordinary sourc
 | [docs/TESTING.md](docs/TESTING.md) | the suites, the gate, how to write a test, the rig field manual |
 | [docs/QA.md](docs/QA.md) | muted browser QA |
 | [docs/ASSETS.md](docs/ASSETS.md) | the packed art, where the source art lives, how to repack |
-| [docs/BRAIN.md](docs/BRAIN.md) | the AI brain: keys, cost, data, safety |
 | [docs/RELEASING.md](docs/RELEASING.md) | version bumps, patch notes, releases |
 | [docs/LANDMINES.md](docs/LANDMINES.md) | things that have bitten before |
 | [docs/PARITY.md](docs/PARITY.md) | the byte-for-byte proof of the move into this repo (historical), and the check you can run today |

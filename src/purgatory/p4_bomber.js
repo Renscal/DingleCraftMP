@@ -25,7 +25,7 @@ function hnHGroupCen(gk){const g=hnA().groups[gk];return [(g[0]+g[1])/2+0.5,35,(
 function hnHInGroup(x,z,gk,pad){const g=gk==='MAT'?[-1,1,-174,-172]:hnA().groups[gk];pad=pad||0;return x>=g[0]-pad&&x<=g[1]+1+pad&&z>=g[2]-pad&&z<=g[3]+1+pad;}
 /* which station would the Demolitionist pick: a player on (or within 2 of) a network's plates, else the fixed order */
 function hnHPick(){const A=hnA(),foes=[];if(P&&!P.dead&&P.mode!=='c')foes.push([P.x,P.z]);
-  if(typeof AG_ACTIVE!=='undefined'&&AG_ACTIVE)for(const a of AGENTS)if(a.e&&!a.dead&&a.online&&a.dim===DIM)foes.push([a.e.x,a.e.z]);
+  
   for(const s of A.st)for(const gk of s.groups)for(const f of foes)if(hnHInGroup(f[0],f[1],gk,2))return s.i;
   const i=HN_H.next%4;HN_H.next++;return A.order.indexOf(A.st[i].k)>=0?i:0;}
 
@@ -67,14 +67,11 @@ function hnHStationHit(prop,dmg,by){if(DIM!=='puppet')return;const k=prop.kind;
   if((HN_H.pressCd[k]||-9)>MP.clock)return;HN_H.pressCd[k]=MP.clock+1.2;
   if(k==='dnp'){hnHDnp(prop,by);return;}
   const s=hnA().st.find(x=>x.k===k);if(!s)return;
-  if(hnIsBot(by)&&!(MPF.fight&&MPF.fight.name==='bomber'&&!MPF.fight.over))return;
   hnHPlunge(s,by,false);if(MPF.fight)hnLog(MPF.fight,'playerPlunge',{k,by});}
 /* DO NOT PUSH: Dan only. Without Wire Snips (or better) the first punch earns the Demolitionist's demo; a bot gets the boot */
 function hnHHasSnips(){return P.inv.some(s=>s&&(s.id===IT.PG_SNIPS||s.id===IT.PG_RSNIPS||s.id===IT.PG_GAUNTLET))||!!(cursorStack&&cursorStack.id===IT.PG_SNIPS);}
 function hnHDnp(prop,by){
-  if(by!=='Dan'){const a=agByName(by);if(a&&a.e){const b=a.e,dx=b.x-prop.x,dz=b.z-prop.z,l=Math.hypot(dx,dz)||1;hnPush(b,dx/l*7,4,dz/l*7);
-      mwS('pg_boot',b.x,b.y,b.z);hnPuff(prop.x,35.4,prop.z-1.2,0.5,0.5,0.4);if(typeof agEvent==='function')agEvent(a,'A boot flew out of the hatch behind DO NOT PUSH and hit you in the face',5);}
-    return;}
+  if(by!=='Dan')return;
   const F=MPF.fight;
   if(F&&F.name==='bomber'&&!F.over){hnHPlungeDnp(by);return;}
   if(MP.dead.bomber){hnHPlungeDnp(by);return;}

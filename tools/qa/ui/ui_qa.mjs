@@ -95,7 +95,7 @@ const HELP=`window.__u={T:700000,stp(n){for(let i=0;i<(n||1);i++){this.T+=40;__v
    if(kind!=='hud')this.toastHits(boxes,out);
    if(kind==='hud'){const ids=['hotbar','stats','handname','xp','armor','chatbox','cmphud','pcmphud','boss','mgbar','toast','coords','tablist','debug','trick','dis'];
      const L=[];for(const id of ids){const e=document.getElementById(id);if(!this.vis(e))continue;
-       if(id==='chatbox'&&!e.querySelector('.cl')&&!this.vis(document.getElementById('aibadge'))&&!this.vis(document.getElementById('chatin')))continue;
+       if(id==='chatbox'&&!e.querySelector('.cl')&&!this.vis(document.getElementById('chatin')))continue;
        if(id==='handname'&&!e.textContent)continue;const r=this.rect(e);L.push({id,...r});add(id,e);}
      /* every pair, F3 (#debug) and the player list (#tablist) included: hudLayout keeps them clear (widgets it hides are not visible) */
      for(let i=0;i<L.length;i++)for(let j=i+1;j<L.length;j++)if(this.hit(L[i],L[j]))out.overlap.push(L[i].id+'/'+L[j].id);
@@ -120,7 +120,7 @@ const closeAll=`try{if(crOn)crUIClose(true);}catch(e){}closeModal(true);if(pcOpe
 const VIEWS=[
   ['hud_a','hud',`__vox.P.sel=4;__vox.P.cmpT='village';redrawHotbar();const P=__vox.P;spawnMob('boss',P.x+6,P.y+1,P.z+6);__u.stp(4);
     updateBossBar();showToast('Compass tuned: Alien Village');__u.stp(1);`],
-  ['hud_b','hud',`__vox.P.sel=5;redrawHotbar();if(!AGENTS.some(a=>a.online)){GR.bots=true;agJoinAll(false);}__u.stp(6);tabHeld=true;renderTab();debugOn=true;
+  ['hud_b','hud',`__vox.P.sel=5;redrawHotbar();__u.stp(6);tabHeld=true;renderTab();debugOn=true;
     const m=document.getElementById('mgbar');m.style.display='block';MG2HUD.shown=1;MG2HUD.key='';mg2HudDraw(MG_K.BAR*0.62,false);__u.stp(1);
     m.style.display='block';mg2HudDraw(MG_K.BAR*0.62,false);`],
   ['chat','hud',`openChat('');document.getElementById('chatin').value='/msg BunkerBrad hello';__u.stp(1);`],

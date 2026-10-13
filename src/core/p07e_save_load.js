@@ -33,7 +33,7 @@ function snapshot(name){
     if(e.dead)continue;
     if(e.t==='mob'&&MOBT[e.mt].pmob){mpSnapMob(e,ents);continue;}
     if(e.t==='mob'&&MOBT[e.mt].mg)continue;
-    if(e.t==='mob'&&!e.bot){
+    if(e.t==='mob'){
       const o={t:e.mt,x:+e.x.toFixed(2),y:+e.y.toFixed(2),z:+e.z.toFixed(2),hp:e.hp};
       if(e.mt==='alien'){o.nm=e.name;o.rel=Math.round(e.rel);o.rom=e.rom;
         o.md=e.mood==='h'?'h':'c';o.hx=Math.round(e.hx);o.hz=Math.round(e.hz);}
@@ -88,12 +88,10 @@ function snapshot(name){
     ...mgSaveFields(),
     gr:{...GR},
     ...crSaveFields(),
-    bots:agSnapshot(),
     spw:[...SPW.keys()],
     edits,be,ents};
 }
 function resetWorld(){
-  agReset();
   DIM='over';
   SNL=null;SNL_ON=false;
   NUKES.length=0;NARM.e=null;NARM.t=0;nukeHud(-1);
@@ -186,6 +184,7 @@ function applySave(d){
   LSSEEN.clear();for(const v of (d.lsseen||[]))LSSEEN.add(v);
   RSEEN.clear();for(const v of (d.rseen||[]))RSEEN.add(v);
   Object.assign(GR,GR_DEF(),d.gr||{});
+  for(const k of ['bots','botPvP','botGrief','botPurg'])delete GR[k];   /* rules of the AI players (5.9 to 6.9): old saves still carry them */
   if(typeof grApplyUI==='function')grApplyUI();
   if(d.demon){DEMON.ay=d.demon.ay||0;DEMON.cutSeen=!!d.demon.cs;DEMON.dead=!!d.demon.dead;}
   else{DEMON.ay=0;DEMON.cutSeen=false;DEMON.dead=false;}
@@ -245,7 +244,6 @@ function applySave(d){
       }
     }
   }
-  agRestore(d);
 }
 async function saveToStorage(name,quiet){
   if(!playing)return false;

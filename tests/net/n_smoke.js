@@ -12,7 +12,7 @@
    7 chat both ways, system lines, a remote "Dan" does not read as you
    8 PvP: Bea hits Dan (hp drops), Dan's left click on Bea sends a hit (and mines nothing)
    9 time: the server's clock moves Dan's, and a local jump (a bed) is sent to the server
-   10 game rules: a local change is sent, a remote one applied (bots never)
+   10 game rules: a local change is sent, a remote one applied (only rules the game has)
    11 saving: saveToStorage goes to the server (the player by name), not to local storage; rejoining restores inventory and position
    12 refusals: a wrong password, a full server, an old game; a kick returns Dan to the title with the reason
    13 the server: /status, a served game file when given one, bad input ignored (bad keys, bad ids, oversized), the world file
@@ -105,7 +105,6 @@ boot.run(async()=>{
   ok('joined: the server time',Math.abs((V.getTime()%1)-0.61)<0.01);
   ok('joined: the server\'s game rules (the settings file\'s, the server defaults for the rest: Cheats off)',V.GR.mobSpawn===false&&V.GR.keepInv===true&&V.GR.snail===false&&V.GR.cheats===false&&V.GR.fireTick===true);
   ok('a rule of the wrong type or an unknown rule in the settings is ignored',W.gr.jsc===0&&!('madeUp' in W.gr)&&!('madeUp' in V.GR));
-  ok('joined: AI players stay off',V.GR.bots===false&&V.AGENTS.every(a=>!a.online));
   step(160);await pump(4);
   ok('joined: the edit that was already there is in the world',V.getBlock(ex,ey,ez)===B.GLASS);
   {const be=V.blockEnts.get((ex+1)+','+ey+','+ez);ok('joined: the chest that was already there has its 7 stone and 27 slots',!!be&&be.t==='chest'&&be.inv.length===27&&be.inv[0].id===B.STONE&&be.inv[0].count===7);}
@@ -205,12 +204,12 @@ boot.run(async()=>{
 
   /* ===== 10. game rules ===== */
   bea.clear();V.GR.keepInv=!V.GR.keepInv;const kv=V.GR.keepInv;await pump(40);
-  ok('a changed game rule goes to the server and to Bea (never bots)',W.gr.keepInv===kv&&bea.by('gr').some(m=>m.gr.keepInv===kv)&&W.gr.bots===false);
+  ok('a changed game rule goes to the server and to Bea',W.gr.keepInv===kv&&bea.by('gr').some(m=>m.gr.keepInv===kv));
   bea.clear();bea.send({t:'gr',gr:{fireTick:false}});await until(()=>!!bea.last('gr'),2000);await pump(3);
   ok('a rule change from a player without the right to is refused and theirs put back',W.gr.fireTick===true&&V.GR.fireTick===true&&bea.last('gr').gr.fireTick===true);
   S.command('op Bea');await sleep(30);
   bea.send({t:'gr',gr:{fireTick:false,bots:true,'bad key':1,obj:{}}});await until(()=>V.GR.fireTick===false,2000);
-  ok('a remote game rule (from an operator) is applied; bots and junk are not',V.GR.fireTick===false&&V.GR.bots===false&&!('bad key' in W.gr)&&!('obj' in W.gr));
+  ok('a remote game rule (from an operator) is applied; a rule this game does not have (the AI players\' old "bots") and junk are not',V.GR.fireTick===false&&!('bots' in W.gr)&&!('bots' in V.GR)&&!('bad key' in W.gr)&&!('obj' in W.gr));
   S.command('deop Bea');S.command('deop '+V.getPName());await until(()=>NET.op===false,2000);
   ok('/deop: back to ordinary players',NET.op===false&&S.opts.ops.length===0);
 
@@ -454,7 +453,7 @@ boot.run(async()=>{
     fs.writeFileSync(path.join(OUT,'dinglecraft_v'+V.GAME_VERSION+'.html'),'<!doctype html><title>stand-in</title>');
     const S2=createServer({port:0,data:OUT,world:'world.vxw.json',quiet:true});await S2.listen();const W2=S2.world();
     ok('an exported single-player world is adopted (seed, mode, edits; no player, ents or bots)',W2.seed===save.seed&&W2.mode==='c'&&Object.keys(W2.edits).length===Object.keys(save.edits).length&&
-      !('player' in W2)&&!('ents' in W2)&&!('bots' in W2)&&W2.gr.bots===false);
+      !('player' in W2)&&!('ents' in W2)&&!('bots' in W2)&&!('bots' in W2.gr));
     ok('a game html next to the world is served at /',/stand-in/.test(await fetch('http://127.0.0.1:'+S2.port+'/').then(x=>x.text()))&&S2.status().version===V.GAME_VERSION);
     const b2=raw(S2.port,{});await b2.open;await until(()=>!!b2.last('ready'));
     b2.send({t:'drop',id:'savesave.1',dim:'over',x:3,y:50,z:3,st:{id:B.STONE,count:2}});
@@ -462,7 +461,7 @@ boot.run(async()=>{
     await S2.close();
     /* the settings file decides, on every start: rules and mode over the world file's own */
     {let told=null;const S3=createServer({port:0,data:OUT,world:'world.vxw.json',quiet:true,noGame:true,mode:'s',rules:{keepInv:true,fallDmg:false},onRules:r=>{told=r;}});await S3.listen();
-      ok('settings applied over an existing world: mode and the listed rules change, the others keep the world\'s values',S3.world().mode==='s'&&S3.world().gr.keepInv===true&&S3.world().gr.fallDmg===false&&S3.world().gr.cheats===save.gr.cheats&&S3.world().gr.bots===false);
+      ok('settings applied over an existing world: mode and the listed rules change, the others keep the world\'s values',S3.world().mode==='s'&&S3.world().gr.keepInv===true&&S3.world().gr.fallDmg===false&&S3.world().gr.cheats===save.gr.cheats&&!('bots' in S3.world().gr));
       const b3=raw(S3.port,{});await b3.open;await until(()=>!!b3.last('ready'));
       ok('...and players get them on joining',b3.last('welcome').world.mode==='s'&&b3.last('welcome').world.gr.fallDmg===false);
       b3.send({t:'gr',gr:{fireTick:false}});await until(()=>!!told,2000);

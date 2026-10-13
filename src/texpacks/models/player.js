@@ -1,7 +1,7 @@
 /* PLAYER (Dan): "The Tree-Puncher". DESIGN_BIBLE.md section 1.
    Hyperreal pack, Three.js r128. Registers HR.MODELS.player.
    Feet at y=0, faces +z, model's left = +x. In game wrap root in a Group with rot.y = PI
-   (mkPlayerModel / agHumanoid face -z). handles = {head, aL, aR, lL, lR} for syncArmTool / applyHat / syncArmorModel.
+   (mkPlayerModel faces -z). handles = {head, aL, aR, lL, lR} for syncArmTool / applyHat / syncArmorModel.
    Extra API on the returned object:
      fist      {swell 0..1, splinters 0..6, minSwell, minSplinters, hour}: cosmetic counters, read/write, not saved.
                +0.025 swell per bare-hand block hit (s.blockHit or s.woodHit), plus a 35% splinter chance on wood (s.woodHit);

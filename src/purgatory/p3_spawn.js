@@ -4,7 +4,7 @@
 /* P3 tick, the Hands' entrances, Felt Dan's walk, the death heckles, registrations and exports (bible 9.4, 9.5, 3.6, 12.3)  */
 /* ===================================================================== */
 function pmPlayers(){const L=[];if(P&&!P.dead&&DIM==='puppet')L.push(P);
-  if(typeof AG_ACTIVE!=='undefined'&&AG_ACTIVE)for(const a of AGENTS){const b=a.e;if(b&&!b.dead&&!a.dead&&a.online&&a.dim==='puppet')L.push(b);}return L;}
+  return L;}
 function pmNearestPlayer(x,z,r){let best=null,bd=r==null?1e9:r;for(const p of pmPlayers()){const d=Math.hypot(p.x-x,p.z-z);if(d<bd){bd=d;best=p;}}return best;}
 function pmHn(){if(PMS.hnO!=null)return PMS.hnO;try{return hnState();}catch(err){return null;}}
 /* the top solid block: the real blocks where the chunk is loaded (edits, digs, a carved floor), P1's column function elsewhere */
@@ -167,9 +167,7 @@ function pmTick(dt){if(PMS.flF!==frameCount)pmFlightStep(dt);
     const n=d.hs&&MP.deaths?MP.deaths[d.hs]:0;
     if(d.who==='Dan'&&d.hs&&(n===2||n===4)&&MP.clock-(PMS.hintAt||-99)<3.5)continue;          /* P4 already called the hint pair */
     pmHeckle(pmDeathKind(d.by,d.how,n,d.blk),{who:d.who,death:1});}
-  if(typeof AG_ACTIVE!=='undefined'&&AG_ACTIVE)for(const a of AGENTS){if(a.dim!=='puppet')continue;
-    if(a.dead&&!PMS.botDead[a.name]){PMS.botDead[a.name]=1;const hs=pmHn();PMS.dq.push({who:a.name,by:a.lastHurtBy,how:a.lastHurtHow,blk:pmBlackout(),hs:hs&&hs.live?hs.name:null,t:MP.clock+1.2});}
-    else if(!a.dead&&PMS.botDead[a.name])delete PMS.botDead[a.name];}
+  
   /* an embarrassing fall (3+ damage) earns a tomato */
   if(P){if(LASTDMG!==PMS.lastLD){if(LASTDMG&&LASTDMG.how==='fall'&&PMS.lastHp-P.hp>=3&&!P.dead)pmHeckle('fall',{who:'Dan'});PMS.lastLD=LASTDMG;}PMS.lastHp=P.hp;}
   if((frameCount%6)===0)pmChefCounterTick();

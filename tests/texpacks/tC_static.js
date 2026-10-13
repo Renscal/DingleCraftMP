@@ -16,11 +16,9 @@ boot.run(async()=>{
   ok('HR_MOB covers the 7 mob types with a Hyperreal model (aliens render OG)',mobKeys.sort().join()==='boomer,cow,pig,sheep,skel,spider,zombie');
   ok('every HR_MOB key is a MOBT mob type',mobKeys.every(k=>!!V.MOBT[k]));
   ok('no boss, flyer or Nether/Aether mob is mapped',mobKeys.every(k=>!V.MOBT[k].boss&&!V.MOBT[k].fly));
-  const order=(G.match(/const AG_ORDER=\[([^\]]*)\]/)||[])[1];
-  const agNames=order?order.split(',').map(s=>s.trim().replace(/'/g,'')):[];
-  ok('HR_BOT keys equal the AI player names (AG_ORDER)',agNames.length===3&&Object.keys(X.HR_BOT).sort().join()===agNames.slice().sort().join());
-  const cast=[...new Set(Object.values(X.HR_MOB).concat(Object.values(X.HR_BOT),['player']))].sort();
-  ok('the maps use exactly the 11 cast models',cast.length===11&&cast.join()===X.HR_CAST.slice().sort().join());
+  ok('the AI players\' models went with them (6.10): no HR_BOT map, none of the three in the cast',!('HR_BOT' in X)&&!X.HR_CAST.some(n=>/brad|creepah|honeybee/.test(n)));
+  const cast=[...new Set(Object.values(X.HR_MOB).concat(['player']))].sort();
+  ok('the maps use exactly the 8 cast models',cast.length===8&&cast.join()===X.HR_CAST.slice().sort().join());
   for(const n of X.HR_CAST)ok('model source '+n+'.js exists',fs.existsSync(MD+n+'.js'));
 
   /* ---- angle helpers ---- */
@@ -45,15 +43,12 @@ boot.run(async()=>{
   /* ---- hooks as spliced (one check per hook: the inserted text is in the build) ---- */
   const HOOKS={C1:'function makeMobMesh(mt,opts){',C2:'if(opts&&opts.hr&&HRE.on&&HR_MOB[mt]){const r=hrMobMesh(mt,G);if(r)return r;}',
     C3:'const {G,legs,mats,hrM}=makeMobMesh(mt,{hr:1});',C4:'mesh:G,legs,mats,hrM:hrM||null,anim:0});',C5:'if(e.hrM)e._a0=e.atkT;',
-    C6:'if(e.hrM){hrMobTick(e,dt,T,tdx,tdz,td,_tb,hostileNow);return;}',C7:'if(!(e.hrM&&hrCorpse(e,B.TNT)))',C8:'if(e.hrM){hrFree(e.hrM);e.hrM=null;}',
+    C6:'if(e.hrM){hrMobTick(e,dt,T,tdx,tdz,td,null,hostileNow);return;}',C7:'if(!(e.hrM&&hrCorpse(e,B.TNT)))',C8:'if(e.hrM){hrFree(e.hrM);e.hrM=null;}',
     C9:'if(TP.hr)hrEntFrame(dt);',C10:'if(HRE.corpses.length)hrTickCorpses(dt);',C11:'  hrClearCorpses();\n  for(const e of entities)removeEnt(e);',
     C12:'function stashEnts(){\n  hrClearCorpses();',C13:'if(HRE.on&&P){const M=hrPlayerModel();if(M)return M;}',C14:'if(M.hr){hrPlayerTick(M,paused?0:dt);return;}',
     C15:'helm.position.y=M.helmA?0:1.62;',C16:'chest.position.y=M.chestA?0:1.0;',C17:'(M.helmA||M.G).add(helm);(M.chestA||M.G).add(chest);',
-    C18:'if(!st){if(HRE.on&&P)hrFistAttach();return;}',C19:'if(HRE.on&&hrFistTick(dt))return;',C20:'const M=(HRE.on&&hrBotBody(a))||agHumanoid(D);',
-    C21:'if(M.hr)M.tag.position.y=2.62;else shadowify(M.G);',C22:'mats:M.mats,M,hrM:M.hrM||null,anim:0};',C23:'if(M.hr){hrBotTick(a,e,dt);return;}',
-    C24:'if(a.e&&a.e.hrM){a.hrPlT=AG_T;a.hrPlId=id;}',C25:'if(a.e&&a.e.hrM&&hrCorpse(a.e,B.WOOL))a.e=null;'};
+    C18:'if(!st){if(HRE.on&&P)hrFistAttach();return;}',C19:'if(HRE.on&&hrFistTick(dt))return;'};   /* C20-C25 were the AI players' bodies */
   for(const k in HOOKS)ok('hook '+k+' is spliced exactly once',G.split(HOOKS[k]).length===2);
-  ok('C24 never touches PART 53\'s a.placeT build pacer',G.indexOf('a.placeT=AG_T')<0);
   ok('in the core, only spawnMob asks for a Hyperreal body (figurines and every other caller stay OG)',(G.slice(0,G.indexOf('/* ---- PART 54: t0_contract.js ---- */')).match(/makeMobMesh\([^)]*\{hr:1\}\)/g)||[]).length===1&&G.indexOf('const {G}=makeMobMesh(be.fig.t);')>0);
 
   /* ---- model sources: embedding rules (C5) ---- */
@@ -75,7 +70,7 @@ boot.run(async()=>{
   /* ---- PART 54 sources: names ---- */
   const GD=boot.SRC.tex;
   const srcs=fs.readdirSync(GD).filter(f=>/^tC_.*\.js$/.test(f));
-  ok('package C sources: tC_adapter, tC_mobs, tC_player, tC_bots, tC_corpse',['tC_adapter.js','tC_mobs.js','tC_player.js','tC_bots.js','tC_corpse.js'].every(f=>srcs.includes(f)));
+  ok('package C sources: tC_adapter, tC_mobs, tC_player, tC_corpse (tC_bots went with the AI players)',['tC_adapter.js','tC_mobs.js','tC_player.js','tC_corpse.js'].every(f=>srcs.includes(f))&&!srcs.includes('tC_bots.js'));
   const bad=[];for(const f of srcs){const s=boot.readSrc(GD+f,{legacy:true});const re=/^(?:async\s+)?function\s+([A-Za-z_$][\w$]*)|^(?:const|let|var)\s+([A-Za-z_$][\w$]*)/gm;let m;
     while((m=re.exec(s))){const n=m[1]||m[2];if(!/^(HRE|HR_[A-Z_]+|hr[A-Z]\w*|hrWrap|hrS|hrC25)$/.test(n))bad.push(f+':'+n);}}
   ok('package C top-level names stay in its prefixes (HRE, HR_*, hr*)'+(bad.length?' ('+bad.join(',')+')':''),bad.length===0);

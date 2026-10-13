@@ -1,5 +1,41 @@
+/* ===================================================================== */
+/* PART 53 — chat, the player list, and a few things everything shares    */
+/* ===================================================================== */
+/* What is left of the 5.9 AI Players update after the AI players themselves were removed in 6.10 (multiplayer brought real
+   ones). These were born in that update but belong to the whole game:
+     - who did it: HIT_BY / ACTOR / LASTDMG say who the next hit, block change or death is from (HIT_HOW and EXPL_BY are
+       beside GAME_VERSION in core/p01a_prologue.js)
+     - playSAt: a sound that is quieter with distance
+     - the chat box (T, Enter or /), the Tab player list, and the Player Compass, which now tracks the other players on a
+       server (PART 58)
+     - the nine biome flowers (block ids 140-148): worldgen places them, so they can never go
+     - mobAnchor / mobFarFromAll / mobClearOfPlayers: where the mob spawner measures from */
+var HIT_BY=null;            /* who the next hurtMob() is from */
+var ACTOR=null;             /* who is changing blocks right now */
+var LASTDMG={by:null,how:null};   /* what last hurt the player: a new object every time (death messages compare identity) */
+var SNDMUL=1;
 
-/* ----- new flowers (honeybee_mc collects them; each biome grows its own) ----- */
+/* positional sound: quieter with distance, silent past 30 blocks */
+function playSAt(n,x,y,z){
+  if(!P)return;
+  const d=Math.hypot(x-P.x,y-P.y,z-P.z);
+  if(d>30)return;
+  SNDMUL=Math.pow(1-d/30,1.4);
+  try{playS(n);}finally{SNDMUL=1;}
+}
+
+/* ----- what a mob is called (death messages) ----- */
+const MOB_NAME={zombie:'Zombie',skel:'Skeleton',boomer:'Boomer',spider:'Spider',alien:'Alien',
+  dragon:'Dragon',dking:'Dragon King',titan:'Stone Titan',demon:'Malgorath',imp:'Imp',hellhog:'Hellhog',
+  cherub:'Cherub',warden:'Warden',valkyra:'Valkyra',infernis:'Infernis',creep:'Nuke Keg',nuker:'Armed Nuke Keg',snake:'Snake',blockling:'Blockling'};
+function mobNameOf(mt){return MOB_NAME[mt]||(mt?mt[0].toUpperCase()+mt.slice(1):'something');}
+
+/* ----- where the mob spawner measures from: this player ----- */
+function mobAnchor(){return P;}
+function mobFarFromAll(e){return Math.hypot(e.x-P.x,e.z-P.z)>64;}
+function mobClearOfPlayers(x,z){return Math.hypot(x-P.x,z-P.z)>12;}
+
+/* ----- flowers (each biome grows its own) ----- */
 B.TULIP_R=140;B.TULIP_O=141;B.CORNFLOWER=142;B.ALLIUM=143;B.LILY=144;B.SNOWDROP=145;B.MARIGOLD=146;B.EDELWEISS=147;B.SEALAV=148;
 const NEW_FLOWERS=[
   [B.TULIP_R,'Red Tulip','fl_tulr','plains'],[B.TULIP_O,'Orange Tulip','fl_tulo','plains'],
@@ -10,8 +46,6 @@ const NEW_FLOWERS=[
 ];
 for(const [id,n,t] of NEW_FLOWERS)def(id,{name:n,tiles:t,hard:0,solid:false,opq:false,bucket:'cut',cross:true,replace:true});
 const FLOWER_IDS=new Set([B.FLOWER_R,B.FLOWER_Y].concat(NEW_FLOWERS.map(f=>f[0])));
-const FLOWER_HINT={[B.FLOWER_R]:'plains',[B.FLOWER_Y]:'plains'};
-for(const f of NEW_FLOWERS)FLOWER_HINT[f[0]]=f[3];
 tile('fl_tulr',(c,R)=>{c.clearRect(0,0,16,16);c.fillStyle='#3f7a26';c.fillRect(7,8,1,8);c.fillRect(8,11,2,1);
   c.fillStyle='#d8343a';c.fillRect(6,4,4,4);c.fillRect(5,3,1,3);c.fillRect(10,3,1,3);c.fillRect(7,2,2,1);px(c,7,5,'#f06a6a');});
 tile('fl_tulo',(c,R)=>{c.clearRect(0,0,16,16);c.fillStyle='#3f7a26';c.fillRect(7,8,1,8);c.fillRect(5,12,2,1);
@@ -45,14 +79,8 @@ function bioFlower(b,top,h,wx,wz){
   if(top===B.SAND&&b===BIOME.BEACH)return r<0.012?B.SEALAV:0;
   return 0;
 }
-function agFlowerFound(a,id){
-  if(!FLOWER_IDS.has(id)||a.flowers.includes(id))return;
-  a.flowers.push(id);
-  agEvent(a,'You found a '+DEFS[id].name+' - new for your collection! ('+a.flowers.length+'/'+FLOWER_IDS.size+')',AG_DEF[a.name].short==='bee'?7:3);
-  if(AG_DEF[a.name].short==='bee')agNeedTurn(a,'new flower: '+DEFS[id].name);
-}
 
-/* ----- the Player Compass ----- */
+/* ----- the Player Compass: points at another player on a server ----- */
 IT.PCOMPASS=284;
 idef(IT.PCOMPASS,{name:'Player Compass',icon:'i_pcmp',stack:1});
 tile('i_pcmp',c=>{c.clearRect(0,0,16,16);
@@ -62,7 +90,16 @@ tile('i_pcmp',c=>{c.clearRect(0,0,16,16);
   c.fillStyle='#f3f3f8';c.beginPath();c.moveTo(8,13);c.lineTo(6,8);c.lineTo(8,9);c.closePath();c.fill();
   c.fillStyle='#ffd84d';c.fillRect(7,7,2,2);});
 R([' I ','IGI',' I '],{I:IT.IRON,G:IT.GOLD},IT.PCOMPASS,1);
-function pcmpTargets(){return AGENTS.filter(a=>a.online).map(a=>a.name);}
+/* the players it can track: everyone else on the server, as {name, dead, dim, x, y, z} */
+function pcmpPlayers(){
+  const out=[];
+  if(typeof NET!=='undefined'&&NET.on)for(const p of NET.peers.values())if(p.has)out.push({name:p.name,dead:!!(p.fl&4),dim:p.dim,x:p.tx,y:p.ty,z:p.tz});
+  return out;
+}
+function pcmpTargets(){return pcmpPlayers().map(p=>p.name);}
+/* compass points, N at -z */
+function dir8(dx,dz){const dirs=['N','NE','E','SE','S','SW','W','NW'];
+  return dirs[Math.round(((Math.atan2(dx,-dz)/Math.PI*180+360)%360)/45)%8];}
 function pcmpCycle(dir){
   dir=dir<0?-1:1;
   const L=pcmpTargets();
@@ -80,11 +117,11 @@ function tickPCompass(dt){
   const st=P&&!P.dead?heldStack():null;
   const held=st&&st.id===IT.PCOMPASS&&!CUT.on;
   if(!held){if(_pcLast!==''){_pcLast='';el.style.display='none';}return;}
-  const L=pcmpTargets();
+  const PL=pcmpPlayers(),L=PL.map(p=>p.name);
   if(P.pcmpT&&!L.includes(P.pcmpT))P.pcmpT=null;
   if(!P.pcmpT&&L.length)P.pcmpT=L[0];
   let txt,ang=null,spin=false;
-  const a=agByName(P.pcmpT);
+  const a=PL.find(p=>p.name===P.pcmpT)||null;
   if(!a)txt='No other players online';
   else if(a.dead)txt=a.name+' — respawning';
   else if(a.dim!==DIM){txt=a.name+' ('+(a.dim==='over'?'Overworld':a.dim==='nether'?'Nether':a.dim==='puppet'?'Puppet Purgatory':'Aether')+')';spin=true;}
@@ -101,6 +138,18 @@ function tickPCompass(dt){
   else if(spin){nd.style.transform='rotate('+((performance.now()/3)%360).toFixed(0)+'deg)';nd.textContent='⬆';}
   else{nd.style.transform='';nd.textContent=a?'★':'?';}
 }
+
+/* ----- chat log ----- */
+const CHAT=[];   /* {t,txt,k:'chat'|'sys'|'whisper'|'death'|'me',from,to} */
+var chatOpen=false,tabHeld=false;
+let _chatDirty=true;
+function chatPush(m){
+  m.t=performance.now();CHAT.push(m);
+  if(CHAT.length>120)CHAT.splice(0,CHAT.length-120);
+  _chatDirty=true;
+}
+function sysMsg(txt){chatPush({k:'sys',txt});}
+function chatLine(from,txt,to,whisper){chatPush({k:whisper?'whisper':'chat',from,txt,to:to||null});}
 
 /* ----- chat box, commands, Tab list ----- */
 function renderChat(force){
@@ -149,59 +198,14 @@ function chatKey(e){
   if(e.code==='Slash'){e.preventDefault();openChat('/');return true;}
   return false;
 }
+/* a line typed into chat. On a server it goes to everyone, and a slash command is the server's (PART 58); alone, chat is
+   a note to yourself and there are no commands. */
 function chatSubmit(raw){
   const t=(''+(raw||'')).replace(/[\u0000-\u001f]/g,' ').trim().slice(0,200);
   if(!t)return;
-  if(t[0]!=='/'){chatLine('Dan',t,null,false);if(NET.on)ntChat(t);agBrainNudge();return;}
+  if(t[0]!=='/'){chatLine('Dan',t,null,false);if(NET.on)ntChat(t);return;}
   if(NET.on){ntCmd(t);return;}   /* PART 58: on a server, slash commands are the server's */
-  const parts=t.slice(1).split(/\s+/);const cmd=(parts.shift()||'').toLowerCase();
-  if(cmd==='msg'||cmd==='w'||cmd==='tell'||cmd==='whisper'){
-    const to=parts.shift();const msg=parts.join(' ');
-    const a=agByName(to);
-    if(!a||!msg){sysMsg('Usage: /msg <player> <message>');return;}
-    if(!a.online){sysMsg(a.name+' is not online');return;}
-    chatPush({k:'whisper',from:'Dan',to:a.name,txt:msg});
-    agHear('Dan',msg,a.name,true);agBrainNudge();return;
-  }
-  if(cmd==='r'){const a=agByName(_lastWhisperFrom);if(!a){sysMsg('Nobody has whispered to you');return;}
-    const msg=parts.join(' ');if(!msg)return;chatPush({k:'whisper',from:'Dan',to:a.name,txt:msg});agHear('Dan',msg,a.name,true);agBrainNudge();return;}
-  if(cmd==='pair'){if(!parts[0]){sysMsg('Usage: /pair <code from the brain server window>');return;}brainPair(parts[0]);return;}
-  if(cmd==='brain'){
-    const s=(parts[0]||'status').toLowerCase();
-    if(s==='off'){BRAIN.off=true;BRAIN.ok=false;AG_EPOCH++;for(const a of AGENTS){if(a.bs){a.bs.actFly=false;a.bs.mindFly=false;}if(a.bjob)a.bjob.inflight=false;}sysMsg('[AI] Brains off - players on autopilot.');return;}
-    if(s==='on'){BRAIN.off=false;BRAIN.back=5;brainHealth();sysMsg('[AI] Brains on (connecting...)');return;}
-    sysMsg('[AI] '+(BRAIN.ok?'connected':BRAIN.off?'switched off':BRAIN.needPair?'needs /pair':'not connected')+
-      ' | server '+BRAIN.url+' | calls '+BRAIN.calls+' | spent this session $'+(+BRAIN.spent||0).toFixed(3)+
-      ' | avg reply '+Math.round(BRAIN.lat)+'ms'+(BRAIN.err?' | last error: '+BRAIN.err:''));
-    if(!BRAIN.ok&&!BRAIN.mock)sysMsg(BRAIN.off?'[AI] The players are on autopilot and can\u2019t chat. /brain on reconnects.':
-      BRAIN.needPair?'[AI] The players are on autopilot until you /pair <code> (the code is in the brain server window).':
-      BRAIN.found&&BRAIN.noKey?'[AI] The brain server is running but has no ANTHROPIC_API_KEY: add it to the server\u2019s .env file and restart the server. Until then the players are on autopilot and can\u2019t chat.':
-      '[AI] The players are on autopilot and can\u2019t chat. Double-click "Start AI Brain.command" in the game folder (or run npm run brain:launch) - it opens the game for you.');
-    return;
-  }
-  if(cmd==='bots'||cmd==='players'){
-    const s=(parts[0]||'').toLowerCase();
-    if(s==='join'||s==='on'){if(!GR.bots){GR.bots=true;agJoinAll(false);}else sysMsg('They are already here');return;}
-    if(s==='leave'||s==='off'){if(GR.bots){GR.bots=false;agLeaveAll();}return;}
-    if(!AGENTS.length){sysMsg('No AI players in this world. Type /bots join to invite them.');return;}
-    for(const a of AGENTS)sysMsg(a.name+': '+(!a.online?'offline':a.dead?'dead':'hp '+Math.round(a.hp)+', '+Math.round(agDist(a,P.x,P.z))+'m away')+(a.proj?' - working on "'+a.proj.title+'"':''));return;
-  }
-  if(cmd==='think'||cmd==='mind'||cmd==='thoughts'){
-    const a=agByName(parts[0]);
-    if(!a){sysMsg('Usage: /think <player>');return;}
-    sysMsg('['+a.name+'] project: '+(a.proj?a.proj.title+' (step '+(a.proj.step+1)+'/'+a.proj.steps.length+': '+a.proj.steps[Math.min(a.proj.step,a.proj.steps.length-1)]+')':'none'));
-    sysMsg('['+a.name+'] feels about you: '+relMood(agRel(a,'Dan'))+' (trust '+Math.round(agRel(a,'Dan').trust)+')');
-    for(const t2 of a.thoughts.slice(-3))sysMsg('['+a.name+'] '+t2.txt);
-    return;
-  }
-  if(cmd==='help'||cmd==='?'){
-    sysMsg('Chat: T or Enter to talk, / for commands. Everyone on the server sees normal chat.');
-    sysMsg('/msg <player> <text> (or /w) whisper | /r <text> reply | /think <player> read their mind');
-    sysMsg('/bots [join|leave] AI players | /brain [status|on|off] the AI link | /pair <code> connect to the brain server');
-    sysMsg('The AI players start with nothing and play by your survival rules: they chop, mine, craft, smelt and build only with what they gathered.');
-    return;
-  }
-  sysMsg('Unknown command. Type /help');
+  sysMsg('Commands work on a multiplayer server (main menu: Multiplayer). Alone, T or Enter just talks.');
 }
 let _tabLast='';
 function renderTab(){
@@ -209,8 +213,6 @@ function renderTab(){
   const show=tabHeld&&playing&&!chatOpen&&!modalOpen();
   if(!show){if(_tabLast!==''){_tabLast='';el.style.display='none';}return;}
   const rows=[[PNAME,P.mode==='c'?'creative':Math.round(P.hp)+'❤','',0]];
-  for(const a of AGENTS){if(!a.online)continue;
-    rows.push([a.name,a.dead?'dead':Math.round(a.hp)+'❤',!BRAIN.ok?'autopilot':a.typing.length?'typing…':'▂▄▆█',a.dim!==DIM?(a.dim==='over'?'Overworld':a.dim==='puppet'?'Puppet Purgatory':a.dim):'']);}
   if(NET.on)ntTabRows(rows);
   const s=JSON.stringify(rows);
   if(s===_tabLast)return;
@@ -219,38 +221,9 @@ function renderTab(){
   for(const r of rows){const d=document.createElement('div');d.className='tabr';
     d.textContent=r[0].padEnd(18,' ')+'  '+(''+r[1]).padStart(9,' ')+'  '+(''+r[2]).padStart(9,' ')+(r[3]?'  '+r[3]:'');el.appendChild(d);}
 }
-function agDebugStr(){
-  if(!AG_ACTIVE)return '';
-  let s='\n— AI players ('+(BRAIN.ok?'brain online, $'+(+BRAIN.spent||0).toFixed(2):'autopilot')+') —';
-  for(const a of AGENTS){if(!a.online)continue;
-    const sk=a.rx?a.rx.k+'!':a.sk?a.sk.k+(a.sk.a.target?' '+a.sk.a.target:''):'idle';
-    const th=a.thoughts.length?a.thoughts[a.thoughts.length-1].txt:'';
-    s+='\n'+a.name+' hp'+Math.round(a.hp)+' | '+(a.proj?a.proj.title.slice(0,26)+' '+(a.proj.step+1)+'/'+a.proj.steps.length:'no project')+' | '+sk+
-      '\n   '+th.slice(0,92);}
-  return s;
-}
-/* "AI players: autopilot" badge: always visible while the minds are offline */
-let _aiBadge=null;
-function aiBadgeText(){
-  if(!AG_ACTIVE||BRAIN.ok||!AGENTS.some(a=>a.online))return '';
-  if(BRAIN.off)return 'AI players: autopilot - brains switched off (/brain on)';
-  if(BRAIN.needPair)return 'AI players: autopilot - type /pair <code> to connect the brain';
-  if(BRAIN.found&&BRAIN.noKey)return 'AI players: autopilot - the brain server has no API key';
-  if(!BRAIN.checked)return 'AI players: looking for the brain...';
-  return 'AI players: autopilot - brain not running';
-}
-function tickAiBadge(){
-  const t=aiBadgeText();
-  if(t===_aiBadge)return;
-  const el=$('aibadge');if(!el)return;
-  _aiBadge=t;el.textContent=t;el.style.display=t?'block':'none';
-}
-/* tick the HUD bits every frame (even while paused, so Tab/chat stay live) */
-function tickAgHud(dt){
+/* tick the chat and the player list every frame (even while paused, so Tab and chat stay live) */
+function tickChatHud(dt){
   if(!playing)return;
   renderChat(false);
   renderTab();
-  tickAiBadge();
 }
-bpalInit();vgInit();
-

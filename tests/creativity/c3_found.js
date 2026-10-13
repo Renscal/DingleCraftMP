@@ -3,7 +3,7 @@
    world seed and the chest cell: 1 in 40, even picks, no Math.random, so the loot stream is unchanged), the real lootFill hook (a hit,
    a miss, a forced find of every work), minting through the registry (fresh 1/1 works by Dan Dingle, equal to the source), a found
    painting taken out of its chest, hung and taken down, a found disc played in a jukebox (its note sprite; rendered offline, never
-   heard), bots refusing them, the caps (works, bytes to the byte, a full chest: skipped, no toast), a save round trip, and Puppet
+   heard), the caps (works, bytes to the byte, a full chest: skipped, no toast), a save round trip, and Puppet
    Purgatory (never there). */
 'use strict';
 const boot=require('../lib/c_boot.js'),{skip}=boot,ok=(n,c)=>{if(c&&process.env.C3_VERBOSE)console.log('ok   '+n);return boot.ok(n,c);};
@@ -92,8 +92,8 @@ boot.run(async()=>{
   ok('a forced roll on each chest mints that work as a fresh finished registry work (the next serial), by Dan Dingle, data equal to the source'+
     (badMint.length?' ('+badMint.join(', ')+')':''),badMint.length===0);
   const badDef=FOUND.filter(q=>{const f=F[q.i],d=V.DEFS[q.id];return !(d&&d.item&&d.stack===1&&d.hide&&d.crw===q.n&&d.crst==='done'&&
-    d.name===(f.k==='art'?'Painting: ':'Music Disc: ')+f.t&&C.ICONS[q.id]&&V.stackMax(q.id)===1&&V.crBotNo({id:q.id,count:1}));}).map(q=>F[q.i].t);
-  ok('each is a normal work item: "Painting: <title>" or "Music Disc: <title>", stack 1, hidden from the palette, an icon, never for bots'+
+    d.name===(f.k==='art'?'Painting: ':'Music Disc: ')+f.t&&C.ICONS[q.id]&&V.stackMax(q.id)===1);}).map(q=>F[q.i].t);
+  ok('each is a normal work item: "Painting: <title>" or "Music Disc: <title>", stack 1, hidden from the palette, an icon'+
     (badDef.length?' ('+badDef.join(', ')+')':''),badDef.length===0);
   ok('every find is its own 1/1 work (8 distinct ids in the dynamic band) and the forced rolls are used up',new Set(FOUND.map(q=>q.id)).size===8&&
     FOUND.every(q=>q.id===CRC.ID0+q.n)&&FD().force===0&&FD().pick===-1);
@@ -127,10 +127,6 @@ boot.run(async()=>{
      a.length===Math.round(V.crSongLen(r.d)*sr)&&rms>0.005&&same);
    emptyHand();aim(jx+0.5,jy+0.5,jz+0.5);rclick();step(2);
    ok('  ... eject: the same disc is back in the inventory and the jukebox is empty',has(q.id)&&V.blockEnts.get(jk).id===0);}
-
-  /* ===== 7. bots never hold one ===== */
-  {const a={inv:Array(36).fill(null)},st={id:FOUND[1].id,count:1};
-   ok('agGive refuses a found work (count back, inventory untouched): a bot can never steal one from a chest',V.agGive(a,st,'steal')===1&&a.inv.every(s=>!s));}
 
   /* ===== 8. the caps: skipped silently, never a toast from a chest ===== */
   {const fill=[];while(Object.keys(CR().CRW).length<CRC.MAX_WORKS){const n=V.crNew('song',{d:null});if(!n)break;fill.push(n);}

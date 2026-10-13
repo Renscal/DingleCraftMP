@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // DINGLECRAFT release gate: build (--strict) + every suite in tests/gate.json. Node only, no dependencies.
 //
-//   npm run gate                      the full gate (legacy repeats: smoke.js x6, botsmoke.js x3, feature smokes x2), ~16 min
+//   npm run gate                      the full gate (legacy repeats: smoke.js x6, feature smokes x2), ~16 min
 //   npm test                          = node scripts/gate.mjs --once (every suite once), ~9 min
 //   npm run test:quick                = node scripts/gate.mjs --tier quick (repo checks, statics, test.js, og_trace over), ~1 min
 //   node scripts/gate.mjs [--once] [--tier NAME] [--group G[,G]] [--only NAME[,NAME]] [--keep-going] [--jobs N] [--no-build] [--list]
@@ -82,7 +82,7 @@ try { info = JSON.parse(fs.readFileSync(path.join(BUILD, 'build.json'), 'utf8'))
 console.log(`build: v${info.version} ${info.html.file} ${info.html.bytes} B md5 ${info.html.md5}${info.frozen === 'match' ? ' (frozen: byte-identical to the shipped file)' : ''}`);
 
 // 2. the core quartet runs from a copy next to the built game.js (they require('./game.js'); never edit them) -----------
-for (const f of ['stubs.js', 'test.js', 'smoke.js', 'botsmoke.js']) fs.copyFileSync(path.join(REPO, 'tests', 'core', f), path.join(BUILD, f));
+for (const f of ['stubs.js', 'test.js', 'smoke.js']) fs.copyFileSync(path.join(REPO, 'tests', 'core', f), path.join(BUILD, f));
 fs.mkdirSync(OUT, { recursive: true });
 
 // 3. runs -----------------------------------------------------------------------------------------------------------

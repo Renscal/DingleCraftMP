@@ -154,7 +154,6 @@ function hnWin(F,dur,why){if(!F)return null;F.win={cap:hnCap(F),dmg:0,until:MP.c
 function hnWinEnd(F){if(F&&F.win)F.win.until=MP.clock;}
 function hnLog(F,ev,o){if(F&&F.log&&F.log.length<2000)F.log.push(Object.assign({t:+(MP.clock-F.t0).toFixed(2),ev,ph:F.phase,hp:F.e?Math.round(F.e.hp):0},o||{}));}
 /* who caused a hit: 'Dan', a bot name, or the headliner's own name (self-inflicted: never Dan's hit) */
-function hnIsBot(by){return !!(by&&by!=='Dan'&&typeof agByName==='function'&&agByName(by));}
 /* scripted hits on a headliner always land (forced: i-frames zeroed). how is prefixed 'x:' so the per-boss multipliers skip it */
 function hnHit(e,dmg,by,how){if(!e||e.dead)return false;return purgHit(e,dmg,by||'Dan',('x:'+(how||'counter')),{force:1});}
 /* the pre-hurt policy (PREG.hurt[mt], called from P0's mpPreHurt before the mob i-frame check) */
@@ -164,14 +163,13 @@ function hnHurt(e,dmg,kx,kz){
   const F=e.hf;
   if(!F||F.over){e.pfloor=Math.max(1,e.hp-dmg);return dmg;}
   if(F.dying||F.gloat>0||F.intro||F.leaving)return -1;
-  const by=HIT_BY||'Dan',how=HIT_HOW||'',bot=hnIsBot(by);
+  const by=HIT_BY||'Dan',how=HIT_HOW||'';
   if(F.wait&&by!=='Dan')return -1;                                     /* waiting for Dan on the Mark: bots are shrugged off */
   if(F.wait)F.wait=false;
   let d=dmg;
   if(how.slice(0,2)!=='x:'){const f=HN_MULT[e.mt];if(f){d=f(e,F,d,by,how);if(d<0)return -1;}}
-  if(bot)d*=0.5;
   /* the Plunger in a live arena: a click's blasts deal at most 25 in total (a click = blasts within 1 s) */
-  if(/blast|charge|plunger/.test(how)&&(by==='Dan'||bot)){if(MP.clock-(F.plT||-9)>1){F.plT=MP.clock;F.plD=0;}d=Math.min(d,Math.max(0,HN_K.plCap-F.plD));F.plD+=d;}
+  if(/blast|charge|plunger/.test(how)&&by==='Dan'){if(MP.clock-(F.plT||-9)>1){F.plT=MP.clock;F.plD=0;}d=Math.min(d,Math.max(0,HN_K.plCap-F.plD));F.plD+=d;}
   if(by==='Dan'&&dmg>0)F.lastDan=MP.clock;
   if(F.win&&MP.clock<F.win.until){const room=Math.max(0,F.win.cap-F.win.dmg);d=Math.min(d,room);F.win.dmg+=d;}
   const ph=HN_PH[F.name],thr=ph[F.phase],fl=F.phase>=3?1:thr;
@@ -233,7 +231,7 @@ function hnLoot(e){const name=e.mt==='pgbomber'?'bomber':e.mt==='pgbigpig'?'bigp
     hnTrunkEnsure('bigpig',HN_TRUNK.bigpig.rest());showToast('The Pig rolled all the way down. Her gloves, pearls and boa are yours.');}
   spawnXP(e.x,e.y+1,e.z,MOBT[e.mt].xp||20);}
 function hnHealAll(){if(P&&!P.dead){P.hp=20;P.hunger=20;drawStats();}
-  if(typeof AG_ACTIVE!=='undefined'&&AG_ACTIVE)for(const a of AGENTS)if(a.online&&!a.dead&&a.dim===DIM){a.hp=20;if(a.hunger!==undefined)a.hunger=20;if(a.e)a.e.hp=20;}}
+  }
 
 /* ---- keep-alive, reset, gloat/wait, phase bookkeeping (run every purgatory tick) ---- */
 function hnOnMark(name){const s=hnMarkStand(name);return !!(s&&P&&Math.hypot(P.x-s[0],P.z-s[2])<1.8&&Math.abs(P.y-s[1])<2.5);}
@@ -280,7 +278,7 @@ function hnChargeProof(F,e){for(const c of entities){if(c.dead||c.t!=='mob'||c.m
   const on=c.on||c.att||c.host||c.stuckTo||c.target;
   const touching=on===e||(!c.blk&&!c.block&&Math.abs(c.x-e.x)<e.hw+0.5&&Math.abs(c.z-e.z)<e.hw+0.5&&c.y>e.y-0.3&&c.y<e.y+e.h+0.3);
   if(!touching)continue;const owner=c.owner||c.pown||'Dan';removeEnt(c);
-  const t=owner==='Dan'?P:(agByName(owner)&&agByName(owner).e);
+  const t=owner==='Dan'?P:null;
   if(typeof piChargeArm==='function'&&t)try{piChargeArm(t,owner);}catch(err){mpFail('chargeArm',err);}
   hnSay(F.name==='bigpig'?'SLAM!':F.name==='bigfrog'?'Pfft.':'HEE HEE!',1.4);hnLog(F,'chargeBack',{owner});}}
 /* boss subtitles: one line at a time, rate-limited per key */
@@ -347,7 +345,7 @@ function hnSparkNear(x,z,r){let best=null,bd=r||4;for(const s of HN.sparks)for(c
    input readers for the counters P2's gear provides (P4 reads held item + mouse state, so it never depends on P2's fields)
    ===================================================================================================================== */
 function hnHolding(id){const s=P&&heldStack();return !!(s&&s.id===id);}
-function hnHeldDef(by){let s=null;if(by==='Dan'||!by)s=P&&heldStack();else{const a=agByName(by);s=a&&a.inv[a.sel];}return s&&DEFS[s.id]?{st:s,d:DEFS[s.id]}:null;}
+function hnHeldDef(by){let s=null;if(by==='Dan'||!by)s=P&&heldStack();return s&&DEFS[s.id]?{st:s,d:DEFS[s.id]}:null;}
 function hnShears(by,tier){const h=hnHeldDef(by);return !!(h&&h.d.tool&&h.d.tool.type==='axe'&&(h.d.tool.tier||0)>=(tier||0));}
 /* the Vanity Mirror is raised while Dan holds it with the right button down; facing = within 60 degrees of the look */
 function hnMirrorRaised(){return !!(P&&!P.dead&&hnHolding(IT.PG_VMIRROR)&&MB.r&&!modalOpen());}

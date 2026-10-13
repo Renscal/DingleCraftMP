@@ -94,12 +94,12 @@ if(!window.__czPG&&typeof pauseGame==='function'){window.__czPG=pauseGame;window
 const boot=async()=>{for(let i=0;i<240;i++){let v=false;try{v=await ev("return typeof window.__vox==='object'&&document.readyState==='complete'");}catch(e){}if(v)break;await sleep(500);}
   /* headless Chrome grants and then revokes pointer lock after a page reload, and the core pauses on the lost lock (not a creativity
      matter: Dan has a real mouse): use the core's own drag-look fallback, and resume if a pause slipped through (counted in summary.json) */
-  await ev(HELP+"try{usePLock=false;lockWanted=false;}catch(e){}Object.assign(__vox.BRAIN,{mock:null,ok:false,off:true,url:'http://127.0.0.1:9'});if(__vox.setBrainMock)__vox.setBrainMock(null);");};
+  await ev(HELP+"try{usePLock=false;lockWanted=false;}catch(e){}");};
 await send('Runtime.enable');await send('Page.enable');await send('Network.enable');await send('Network.setCacheDisabled',{cacheDisabled:true});
 await send('Emulation.setDeviceMetricsOverride',{width:1280,height:720,deviceScaleFactor:1,mobile:false});
 await send('Page.addScriptToEvaluateOnNewDocument',{source:"try{const k='vx_vox_settings';let s={};try{s=JSON.parse(localStorage.getItem(k)||'{}')||{};}catch(e){}"+
   "s.snd=0;s.mus=0;s.tp='og';localStorage.setItem(k,JSON.stringify(s));}catch(e){}"+
-  "window.__DINGLE_BRAIN={url:'http://127.0.0.1:9',token:null};window.requestAnimationFrame=function(){return 0;};"});
+  "window.requestAnimationFrame=function(){return 0;};"});
 await send('Page.navigate',{url:`http://127.0.0.1:${SRV}/${BUILD}?b=${Date.now()}`});await boot();
 const info=await ev("return {ver:__vox.GAME_VERSION,stubs:__vox.crInfo().stubs,pg:__vox.mpInfo?__vox.mpInfo().stubs:'?',sound:soundOn,hr:typeof __vox.setPack==='function',title:document.title}");
 check('v'+gameVersion()+' loaded with both creativity packages real, PART 55 present, sound off',info.ver===gameVersion()&&info.stubs===''&&info.sound===false&&info.hr,info);
@@ -299,28 +299,6 @@ await ev(QS+`__cz.tp(Q.x+0.5,Q.z-3.5,Q.y);__cz.stp(20);__cz.select(${PID});__cz.
 console.log('pause log:',JSON.stringify(await ev('return window.__czPause;')));
 check('home again: the painting re-hangs and the disc plays',await ev(QS+`return __cz.cells(${PID}).length===8&&${JK}.id===${DID}&&V.getCRPM().size===2&&V.crMusInfo().CRM.fx.size===1`));
 
-/* ===== 9. the AI players ===== */
-const BOT=await ev(QS+`V.GR.bots=true;V.GR.botGrief=true;Object.assign(V.BRAIN,{mock:null,ok:false,off:true,url:'http://127.0.0.1:9'});
-  const fw=V.crNew('art',{w:64,h:64,d:V.crArtEncode(new Uint8Array(4096).map((_,i)=>1+((i>>3)^(i>>9))%24),64,64)});V.crFinish(fw,'Bot Bait','Dan');const fid=V.crItemId(fw);
-  V.spawnDrop(Q.x+4.5,Q.y+0.5,Q.z+4.5,{id:fid,count:1},0,0,0);
-  if(!V.AGENTS.length||!V.AGENTS.some(a=>a.e))V.agJoinAll(false);__cz.stp(20);
-  V.AGENTS.forEach((a,i)=>{if(a.e){a.e.x=Q.x+1.5+i*1.5;a.e.z=Q.z+4.5;a.e.y=Q.y;}});__cz.stp(4);
-  window.__fid=fid;return {n:V.AGENTS.filter(a=>a.e).length,fid,names:V.AGENTS.map(a=>a.name)};`);
-let crash=null;
-for(let k=0;k<6;k++){try{await ev('__cz.stp(100);');}catch(e){crash=String(e.message).slice(0,200);break;}
-  if(k===1||k===4){await ev(QS+`__cz.tp(Q.x-4.5,Q.z+5.5,Q.y);__cz.aim(Q.x+2,Q.y+1.2,Q.z-2);__cz.stp(2);`);await shot('bots_in_the_studio_'+k);}}
-const B2=await ev(QS+`const fid=window.__fid;return {joined:V.AGENTS.filter(a=>a.e).length,
-  botWorks:V.AGENTS.some(a=>(a.inv||[]).some(q=>q&&q.id>V.CRC.ID0)),
-  easel1:V.getBlock(Q.x+2,Q.y,Q.z)===V.B.CR_EASEL,easel2:V.getBlock(Q.x-2,Q.y,Q.z+3)===V.B.CR_EASEL&&__cz.be(Q.x-2,Q.y,Q.z+3).id===${W0.id},
-  deck:V.getBlock(Q.x+2,Q.y,Q.z+2)===V.B.CR_DECK,juke:${JK}&&${JK}.id===${DID},cells:__cz.cells(${PID}).length,floor:__cz.drops(fid).length,
-  crw:__cz.rec(${PID}).d===${JSON.stringify(PD)}&&__cz.hash(JSON.stringify(__cz.rec(${DID}).d))===${JSON.stringify(K0.dh)},fails:Object.keys(V.getCR().CRF.fails)}`);
-check('three AI players (brain off, griefing on) loose in the studio for 600 frames: no crash, no bot holds a work',!crash&&BOT.n>=1&&!B2.botWorks&&B2.fails.length===0,{crash,BOT,B2});
-check('  ... both easels (one still holding its canvas), the record player, the playing jukebox, the hung painting and the work on the floor are all untouched',
-  B2.easel1&&B2.easel2&&B2.deck&&B2.juke&&B2.cells===8&&B2.floor===1&&B2.crw,B2);
-await ev("await __vox.setPack('hr');");for(let i=0;i<120;i++){if(await ev("const t=__vox.getTP();return !t.busy&&t.hr;"))break;await sleep(500);}
-await ev(QS+`__cz.stp(6);__cz.tp(Q.x-4.5,Q.z+5.5,Q.y);__cz.aim(Q.x+1,Q.y+1.4,Q.z-3);__cz.stp(3);`);await shot('bots_in_the_studio_hr');
-await ev("await __vox.setPack('og');");for(let i=0;i<60;i++){if(await ev("const t=__vox.getTP();return !t.busy&&!t.hr;"))break;await sleep(300);}
-await ev(QS+"V.agLeaveAll();V.GR.botGrief=false;__cz.stp(5);");
 /* the inventory with every kind of work in it */
 await ev(QS+`const P=V.P;const sid=V.crNew('song',{d:V.crSongBlank()});V.crGiveDan({id:V.crItemId(sid),count:1});const s=V.crNew('art',{w:64,h:64,d:V.crArtBlank(64,64)});V.crGiveDan({id:V.crItemId(s),count:1});
   V.openModal('inv');__cz.stp(2);`);

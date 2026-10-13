@@ -47,21 +47,6 @@ Every other mesh in `WPN3D` was modelled for DINGLECRAFT and is covered by LICEN
 
 The game itself has no npm dependencies.
 
-## The AI brain's npm packages
-
-`brain/` (the optional local server for the AI players) installs these with `npm ci --prefix brain`. They are listed in
-`brain/package.json` and `brain/package-lock.json` and are never committed (`brain/node_modules/` is gitignored).
-
-| Package | Version | Licence |
-|---|---|---|
-| @anthropic-ai/sdk | 0.131.0 | MIT |
-| @babel/runtime | 7.29.7 | MIT |
-| @stablelib/base64 | 1.0.1 | MIT |
-| fast-sha256 | 1.3.0 | Unlicense |
-| json-schema-to-ts | 3.1.1 | MIT |
-| standardwebhooks | 1.1.1 | MIT |
-| ts-algebra | 2.0.0 | MIT |
-
 ## Everything else
 
 Original to DINGLECRAFT and covered by [LICENSE](LICENSE): the code, the OG art (drawn in code at runtime), every sound

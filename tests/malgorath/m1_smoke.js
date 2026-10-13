@@ -62,7 +62,7 @@ boot.run(async()=>{
     step(20);V.mgHitAs(e,5,'Dan','melee');step(2);
     ok('a second poke within 12 s wakes him: fight.wake(\'poke\')',calls.join()==='poke');
     calls=[];G1().eye.n=0;V.mgHitAs(e,5,'BunkerBrad','melee');step(20);V.mgHitAs(e,5,'BunkerBrad','arrow');step(2);
-    ok('a bot\'s hits on the eye never count (only Dan can summon)',calls.length===0&&G1().eye.n===0);
+    ok('a hit on the eye that is not Dan\'s never counts (only Dan can summon)',calls.length===0&&G1().eye.n===0);
     V.mgHitAs(e,5,'Dan','melee');step(13*25);V.mgHitAs(e,5,'Dan','melee');step(2);
     ok('two pokes 13 s apart do not wake him (the second is a first poke again)',calls.length===0&&G1().eye.n===1);
     boot.lip(V,step);step(20);G1().eye.n=0;const e2=V.MGREG.world.eye();
@@ -218,11 +218,4 @@ boot.run(async()=>{
       pl.length===6&&pl.every(c=>V.getBlock(...c)===B.AIR)&&G1().maxFrame<=250);
     useDbl();});
 
-  /* ===== 22. bots (last: they grief) ===== */
-  sec('bots',()=>{world('m1m');M().met=1;settleL();if(V.BRAIN)Object.assign(V.BRAIN,{mock:null,ok:false,off:true});V.agJoinAll(false);step(10);
-    const bots=V.AGENTS.filter(a=>a.e&&!a.dead);if(!bots.length){skip('bots in the gut','no agent joined');return;}
-    const a=bots[0],GF_=GF(),t0=G1().tossed||0;a.e.x=a.x=1020.5;a.e.y=a.y=GF_;a.e.z=a.z=1000.5;a.e.vx=a.e.vy=a.e.vz=0;
-    let f=0;for(;f<200&&(G1().tossed||0)===t0;f++)step(1);step(2);const b=V.mg1BonePile();
-    ok('a bot left in the gut while he is dormant is fished out and tossed onto the Bone Pile (no wake, no damage)',Math.hypot(a.e.x-b.x,a.e.z-b.z)<6&&Math.abs(a.e.y-b.y)<3&&
-      calls.indexOf('plate')<0&&!a.dead);});
 });

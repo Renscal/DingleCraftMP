@@ -1,6 +1,6 @@
 /* ---- PART 54: tC_corpse.js ---- */
 /* ---- tC_corpse.js (Package C): corpses, so the death animations play ----
-   killMob (hook C7) and agDie (hook C25) hand a Hyperreal body over here instead of removing it: the entity is
+   killMob (hook C7) hands a Hyperreal body over here instead of removing it: the entity is
    removed at once (no collision, picks, saves or targeting; drops, XP, loot, figurine and ghost rolls already ran),
    the model keeps its Group and plays s.dead 0->1 over deathDur (<= 3 s), holds 0.8 s, sinks 0.4 in 0.5 s and poofs.
    Explosions, despawn, the void and critter jars call removeEnt directly, so they leave no corpse.
@@ -8,7 +8,6 @@
 function hrCorpse(e,poof){const H=e.hrM;if(!H||!e.mesh||!HRE.on)return false;
   const G=e.mesh;e.mesh=HRE.dummy;e.hrM=null;
   for(const m of e.mats||[])m.emissive&&m.emissive.setRGB(0,0,0);   /* nobody resets the red flash any more */
-  if(e.M){if(e.M.tag)e.M.tag.visible=false;e.M=null;}       /* bots: agAnimate stops at !e.M */
   removeEnt(e);
   const s=H.s;s.speed=s.attack=s.fuse=s.cd=0;s.fired=s.woodHit=s.blockHit=s.build=s.plant=s.grief=false;s.accel.set(0,0,0);
   G.visible=true;H.G=G;if(H.lod!==0&&H.lod!==1)hrSetLod(H,1);

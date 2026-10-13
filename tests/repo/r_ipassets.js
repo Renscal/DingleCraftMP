@@ -86,8 +86,12 @@ const quoted = new Set(), asked = new Set();
 for (const f of mfiles) { const s = fs.readFileSync(MD + f, 'utf8');
   for (const m of s.matchAll(/['"]([a-z][a-z0-9_]*)['"]/g)) quoted.add(m[1]);
   for (const m of s.matchAll(/(?:HR\.mat|hmat|texUrl|texURL)\(\s*['"]([a-z][a-z0-9_]*)['"]/g)) asked.add(m[1]); }
-const deadPacked = ent.filter((i) => !quoted.has(i));
-ok('every packed entity texture is quoted by a model (a removed literal drops out of the pack at the next repack)' + (deadPacked.length ? ' (not quoted: ' + show(deadPacked) + ')' : ''), deadPacked.length === 0);
+/* The AI players' three models were removed in 6.10, but the pack can only be rebuilt from the private art sources
+   (docs/ASSETS.md), so their maps ride along until the next repack. They are listed here, exactly: a new orphan fails, and
+   so does this list once a repack has dropped them (delete it then). */
+const ORPHANS = ["face_bee","face_brad","face_creepah","face_pelt","head_bee_side","head_brad_side","head_creepah_side","honeycomb","hoodie_creepah","jumper_bee","leggings_bee","sleeve_brad","trousers_brad","trousers_creepah"];
+const deadPacked = ent.filter((i) => !quoted.has(i)), newDead = deadPacked.filter((i) => !ORPHANS.includes(i)), gone = ORPHANS.filter((i) => !deadPacked.includes(i));
+ok('every packed entity texture is quoted by a model, except the ' + ORPHANS.length + ' maps of the removed AI players that wait for the next repack' + (newDead.length ? ' (not quoted: ' + show(newDead) + ')' : '') + (gone.length ? ' (no longer orphaned, take off the list: ' + show(gone) + ')' : ''), newDead.length === 0 && gone.length === 0);
 const noTex = ((MAN.coverage && MAN.coverage.modelIdsWithoutTexture) || []);
 const unknown = [...asked].filter((i) => !ent.includes(i) && !noTex.includes(i));
 ok('every texture a model asks for (HR.mat / hmat / texURL) is packed or a known painted/flat fallback' + (unknown.length ? ' (' + show(unknown) + ')' : ''), unknown.length === 0);

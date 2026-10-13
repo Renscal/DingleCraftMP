@@ -53,7 +53,7 @@ function mwCueTick(dt){const C=MW_CUE;if(!MP.cue||typeof MP.cue.t!=='number')MP.
 
 /* ===== the Followspot (BLACKOUT): an additive cone + ground disc on the most exposed player; hostiles read mwFollowTarget() ===== */
 function mwPlayers(){const L=[];if(P&&!P.dead&&DIM==='puppet')L.push({who:'Dan',e:P});
-  if(typeof AG_ACTIVE!=='undefined'&&AG_ACTIVE)for(const a of AGENTS)if(a.e&&!a.dead&&a.online&&a.dim===DIM)L.push({who:a.name,e:a.e});
+  
   return L;}
 function mwLampNear(x,y,z,r){for(const k of torches){const p=dimP(k);if(!p)continue;if(Math.abs(+p[0]-x)<=r&&Math.abs(+p[1]-y)<=r&&Math.abs(+p[2]-z)<=r)return true;}
   for(const k of MP_LIGHTS){const p=dimP(k);if(!p)continue;const id=getBlock(+p[0],+p[1],+p[2]);if(id!==B.PG_LAMP)continue;
@@ -66,7 +66,7 @@ function mwFollowTick(){const S=MWR.spot;if(mwCue().ph!=='blackout'){S.who=null;
   if(!pick&&L.length){let bd=1e9;for(const p of L){const d=Math.hypot(p.e.x-S.x,p.e.z-S.z);if(d<bd){bd=d;pick=p;}}}
   S.who=pick?pick.who:null;}
 function mwFollowTarget(){if(mwCue().ph!=='blackout'||!MWR.spot.who)return null;const S=MWR.spot;
-  const e=S.who==='Dan'?P:(agByName(S.who)||{}).e;if(!e)return null;return {who:S.who,x:e.x,y:e.y,z:e.z};}
+  const e=S.who==='Dan'?P:null;if(!e)return null;return {who:S.who,x:e.x,y:e.y,z:e.z};}
 
 /* ===== the sky (OG updateSky puppet branch, hook P1-01): colours and near/far only, never null fog or background ===== */
 const MW_SKY={show:{bg:[0.165,0.086,0.149],n:0.35,f:0.9,amb:0.62,ac:[1,0.886,0.69],dir:0.45,lamp:[1,0.83,0.42]},
@@ -231,7 +231,7 @@ function mwLimp(T,who){if(!T||MP.trees[T.id]!=null)return null;const cells=mwTre
   for(const c of cells){const id=getBlock(c[0],c[1],c[2]);if(id!==c[3])continue;n++;
     const d=DEFS[id],dr=d&&d.pdrop?d.pdrop(null,who):blockDrop(id);if(dr&&dr.count>0)agg.set(dr.id,(agg.get(dr.id)||0)+dr.count);}
   MP.trees[T.id]=MP.clock;mwDelEdits(cells);mwRegenCells(cells);
-  for(const [id,count] of agg)mpDrop(T.x+0.5,T.g+1.3,T.z+0.5,{id,count},who==='Dan'||agByName(who)?who:null,(Math.random()-0.5)*1.5,2.5,(Math.random()-0.5)*1.5);
+  for(const [id,count] of agg)mpDrop(T.x+0.5,T.g+1.3,T.z+0.5,{id,count},who==='Dan'?who:null,(Math.random()-0.5)*1.5,2.5,(Math.random()-0.5)*1.5);
   mwCollapseAnim(cells.filter(c=>c[3]!==B.PG_FOREARM),T.x,T.g,T.z,'limp');
   mwS('pg_whump',T.x,T.g+4,T.z);burstParticles(T.x+0.5,T.g+T.s+2,T.z+0.5,B.PG_FLEECE,22,1.6);
   return {blocks:n,drops:agg.size};}
@@ -317,7 +317,7 @@ function mwFlinch(x,y,z,who){MPF.flinch=0.6;mwS('pg_flinch');
   for(const e of entities)if(!e.dead&&e.t==='drop'&&Math.hypot(e.x-x,e.z-z)<64){e.vy=Math.max(e.vy||0,3.2);e.onGround=false;}
   for(const f of mwAllFlats()){if(MP.flats[f.id])continue;const d=Math.hypot((f.x0+f.x1)/2-x,f.fz-z);if(d>40)continue;
     if(mwFlatBraces(f)<2)mwToppleFlat(f,who||null);else for(let i=0;i<4;i++)burstParticles(f.x0+Math.random()*f.w,f.top+0.5,f.fz+0.5,B.PG_BACKING,3,0.6);}
-  const tgt=who==='Dan'||!who?P:((agByName(who)||{}).e||P);
+  const tgt=P;
   if(typeof pmSpawnHand==='function'&&tgt&&Math.hypot(tgt.x-x,tgt.z-z)<=24)for(let k=0;k<2;k++){const a=Math.random()*6.283,r=4+Math.random()*5;
     try{pmSpawnHand(x+Math.cos(a)*r,y,z+Math.sin(a)*r,tgt);}catch(err){mpFail('pmSpawnHand',err);}}
   return true;}

@@ -15,7 +15,7 @@ const HELP=`window.__rl={T:700000,stp(n){for(let i=0;i<(n||1);i++){if(typeof pau
   lip(){const V=__vox,b=V.mgBonePile(),P=V.P;V.forceChunksNear(b.x,b.z);V.forceChunksNear(1000,1000);P.x=b.x;P.y=b.y+0.1;P.z=b.z;P.vx=P.vy=P.vz=0;P.fallD=0;this.look(1000.5,V.mgF()-2,1000.5);},
   st(){const V=__vox,M=V.getMALG(),i=V.mgInfo();return {round:M.round,met:M.met,dead:!!V.getDEMON().dead,live:i.live,boss:i.boss,deaths:M.deaths,P:[+V.P.x.toFixed(1),+V.P.y.toFixed(1),+V.P.z.toFixed(1)],
     pdead:V.P.dead,zone:V.mgZone(V.P.x,V.P.y,V.P.z),layout:V.MGREG.world&&V.MGREG.world.L?V.MGREG.world.L():null,edits:V.mgCore().chunkEdits?[...V.mgCore().chunkEdits.keys()].length:null};}};
-  try{usePLock=false;lockWanted=false;}catch(e){}Object.assign(__vox.BRAIN,{mock:null,ok:false,off:true,url:'http://127.0.0.1:9'});return 1;`;
+  try{usePLock=false;lockWanted=false;}catch(e){}return 1;`;
 const shot=async(name)=>{await C.ev('__rl.stp(1);__rl.draw();');await C.sleep(40);const r=await C.send('Page.captureScreenshot',{format:'jpeg',quality:84});
   const f=OUT+'/'+String(shots.length+1).padStart(2,'0')+'_'+name+'.jpg';fs.writeFileSync(f,Buffer.from(r.result.data,'base64'));shots.push(f);};
 await C.ev(HELP);

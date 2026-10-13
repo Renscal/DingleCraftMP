@@ -21,17 +21,17 @@ const r13 = B.r13;
 const G = fs.existsSync(P.BUILD + 'game.js') ? fs.readFileSync(P.BUILD + 'game.js', 'utf8') : '';
 const HEAD = fs.existsSync(P.BUILD + 'head.html') ? fs.readFileSync(P.BUILD + 'head.html', 'utf8') : '';
 const readRepo = (rel) => fs.existsSync(P.REPO + rel) ? fs.readFileSync(P.REPO + rel, 'utf8') : '';
-const PROMPTS = readRepo('brain/prompts.mjs'), BRAIN = readRepo('brain/dingle-brain.mjs'), TP = readRepo('THIRD_PARTY.md');
+const TP = readRepo('THIRD_PARTY.md');
 /* every string literal of a JS text, unquoted (template chunks included) */
 const lits = (src) => { try { return J.strings(src).map((t) => t.s.slice(1, t.s.endsWith('${') ? -2 : -1)); } catch (e) { return null; } };
-const GL = lits(B.mask(G)) || [], PL = lits(PROMPTS) || [];
+const GL = lits(B.mask(G)) || [], PL = [];   /* PL: the AI brain's prompts until 6.10 */
 const ui = (s) => / /.test(s) || /^[A-Z]/.test(s);
 const HEADTXT = HEAD.replace(/<style[\s\S]*?<\/style>/gi, ' ').replace(/<script>[\s\S]*?<\/script>/gi, ' ')   /* the inlined third-party three.js (assets/vendor) */.replace(/data:[^"')\s]+/g, ' ');
 
 const V = boot({});
 boot.run(async () => {
   ok('the build is there (build/game.js and head.html)', G.length > 0 && HEAD.length > 0);
-  ok('the string lexer reads the build game.js and brain/prompts.mjs', GL.length > 1000 && PL.length > 10);
+  ok('the string lexer reads the build game.js', GL.length > 1000);
   const PATCH = (V.PATCH_LOG || []).map((e) => [e.title || '', ...(e.lines || [])].join('\n')).join('\n');
   /* where a UI string can live: game.js string literals that look like text, brain prompts, the help and shell html, the patch notes */
   const uiHits = (re) => { const out = [];
@@ -58,7 +58,7 @@ boot.run(async () => {
     const lines = G.split('\n'); let mig = 0, other = [];
     lines.forEach((l, i) => { if (!re.test(l)) return; if (/^const STOX_OLD=/.test(l)) mig++; else other.push(i + 1); });
     ok('the real tickers survive only in the save-migration table STOX_OLD (one line), nowhere else in the build, prompts or patch notes' +
-      (other.length ? ' (game.js lines ' + other.slice(0, 5).join(' ') + ')' : ''), mig === 1 && other.length === 0 && !re.test(HEAD) && !re.test(PROMPTS) && !re.test(PATCH)); }
+      (other.length ? ' (game.js lines ' + other.slice(0, 5).join(' ') + ')' : ''), mig === 1 && other.length === 0 && !re.test(HEAD) && !re.test(PATCH)); }
 
   /* ===== F2, B1, C1, E1, A8, F3, C2: the renamed things ===== */
   { const d = V.DEFS[V.IT.M8BALL];
@@ -87,8 +87,7 @@ boot.run(async () => {
   /* ===== section 7: local media paths and the /media route ===== */
   { const url = /file:\/\/\/?[A-Za-z~%]/g, home = /\/Us(?:ers)\/[A-Za-z0-9]/g;
     const out = (G.match(url) || []).length + (G.match(home) || []).length + (HEAD.match(url) || []).length + (HEAD.match(home) || []).length;
-    ok('no file:// URL and no home-folder path in the build', out === 0);
-    ok('the brain has no media route (no serveMedia, mediaList or /media/ path in brain/dingle-brain.mjs)', BRAIN.length > 1000 && !/serveMedia|mediaList|\/media\//.test(BRAIN)); }
+    ok('no file:// URL and no home-folder path in the build', out === 0); }
 
   /* ===== section 8: the meshes and their credits ===== */
   { const i = G.indexOf('const WPN3D='), line = i >= 0 ? G.slice(i, G.indexOf('\n', i)) : '';

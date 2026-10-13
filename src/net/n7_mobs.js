@@ -15,7 +15,7 @@
 const NT_MOBS={pig:1,cow:1,sheep:1,zombie:1,skel:1,boomer:1,spider:1,imp:1,hellhog:1,cherub:1};
 /* ----- shared mobs ----- */
 /* does this entity travel? */
-function ntMobShared(e){return e.t==='mob'&&!e.bot&&!e.pkeep&&!e.cellId&&NT_MOBS[e.mt]===1;}
+function ntMobShared(e){return e.t==='mob'&&!e.pkeep&&!e.cellId&&NT_MOBS[e.mt]===1;}
 /* a mob as it goes on the wire: [id, type, x, y, z, yaw, hp, flags] (flags: 1 just hurt, 2 a fuse is burning) */
 function ntMobState(e){
   return [e.rid,e.mt,+e.x.toFixed(2),+e.y.toFixed(2),+e.z.toFixed(2),+(e.yaw||0).toFixed(2),Math.round(e.hp*10)/10,(e.hurtT>0.25?1:0)|(e.fuse>0?2:0)];
@@ -171,7 +171,7 @@ function ntBoomIn(m){
   playS('boom');
   if(chunkAt(Math.floor(m.x),Math.floor(m.z)))burstParticles(m.x,m.y,m.z,B.TNT,40,1.2);
   if(m.hurt&&!P.dead&&pd<r*1.6){
-    P.hurtT=0;LASTDMG={by:m.mob?'Boomer':ntShown(m.name),how:'tnt',t:AG_T};
+    P.hurtT=0;LASTDMG={by:m.mob?'Boomer':ntShown(m.name),how:'tnt'};
     damagePlayer(Math.round((1-pd/(r*1.6))*22),P.x-m.x,P.z-m.z);
   }
 }

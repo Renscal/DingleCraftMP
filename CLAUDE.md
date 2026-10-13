@@ -18,16 +18,16 @@ original: no real characters, brands or trademarks in names, art or text (the IP
    `soundOn=false; if(AC)AC.suspend()` after every load. Never turn sound on. Verify audio offline only. Put `tp:'og'`
    back when done. Details: `docs/QA.md`.
 2. **Secrets.** Never read, print, copy, create or commit a `.env` file or any key. Secret scans report `path:line` and a
-   rule name, never a value. `brain/data/` never goes in git.
-3. **No paid API calls.** Never run `tools/art/fal.mjs` or any art driver, and never start the brain in real mode, with
-   any key, real or fake. The brain self-test (`npm run test:brain`) is free and fine.
+   rule name, never a value.
+3. **No paid API calls.** Never run `tools/art/fal.mjs` or any art driver, with any key, real or fake.
 4. **Shipped versions are frozen.** If `GAME_VERSION` is in `tests/fixtures/shipped.json`, the build must reproduce it
    byte for byte. Bump first (`npm run bump`) for anything that changes output. Never overwrite a `dist/` html Dan may be
    playing; never modify a shipped html anywhere. "Release 1.0" is a public LABEL (`RELEASE_LABEL`), not a game version:
    Release 1.0 is game versions 6.4 (the preview) to 6.9. Never set `GAME_VERSION` or `package.json` to a label;
    `GAME_VERSION` only goes up ([CONTRIBUTING.md](CONTRIBUTING.md), "Versions and release labels").
-5. **The core quartet is frozen.** Never edit `tests/core/{stubs,test,smoke,botsmoke}.js`. New behaviour, new suites.
-   (One owner-made exception: 6.8 removed `smoke.js`'s Watcher check with the Watcher; `r_gate.js` pins the new bytes.)
+5. **The core suites are frozen.** Never edit `tests/core/{stubs,test,smoke}.js`. New behaviour, new suites.
+   (Two owner-made exceptions: 6.8 removed `smoke.js`'s Watcher check with the Watcher, and 6.10 deleted `botsmoke.js`
+   with the AI players it tested; `r_gate.js` pins the bytes of what is left.)
 6. **Never print big generated text**: `build/hrassets.js`, `build/*.gen.js`, `dist/*.html`, `DINGLECRAFT.html`, `assets/packed/**`. Their
    lines run to megabytes. Search with `tools/grep-safe.sh <pattern> [paths]`, which skips build output, generated
    asset scripts and `.env` files, rather than a raw recursive grep over the repo.
@@ -42,21 +42,21 @@ original: no real characters, brands or trademarks in names, art or text (the IP
 ```
 src/            the game, about 190 files, joined in src/ORDER.txt order (the only source of order)
   core/ world/ entities/ ui/ features/   PARTs 1-52 (the original sandbox, every update's core hooks folded in)
-  ai_players/   PART 53      texpacks/ PART 54 (+ models/, loaders/)      purgatory/ PART 55
+  ui/p53_chat.js PART 53 (chat, the Tab list; the AI players it came with were removed in 6.10)
+  texpacks/ PART 54 (+ models/, loaders/)      purgatory/ PART 55
   creativity/   PART 56      malgorath/ PART 57 (+ hr/: the PART 57 HR block)     boot/export_boot.js
   net/          PART 58 (the multiplayer client, game 6.10)
 html/           head.html in 18 pieces (html/ORDER.txt) + tail.html; css/ per system, dom/ by region
 assets/         logo.png, title/ (menu panorama), vendor/ (three.js r128, inlined), packed/{hr,mg}/ (429 WebP + sidecars +
                 manifests), pack-inputs/
 scripts/        build.mjs serve.mjs bump.mjs release.mjs gate.mjs changelog.mjs guards.json lib/
-tests/          core/ (frozen quartet) lib/ (boot chain, paths.js) texpacks/ purgatory/ pilot/ creativity/ malgorath/
+tests/          core/ (frozen) lib/ (boot chain, paths.js) texpacks/ purgatory/ pilot/ creativity/ malgorath/
                 ui/ repo/ fixtures/ gate.json
 tools/          art/ (packers, fal client: PAID) assets/ (unpack, repack) qa/ (muted browser rigs) hooks/ (git hooks)
                 scan_secrets.mjs scan_history.mjs grep-safe.sh lib/private_terms.cjs
-brain/          the AI players' local server (bring your own key)
 server/         the multiplayer server: dinglecraft-server.mjs (the front door) + lib/ (config, world, websocket, protocol,
                 commands, http, server, cli), no dependencies; Start Server.bat; its data/ is gitignored
-docs/           ARCHITECTURE BUILD TESTING QA ASSETS BRAIN RELEASING PARITY ROADMAP LEGACY LANDMINES
+docs/           ARCHITECTURE BUILD TESTING QA ASSETS RELEASING PARITY ROADMAP LEGACY LANDMINES
 build/ dist/ out/   gitignored outputs
 ```
 
@@ -178,7 +178,7 @@ every probe (grep `Probe` and `/*DBG*/`) before committing.
 
 Your own Chrome on your own port (`tools/qa/chrome.sh <port> [profile]`, prints the PID to kill), your own server on
 port+100 (`node scripts/serve.mjs --port <p>`, which sends no-store), the shared driver `tools/qa/lib/cdp.mjs` (mutes on
-every document, freezes rAF so `frameStep` does not stack loops, points the brain at a dead port). Quick check: `node
+every document, freezes rAF so `frameStep` does not stack loops). Quick check: `node
 tools/qa/boot_check.mjs --launch --port <p>` (starts and stops its own Chrome and server). Verify WebGL2 first; built-in
 editor browser panes have none. Review frames as 5×6 contact sheets, not one image at a time. Put `tp:'og'` back at the
 end.
@@ -216,7 +216,6 @@ the engineering underneath is straight-faced. Keep both. `npm run changelog` tur
 | suites, gate, writing tests, flakes | `docs/TESTING.md` |
 | browser checks | `docs/QA.md` |
 | art and repacking | `docs/ASSETS.md` |
-| the AI brain | `docs/BRAIN.md`, `brain/README.md` |
 | version bumps and releases | `docs/RELEASING.md` |
 | where a pre-repository file went | `docs/LEGACY.md` |
 | what is planned | `docs/ROADMAP.md` |

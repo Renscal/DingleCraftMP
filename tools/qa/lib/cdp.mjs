@@ -26,10 +26,10 @@ export async function connect(port){const list=await (await fetch(`http://127.0.
     await send('Emulation.setDeviceMetricsOverride',{width:1280,height:720,deviceScaleFactor:1,mobile:false});
     await send('Page.addScriptToEvaluateOnNewDocument',{source:"try{const k='vx_vox_settings';let s={};try{s=JSON.parse(localStorage.getItem(k)||'{}')||{};}catch(e){}"+
       "s.snd=0;s.mus=0;s.tp='og';if(!s.pn)s.pn='QA';localStorage.setItem(k,JSON.stringify(s));}catch(e){}"+
-      "window.__DINGLE_BRAIN={url:'http://127.0.0.1:9',token:null};window.requestAnimationFrame=function(){return 0;};"});
+      "window.requestAnimationFrame=function(){return 0;};"});
     await send('Page.navigate',{url});
     for(let i=0;i<400;i++){try{const ok=await ev("return typeof window.__vox==='object'&&document.readyState==='complete'");if(ok)break;}catch(e){}await sleep(250);}
-    await ev("try{usePLock=false;lockWanted=false;}catch(e){}if(__vox.BRAIN)Object.assign(__vox.BRAIN,{mock:null,ok:false,off:true,url:'http://127.0.0.1:9'});");};
+    await ev("try{usePLock=false;lockWanted=false;}catch(e){}");};
   const shot=async(file,clip)=>{const r=await send('Page.captureScreenshot',Object.assign({format:'jpeg',quality:86},clip?{clip:Object.assign({scale:1},clip)}:{}));fs.writeFileSync(file,Buffer.from(r.result.data,'base64'));return file;};
   const restoreOG=async()=>{try{await ev("const k='vx_vox_settings';let s={};try{s=JSON.parse(localStorage.getItem(k)||'{}')||{};}catch(e){}s.tp='og';s.snd=0;localStorage.setItem(k,JSON.stringify(s));");}catch(e){}};
   return {send,ev,sleep,open,shot,logs,restoreOG,close:()=>ws.close()};}

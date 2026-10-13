@@ -53,7 +53,7 @@ function updatePlayer(dt){
       P.hurtT=Math.max(0,P.hurtT-dt);P.atkT=Math.max(0,P.atkT-dt);P.useT=Math.max(0,P.useT-dt);
       if(hurtFlash>0)hurtFlash=Math.max(0,hurtFlash-dt);
       if(P.swing>0)P.swing=Math.max(0,P.swing-dt*3.5);
-      if(P.y<-12){P.voidT-=dt;if(P.voidT<=0){P.voidT=0.4;P.hurtT=0;LASTDMG={by:null,how:'void',t:AG_T};damagePlayer(4);}}
+      if(P.y<-12){P.voidT-=dt;if(P.voidT<=0){P.voidT=0.4;P.hurtT=0;LASTDMG={by:null,how:'void'};damagePlayer(4);}}
       ACTOR='Dan';try{doMine(dt);doUse(dt);}finally{ACTOR=null;}
       return;
     }
@@ -83,7 +83,7 @@ function updatePlayer(dt){
   P.inLava=fb===B.LAVA;
   if(P.inLava){
     P.lavaAcc=(P.lavaAcc||0)+dt;
-    if(P.lavaAcc>0.5){P.lavaAcc=0;if(!powActive('fire')){LASTDMG={by:null,how:'lava',t:AG_T};damagePlayer(4);playS('sizzle');}
+    if(P.lavaAcc>0.5){P.lavaAcc=0;if(!powActive('fire')){LASTDMG={by:null,how:'lava'};damagePlayer(4);playS('sizzle');}
       burstParticles(P.x,P.y+0.8,P.z,B.LAVA,4,0.5);}
   }else P.lavaAcc=0;
   const ep=eyePos();
@@ -145,7 +145,7 @@ function updatePlayer(dt){
       else if(GDG.tramp&&P.fallD>4){P.vy=Math.min(12,P.fallD*0.85);P.onGround=false;playS('pop');}
       let dmg=(powActive('feather')||!GR.fallDmg||GDG.tramp||_tb)?0:Math.floor(P.fallD-3.2);
       if(DIM==='puppet')dmg=piLand(dmg);
-      if(dmg>0){LASTDMG={by:null,how:'fall',t:AG_T};damagePlayer(dmg);}
+      if(dmg>0){LASTDMG={by:null,how:'fall'};damagePlayer(dmg);}
       if(P.fallD>0.8&&dmg<=0)playSStep();
       P.fallD=0;
     }
@@ -162,13 +162,13 @@ function updatePlayer(dt){
   /* -- environment damage -- */
   if(P.eyeWater){
     P.airT+=dt;
-    if(P.airT>1){P.airT=0;if(P.air>0)P.air--;else{LASTDMG={by:null,how:'drown',t:AG_T};damagePlayer(2);}drawStats();}
+    if(P.airT>1){P.airT=0;if(P.air>0)P.air--;else{LASTDMG={by:null,how:'drown'};damagePlayer(2);}drawStats();}
   }else if(P.air<10){P.air=10;P.airT=0;drawStats();}
   if(boxTouches(P.x,P.y,P.z,P.hw,P.h,'hurts')){
     P.cactusT-=dt;
     if(P.cactusT<=0){P.cactusT=0.6;damagePlayer(1);}
   }else P.cactusT=0;
-  if(P.y<-12){P.voidT-=dt;if(P.voidT<=0){P.voidT=0.4;P.hurtT=0;LASTDMG={by:null,how:'void',t:AG_T};damagePlayer(4);}}
+  if(P.y<-12){P.voidT-=dt;if(P.voidT<=0){P.voidT=0.4;P.hurtT=0;LASTDMG={by:null,how:'void'};damagePlayer(4);}}
   /* -- hunger / regen -- */
   if(P.mode==='s'){
     while(P.exh>=4){P.exh-=4;if(P.hunger>0)P.hunger--;drawStats();}

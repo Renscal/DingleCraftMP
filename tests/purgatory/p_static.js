@@ -70,11 +70,7 @@ boot.run(async()=>{
   ok('PART 55 never shadows B, P, T, G, HR, TP, TPX, MB, MINE, MM, MMM, PGRID, PR at top level',
     !/^(?:const|let|var)\s+(B|P|T|G|HR|TP|TPX|MB|MINE|MM|MMM|PGRID|PR)\b|^(?:async\s+)?function\s+(B|P|T|G|HR|TP|TPX|MB|MINE|MM|MMM|PGRID|PR)\s*\(/m.test(p55));
   ok('PART 55 never touches TPEX, HRE, HRL, HRW or tpRegister',!/\b(TPEX|HRE|HRL|HRW|tpRegister)\b/.test(p55.replace(/\/\*[\s\S]*?\*\//g,'')));
-  const b5=GD+'p5_bots.js';
-  if(fs.existsSync(b5)){const t=rd(b5).replace(/\/\*[\s\S]*?\*\//g,'').replace(/(^|[^:'"\\])\/\/.*$/gm,'$1');
-    const top=t.split('\n').filter(l=>/^\S/.test(l)&&!/^(function |var |\}|\)|PREG\.|Object\.assign\(PGEX|$)/.test(l));
-    ok('p5_bots.js top level holds only function declarations and vars (plus registrations)'+(top.length?' ('+top[0].slice(0,60)+')':''),top.length===0);}
-  else skip('p5_bots.js top-level rule','no p5_bots.js yet');
+  ok('p5_bots.js (the AI players inside) is gone with them',!fs.existsSync(GD+'p5_bots.js'));
 
   /* ---- hooks: RETIRED at the split (6 checks: hooks_P*.py are folded into src/; no hooks file is left to parse) ---- */
   /* PARTs 47-50: ordinary sources since v6.8 (the md5 pin is retired: the Watcher and the Reaper were cut); they reach the build verbatim, once, in order */
@@ -86,13 +82,10 @@ boot.run(async()=>{
     G.includes('if(id===B.AIR||id===B.BEDROCK||id===B.WATER||id===B.PG_STRUNK||id===B.PG_DOOR||id===B.PG_MBLACK)continue;')&&
     G.includes('if(id===B.AIR||id===B.BEDROCK||id===B.PG_STRUNK||id===B.PG_DOOR||id===B.PG_MBLACK)continue;'));
   ok('the y 62 placement guard is in Dan\u2019s place branch (P0-23)',G.includes("if(!blocked&&DIM==='puppet'&&!mpPlaceOK(tx,ty,tz,pid))blocked=true;"));
-  if(hookRan('5'))
-    ok('the placement guard is in agPlaceBlock and the nav pillar planner (P5-09, P5-07)',G.includes("if(DIM==='puppet'&&!mpPlaceOK(x,y,z,id))return 'too high")&&G.includes("&&(DIM!=='puppet'||mpPlaceOK(x,y,z,-1))"));
-  else skip('placement guard in the bot paths','hooks_P5.py not applied');
-  ok('living blocks, figurines, ghosts, store, battle pass, dragons, superpowers and the Player Compass are gated',
+  ok('living blocks, figurines, ghosts, store, battle pass, dragons and superpowers are gated',
     G.includes("if(DIM!=='puppet'&&blockComesAlive(")&&G.includes("if(DIM!=='puppet'&&Math.random()<FIG_CHANCE)")&&G.includes("GR.ghosts&&DIM!=='puppet'&&")&&
     G.includes("if(DIM==='puppet'){showToast('No crew on stage.');")&&G.includes("P.dead||DIM==='puppet')return;")&&G.includes("dragT=9;\n  if(DIM==='puppet')return;")&&
-    G.includes("function powActive(k){if(DIM==='puppet')return false;")&&G.includes("if(P&&DIM!=='puppet'&&!P.inv.some(s=>s&&s.id===IT.PCOMPASS)"));
+    G.includes("function powActive(k){if(DIM==='puppet')return false;"));
 
   /* ---- MOBT rules ---- */
   const pm=Object.keys(V.MOBT).filter(k=>/^pg/.test(k)),PREG=V.PREG;const mbad=[];
@@ -103,19 +96,10 @@ boot.run(async()=>{
     if(T.pboss&&!(PREG.loot[k]&&PREG.hurt[k]))mbad.push(k+' loot/hurt');}
   if(pm.length)ok('every pg* MOBT entry: pmob, legc, {id,min,max} drop, pnc iff prop/npc/struct, pboss with loot+hurt'+(mbad.length?' ('+mbad.slice(0,6).join(', ')+')':''),mbad.length===0);
   else skip('MOBT rules','no purgatory mob is defined yet (P3/P4 on stubs)');
-  if(pm.length&&stubs.indexOf('5')<0&&typeof V.purgBotInit==='function'){V.purgBotInit();const MN=C.MOB_NAME,nn=pm.filter(k=>!MN[k]);
-    ok('MOB_NAME covers every purgatory mob after purgBotInit()'+(nn.length?' (missing: '+nn.join(',')+')':''),nn.length===0);}
-  else skip('MOB_NAME coverage','P5 on its stub or no purgatory mobs');
   if(hookRan('4'))ok('the boss bar names the three headliners',G.includes("const BN={pgbomber:'THE DEMOLITIONIST',pgbigpig:'THE PIG',pgbigfrog:'THE FROG',"));
   else skip('boss bar names','hooks_P4.py not applied');
 
-  /* ---- AG tables (P5) ---- */
-  if(stubs.indexOf('5')<0&&V.AG_GATHER&&typeof V.purgRealm==='function'){
-    const snap=()=>JSON.stringify([V.AG_GATHER,V.AG_HUNT,V.AG_JUNK]);const s0=snap();V.purgBotInit();V.purgBotInit();V.purgRealm('puppet');
-    const und=[];for(const t of [V.AG_GATHER,V.AG_HUNT,V.AG_JUNK,V.AGP_GATHER,V.AGP_HUNT,V.AGP_JUNK])if(t)for(const k in t)if(t[k]===undefined)und.push(k);
-    ok('no purgatory key in AG_*/AGP_* is undefined after purgBotInit()',und.length===0);V.purgRealm('over');
-    ok('purgRealm(\'over\') restores AG_GATHER/AG_HUNT/AG_JUNK exactly',snap()===s0);}
-  else skip('AG tables','P5 on its stub');
+
 
   /* ---- recipes ---- */
   /* v6.2 (lead, the creativity plan 3.5): the Creativity Update appends CR_RECIPE_N overworld recipes */

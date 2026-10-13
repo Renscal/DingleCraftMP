@@ -183,7 +183,6 @@ function openModal(kind,bek){
   closeModal(true);
   MODAL.kind=kind;MODAL.slots=[];MODAL.grid=null;MODAL.gw=0;MODAL.be=null;MODAL.bek=bek||null;
   MODAL.rset=DIM==='puppet'?piRecipeSet(kind):RECIPES;
-  if(AG_ACTIVE&&kind==='chest'&&bek)agChestOpen(bek);
   document.exitPointerLock&&document.exitPointerLock();
   const M=$('modal'),body=$('mbody');
   body.innerHTML='';
@@ -272,7 +271,6 @@ function openModal(kind,bek){
 }
 function closeModal(skipLock){
   if(!MODAL.kind)return;
-  if(AG_ACTIVE&&MODAL.kind==='chest')agChestClose();
   if(MODAL.grid){
     for(const st of MODAL.grid)if(st){
       if(invAddTo(P.inv,st)>0)spawnDrop(P.x,P.y+1,P.z,st,0,2,0);
