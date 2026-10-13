@@ -45,6 +45,15 @@ then enters `wss://<address>:40162`.
 **A dropped connection** is retried by the game by itself, five times over about 25 seconds, and the player comes back
 where the server last saw them. A kick, a ban or a server shutdown is not retried.
 
+## The server as a window
+
+[`../server-gui`](../server-gui/README.md) is a desktop program around this same server: a list of servers down the left, and for
+the one you pick a dashboard, a console, players, settings, game rules, worlds, backups and a scheduler. It is optional; the
+terminal server here works exactly as before. It talks to the server through `--ipc`: started that way by a parent
+process, the server reports status, log lines and players with `process.send` and takes commands from
+`process.on('message')` (`lib/admin.mjs` lists the messages). There is no Windows `.exe` yet: it runs with `npm install`
+and `npm start`; when an exe is built it will be unsigned, so Windows SmartScreen will warn the first time.
+
 ## Settings
 
 The first run writes `data/server.json`. Edit it and restart, or pass the same things on the command line (which wins):

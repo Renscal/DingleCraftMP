@@ -113,6 +113,7 @@ export function parseArgs(argv) {
     else if (a === '--cert') o.cert = val();
     else if (a === '--key') o.key = val();
     else if (a === '--quiet') o.quiet = true;
+    else if (a === '--ipc') o.ipc = true;                  // report to, and take orders from, the process that started this one (lib/admin.mjs)
     else if (a === '--help' || a === '-h') o.help = true;
     else throw new Error('unknown option ' + a);
   }

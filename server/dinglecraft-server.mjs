@@ -26,6 +26,8 @@
 //                       lib/headless.cjs) and passes messages to and from it
 //   lib/server.mjs      createServer: puts the above together
 //   lib/cli.mjs         the program: server.json, the banner, the console commands
+//   lib/admin.mjs       --ipc: the server run and watched by another program (the window in server-gui/), and the
+//                       check server.json's values must pass
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { main } from './lib/cli.mjs';

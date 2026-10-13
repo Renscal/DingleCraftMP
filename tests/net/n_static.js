@@ -123,11 +123,11 @@ boot.run(async()=>{
 
   /* ---- 7. the server ---- */
   /* the server: the front door plus its modules in server/lib/ */
-  const SMODS=['cli.mjs','commands.mjs','config.mjs','host.mjs','http.mjs','protocol.mjs','server.mjs','websocket.mjs','world.mjs'];
+  const SMODS=['admin.mjs','cli.mjs','commands.mjs','config.mjs','host.mjs','http.mjs','protocol.mjs','server.mjs','websocket.mjs','world.mjs'];
   const SHOST=['headless.cjs','host_worker.cjs'];   /* the server's own game runs in a thread: the hollow browser, and the thread's program */
   const SFILES=['dinglecraft-server.mjs',...SMODS.map(f=>'lib/'+f)],STXT=Object.fromEntries(SFILES.map(f=>[f,fs.readFileSync(path.join(REPO,'server',f),'utf8')]));
   const SV=SFILES.map(f=>STXT[f]).join('\n');
-  ok('server/lib/ holds exactly the nine modules and the two files of the game thread',JSON.stringify(fs.readdirSync(path.join(REPO,'server','lib')).sort())===JSON.stringify([...SMODS,...SHOST].sort()));
+  ok('server/lib/ holds exactly the ten modules (admin.mjs since 6.41) and the two files of the game thread',JSON.stringify(fs.readdirSync(path.join(REPO,'server','lib')).sort())===JSON.stringify([...SMODS,...SHOST].sort()));
   ok('the game thread\'s files open with a comment, load nothing but node: built-ins, each other and the game script, and never touch the network',SHOST.every(f=>{const t=fs.readFileSync(path.join(REPO,'server','lib',f),'utf8');
     return t.startsWith('/* '+f+':')&&[...t.matchAll(/require\((['"])([^'"]+)\1\)/g)].every(m=>m[2].startsWith('node:')||m[2]==='./headless.cjs')&&!/node:(http|https|net|dgram|child_process)/.test(t);}));
   ok('every server file opens with a comment saying what it is for, and the front door lists every module',SFILES.every(f=>/^(#![^\n]*\n)?\/\/ /.test(STXT[f]))&&SMODS.every(f=>STXT['dinglecraft-server.mjs'].includes('lib/'+f)));

@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'">
+<title>DINGLECRAFT Server</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside>
+  <h1>DINGLECRAFT<small>Server</small></h1>
+  <div id="slist"></div>
+  <div class="sideacts">
+    <button id="b_new">New server</button>
+    <button id="b_adopt">Add existing folder</button>
+  </div>
+  <form id="newserver" hidden>
+    <input id="ns_name" maxlength="60" placeholder="Name of the new server" required>
+    <button>Create</button>
+  </form>
+  <div id="noserver" class="warn" hidden>The server's files were not found next to this program.</div>
+</aside>
+<div id="right">
+  <header>
+    <div class="grow">
+      <h2 id="sname">No server selected</h2>
+      <span id="pill" class="pill off">stopped</span>
+      <span id="sport" class="dim"></span>
+    </div>
+    <button id="b_start" class="go">Start</button>
+    <button id="b_stop" disabled>Stop</button>
+    <button id="b_restart" disabled>Restart</button>
+    <button id="b_kill" class="danger" disabled title="End it at once. The world is not saved first.">Kill</button>
+  </header>
+  <nav id="tabs">
+    <button data-tab="dash" class="on">Dashboard</button>
+    <button data-tab="console">Console</button>
+    <button data-tab="players">Players</button>
+    <button data-tab="settings">Settings</button>
+    <button data-tab="rules">Game rules</button>
+    <button data-tab="worlds">Worlds</button>
+    <button data-tab="backups">Backups</button>
+    <button data-tab="sched">Scheduler</button>
+  </nav>
+  <main>
+    <section id="t_dash">
+      <div class="cards">
+        <div class="card"><b>Status</b><span id="c_status">stopped</span><small id="c_uptime"></small></div>
+        <div class="card"><b>Players</b><span id="c_players">0</span><small id="c_max"></small></div>
+        <div class="card"><b>Memory</b><span id="c_mem">none</span><small>this server's process</small></div>
+        <div class="card"><b>World</b><span id="c_world">none</span><small id="c_diff"></small></div>
+      </div>
+      <h3>Give players this address</h3>
+      <div id="addrs" class="list"></div>
+      <p><button id="b_browser" disabled>Open in browser</button></p>
+      <h3>The server's own games</h3>
+      <table><thead><tr><th>Dimension</th><th>State</th><th>Memory</th></tr></thead><tbody id="hosts"></tbody></table>
+      <p class="dim">Data folder: <span id="datadir"></span> <button id="b_opendata">Open folder</button> <button id="b_remove">Remove from the list</button></p>
+    </section>
+    <section id="t_console" hidden>
+      <pre id="log"></pre>
+      <form id="cmdform"><input id="cmd" autocomplete="off" spellcheck="false" placeholder="a server command: list, say hello, time day, help ..."><button>Run</button></form>
+    </section>
+    <section id="t_players" hidden>
+      <table><thead><tr><th>Player</th><th>Dimension</th><th>Position</th><th>Ping</th><th></th></tr></thead><tbody id="plist"></tbody></table>
+      <p id="noplayers" class="dim">Nobody is online.</p>
+    </section>
+    <section id="t_settings" hidden>
+      <form id="setform" class="form"></form>
+      <p><button id="b_savesettings">Save settings</button> <span id="setmsg" class="dim"></span></p>
+    </section>
+    <section id="t_rules" hidden>
+      <form id="ruleform" class="form"></form>
+      <p><button id="b_saverules">Save rules</button> <span id="rulemsg" class="dim"></span></p>
+    </section>
+    <section id="t_worlds" hidden>
+      <table><thead><tr><th>World</th><th>Seed</th><th>Mode</th><th>Difficulty</th><th>Size</th><th></th></tr></thead><tbody id="wlist"></tbody></table>
+      <p id="worldmsg" class="dim"></p>
+      <h3>New world</h3>
+      <form id="newworld" class="form">
+        <label>Name <input name="name" maxlength="40" required></label>
+        <label>Seed <input name="seed" maxlength="64" placeholder="empty for a random one"></label>
+        <label>Mode <select name="mode"><option value="s">Survival</option><option value="c">Creative</option></select></label>
+        <label>Difficulty <select name="difficulty"><option value="easy">Easy</option><option value="normal" selected>Normal</option><option value="hard">Hard</option><option value="dinglecore">DingleCore</option></select></label>
+        <button>Create and switch to it</button>
+      </form>
+    </section>
+    <section id="t_backups" hidden>
+      <p><button id="b_backup">Back up now</button> <span id="backmsg" class="dim"></span></p>
+      <table><thead><tr><th>Backup</th><th>World</th><th>Made</th><th>Size</th><th></th></tr></thead><tbody id="blist"></tbody></table>
+      <p id="nobackups" class="dim">No backups yet. A backup is a dated copy of the whole world folder, kept under backups/ in the data folder.</p>
+    </section>
+    <section id="t_sched" hidden>
+      <table><thead><tr><th>Every</th><th>Do</th><th>On</th><th></th></tr></thead><tbody id="tlist"></tbody></table>
+      <p id="notasks" class="dim">Nothing is scheduled. Tasks run while this server is running, counted from when it started.</p>
+      <h3>New task</h3>
+      <form id="newtask" class="form">
+        <label>Every (minutes) <input name="every" type="number" min="1" max="10080" value="60" required></label>
+        <label>Do <select name="what" id="task_what"><option value="backup">Back up the world</option><option value="restart">Restart the server</option><option value="command">Run a command</option></select></label>
+        <label id="task_keep_l">Backups to keep <input name="keep" type="number" min="1" max="500" value="10"></label>
+        <label id="task_cmd_l" hidden>Command <input name="command" maxlength="300" placeholder="say Remember to drink water"></label>
+        <button>Add task</button>
+      </form>
+      <p id="taskmsg" class="dim"></p>
+    </section>
+  </main>
+</div>
+<script src="renderer.js"></script>
+</body>
+</html>

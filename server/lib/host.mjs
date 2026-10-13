@@ -43,7 +43,9 @@ export function startHost(S, script, handle, log, dim = 'over') {
     seen: Date.now(), poseT: 0, chatT: 0, chatN: 0, hitT: 0, lastHit: null, sleepT: 0, sleepAt: null, gm: null, ms: 0, rd: 0 };
   const waiting = [];
   const H = { c, ready: false, stopped: false, post(m) { if (H.stopped) return; if (H.ready) worker.postMessage(m); else waiting.push(m); },
-    stop() { H.stopped = true; return worker.terminate().catch(() => {}); } };
+    stop() { H.stopped = true; return worker.terminate().catch(() => {}); },
+    /* the bytes of JavaScript heap this dimension's game is using (a promise; rejected where Node cannot say) */
+    heap() { return typeof worker.getHeapStatistics === 'function' ? worker.getHeapStatistics().then((s) => s.used_heap_size | 0) : Promise.reject(new Error('not available')); } };
   c.h = H;
   const here = (list) => (Array.isArray(list) ? list.filter((x) => (x.d || 'over') === dim) : []);
   const worker = new Worker(path.join(HERE, 'host_worker.cjs'), { workerData: { game: script, world: { ...level, edits, be }, mobs: here(mobs), vehs: here(vehicles), dim, primary: dim === 'over' } });

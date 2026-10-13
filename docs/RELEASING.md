@@ -134,6 +134,7 @@ gh release create v6.9 out/release/DINGLECRAFT-Server-v6.9.zip out/release/DINGL
 | file | what |
 |---|---|
 | `DINGLECRAFT-Server-v<X.Y>.zip` | `server/` with the game html beside it. The server hands the game out at its own address, so players only need a browser |
+| `DINGLECRAFT-ServerGUI-v<X.Y>.zip` | `server-gui/` (the server as a window, [server-gui/README.md](../server-gui/README.md)) with `server/` and the html inside it. Optional. Source only: no `.exe` is built yet |
 | `DINGLECRAFT-Client-v<X.Y>.zip` | `client/` (the Electron wrapper, [client/README.md](../client/README.md)) with the same html beside `main.js`. Optional: nobody needs it to play |
 | `notes.md` | the version's patch notes as Markdown, plus a line about each download |
 

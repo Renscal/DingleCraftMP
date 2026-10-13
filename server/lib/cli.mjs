@@ -6,6 +6,7 @@ import path from 'node:path';
 import readline from 'node:readline';
 import { DEFAULTS, HELP, SERVER_DIR, parseArgs } from './config.mjs';
 import { createServer } from './server.mjs';
+import { attachAdmin } from './admin.mjs';
 
 /* this computer's addresses on the local network, for the "hand these out" list */
 function lanAddresses() {
@@ -72,8 +73,11 @@ export async function main() {
   };
   /* a first run next to an existing world (say, one exported from single player) passes no settings of its own, so that
      world's mode and rules become the starting values in the new server.json */
+  /* --ipc: a parent process is watching (the server window, a test). What is logged before the server exists is kept for it. */
+  const ipc = !!args.ipc && typeof process.send === 'function';
+  let admin = null; const early = [];
   let S;
-  try { S = createServer({ ...(fresh ? {} : cfg), ...args, data: dataDir, onRules: () => writeCfg(S, 'a game rule was changed in the game: updated'),
+  try { S = createServer({ ...(fresh ? {} : cfg), ...args, data: dataDir, ...(ipc ? { onLog: (l) => (admin ? admin.log(l) : early.push(l)) } : {}), onRules: () => writeCfg(S, 'a game rule was changed in the game: updated'),
     onSettings: () => writeCfg(S, 'a command changed the settings: updated') }); }
   catch (e) { console.error('dinglecraft-server: ' + e.message); process.exit(1); }
   writeCfg(S, fresh ? 'wrote the settings to' : 'added the missing settings to');
@@ -86,7 +90,15 @@ export async function main() {
 
   /* every way of stopping saves the world first: the stop command, Ctrl+C, closing the window */
   let stopping = false;
-  const stop = async (why) => { if (stopping) return; stopping = true; S.log('stopping (' + why + ')'); await S.close(); process.exit(0); };
+  const stop = async (why) => { if (stopping) return; stopping = true; S.log('stopping (' + why + ')'); await S.close(); if (admin) admin.close(); process.exit(0); };
+  if (ipc) {
+    admin = attachAdmin(S, { send: (m) => process.send(m), stop });
+    for (const l of early) admin.log(l);
+    process.on('message', (m) => admin.onMessage(m));
+    process.on('disconnect', () => stop('the window that started it has gone'));
+    setInterval(() => admin.tick(), 1000).unref();
+    admin.ready();
+  }
   process.on('SIGINT', () => stop('Ctrl+C'));
   process.on('SIGTERM', () => stop('terminated'));
   process.on('SIGHUP', () => stop('window closed'));

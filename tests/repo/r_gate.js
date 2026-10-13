@@ -109,7 +109,7 @@ for (const f of JS) read(f).split('\n').forEach((l, i) => {
 ok('no suite reaches for the legacy layout (dev/..., splice.py, gate.sh, hooks files, _stub/, ../../ requires)' + (legacyLook.length ? ' (' + legacyLook.slice(0, 6).join(' ') + ')' : ''), legacyLook.length === 0);
 const writers = JS.filter((f) => /\bwriteFileSync\(|\bappendFileSync\(|\bcreateWriteStream\(/.test(read(f)));
 ok('only the outputs-to-out/ suites write files (p4_boss, speedrun, n_smoke, n_host and n_served: the server files on disk) plus og_trace --bless (' + writers.join(', ') + ')',
-  writers.every((f) => ['tests/purgatory/p4_boss.js', 'tests/pilot/speedrun.js', 'tests/texpacks/og_trace.js', 'tests/net/n_smoke.js', 'tests/net/n_host.js', 'tests/net/n_served.js'].includes(f)) &&
+  writers.every((f) => ['tests/purgatory/p4_boss.js', 'tests/pilot/speedrun.js', 'tests/texpacks/og_trace.js', 'tests/net/n_smoke.js', 'tests/net/n_host.js', 'tests/net/n_served.js', 'tests/net/n_admin.js'].includes(f)) &&
   /outDir\('net'\)/.test(read('tests/net/n_smoke.js')) && /outDir\('net'\)/.test(read('tests/net/n_host.js')) &&
   /outDir\('purgatory'\)/.test(read('tests/purgatory/p4_boss.js')) && /outDir\('pilot'\)/.test(read('tests/pilot/speedrun.js')));
 ok('tests/lib/paths.js computes every path from its own place or the environment', !/['"]\//.test(read('tests/lib/paths.js').replace(/\/\*[\s\S]*?\*\//g, '').replace(/'\/'/g, '')));

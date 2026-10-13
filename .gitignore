@@ -49,3 +49,8 @@ desktop.ini
 *~
 .idea/
 .vscode/
+
+# the server window: its dependencies and anything built from it
+server-gui/out/
+server-gui/server/
+server-gui/dinglecraft_v*.html

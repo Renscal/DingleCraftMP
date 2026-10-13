@@ -3,7 +3,19 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Something in the stew',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'The server gets a window',lines:[
+    '<b>THE SERVER GETS A WINDOW.</b> Running a DINGLECRAFT server has meant a black terminal, a blinking cursor and a list of commands you were expected to remember. There is now a proper program for it, laid out the way server managers are: your servers down the left, the one you picked on the right. The terminal server is still there, untouched, for people who like blinking cursors.',
+    '<b>Servers, plural.</b> Keep a survival world for the group and a creative one for the builders. Each server has its own folder, its own port and its own dot: green for running, amber for starting, grey for stopped. New server makes one; Add existing folder adopts the one you already had.',
+    '<b>Dashboard.</b> Status, players, memory and world on four cards, the address to give your friends with a Copy button, and Open in browser.',
+    '<b>Start, Stop, Restart, Kill.</b> Stop saves the world first. Kill does not, and says so. Closing the window with a server running asks whether to stop it or keep it going in the tray.',
+    '<b>Console and Players.</b> The live log, a command box with Up and Down for history, and for everyone online: where they are, with buttons to kick, ban, op and teleport them to each other.',
+    '<b>Settings and Game rules.</b> Every setting and every rule as a form, including difficulty and the three dimension switches. Nothing wrong gets written: a bad port or a name that is not a name is pointed at, and the window tells you which changes need a restart.',
+    '<b>Worlds and Backups.</b> Make a world, switch world. Back up now takes a dated copy of the whole world; Restore puts one back, and quietly backs up the world as it was first, so even a restore can be undone.',
+    '<b>Scheduler.</b> Every so many minutes: back up the world and keep the newest ten, restart the server, or run a command. Set it once and stop thinking about it.',
+    '<b>The honest part.</b> It is an Electron app you start with npm install and npm start. There is no .exe yet, and nobody has run it on Windows or looked at it on a screen: the parts that touch files and the server are tested, the buttons are not. When an .exe exists it will be unsigned, and Windows will say so the first time.',
+    '<b>For the curious.</b> The server grew an --ipc mode: started by another program, it reports its status, log and players to it and takes commands back. That is all the window is: a face on that.',
+  ]},
+ {v:'6.40',label:'Release 1.1',title:'Something in the stew',lines:[
     '<b>SOMETHING IN THE STEW.</b> The Hemlock Root from last update now does what hemlock does. Eat one and you are poisoned: your hearts turn a sick green and you lose half a heart every second or so until it wears off. It will take you down to your last half heart and stop there. It is poison, not an execution. A full stomach does not heal you while it lasts, and nothing cures it but time.',
     '<b>Glass Bottle.</b> Three glass in a V make three bottles.',
     '<b>Jar of Poison.</b> One Hemlock Root and one Glass Bottle. This is where it gets interesting.',

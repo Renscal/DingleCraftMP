@@ -5,6 +5,7 @@
 //   DINGLECRAFT-Server-v<X.Y>.zip   server/ (front door, lib/, launchers, README) with the game html beside it, so the
 //                                   server hands the game out at its own address: players only need a browser
 //   DINGLECRAFT-Client-v<X.Y>.zip   client/ (the Electron wrapper) with the same html beside main.js
+//   DINGLECRAFT-ServerGUI-v<X.Y>.zip  server-gui/ (the server as a window, Electron) with server/ and the html inside it
 //   notes.md                        the version's patch notes as Markdown, for the release page
 // Then it reads both zips back and checks every file (names, bytes, CRC), and prints the gh command that publishes them.
 // Publishing stays a separate step (docs/RELEASING.md, step 6): this script never talks to the network.
@@ -33,7 +34,7 @@ function tree(dir, top) {
   const out = [];
   (function walk(d, pre) {
     for (const n of fs.readdirSync(d).sort()) {
-      if (n === 'data' || n === 'node_modules' || n.startsWith('.') || /^dinglecraft_v.*\.html$/.test(n) || n === 'package-lock.json') continue;
+      if (n === 'data' || n === 'node_modules' || n === 'out' || n.startsWith('.') || /^dinglecraft_v.*\.html$/.test(n) || n === 'package-lock.json') continue;
       const f = path.join(d, n), st = fs.statSync(f);
       if (st.isDirectory()) walk(f, pre + n + '/');
       else out.push({ name: top + '/' + pre + n, data: fs.readFileSync(f), mode: n.endsWith('.sh') ? 0o755 : 0o644 });
@@ -52,6 +53,20 @@ const client = tree(path.join(REPO, 'client'), 'DINGLECRAFT-Client');
   pj.data = Buffer.from(JSON.stringify(doc, null, 2) + '\n');
 }
 client.push({ name: 'DINGLECRAFT-Client/' + HTML_NAME, data: html, mode: 0o644 });
+/* the server window: its own files, the server inside it (where main.js looks first), the game beside the server, an icon */
+const gui = tree(path.join(REPO, 'server-gui'), 'DINGLECRAFT-ServerGUI').filter((e) => !e.name.startsWith('DINGLECRAFT-ServerGUI/server/'));
+{
+  const pj = gui.find((e) => e.name === 'DINGLECRAFT-ServerGUI/package.json');
+  if (!pj) die('server-gui/package.json missing');
+  const doc = JSON.parse(pj.data.toString('utf8')); doc.version = VER + '.0';
+  pj.data = Buffer.from(JSON.stringify(doc, null, 2) + '\n');
+}
+gui.push(...tree(path.join(REPO, 'server'), 'DINGLECRAFT-ServerGUI/server'));
+gui.push({ name: 'DINGLECRAFT-ServerGUI/server/' + HTML_NAME, data: html, mode: 0o644 });
+gui.push({ name: 'DINGLECRAFT-ServerGUI/icon.png', data: fs.readFileSync(path.join(REPO, 'assets', 'logo.png')), mode: 0o644 });
+for (const need of ['DINGLECRAFT-ServerGUI/main.js', 'DINGLECRAFT-ServerGUI/preload.js', 'DINGLECRAFT-ServerGUI/index.html', 'DINGLECRAFT-ServerGUI/renderer.js', 'DINGLECRAFT-ServerGUI/lib/store.cjs',
+  'DINGLECRAFT-ServerGUI/server/dinglecraft-server.mjs', 'DINGLECRAFT-ServerGUI/server/lib/admin.mjs'])
+  if (!gui.some((e) => e.name === need)) die('the server window package would miss ' + need);
 for (const need of ['DINGLECRAFT-Server/dinglecraft-server.mjs', 'DINGLECRAFT-Server/lib/server.mjs', 'DINGLECRAFT-Server/Start Server.bat', 'DINGLECRAFT-Server/start-server.sh'])
   if (!server.some((e) => e.name === need)) die('the server package would miss ' + need);
 if (!client.some((e) => e.name === 'DINGLECRAFT-Client/main.js')) die('the client package would miss main.js');
@@ -59,7 +74,7 @@ if (!client.some((e) => e.name === 'DINGLECRAFT-Client/main.js')) die('the clien
 const OUT = path.join(path.resolve(process.env.DC_OUT_DIR || path.join(REPO, 'out')), 'release');
 fs.rmSync(OUT, { recursive: true, force: true }); fs.mkdirSync(OUT, { recursive: true });
 const files = [];
-for (const [label, entries] of [['Server', server], ['Client', client]]) {
+for (const [label, entries] of [['Server', server], ['Client', client], ['ServerGUI', gui]]) {
   const file = path.join(OUT, `DINGLECRAFT-${label}-v${VER}.zip`), buf = writeZip(entries);
   const back = readZip(buf);
   if (back.length !== entries.length || back.some((b, i) => b.name !== entries[i].name || !b.data.equals(entries[i].data) || b.mode !== entries[i].mode)) die(`${label} zip does not read back as written`);
@@ -79,7 +94,10 @@ const notes = [
   `- **DINGLECRAFT-Server-v${VER}.zip**: the multiplayer server with the game inside. Needs Node.js 20 or newer. Start it (` +
     '`Start Server.bat` on Windows, `./start-server.sh` elsewhere) and players open its address in a browser: nothing else to install.',
   `- **DINGLECRAFT-Client-v${VER}.zip**: the game as a desktop app (an Electron wrapper around the same html). Optional: ` +
-    'the html inside it also opens in any browser by double-click. `npm install`, then `npm start`.', '',
+    'the html inside it also opens in any browser by double-click. `npm install`, then `npm start`.',
+  `- **DINGLECRAFT-ServerGUI-v${VER}.zip**: the server as a window (an Electron app with the server and the game inside): Status, Start and Stop, ` +
+    'a console, players, settings, game rules and worlds. Optional, and new: it has not been run on Windows yet. `npm install`, then `npm start`. ' +
+    'There is no .exe yet; when there is one it will be unsigned, so Windows SmartScreen will warn on first launch.', '',
   ...(BETA ? ['> **Beta.** Cut from the Experimental branch for players to test; it was released without the full test run. Report what breaks.', ''] : []),
 ].join('\n');
 const notesFile = path.join(OUT, 'notes.md');

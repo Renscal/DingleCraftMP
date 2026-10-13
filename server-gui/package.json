@@ -1,0 +1,26 @@
+{
+  "name": "dinglecraft-server-gui",
+  "version": "0.0.0",
+  "private": true,
+  "description": "DINGLECRAFT Server: a window around the multiplayer server. No terminal, no separate Node install.",
+  "license": "SEE LICENSE IN LICENSE",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis portable --x64"
+  },
+  "devDependencies": {
+    "electron": "^38.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "net.dinglecraft.server",
+    "productName": "DINGLECRAFT Server",
+    "asar": false,
+    "directories": { "output": "out" },
+    "files": ["main.js", "preload.js", "index.html", "renderer.js", "style.css", "lib/**", "server/**", "icon.png"],
+    "win": { "target": [{ "target": "nsis", "arch": ["x64"] }, { "target": "portable", "arch": ["x64"] }], "icon": "icon.png" },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true },
+    "portable": { "artifactName": "DINGLECRAFT-Server-portable.exe" }
+  }
+}

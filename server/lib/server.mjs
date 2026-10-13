@@ -38,7 +38,11 @@ export function createServer(opts = {}) {
   const o = { ...DEFAULTS, ...opts };
   for (const k of ['ops', 'allow', 'bans']) o[k] = cleanList(o[k]);   // names are compared in lower case
   o.whitelist = o.whitelist === true;
-  const log = o.quiet ? () => {} : (...a) => console.log(new Date().toTimeString().slice(0, 8), ...a);
+  /* every logged line also goes to o.onLog, if there is one (the --ipc mode's parent: lib/admin.mjs) */
+  const log = (...a) => {
+    if (typeof o.onLog === 'function') { try { o.onLog(new Date().toTimeString().slice(0, 8) + ' ' + a.join(' ')); } catch { /* a listener must never stop the server */ } }
+    if (!o.quiet) console.log(new Date().toTimeString().slice(0, 8), ...a);
+  };
   const dataDir = path.resolve(o.data || path.join(SERVER_DIR, 'data'));
   const place = o.world && !o.memory ? worldPlace(dataDir, o.world) : null;   // null: nothing is ever written (tests)
   const worldDir = place ? place.dir : null;
