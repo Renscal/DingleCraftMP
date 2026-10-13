@@ -51,7 +51,15 @@ const STATS_W=510,STATS_H=36;
 const PIX={
  heart:['.XX.XX.','XXXXXXX','XXXXXXX','.XXXXX.','..XXX..','...X...'],
  meat: ['..XXXX.','.XXXXXX','.XXXXXX','..XXXX.','...XX.o','......o'],
- bub:  ['..XXX..','.X...X.','.X...X.','.X...X.','..XXX..','.......']};
+ bub:  ['..XXX..','.X...X.','.X...X.','.X...X.','..XXX..','.......'],
+ legs: ['XXXXXXX','XXXXXXX','XXX.XXX','XX...XX','XX...XX','XX...XX']};   /* 6.35: the armour bar is trousers; half = the left leg */
+/* the armour bar: ten icons of 2 points each. 0 empty, 1 half, 2 full, for an armour value of 0 to 20 (a fraction goes to
+   the nearest half icon: gold's 1.5 shows as one whole pair) */
+function armorIcons(pts){
+  const h=clamp(Math.round(+pts||0),0,20),out=[];
+  for(let i=0;i<10;i++)out.push(clamp(h-i*2,0,2));
+  return out;
+}
 /* one pattern at cell size q device px; columns c0..c1-1 only (a half heart / half drumstick is the left four columns) */
 function drawPat(g,pat,x,y,col,col2,q,c0,c1){
   q=q||2;
@@ -80,6 +88,17 @@ function drawStats(){
     drawPat(g,PIX.heart,x,y,'#3a0d0d',null,q);
     if(v>=2)drawPat(g,PIX.heart,x,y,'#e23b3b',null,q);
     else if(v===1)drawPat(g,PIX.heart,x,y,'#e23b3b',null,q,0,4);
+  }
+  /* 6.35: the armour bar, one row above the hearts and in line with them; not drawn with no armour on */
+  const ap=armorPts();
+  if(ap>0){
+    const ic=armorIcons(ap),ay=y-7*q;
+    for(let i=0;i<10;i++){
+      const x=m+i*pitch;
+      drawPat(g,PIX.legs,x,ay,'#23262e',null,q);
+      if(ic[i]===2)drawPat(g,PIX.legs,x,ay,'#cfd6ff',null,q);
+      else if(ic[i]===1)drawPat(g,PIX.legs,x,ay,'#cfd6ff',null,q,0,4);
+    }
   }
   for(let i=0;i<10;i++){
     const x=W-7*q-m-i*pitch,v=P.hunger-i*2;

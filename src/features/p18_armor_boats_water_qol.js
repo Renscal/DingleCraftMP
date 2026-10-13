@@ -287,18 +287,19 @@ function equipArmor(){
   P.inv[P.sel]=old?{id:old.id,count:1,...(old.dur!=null?{dur:old.dur}:{})}:null;
   redrawHotbar();
   playS('place');
-  showToast(DEFS[P.armor[s].id].name+' equipped \u2014 \u26e8 '+armorPts());
+  showToast(DEFS[P.armor[s].id].name+' equipped \u2014 armour '+armorPts());
 }
 let _armLast='';
 function updateArmorHud(){
   const el=$('armor');
   if(!el)return;
-  const pts=armorPts();
-  const s=pts>0?'\u26e8 '+pts:'';
+  /* 6.35: the badge is gone; the armour bar is drawn with the hearts (drawStats, ui/p06a_hud.js) whenever the value changes */
+  const s=''+armorPts();
   if(s!==_armLast){
     _armLast=s;
-    el.textContent=s;
-    el.style.display=s?'block':'none';
+    el.textContent='';
+    el.style.display='none';
+    drawStats();
   }
 }
 /* ----- boats ----- */

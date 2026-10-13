@@ -3,7 +3,14 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'The server remembers',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Ten pairs of trousers',lines:[
+    '<b>TEN PAIRS OF TROUSERS.</b> Your armour used to be a small shield and a number in the corner of the screen, like a parking ticket. It is now a proper armour bar: ten icons in a row directly above your hearts. The icons are trousers. Every other game went with a chestplate. We looked at what actually keeps a person decent and made our choice.',
+    '<b>How to read it.</b> Each pair of trousers is two points of armour. One leg is one point. A full iron set is four pairs; full dragon is all ten.',
+    '<b>Gold rounds up.</b> A golden piece is worth a point and a half, and the bar shows the nearest half pair, so one golden helmet is one whole pair of trousers. Nobody is drawing three quarters of a trouser.',
+    '<b>Nothing on, nothing shown.</b> With no armour the bar is not there at all, and it steps aside in creative along with the hearts.',
+    '<b>Same protection.</b> Only the display changed. Armour absorbs exactly what it absorbed yesterday.',
+  ]},
+ {v:'6.34',label:'Release 1.1',title:'The server remembers',lines:[
     '<b>THE SERVER REMEMBERS.</b> On a server your inventory used to be saved when you dropped something, picked something up, or pressed Save. Mine for an hour, craft a diamond pickaxe, eat, level up, and then have the browser tab crash: the server remembered you as you were an hour ago, holding dirt. Not any more.',
     '<b>Within a second.</b> Anything that changes about you (what you carry, what you wear, your health, your hunger, your experience, your spawn) reaches the server about a second later, by itself. A flurry of changes goes as one message, and when nothing changes nothing is sent.',
     '<b>Where you stand.</b> Your position goes along with every save, and on its own every ten seconds while you are on the move.',

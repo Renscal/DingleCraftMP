@@ -21,6 +21,16 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — Ten pairs of trousers
+
+*Game version 6.35, released 2026-10-13.*
+
+- **TEN PAIRS OF TROUSERS.** Your armour used to be a small shield and a number in the corner of the screen, like a parking ticket. It is now a proper armour bar: ten icons in a row directly above your hearts. The icons are trousers. Every other game went with a chestplate. We looked at what actually keeps a person decent and made our choice.
+- **How to read it.** Each pair of trousers is two points of armour. One leg is one point. A full iron set is four pairs; full dragon is all ten.
+- **Gold rounds up.** A golden piece is worth a point and a half, and the bar shows the nearest half pair, so one golden helmet is one whole pair of trousers. Nobody is drawing three quarters of a trouser.
+- **Nothing on, nothing shown.** With no armour the bar is not there at all, and it steps aside in creative along with the hearts.
+- **Same protection.** Only the display changed. Armour absorbs exactly what it absorbed yesterday.
+
 ## Release 1.1 — The server remembers
 
 *Game version 6.34, released 2026-10-13.*
