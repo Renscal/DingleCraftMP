@@ -21,6 +21,13 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — Looking up from underwater
+
+*Game version 6.20, released 2026-10-13.*
+
+- LOOKING UP FROM UNDERWATER. Dive in, look up, and there used to be nothing: the surface of the water was only painted on its top side, so from below the lake had no lid.
+- Water now has both sides. The surface is there from underneath, and the wall of a waterfall is there when you look out of it.
+
 ## Release 1.1 — No more tool swapping
 
 *Game version 6.19, released 2026-10-13.*

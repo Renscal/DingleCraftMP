@@ -3,7 +3,11 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'No more tool swapping',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Looking up from underwater',lines:[
+    'LOOKING UP FROM UNDERWATER. Dive in, look up, and there used to be nothing: the surface of the water was only painted on its top side, so from below the lake had no lid.',
+    'Water now has both sides. The surface is there from underneath, and the wall of a waterfall is there when you look out of it.',
+  ]},
+ {v:'6.19',label:'Release 1.1',title:'No more tool swapping',lines:[
     'NO MORE TOOL SWAPPING. You could start a block with your good pickaxe, flick to an empty hand just before it broke, and let your bare knuckles take the wear. Or do it the other way round and borrow a diamond pick for the last tenth of a second.',
     'Not any more. Change the slot, or what is in your hand, and the block starts over with whatever you are holding now. The tool that breaks a block is the tool that did the whole job, and it pays for it.',
     'Mining without swapping costs exactly the time and the wear it always did.',

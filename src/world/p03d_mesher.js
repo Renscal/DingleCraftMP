@@ -50,6 +50,23 @@ function addQuad(b,x,y,z,F,uvr,br,lower){
   else b.ix.push(s+1,s+2,s+3,s+1,s+3,s);
   b.vc+=4;
 }
+/* The same quad seen from the other side (6.20): the same four corners, the normal turned round and the triangles wound
+   the other way. Water faces get one, so its surface is there when you look up from underneath, and the side of a column
+   of water is there when you look out of it. (A one-sided face is simply not drawn from behind.) */
+function addQuadBack(b,x,y,z,F,uvr,br,lower){
+  const u0=uvr[0],v0=uvr[1],u1=uvr[2],v1=uvr[3];
+  const uvs=[[u0,v0],[u1,v0],[u1,v1],[u0,v1]];
+  for(let i=0;i<4;i++){
+    const V=F.verts[i];
+    b.p.push(x+V[0],y+V[1]-(V[1]===1?lower:0),z+V[2]);
+    b.n.push(-F.n[0],-F.n[1],-F.n[2]);
+    b.u.push(uvs[i][0],uvs[i][1]);
+    b.c.push(br[i],br[i],br[i]);
+  }
+  const s=b.vc;
+  b.ix.push(s,s+2,s+1,s,s+3,s+2);
+  b.vc+=4;
+}
 function addCross(b,x,y,z,d){
   const uvr=tileUV(d._t.side);
   const u0=uvr[0],v0=uvr[1],u1=uvr[2],v1=uvr[3];
@@ -110,6 +127,7 @@ function meshChunk(ch){
       }
       const lower=(id===B.WATER&&f===0&&gb(lx,y+1,lz)!==B.WATER)?.12:0;
       addQuad(bufs[d.bucket],lx,y,lz,F,tileUV(ti),br,lower);
+      if(d.bucket==='wat'&&d.solid===false)addQuadBack(bufs.wat,lx,y,lz,F,tileUV(ti),br,lower);   /* liquids only: ice is in this bucket too, and nobody is ever inside ice */
     }
   }
   return bufs;
