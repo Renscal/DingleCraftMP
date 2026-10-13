@@ -41,8 +41,19 @@ function ntApplyEdit(k,lk,id,raw,by){
         playSAt(id===B.AIR?'dig':'place',x+0.5,y+0.5,z+0.5);
       }
     }
-    NET.ap=true;
-    try{setBlock(x,y,z,id);}finally{NET.ap=false;}
+    if(NET.host){
+      /* The server's game runs what follows from a player's edit (sand falls, water moves), and those further writes must
+         go out; only the echo of this very cell is taken back out of the queue. What the edit knocks loose is still the
+         editing game's to drop (NET.apd), as between players. */
+      const n=NET.q.length;
+      NET.apd=true;
+      try{setBlock(x,y,z,id);}finally{NET.apd=false;}
+      for(let i=n;i<NET.q.length;i++)if(NET.q[i][0]===k&&NET.q[i][1]===lk&&NET.q[i][2]===id){NET.q.splice(i,1);break;}
+      return;                                              /* whatever the cell holds now is what this game made of it (sand set in mid-air has already left) */
+    }else{
+      NET.ap=true;
+      try{setBlock(x,y,z,id);}finally{NET.ap=false;}
+    }
     if(ch.bl[bidx(lx,y,lz)]===id)return;                 /* a protected cell refused it: record it below anyway */
   }
   if(ch&&ch.bl[bidx(lx,y,lz)]!==id){ch.bl[bidx(lx,y,lz)]=id;ch.dirty=true;
@@ -112,7 +123,8 @@ function ntLockTick(){
   if(!k||(MODAL.kind&&MODAL.bek===k))return;
   NET.lockK=null;
   const b=blockEnts.get(k);
-  if(ntBeShared(b)){const sg=ntBeSig(b);if(NET.beS.get(k)!==sg){NET.beS.set(k,sg);ntSend({t:'be',k,v:b});}}
+  /* a furnace goes back whole even if no item moved: whoever cooks it next carries on from its timers */
+  if(ntBeShared(b)){const sg=ntBeSig(b);if(NET.beS.get(k)!==sg||(b.t==='furnace'&&NET.hosted)){NET.beS.set(k,sg);ntSend({t:'be',k,v:b});}}
   ntSend({t:'close',k});
 }
 

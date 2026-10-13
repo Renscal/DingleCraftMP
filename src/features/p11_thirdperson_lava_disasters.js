@@ -430,6 +430,7 @@ function isFlam(id){
 function igniteAt(x,y,z){
   if(fires.size>600)return;
   if(!isFlam(getBlock(x,y,z)))return;
+  if(NET.on&&ntIgnite(x,y,z))return;   /* PART 58: where the server runs the world, the fire is the server's to light */
   fires.set(x+','+y+','+z,0);
 }
 function updateFires(dt){
@@ -443,7 +444,7 @@ function updateFires(dt){
     if(nv>0.9){
       fires.delete(k);
       const id=getBlock(x,y,z);
-      if(isFlam(id)){
+      if(isFlam(id)&&!(NET.on&&ntHosted())){   /* PART 58: ...and to burn things with: here it only flickers and stings */
         setBlock(x,y,z,B.AIR);
         if(getBlock(x,y-1,z)===B.GRASS)setBlock(x,y-1,z,B.DIRT); /* scorched earth */
         for(const [ox,oy,oz] of [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]])

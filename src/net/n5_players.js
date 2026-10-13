@@ -203,6 +203,8 @@ function ntPeerLive(p){return p.has&&p.dim===DIM&&!(p.fl&32)&&NET.acc-p.pt<3;}
    the lowest id does, and its results reach the others as ordinary block edits; if nobody is that close, everyone who has
    the chunk does (the old behaviour). So water flows once, not once per player, and what it washes loose drops once. */
 function ntSimHere(x,z){
+  if(NET.host)return true;                                 /* the server's game runs the water wherever it has the land */
+  if(ntHosted())return false;                              /* ...and where it does, a player's game runs none */
   let own=Math.hypot(P.x-x,P.z-z)<=48?NET.id:0;
   for(const p of NET.peers.values()){
     if(!ntPeerLive(p)||Math.hypot(p.tx-x,p.tz-z)>48)continue;

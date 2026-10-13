@@ -145,10 +145,13 @@ boot.run(async()=>{
   const ck=(ex+2)+','+ey+','+ez;
   bea.send({t:'be',k:ck,v:{t:'chest',inv:[null,{id:B.COBBLE,count:3}]}});await until(()=>V.blockEnts.has(ck),2000);
   {const be=V.blockEnts.get(ck);ok('Bea\'s chest appears in Dan\'s world (27 slots)',!!be&&be.inv.length===27&&be.inv[1].count===3);
-    const ref=be;bea.send({t:'be',k:ck,v:{t:'chest',inv:[{id:B.DIRT,count:1}]}});await until(()=>ref.inv[0]&&ref.inv[0].id===B.DIRT,2000);
+    const ref=be;bea.send({t:'be',k:ck,v:{t:'chest',inv:[{id:B.SAND,count:9}]}});await sleep(80);await pump(4);
+    ok('a chest the world already knows is only rewritten through its lid: a write from a player who has not opened it is put back (loot is rolled once)',ref.inv[0]===null&&ref.inv[1].count===3&&await until(()=>bea.by('be').some(m=>m.k===ck&&m.v.inv[1]&&m.v.inv[1].count===3),2000)&&W.be[ck].inv[1].count===3);
+    bea.send({t:'open',k:ck});await until(()=>!!bea.last('lock'),2000);
+    bea.send({t:'be',k:ck,v:{t:'chest',inv:[{id:B.DIRT,count:1}]}});await until(()=>ref.inv[0]&&ref.inv[0].id===B.DIRT,2000);bea.send({t:'close',k:ck});await sleep(40);
     ok('an update changes the same object in place (an open chest window keeps working)',V.blockEnts.get(ck)===ref&&ref.inv[0].id===B.DIRT&&ref.inv[1]===null);}
   bea.clear();
-  V.blockEnts.get(ck).inv[5]={id:B.GLASS,count:2};await pump(40);
+  V.ntSend({t:'open',k:ck});await sleep(60);V.blockEnts.get(ck).inv[5]={id:B.GLASS,count:2};await pump(40);V.ntSend({t:'close',k:ck});await sleep(40);
   ok('Dan changes a chest: Bea and the server get it',!!bea.by('be').find(m=>m.k===ck&&m.v.inv[5]&&m.v.inv[5].count===2)&&W.be[ck].inv[5].id===B.GLASS);
   {const fk=(ex+3)+','+ey+','+ez;const f=V.ensureBE(ex+3,ey,ez,'furnace');await pump(40);bea.clear();
     f.burn=5;f.cook=0.4;await pump(40);

@@ -17,25 +17,31 @@
    Elsewhere (other dimensions, a server without its own game) vehicles are each player's own, as before. */
 
 /* the kinds that are announced, and the vehicles */
-const NT_FX={arrow:1,blt:1,nade:1,tnt:1,fireb:1,lavab:1,rock:1,abomb:1,xp:1};
+const NT_FX={arrow:1,blt:1,nade:1,tnt:1,fireb:1,lavab:1,rock:1,abomb:1,xp:1,fall:1};   /* fall: a falling block, announced only by the server's game */
 const NT_VEH={car:1,skate:1,cart:1,boat:1,plane:1};
 
 /* ----- what flies ----- */
 /* one of this game's flying things as it is announced: [id, kind, x, y, z, vx, vy, vz, gravity, seconds it may last] */
 function ntFxState(e){
   const k=e.t,g=k==='arrow'?14:k==='blt'?(+e.grav||0):k==='fireb'?0:GRAV*(k==='xp'?0.6:k==='nade'?0.85:1);
-  const life=k==='blt'?1.8:k==='arrow'?8:(k==='tnt'||k==='nade')?Math.max(0.2,+e.fuse||2):k==='xp'?60:6;
+  const life=k==='blt'?1.8:k==='arrow'?8:(k==='tnt'||k==='nade')?Math.max(0.2,+e.fuse||2):k==='xp'?60:k==='fall'?12:6;
   const r=v=>+(+v||0).toFixed(2);
-  return [e.fxid,k,r(e.x),r(e.y),r(e.z),r(e.vx),r(e.vy),r(e.vz),r(g),r(life)];
+  const a=[e.fxid,k,r(e.x),r(e.y),r(e.z),r(e.vx),r(e.vy),r(e.vz),r(g),r(life)];
+  if(k==='fall')a.push(e.id|0);                            /* which block it is */
+  return a;
 }
 /* every frame: announce the flying things this game has just made, and the ones that are gone */
 function ntFxTick(){
   const out=[],gone=[],tell=NET.host?NET.hpl.length>0:NET.peers.size>0;
   for(const [id,e] of NET.fx)if(e.dead){NET.fx.delete(id);if(!e.pup)gone.push(id);}
   for(const e of entities){
-    if(e.dead||e.pup||e.fxid||NT_FX[e.t]!==1)continue;
+    if(e.dead||e.pup||e.fxid||NT_FX[e.t]!==1||(e.t==='fall'&&!NET.host))continue;   /* sand falls in every game on a server without its own: nothing to announce */
     e.fxid=NET.id.toString(36)+'f'+(++NET.fseq).toString(36);NET.fx.set(e.fxid,e);
     if(tell&&out.length<40)out.push(ntFxState(e));
+  }
+  if(NET.ignQ.length){                                     /* fire: cells for the server's game to light, or (from it) cells that are lit */
+    if(tell||!NET.host)ntSend({t:NET.host?'fire':'ign',c:NET.ignQ.slice(0,64)});
+    NET.ignQ.length=0;
   }
   if(!tell)return;
   if(out.length)ntSend({t:'fx',f:out});
@@ -52,6 +58,12 @@ function ntFxIn(m){
     if(k==='arrow')spawnArrow(a[2],a[3],a[4],a[5],a[6],a[7],'n',0);
     else if(k==='blt')spawnBullet(a[2],a[3],a[4],a[5],a[6],a[7],0,a[8]);
     else if(k==='tnt')primeTNT(a[2]-0.5,a[3],a[4]-0.5,a[9]);
+    else if(k==='fall'){
+      if(!DEFS[a[10]|0]||!(a[10]>0))continue;
+      const me=new THREE.Mesh(mkCubeGeo(a[10]|0,0.98),matOp);
+      scene.add(me);
+      entities.push({t:'nfx',x:a[2],y:a[3],z:a[4],vx:0,vy:a[6],vz:0,hw:0.45,h:0.95,onGround:false,mesh:me});
+    }
     else{
       const s=k==='xp'?0.16:k==='nade'?0.22:k==='abomb'?0.5:0.45;
       const me=new THREE.Mesh(new THREE.BoxGeometry(s,s,s),new THREE.MeshBasicMaterial({color:k==='xp'?0x9dff5a:k==='nade'?0x3c4a2a:k==='rock'?0x8a8a8a:k==='abomb'?0x2a2a2e:0xff7a1a}));
@@ -86,10 +98,49 @@ function ntFxPup(e,dt){
     }
   }
   if(k==='tnt'){e.fuse=e.fxl;if(e.flash)e.flash.visible=(e.fxl*5|0)%2===0;e.mesh.position.set(e.x,e.y+0.49,e.z);}
+  else if(k==='fall')e.mesh.position.set(e.x,e.y+0.49,e.z);
   else{
     e.mesh.position.set(e.x,e.y+(k==='xp'?0.1:0),e.z);
     if((k==='arrow'||k==='blt')&&!e.fxs&&typeof e.mesh.lookAt==='function')e.mesh.lookAt(e.x+e.vx,e.y+e.vy,e.z+e.vz);
   }
+}
+
+/* ----- the world the server runs: fire, sand, water, furnaces (6.15) ----- */
+/* The igniteAt hook. Where the server runs the world a player's game lights nothing itself: the cell goes to the server's
+   game (true: handled). On the server's game the fire is lit as usual and the players are told (false: carry on). */
+function ntIgnite(x,y,z){
+  if(NET.host){NET.ignQ.push([x,y,z]);return false;}
+  if(!ntHosted())return false;
+  if(NET.ignQ.length<64)NET.ignQ.push([x,y,z]);
+  return true;
+}
+/* {t:'fire'}: cells the server's game has set alight. Here they flicker for their second and sting whoever stands in
+   them (updateFires); what they burn down arrives as block edits. */
+function ntFireIn(m){
+  if(!Array.isArray(m.c)||!playing||DIM!=='over')return;
+  for(const c of m.c)if(Array.isArray(c)&&fires.size<600)fires.set((c[0]|0)+','+(c[1]|0)+','+(c[2]|0),0);
+}
+/* The furnaceTick hook: should this game leave this furnace alone? On a server that runs its own game a furnace is cooked
+   by one game only: the player's who has it open (their window is live), otherwise the server's. */
+function ntNoTick(be){
+  if(NET.host)return false;
+  return NET.hosted===true&&blockEnts.get(NET.lockK)!==be;
+}
+/* on the server's game, once a second: send every furnace whose items changed, and the ones that are burning every two
+   seconds, so a player opening one finds it where it really is */
+function ntHostBeScan(){
+  if(NET.acc-NET.fbT<1)return;
+  NET.fbT=NET.acc;
+  const beat=Math.floor(NET.acc/2);
+  for(const [k,b] of blockEnts){
+    if(!b||b.t!=='furnace')continue;
+    const s=ntBeSig(b)+(b.burn>0?'|'+beat:'');
+    if(NET.beS.get(k)===s)continue;
+    const first=!NET.beS.has(k);
+    NET.beS.set(k,s);
+    if(!first)ntSend({t:'be',k,v:b});
+  }
+  for(const k of NET.beS.keys())if(!blockEnts.has(k))NET.beS.delete(k);
 }
 
 /* ----- what you ride ----- */

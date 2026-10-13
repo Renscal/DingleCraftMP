@@ -58,18 +58,21 @@
 /*   spawns nothing natural where the server does)                       */
 /* And two for n9_ents.js: updateEntities -> ntEntPup (behind e.pup),    */
 /*   hitCar -> ntVehHit (behind e.pup)                                   */
+/* And four for the world the server runs (6.15, behind NET.on):         */
+/*   checkFalling -> ntHosted      igniteAt -> ntIgnite                  */
+/*   updateFires -> ntHosted       furnaceTick -> ntNoTick               */
 /*                                                                       */
 /* Protocol: JSON text frames over one WebSocket, {t:'<type>', ...}.     */
 /*   client -> server: hello pose rd edits open close be drop dropAt     */
 /*                     take chat cmd hit save spawn time gr sleep death  */
 /*                     mobs mgone mgive mhit boom ping fx fxgone vehs    */
-/*                     vgive vtake vfree vgone vhit                      */
+/*                     vgive vtake vfree vgone vhit ign                  */
 /*   the server's game -> server, also: hurt xp hsnap                    */
 /*   server -> client: welcome perm edits bes drops ready (the join),    */
 /*                     then join leave pose edits be lock drop undrop    */
 /*                     took chat sys hit time gr kick tp give mode perm  */
 /*                     mobs mgone mgive mhit boom pong mheir hurt xp     */
-/*                     fx fxgone vehs vgone vno vhit                     */
+/*                     fx fxgone vehs vgone vno vhit fire                */
 /* Messages are compressed by the browser and the server between them    */
 /* (permessage-deflate); nothing here knows about it.                    */
 /* NT_PROTO must equal PROTO in the server (tests/net/n_static.js).      */
@@ -80,6 +83,7 @@ const NT_PROTO=3,NT_PORT=40162;
      st      'off' | 'connecting' | 'on'          ws    the WebSocket
      id name this player on the server            server pvp motd   what the welcome said
      ap      true while a block edit from another player is being applied (so it is not sent back, and makes no drops)
+     apd     the same on the server's own game, where only the drops are held back: what the edit sets off does go out
      pend    the world while it is still arriving (between welcome and ready), else null
      why     the reason for the next disconnect (a kick message), shown on the title
      peers   id -> the other players (n5_players.js)
@@ -107,7 +111,7 @@ const NET={on:false,st:'off',ws:null,id:0,name:'',server:'',pvp:true,ap:false,pe
   op:false,prot:0,spawn:null,lockK:null,lockWant:null,saveT:-1,rdS:0,mobs:new Map(),mseq:0,mobT:0,ownT:0,dmgRef:null,guardT:-9,
   pw:'',retryN:0,retryH:0,pingT:0,pingN:0,pingAt:0,ms:0,rxAt:0,act:false,
   hosted:false,host:false,hp0:null,hpl:[],hrr:0,hsnT:0,hchT:0,
-  fx:new Map(),fseq:0,vehs:new Map(),vseq:0,vehT:0};   /* n9_ents.js: flying things and vehicles by id, their counters, the vehicle timer */
+  fx:new Map(),fseq:0,vehs:new Map(),vseq:0,vehT:0,ignQ:[],fbT:0,apd:false};   /* ignQ: cells to light (to the server's game) or lit (to the players); fbT: the host's furnace report timer */   /* n9_ents.js: flying things and vehicles by id, their counters, the vehicle timer */
 
 /* everything the suites reach, spread into window.__vox by src/boot/export_boot.js */
 
@@ -117,4 +121,4 @@ const NTEX={NET,NT_PROTO,NT_PORT,ntUrl,ntConnect,ntLeave,ntDown,ntMsg,ntSend,ntE
   ntRetry,ntRetryStop,ntPing,ntMobAdopt,ntPeerArmor,ntPeerRide,ntMobState,ntMobTwin,
   ntHosted,ntHostStart,ntHostTick,ntHostSnap,ntHostPlayers,ntHostAim,ntHostHurt,ntMobFull,
   ntFxTick,ntFxIn,ntFxGone,ntFxPup,ntVehTick,ntVehsIn,ntVehsGone,ntVehHit,ntVehPup,ntEntPup,ntHostVehSnap,
-  spawnArrow,spawnBoat,hitCar};   /* three core names the suites need to shoot, launch and hit with */
+  spawnArrow,spawnBoat,hitCar,ntIgnite,ntFireIn,ntNoTick,ntHostBeScan,checkFalling,igniteAt,updateFires,furnaceTick,tickFlow,getFires:()=>fires};   /* three core names the suites need to shoot, launch and hit with */

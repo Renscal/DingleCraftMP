@@ -433,6 +433,17 @@ hands over a vehicle it creates (`vgive`), claims the one its player mounts (`vt
 dismount. `hitCar` on a puppet forwards the hit (`vhit`) to whoever runs it. One hook serves both kinds: in
 `updateEntities`, `e.pup && e.t !== 'mob'` goes to `ntEntPup`. The dimension stash skips anything with `e.pup` or `e.vid`.
 
+**The world the server runs (6.15).** In a hosted Overworld the host is the only game that flows water (`ntSimHere`
+is true on the host, false on a hosted player's game), drops gravity blocks (`checkFalling` returns at once on a hosted
+player's game; the host's `fall` entity is announced as an `fx` of kind `fall` with its block id) and burns
+(`igniteAt` -> `ntIgnite`: a player's game sends the cell as `ign`, the host lights it and announces `fire`; players
+keep the flames for show and for the sting, and `updateFires` burns nothing there). The host applies a player's edit
+under `NET.apd`, not `NET.ap`: drops are still held back (the editing game makes them), but the writes that follow from
+the edit are queued and sent, and only the echo of the edited cell is removed. Furnaces: `furnaceTick` asks
+`ntNoTick`, so a player's game cooks only the furnace it has open and the host cooks the rest and reports the burning
+ones every 2 s (`ntHostBeScan`); the server refuses the host's write while a player holds the lock and sends it the
+holder's copy. Chests: a `be` that would rewrite an existing chest is refused unless the sender holds its lock.
+
 **Shared since 6.11:** villagers, Nuke Kegs and the bosses that are plain mobs (`boss`, `titan`, `infernis`,
 `valkyra`), through the same owner/puppet path. A boss is not handed over while its owner is within 40 blocks. The kinds a
 structure spawns (`NT_UNIQ`) carry their spawn spot, and two of a kind from one spot are one mob (`ntMobTwin`), so a

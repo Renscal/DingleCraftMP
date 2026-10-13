@@ -16,7 +16,9 @@
    9 (6.14) what flies is seen: a skeleton's arrow on the server's game, a player's own arrow, lit TNT; the copy flies, hurts
      nothing and goes when the real one does
    10 (6.14) vehicles are the server's: a placed car is handed over and everyone gets it, getting on makes it the rider's
-      (a second rider is refused), getting off gives it back, a hit on a parked one breaks it once, and they are saved */
+      (a second rider is refused), getting off gives it back, a hit on a parked one breaks it once, and they are saved
+   11 (6.15) the world the server runs: its game flows the water and drops the sand (a player's game does neither and is
+      shown the sand falling), lights and burns the fire a player's game asks for, and cooks a furnace nobody has open */
 'use strict';
 const boot=require('../lib/c_boot.js'),{ok}=boot;
 const path=require('path'),fs=require('fs'),{pathToFileURL}=require('url');
@@ -168,6 +170,40 @@ boot.run(async()=>{
       {const d0=Object.keys(W.drops).length;bea.clear();car.hurtT=0;V.hitCar(car,9999);
         ok('breaking a parked car: the hit goes to the server, which breaks it for everyone and drops the one item',await pumpUntil(()=>!veh(car.vid),4000)&&await until(()=>bea.by('vgone').some(m=>m.ids.includes(car.vid))&&Object.keys(W.drops).length===d0+1,4000));}
       V.spawnBoat(P.x+3,P.y+1,P.z+2,0);const boat=V.entities[V.entities.length-1];await pumpUntil(()=>!!boat.vid&&boat.pup,3000);await until(()=>W.vehicles.some(v=>v.t==='boat'),8000);}
+    /* ===== 11. the world the server runs ===== */
+    {const hx=Math.floor(P.x)+20,hy=Math.min(70,Math.floor(P.y)+26),hz=Math.floor(P.z);   /* the stone ledge from section 9, above the trees */
+      const E=(x,y,z,id)=>[Math.floor(x/16)+','+Math.floor(z/16),(x-Math.floor(x/16)*16)+','+y+','+(z-Math.floor(z/16)*16),id];
+      const from0=(id,pred)=>bea.by('edits').some(m=>m.e.some(e=>e[2]===id&&(!pred||pred(e))));
+      await bea.pose(hx-4+0.5,hy+1,hz+0.5);V.P.x=hx-6+0.5;V.P.y=hy+3;V.P.z=hz+0.5;V.P.vy=0;V.P.mode='c';V.P.flying=true;await pump(40);
+      ok('where the server runs the world, a player\'s game flows no water of its own',V.ntSimHere(hx,hz)===false&&V.ntHosted()===true);
+      /* water set on the ledge runs off its edge: only the server\'s game does that */
+      bea.clear();bea.send({t:'edits',e:[E(hx+2,hy+1,hz,B.WATER)]});
+      ok('water a player pours is flowed by the server\'s game: the cells it runs into arrive as edits',await pumpUntil(()=>from0(B.WATER),8000));
+      ok('...and this player\'s game has them too, without having flowed anything itself',await pumpUntil(()=>V.getBlock(hx+3,hy,hz)===B.WATER||V.getBlock(hx+3,hy+1,hz)===B.WATER,6000));
+      /* sand put in mid-air falls on the server, and is seen falling here */
+      {bea.clear();const sy0=hy+6;V.setBlock(hx-2,sy0,hz+6,B.SAND);const fell=()=>V.entities.filter(e=>e.t==='fall'&&!e.dead).length;
+        ok('sand this player sets in mid-air does not start falling in their own game',fell()===0&&V.getBlock(hx-2,sy0,hz+6)===B.SAND);
+        ok('the server\'s game drops it: the block is taken away, and the players are shown it falling',await pumpUntil(()=>V.getBlock(hx-2,sy0,hz+6)===B.AIR,5000)&&
+          await pumpUntil(()=>bea.by('fx').some(m=>m.from===0&&m.f.some(a=>a[1]==='fall'&&a[10]===B.SAND)),3000)&&[...NET.fx.values()].some(e=>e.fxk==='fall'&&e.pup));
+        ok('...and where it lands it is a block again for everyone (or, on a spot that is taken, a dropped item), and the falling copy is gone',
+          await pumpUntil(()=>bea.by('edits').some(m=>m.e.some(e=>e[2]===B.SAND&&+e[1].split(',')[1]<sy0))||bea.by('drop').some(d=>d.st.id===B.SAND),12000)&&fell()===0&&await pumpUntil(()=>![...NET.fx.values()].some(e=>e.fxk==='fall'&&!e.dead),6000));}
+      /* fire */
+      {const fx=hx-1,fy=hy+1,fz=hz+1;V.setBlock(fx,fy,fz,B.PLANK_O);await pump(10);bea.clear();
+        V.igniteAt(fx,fy,fz);
+        ok('a fire this player\'s game would light is not lit here: the server\'s game is asked',!V.getFires().has(fx+','+fy+','+fz));
+        ok('the server\'s game lights it and says so: the flames show here and for the others',await pumpUntil(()=>V.getFires().has(fx+','+fy+','+fz),4000)&&bea.by('fire').some(m=>m.c.some(c=>c[0]===fx&&c[1]===fy&&c[2]===fz)));
+        ok('...and burns the block down, for everyone, once',await pumpUntil(()=>V.getBlock(fx,fy,fz)===B.AIR,5000)&&await until(()=>bea.by('edits').some(m=>m.e.some(e=>e[2]===B.AIR)),2000));}
+      /* a furnace nobody has open */
+      {const ore=+Object.keys(V.SMELT)[0],fuel=+Object.keys(V.FUELS)[0],fk=(hx+1)+','+(hy+1)+','+(hz-1);
+        bea.clear();bea.send({t:'be',k:fk,v:{t:'furnace',in:{id:ore,count:2},fuel:{id:fuel,count:2},out:null,burn:0,burnMax:0,cook:0}});
+        await pumpUntil(()=>V.blockEnts.has(fk),3000);const fb=V.blockEnts.get(fk);
+        ok('a furnace nobody has open is not cooked by a player\'s game',!!fb&&V.ntNoTick(fb)===true);
+        step(120);await pump(4);
+        ok('...so here its timers stand still',fb.cook===0||fb.cook<=1);
+        ok('the server\'s game cooks it: it starts burning, and ten seconds later the first item is out, for everyone',await pumpUntil(()=>bea.by('be').some(m=>m.k===fk&&m.v.burn>0),6000)&&await pumpUntil(()=>bea.by('be').some(m=>m.k===fk&&m.v.out&&m.v.out.id===V.SMELT[ore]),16000)&&await pumpUntil(()=>!!fb.out&&fb.out.id===V.SMELT[ore],3000));
+        /* with the window open it is this player's to cook */
+        V.NET.lockK=fk;ok('with its window open, it is this player\'s game that cooks it',V.ntNoTick(fb)===false);V.NET.lockK=null;}
+      V.P.mode='s';V.P.flying=false;}
     await V.quitToTitle();}
 
   /* ===== 7. saved with the world ===== */

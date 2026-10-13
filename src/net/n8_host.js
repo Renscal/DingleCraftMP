@@ -14,6 +14,9 @@
    that player's own game (damagePlayer -> ntHostHurt -> {t:'hurt'}), and XP they pick up likewise ({t:'xp'}).
    An entity with no player within 72 blocks, or in a chunk the host has not built, is not updated at all: it waits.
    The host builds chunks (blocks only, no meshes) 5 chunks around every player and drops them when the players leave.
+   Since 6.15 the host also runs the Overworld's water (tickFlow), its fire (updateFires: a player's game sends it the
+   cells to light and is told which are alight) and its falling blocks (they are entities, so they came with the rest;
+   players see them fall through n9_ents.js), and every furnace nobody has open (furnaceTick, ntHostBeScan).
    Other dimensions are not hosted yet: there, the players' games still run the mobs between them as before. */
 
 /* how far around each player the host keeps chunks, in chunks */
@@ -184,7 +187,10 @@ function ntHostTick(dt){
       updateEntities(dt);
     }finally{P=NET.hp0;}
     for(const q of pl)if(q.xp>0){ntSend({t:'xp',to:q.nid,n:Math.round(q.xp)});q.xp=0;}
+    tickFlow(dt);                                          /* water, fire: only this game runs them in the Overworld (6.15) */
+    updateFires(dt);
   }
+  if(NET.peers.size){furnaceTick(dt);ntHostBeScan();}      /* furnaces cook wherever they stand, as long as anyone is playing */
   ntHostMobsOut();
   ntHostVehsOut();
   ntFxTick();

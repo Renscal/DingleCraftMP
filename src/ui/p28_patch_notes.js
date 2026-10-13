@@ -3,7 +3,16 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Everyone sees it fly',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'The server runs the water',lines:[
+    'THE SERVER RUNS THE WATER. And the fire. And the sand. In the Overworld of a server that plays along, those are now the server&#x27;s business and happen exactly once.',
+    'Water: poured by you, flowed by the server. No more two games arguing about where the puddle ends.',
+    'Sand and gravel: dig under it and the server drops it. Everyone watches it fall. Nobody gets a bonus sand item because three people were standing nearby.',
+    'Fire: your fireball asks, the server lights. Everybody sees the flames, everybody standing in them regrets it, and each tree burns down once.',
+    'Furnaces keep cooking when you walk away, when you log off, and when nobody is anywhere near them. One game cooks each furnace: yours while you have it open, the server&#x27;s the rest of the time.',
+    'Loot is rolled once. A chest the world already knows can only be changed by the player who has it open, so the next visitor&#x27;s game can no longer refill a dungeon chest with treasure of its own invention.',
+    'Other dimensions still do all this the old way.',
+  ]},
+ {v:'6.14',label:'Release 1.1',title:'Everyone sees it fly',lines:[
     'EVERYONE SEES IT FLY. Arrows, bullets, grenades, lit TNT, a boss&#x27;s rocks and fireballs, XP orbs: other players now see them in the air. Until now your friend&#x27;s arrow was a rumour and a skeleton&#x27;s was an injury with no warning.',
     'What you see is a copy. The real one still lives in the game that shot it, which alone decides what it hits. The copy looks the same and touches nothing.',
     'VEHICLES BELONG TO THE WORLD. On a server that runs its own game, a car, boat, plane, cart or skateboard you put down in the Overworld stays there for everyone, and is still there after a restart.',

@@ -21,6 +21,18 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — The server runs the water
+
+*Game version 6.15, released 2026-10-13.*
+
+- THE SERVER RUNS THE WATER. And the fire. And the sand. In the Overworld of a server that plays along, those are now the server's business and happen exactly once.
+- Water: poured by you, flowed by the server. No more two games arguing about where the puddle ends.
+- Sand and gravel: dig under it and the server drops it. Everyone watches it fall. Nobody gets a bonus sand item because three people were standing nearby.
+- Fire: your fireball asks, the server lights. Everybody sees the flames, everybody standing in them regrets it, and each tree burns down once.
+- Furnaces keep cooking when you walk away, when you log off, and when nobody is anywhere near them. One game cooks each furnace: yours while you have it open, the server's the rest of the time.
+- Loot is rolled once. A chest the world already knows can only be changed by the player who has it open, so the next visitor's game can no longer refill a dungeon chest with treasure of its own invention.
+- Other dimensions still do all this the old way.
+
 ## Release 1.1 — Everyone sees it fly
 
 *Game version 6.14, released 2026-10-13.*

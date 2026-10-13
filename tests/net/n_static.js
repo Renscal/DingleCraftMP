@@ -81,10 +81,15 @@ boot.run(async()=>{
     /* 6.14: another game's vehicle or flying thing (behind e.pup, which only PART 58 sets) */
     ['entities/p05e_spawning_tick.js',"if(e.pup&&e.t!=='mob'){ntEntPup(e,dt);continue;}"],
     ['features/p08_torches_weapons_vehicles_music.js','if(e.pup){ntVehHit(e,dmg);return;}'],
+    /* 6.15: the world the server runs */
+    ['entities/p05b_falling_arrows_tnt.js','if(NET.on&&ntHosted())return;'],
+    ['features/p11_thirdperson_lava_disasters.js','if(NET.on&&ntIgnite(x,y,z))return;'],
+    ['features/p11_thirdperson_lava_disasters.js','if(isFlam(id)&&!(NET.on&&ntHosted())){'],
+    ['core/p07b_furnace.js','if(NET.on&&ntNoTick(be))continue;'],
   ];
   for(const [f,h] of hooks)ok('hook in '+f+': '+h.slice(0,34)+'… once, and once in the build',count(readSrc(f),h)===1&&count(G,h)===1);
   {const outside=G.slice(0,i58)+G.slice(i57);const calls=outside.match(/\bnt[A-Z]\w*\(/g)||[];
-    ok('the core calls into PART 58 exactly 29 times: 23 behind NET.on or e.pup, 6 for the server\'s own game ('+calls.length+')',calls.length===29);
+    ok('the core calls into PART 58 exactly 33 times: 27 behind NET.on or e.pup, 6 for the server\'s own game ('+calls.length+')',calls.length===33);
     ok('single player never reaches the server-game hooks: each is behind NET.host or NET.on, which only PART 58 sets',!/NET\.(host|hosted|on)\s*=[^=]/.test(outside));
     ok('the two drop guards: networked drops stay out of the dimension stash, and drops do not merge online',
       count(readSrc('world/p37_dimensions.js'),"e.t==='drop'&&e.st&&!e.nid){out.push(")===1&&count(readSrc('entities/p05a_entities_drops.js'),'&&e.st.dur==null&&!NET.on){')===1);

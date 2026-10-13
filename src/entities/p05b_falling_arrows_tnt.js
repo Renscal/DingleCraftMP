@@ -1,5 +1,6 @@
 /* ----- falling blocks ----- */
 function checkFalling(x,y,z){
+  if(NET.on&&ntHosted())return;   /* PART 58: where the server runs the world, sand falls there, and here it is shown falling */
   const id=getBlock(x,y,z);
   if(!DEFS[id].gravity)return;
   const below=getBlock(x,y-1,z);

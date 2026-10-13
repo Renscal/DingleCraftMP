@@ -1,6 +1,6 @@
 # The DINGLECRAFT multiplayer server
 
-No dependencies and nothing to install: `dinglecraft-server.mjs` plus the `lib/` folder beside it. It needs [Node.js](https://nodejs.org) 20 or newer and a game build of 6.14 or newer.
+No dependencies and nothing to install: `dinglecraft-server.mjs` plus the `lib/` folder beside it. It needs [Node.js](https://nodejs.org) 20 or newer and a game build of 6.15 or newer.
 
 ## Start it
 
@@ -214,8 +214,13 @@ mob, villager, Nuke Keg and plain boss in the Overworld. The players' games only
   and saved by the server's game, and everyone sees it where it stands. Getting on makes it yours for the ride (your game
   drives it; a second player is told someone else is driving); getting off gives it back. Breaking one breaks it for
   everyone and drops one item.
-- Only the Overworld so far. In the Nether, the Aether and Puppet Purgatory the players' games still run the mobs, and
-  vehicles are each player's own.
+- **Water, fire and falling blocks** (6.15) are the server's in the Overworld. Its game flows the water and drops the sand
+  and gravel; a player's game does neither, and is shown the block falling. A fire a player's game would start is lit by
+  the server, which tells everyone where the flames are and burns the blocks down once.
+- **Furnaces** (6.15, every dimension) are cooked by one game: the player's who has the window open, otherwise the
+  server's. A furnace keeps smelting with nobody near it and nobody's game racing another's.
+- Only the Overworld so far. In the Nether, the Aether and Puppet Purgatory the players' games still run the mobs, the
+  water and the fire, and vehicles are each player's own.
 
 ## What is shared, and what is not
 
@@ -253,12 +258,13 @@ Not shared yet: each player's own game still plays these by itself, so two playe
 - paintings and records from the Creativity Update (the works are stored per player)
 - the stock market
 
-Things that follow from that: loot chests in a structure refill the first time each player visits it. Outside the
+Loot is rolled once (6.15): a chest the world already has can only be changed by the player who has it open, so a later
+visitor's game cannot refill a structure's chest with loot of its own. Outside the
 Overworld (and on a server with `simulate` off) mobs are not saved with the world: when the last player near one leaves, it is gone. When a player leaves or loses their connection, the
 mobs their game was running go to the nearest other player (they stand still for a moment first). A game that is paused
-(a menu open) hands its mobs to the nearest other player. Water is flowed by
-one game per area (the lowest-numbered player nearby); fire and falling blocks still run in every game, so now and then
-an item knocked loose by one of those can appear once per player nearby. Dropped items of the same kind do not merge into
+(a menu open) hands its mobs to the nearest other player. Where the server does not run the world (other dimensions, or
+`simulate` off), water is flowed by one game per area (the lowest-numbered player nearby) and fire and falling blocks
+run in every game, so now and then an item knocked loose by one of those can appear once per player nearby. Dropped items of the same kind do not merge into
 one pile on a server, and they only grow old while someone is online.
 
 Two players who both kept the default name can both join: the second is called `Dan_2`. If the first has gone silent (a

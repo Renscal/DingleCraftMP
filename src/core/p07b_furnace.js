@@ -2,6 +2,7 @@
 function furnaceTick(dt){
   for(const be of blockEnts.values()){
     if(be.t!=='furnace')continue;
+    if(NET.on&&ntNoTick(be))continue;   /* PART 58: one game cooks each furnace: the one that has it open, else the server's */
     const out=be.in?SMELT[be.in.id]:undefined;
     const can=out!==undefined&&(!be.out||(be.out.id===out&&be.out.count<stackMax(out)));
     if(be.burn>0)be.burn=Math.max(0,be.burn-dt);

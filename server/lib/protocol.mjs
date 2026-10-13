@@ -55,6 +55,13 @@
 //                                                 game; the server's game: the parked ones, to each player in range)
 //   vgone {ids}                                   vgone
 //   vhit {id, dmg}                                vhit      (to whoever runs that vehicle: its rider, else the server's game)
+//
+// The world the server runs (6.15, the Overworld of a server with its own game): its game flows the water and drops the
+// sand (their results are ordinary edits from player 0), cooks every furnace nobody has open (be from player 0), and burns:
+//   ign {c: [[x, y, z]...]}                       -> the server's game (a player's game asks for these cells to be lit)
+//   fire {c}  (the server's game)                 fire      (to players nearby: these are alight)
+// A chest that already has a record can only be rewritten by the player who has it open: a later visitor's game, which
+// filled the same chest with loot of its own, is sent the server's copy back. Loot is rolled once.
 import crypto from 'node:crypto';
 import { PROTO, DAY_LEN, MIN_GAME, LIMITS, RATE, RULES, CK_RE, LK_RE, BK_RE, DROP_ID_RE, DIMS, DIM_PFX, cleanRules, cmpVer } from './config.mjs';
 import { num, cleanName, cleanText, cleanStack, cleanMobs, playerKey } from './world.mjs';
@@ -83,14 +90,16 @@ function near(a, b, dist) {
 }
 
 /* what the server's own game may send, and what only it may send */
-const HOST_SENDS = new Set(['edits', 'drop', 'dropAt', 'take', 'mobs', 'mgone', 'boom', 'hurt', 'xp', 'hsnap', 'fx', 'fxgone', 'vehs', 'vgone']);
+const HOST_SENDS = new Set(['edits', 'drop', 'dropAt', 'take', 'mobs', 'mgone', 'boom', 'hurt', 'xp', 'hsnap', 'fx', 'fxgone', 'vehs', 'vgone', 'be', 'fire']);
 /* the kinds of thing that fly, and a vehicle's id */
-const FX_KINDS = new Set(['arrow', 'blt', 'nade', 'tnt', 'fireb', 'lavab', 'rock', 'abomb', 'xp']);
+const FX_KINDS = new Set(['arrow', 'blt', 'nade', 'tnt', 'fireb', 'lavab', 'rock', 'abomb', 'xp', 'fall']);
+/* a list of block cells [[x, y, z]...] from a game, at most 64, whole numbers only */
+const cleanCells = (list) => (Array.isArray(list) ? list.filter((c) => Array.isArray(c) && c.length === 3 && c.every(Number.isInteger)).slice(0, 64) : []);
 const VEH_ID_RE = /^[a-z0-9]{1,8}v[a-z0-9]{1,8}$/;
 /* one flying thing as a game announces it, or null */
 function cleanFx(a) {
-  if (!Array.isArray(a) || a.length !== 10 || typeof a[0] !== 'string' || !/^[a-z0-9]{1,8}f[a-z0-9]{1,8}$/.test(a[0]) || !FX_KINDS.has(a[1])) return null;
-  for (let i = 2; i < 10; i++) if (!Number.isFinite(a[i])) return null;
+  if (!Array.isArray(a) || (a.length !== 10 && !(a.length === 11 && a[1] === 'fall')) || typeof a[0] !== 'string' || !/^[a-z0-9]{1,8}f[a-z0-9]{1,8}$/.test(a[0]) || !FX_KINDS.has(a[1])) return null;
+  for (let i = 2; i < a.length; i++) if (!Number.isFinite(a[i])) return null;
   return a;
 }
 /* one vehicle as a game describes it: [id, kind, x, y, z, yaw, hp, speed?], or null */
@@ -379,6 +388,8 @@ export function handleMessage(S, net, c, m, size) {
       if (typeof m.v !== 'object' || typeof m.v.t !== 'string' || size > LIMITS.beBlob) return;
       const h = lockHolder(S, m.k);
       if (h && h !== c) return net.send(c, { t: 'be', k: m.k, v: Object.hasOwn(world.be, m.k) ? world.be[m.k] : null });   // someone else is in it: theirs stands
+      { const cur = Object.hasOwn(world.be, m.k) ? world.be[m.k] : null;   // a chest the world already knows: only through its lid
+        if (!c.host && h !== c && cur && cur.t === 'chest' && m.v.t === 'chest') return net.send(c, { t: 'be', k: m.k, v: cur }); }
       world.be[m.k] = m.v; S.dirty = true;
       net.broadcast({ t: 'be', k: m.k, v: m.v }, c);
       return;
@@ -539,6 +550,16 @@ export function handleMessage(S, net, c, m, size) {
     }
     case 'hsnap': {                    // (the server's game) every mob and vehicle it has, for the next save
       world.mobs = cleanMobs(m.mobs); world.vehicles = cleanMobs(m.vehs).filter((v) => RIDES.has(v.t)); S.dirty = true;
+      return;
+    }
+    case 'ign': {                      // a player's game asks the server's to light these cells
+      const h = hostOf(S), cells = cleanCells(m.c);
+      if (h && c.pose && c.pose.dim === 'over' && cells.length) net.send(h, { t: 'ign', c: cells, from: c.id });
+      return;
+    }
+    case 'fire': {                     // (the server's game) these cells are alight
+      const cells = cleanCells(m.c);
+      if (cells.length) net.broadcast({ t: 'fire', c: cells }, c, (p) => !!p.pose && p.pose.dim === 'over' && Math.hypot(p.pose.x - cells[0][0], p.pose.z - cells[0][2]) <= LIMITS.mobRange);
       return;
     }
     case 'fx': {                       // something started flying in this game: the players nearby get a copy to look at

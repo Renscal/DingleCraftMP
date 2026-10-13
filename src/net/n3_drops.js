@@ -25,7 +25,7 @@ function ntDropKnow(m){
 function ntDropSpawned(){
   const e=entities[entities.length-1];
   if(!e||e.t!=='drop'||e.dead||e.nid||NET.dropIn)return;
-  if(NET.ap){removeEnt(e);return;}                       /* a side effect of someone else's block edit (a popped torch): theirs to drop */
+  if(NET.ap||NET.apd){removeEnt(e);return;}                       /* a side effect of someone else's block edit (a popped torch): theirs to drop */
   const id=(Math.random().toString(36).slice(2,10)||'d')+'.'+(++NET.dseq).toString(36);
   e.nid=id;
   const d={id,dim:DIM,x:+e.x.toFixed(2),y:+e.y.toFixed(2),z:+e.z.toFixed(2),st:ntDropStack(e.st),e,mine:true,fix:false};
