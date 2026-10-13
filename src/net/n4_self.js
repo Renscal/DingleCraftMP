@@ -59,7 +59,9 @@ function ntFrame(dt){
   NET.act=false;                     /* a hand that changed nothing this frame marks nothing */
   ntPing();
   if(!NET.on)return;                 /* the line was dead: ntDown has taken the game back to the title */
-  if(NET.dim!==DIM){ntEntsDim();ntDropsScan();}   /* a dimension change: before anything else looks at the drops */
+  /* a dimension change: before anything else looks at the drops, and the server hears of it before any message meant for
+     the game that runs the new dimension */
+  if(NET.dim!==DIM){ntEntsDim();ntDropsScan();NET.poseS='';NET.poseT=NET.acc;ntSend(ntPoseNow());}
   if(P.hurtT<=0)NET.dmgRef=LASTDMG;
   ntLockTick();
   if(NET.saveT>=0&&NET.acc>=NET.saveT){NET.saveT=-1;ntSave(true);}

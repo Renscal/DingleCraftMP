@@ -21,7 +21,9 @@
       shown the sand falling), lights and burns the fire a player's game asks for, and cooks a furnace nobody has open
    12 (6.16) what the world remembers: a structure one game finds is found for everyone, a dead boss stays dead, a spawner
       that is gone is taken off the list by the server's game, the stock market is the server's and one for all, a player's
-      own things (the Snail, Malgorath, their Creativity works) travel with their save, and all of it is in data/ on disk */
+      own things (the Snail, Malgorath, their Creativity works) travel with their save, and all of it is in data/ on disk
+   13 (6.17) every dimension: the Nether gets a game of its own the moment a player goes there (the Aether's is not started
+      for nothing), "player 0" is the game of your own dimension, its mobs stay in it and are saved under entities/nether */
 'use strict';
 const boot=require('../lib/c_boot.js'),{ok}=boot;
 const path=require('path'),fs=require('fs'),{pathToFileURL}=require('url');
@@ -229,11 +231,28 @@ boot.run(async()=>{
       /* a player's own things travel with their save */
       {await V.saveToStorage('x',true);await sleep(120);const rec=W.players.dan;
         ok('the save a player sends carries what is theirs alone: the Snail and the old demon (and Malgorath and their Creativity works, once they have any)',!!rec&&('snl' in rec)&&rec.demon&&typeof rec.demon==='object'&&!('vseen' in rec)&&!('market' in rec));}}
+
+    /* ===== 13. every dimension ===== */
+    {ok('players are told which dimensions the server runs: the Overworld, the Nether and the Aether (not Puppet Purgatory)',JSON.stringify(NET.hdims)==='["over","nether","aether"]'&&NET.hosted===true&&!NET.hdims.includes('puppet'));
+      ok('only the Overworld\'s game is running while everyone is there',!!S.host('over')&&S.host('nether')===null&&S.host('aether')===null);
+      bea.clear();await bea.pose(8.5,40,8.5,{dim:'nether'});
+      ok('the first player into the Nether wakes a game for it (and none for the Aether)',!!S.host('nether')&&await until(()=>S.host('nether')&&S.host('nether').ready,25000)&&S.host('aether')===null);
+      await sleep(900);bea.send({t:'mgive',to:0,m:['z.n1','imp',10.5,60,8.5,0,8,0,'',10.5,8.5,'0,0,0']});
+      ok('there, "player 0" is the Nether\'s game: a mob handed over is run by it and comes back to her',await until(()=>bea.mobs().has('z.n1'),6000)&&bea.mobs().get('z.n1')[1]==='imp');
+      await pump(10);
+      ok('...and stays in the Nether: a player in the Overworld is sent nothing of it',!V.entities.some(e=>e.rid==='z.n1')&&!NET.mobs.has('z.n1'));
+      {const known=new Set(bea.mobs().keys());W.gr.mobSpawn=true;S.host('nether').post({t:'gr',gr:{...W.gr}});
+        const got=await until(()=>[...bea.mobs().keys()].some(k=>/^0n\./.test(k)&&!known.has(k)),60000);
+        const fresh=[...bea.mobs().values()].filter(a=>/^0n\./.test(a[0]));
+        ok('the Nether\'s game spawns the Nether\'s own mobs around her'+(got?'':' [none in 60 s]'),got&&fresh.every(a=>a[1]==='imp'||a[1]==='hellhog'));
+        W.gr.mobSpawn=false;S.host('nether').post({t:'gr',gr:{...W.gr}});}
+      ok('each dimension\'s game reports its own mobs for saving, and they are kept apart',await until(()=>W.mobs.some(m=>m.d==='nether'&&m.t==='imp'),8000)&&W.mobs.some(m=>!m.d&&m.t==='alien')&&W.mobs.filter(m=>m.d==='nether').every(m=>m.t==='imp'||m.t==='hellhog'));
+      await bea.pose(sx,sy,sz);await sleep(200);}
     await V.quitToTitle();}
 
   /* ===== 7. saved with the world ===== */
   await sleep(5200);
-  const nSaved=W.mobs.length;
+  const nSaved=W.mobs.filter(m=>!m.d).length;
   await S.close();
   {const dir=path.join(OUT,'world','entities','over'),files=fs.existsSync(dir)?fs.readdirSync(dir):[];
     const all=files.flatMap(f=>JSON.parse(fs.readFileSync(path.join(dir,f),'utf8')).mobs||[]);
@@ -242,9 +261,11 @@ boot.run(async()=>{
     {const dj=f=>JSON.parse(fs.readFileSync(path.join(OUT,'world','data',f),'utf8')),lvl=JSON.parse(fs.readFileSync(path.join(OUT,'world','level.json'),'utf8'));
       ok('the world\'s own records are in data/, a file each, with a line saying what they are: structures, bosses, the market',dj('structures.json').vseen.includes('9,-9')&&typeof dj('structures.json').about==='string'&&dj('bosses.json').infkill.includes('3,4')&&
         Object.keys(dj('market.json').market.p).length>0&&!('vseen' in lvl)&&!('market' in lvl)&&!('infkill' in lvl)&&typeof lvl.seed==='number');}
+{const nd=path.join(OUT,'world','entities','nether'),nf=fs.existsSync(nd)?fs.readdirSync(nd):[];
+      ok('the Nether\'s mobs are saved under entities/nether, apart from the Overworld\'s',nf.length>0&&nf.flatMap(f=>JSON.parse(fs.readFileSync(path.join(nd,f),'utf8')).mobs).some(m=>m.type==='imp')&&!all.some(m=>m.type==='imp'));}
     {const vs=files.flatMap(f=>JSON.parse(fs.readFileSync(path.join(dir,f),'utf8')).vehicles||[]);
       ok('...and the vehicles beside them',vs.some(v=>v.type==='boat'&&typeof v.health==='number')&&S2.world().vehicles.some(v=>v.t==='boat'));}
-    ok('a restarted server reads them back',S2.world().mobs.length===nSaved&&await until(()=>S2.host()&&S2.host().ready,20000));
+    ok('a restarted server reads them back',S2.world().mobs.filter(m=>!m.d).length===nSaved&&S2.world().mobs.some(m=>m.d==='nether')&&await until(()=>S2.host()&&S2.host().ready,20000));
     const b2=raw(S2.port,'Bea');await b2.open;await until(()=>!!b2.last('ready'));await b2.pose(sx,sy,sz);
     ok('a restarted server still knows them, and a joining player is given them with the world',S2.world().vseen.includes('9,-9')&&S2.world().infkill.includes('3,4')&&b2.last('welcome').world.vseen.includes('9,-9')&&!!b2.last('welcome').world.market);
     ok('...and its game puts them back in the world: the villager is there again, by name, for the next player',await until(()=>[...b2.mobs().values()].some(a=>a[1]==='alien'&&a[8]==='Zorp'),8000));

@@ -2,7 +2,9 @@
 // does, and it does it with the game's own code: the script inside the game html is loaded headless in a worker thread
 // (host_worker.cjs, with the hollow browser of headless.cjs) and told to be "the host" (src/net/n8_host.js).
 // To the protocol the host is a player with id 0 who is never listed, never drawn and never counted:
-//   S.host = { c, post, stop, ready }    c is that player (lib/protocol.mjs handles what it sends, with its own rules)
+//   S.hosts.get(dimension) = { c, post, stop, ready }    c is that player (lib/protocol.mjs handles what it sends)
+// One game holds one dimension, so there is one host per dimension (6.17): the Overworld's from the start, the others
+// from the moment a player first goes there.
 // What it costs: one thread, and the memory of a game with no pictures (about 150 MB plus the chunks around the players).
 // "simulate": false in server.json turns it off; so does having no game html. Then the players' games run the mobs
 // between them, as they did before 6.13.
@@ -33,25 +35,27 @@ export function gameScript(gameFile, cacheDir) {
   return out;
 }
 
-/* Start the host for server S. handle(c, message, size) is the protocol's handler; log prints a line.
+/* Start the host of one dimension for server S. handle(c, message, size) is the protocol's handler; log prints a line.
    Returns the host object at once; it takes a second or two to be ready, and what is sent to it meanwhile waits. */
-export function startHost(S, script, handle, log) {
+export function startHost(S, script, handle, log, dim = 'over') {
   const { edits, be, players, drops, mobs, vehicles, ...level } = S.world;
-  const c = { id: 0, name: '#server', host: true, ready: true, closed: false, addr: 'host', pose: null, sent: null, rate: {},
+  const c = { id: 0, name: '#server', host: true, hdim: dim, ready: true, closed: false, addr: 'host', pose: null, sent: null, rate: {},
     seen: Date.now(), poseT: 0, chatT: 0, chatN: 0, hitT: 0, lastHit: null, sleepT: 0, sleepAt: null, gm: null, ms: 0, rd: 0 };
   const waiting = [];
   const H = { c, ready: false, stopped: false, post(m) { if (H.stopped) return; if (H.ready) worker.postMessage(m); else waiting.push(m); },
     stop() { H.stopped = true; return worker.terminate().catch(() => {}); } };
-  const worker = new Worker(path.join(HERE, 'host_worker.cjs'), { workerData: { game: script, world: { ...level, edits, be }, mobs: mobs || [], vehs: vehicles || [] } });
+  c.h = H;
+  const here = (list) => (Array.isArray(list) ? list.filter((x) => (x.d || 'over') === dim) : []);
+  const worker = new Worker(path.join(HERE, 'host_worker.cjs'), { workerData: { game: script, world: { ...level, edits, be }, mobs: here(mobs), vehs: here(vehicles), dim, primary: dim === 'over' } });
   const gone = (why) => {
     if (H.stopped) return;
     H.stopped = true; H.ready = false; c.closed = true;
-    if (S.host === H) S.host = null;
-    log('THE SERVER GAME STOPPED (' + why + '). Mobs in the Overworld stand still until the server is restarted.');
+    if (S.hosts.get(dim) === H) S.hosts.delete(dim);
+    log('THE SERVER GAME FOR ' + dim.toUpperCase() + ' STOPPED (' + why + '). It is started again when a player next enters that dimension.');
   };
   worker.on('message', (m) => {
     if (typeof m === 'string') { let o; try { o = JSON.parse(m); } catch { return; } try { handle(c, o, m.length); } catch (e) { log('error handling a message from the server game: ' + e.message); } return; }
-    if (m && m.ready) { H.ready = true; log(`the server game is running (v${m.version}; ${m.mobs} saved mob${m.mobs === 1 ? '' : 's'} and vehicle${m.mobs === 1 ? '' : 's'} put back)`); for (const w of waiting.splice(0)) worker.postMessage(w); }
+    if (m && m.ready) { H.ready = true; log(`the server game for ${dim} is running (v${m.version}; ${m.mobs} saved mob${m.mobs === 1 ? '' : 's'} and vehicle${m.mobs === 1 ? '' : 's'} put back)`); for (const w of waiting.splice(0)) worker.postMessage(w); }
     else if (m && m.log) log(m.log);
     else if (m && m.error) gone(m.error);
   });

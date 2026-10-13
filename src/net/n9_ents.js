@@ -117,7 +117,7 @@ function ntIgnite(x,y,z){
 /* {t:'fire'}: cells the server's game has set alight. Here they flicker for their second and sting whoever stands in
    them (updateFires); what they burn down arrives as block edits. */
 function ntFireIn(m){
-  if(!Array.isArray(m.c)||!playing||DIM!=='over')return;
+  if(!Array.isArray(m.c)||!playing||!ntHosted())return;
   for(const c of m.c)if(Array.isArray(c)&&fires.size<600)fires.set((c[0]|0)+','+(c[1]|0)+','+(c[2]|0),0);
 }
 /* The furnaceTick hook: should this game leave this furnace alone? On a server that runs its own game a furnace is cooked
@@ -273,7 +273,7 @@ function ntHostVehsOut(){
   let out=[];
   for(const e of entities){
     if(e.dead||NT_VEH[e.t]!==1)continue;
-    if(!e.vid){e.vid='0v'+(++NET.vseq).toString(36);NET.vehs.set(e.vid,e);}
+    if(!e.vid){e.vid='0'+(DIM==='over'?'':DIM[0])+'v'+(++NET.vseq).toString(36);NET.vehs.set(e.vid,e);}
     if(e.pup)continue;
     let near=false;
     for(const q of NET.hpl)if(Math.hypot(q.x-e.x,q.z-e.z)<=128){near=true;break;}

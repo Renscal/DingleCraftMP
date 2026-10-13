@@ -116,7 +116,7 @@ const NET={on:false,st:'off',ws:null,id:0,name:'',server:'',pvp:true,ap:false,pe
   pw:'',retryN:0,retryH:0,pingT:0,pingN:0,pingAt:0,ms:0,rxAt:0,act:false,
   hosted:false,host:false,hp0:null,hpl:[],hrr:0,hsnT:0,hchT:0,
   fx:new Map(),fseq:0,vehs:new Map(),vseq:0,vehT:0,ignQ:[],fbT:0,apd:false,
-  wd:{},wdT:0,mktT:0};   /* na_data.js: each world list as last agreed with the server, the timers for them and for the market */   /* ignQ: cells to light (to the server's game) or lit (to the players); fbT: the host's furnace report timer */   /* n9_ents.js: flying things and vehicles by id, their counters, the vehicle timer */
+  wd:{},wdT:0,mktT:0,hdims:[],hprim:false};   /* hdims: the dimensions the server runs a game for; hprim: this host also cooks the furnaces and runs the market */   /* na_data.js: each world list as last agreed with the server, the timers for them and for the market */   /* ignQ: cells to light (to the server's game) or lit (to the players); fbT: the host's furnace report timer */   /* n9_ents.js: flying things and vehicles by id, their counters, the vehicle timer */
 
 /* everything the suites reach, spread into window.__vox by src/boot/export_boot.js */
 

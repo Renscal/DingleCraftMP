@@ -1,6 +1,6 @@
 # The DINGLECRAFT multiplayer server
 
-No dependencies and nothing to install: `dinglecraft-server.mjs` plus the `lib/` folder beside it. It needs [Node.js](https://nodejs.org) 20 or newer and a game build of 6.16 or newer.
+No dependencies and nothing to install: `dinglecraft-server.mjs` plus the `lib/` folder beside it. It needs [Node.js](https://nodejs.org) 20 or newer and a game build of 6.17 or newer.
 
 ## Start it
 
@@ -214,7 +214,8 @@ mob, villager, Nuke Keg and plain boss in the Overworld. The players' games only
   the spot. A village or a boss room gets one set of inhabitants however many players visit it.
 - Mobs are saved with the world: `entities/` lists each one with its type, place and health, and a restarted server puts
   them back. Villagers and bosses stay where they are when everybody leaves; ordinary mobs still despawn.
-- It costs about 110 MB of memory with nobody on, and a few MB more for the land around each player.
+- It costs about 110 MB of memory with nobody on, and a few MB more for the land around each player. Each further
+  dimension a player has visited since the server started costs about the same again.
 - `"simulate": false` in `server.json` turns it off (so does having no game file). Then the players' games run the
   mobs between them, as before 6.13.
 - **Vehicles** (6.14) are the server's too: a car, boat, plane, cart or skateboard placed in the Overworld is kept, moved
@@ -226,8 +227,9 @@ mob, villager, Nuke Keg and plain boss in the Overworld. The players' games only
   the server, which tells everyone where the flames are and burns the blocks down once.
 - **Furnaces** (6.15, every dimension) are cooked by one game: the player's who has the window open, otherwise the
   server's. A furnace keeps smelting with nobody near it and nobody's game racing another's.
-- Only the Overworld so far. In the Nether, the Aether and Puppet Purgatory the players' games still run the mobs, the
-  water and the fire, and vehicles are each player's own.
+- **Every dimension** (6.17): the Nether and the Aether each get a game of their own, started the moment the first
+  player goes there (and restarted the same way if one ever stops). Everything above applies in them. Each costs about
+  as much memory as the Overworld's. Puppet Purgatory stays each player's own: it is built around one player's progress.
 
 ## What is shared, and what is not
 
@@ -262,7 +264,7 @@ Not shared yet: each player's own game still plays these by itself, so two playe
 
 - dragons (tamed and ridden by one player), snakes, blocklings and the Puppet Purgatory and Malgorath casts.
   What a mob drops when you kill it is shared like any other dropped item; the XP goes to the player whose game ran it
-- vehicles outside the Overworld, or on a server with `simulate` off: you see one under the player riding it; an empty
+- vehicles in Puppet Purgatory, or on a server with `simulate` off: you see one under the player riding it; an empty
   one is only in the game that placed it
 - the dungeon boss and the Stone Titan have no record of their own: the dungeon boss is covered by its dungeon being
   marked as found, the Titan is summoned by hand
@@ -271,7 +273,7 @@ Not shared yet: each player's own game still plays these by itself, so two playe
 
 Loot is rolled once (6.15): a chest the world already has can only be changed by the player who has it open, so a later
 visitor's game cannot refill a structure's chest with loot of its own. Outside the
-Overworld (and on a server with `simulate` off) mobs are not saved with the world: when the last player near one leaves, it is gone. When a player leaves or loses their connection, the
+three hosted dimensions (and on a server with `simulate` off) mobs are not saved with the world: when the last player near one leaves, it is gone. When a player leaves or loses their connection, the
 mobs their game was running go to the nearest other player (they stand still for a moment first). A game that is paused
 (a menu open) hands its mobs to the nearest other player. Where the server does not run the world (other dimensions, or
 `simulate` off), water is flowed by one game per area (the lowest-numbered player nearby) and fire and falling blocks

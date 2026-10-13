@@ -57,7 +57,8 @@ export function createServer(opts = {}) {
     dirty: true,                        // the world differs from the file (true at start: the settings were just applied)
     clients: new Map(),                 // id -> a player who has said hello
     locks: new Map(),                   // block key -> the id of the player using that chest or furnace
-    host: null,                         // the server's own game (lib/host.mjs), once it has been started
+    hosts: new Map(),                   // dimension -> the server's own game for it (lib/host.mjs), once it has been started
+    hdims: [],                          // the dimensions the server can run a game for ([]: it runs none)
     vown: new Map(),                    // vehicle id -> the id of the player riding it (the rest are the server's game's)
     nextId: 1,
     editCount: 0,
@@ -87,7 +88,7 @@ export function createServer(opts = {}) {
     if (c.sock.writableLength > LIMITS.backlog) return drop(c, 'too far behind');
     c.sock.write(buf);
   }
-  const send = (c, m) => (c.host ? (S.host && S.host.c === c ? S.host.post(m) : undefined) : sendRaw(c, textFrame(JSON.stringify(m), c.deflate)));
+  const send = (c, m) => (c.host ? c.h.post(m) : sendRaw(c, textFrame(JSON.stringify(m), c.deflate)));
   /* to every player who has finished joining, except one (usually the sender); onlyIf(client) narrows it further */
   function broadcast(m, except, onlyIf) {
     const bufs = [null, null];                          // encoded once per kind of connection (plain, compressed), and only if someone gets it
@@ -96,7 +97,7 @@ export function createServer(opts = {}) {
       const i = c.deflate ? 1 : 0;
       sendRaw(c, bufs[i] || (bufs[i] = textFrame(json || (json = JSON.stringify(m)), c.deflate)));
     }
-    if (S.host && except !== S.host.c && HOST_WANTS.has(m.t)) S.host.post(m);
+    if (HOST_WANTS.has(m.t)) for (const h of S.hosts.values()) if (except !== h.c) h.post(m);
   }
   /* end a connection. tell = send the reason first (a refusal or a kick), so the player's game can show it. */
   function drop(c, why, tell) {
@@ -138,7 +139,19 @@ export function createServer(opts = {}) {
   if (o.simulate !== false && (o.hostGame || game)) {
     try {
       const script = o.hostGame || gameScript(game.file, path.join(dataDir, '.cache'));
-      if (script) S.host = startHost(S, script, (c, m, size) => handleMessage(S, net, c, m, size), log);
+      if (script) {
+        /* one game per dimension. The Overworld's starts now (it also cooks the furnaces and runs the market); the
+           Nether's and the Aether's start when the first player goes there. Puppet Purgatory stays each player's own. */
+        S.hdims = ['over', 'nether', 'aether'];
+        S.startHost = (dim) => {
+          if (!S.hdims.includes(dim) || S.hosts.has(dim)) return;
+          const h = startHost(S, script, (c, m, size) => handleMessage(S, net, c, m, size), log, dim);
+          S.hosts.set(dim, h);
+          /* a game started late missed the players who are already here: tell it who they are and where (it waits until it is ready) */
+          for (const p of S.clients.values()) if (p.ready) { h.post({ t: 'join', id: p.id, name: p.name }); if (p.pose) h.post({ t: 'pose', id: p.id, ...p.pose }); }
+        };
+        S.startHost('over');
+      }
       else log('the game html holds no script the server can run: the players\' games will run the mobs between them');
     } catch (e) { log('the server game could not be started (' + e.message + '): the players\' games will run the mobs between them'); }
   }
@@ -179,7 +192,7 @@ export function createServer(opts = {}) {
 
   /* ---- what the caller gets ---- */
   const api = {
-    opts: o, secure: !!tls, host: () => S.host, riders: () => S.vown, world: () => world, rules: () => cleanRules(world.gr), status: () => statusOf(S), gameFile: S.gameFile, worldDir, saveWorld, exportWorld: S.exportWorld, log,
+    opts: o, secure: !!tls, host: (dim) => S.hosts.get(dim || 'over') || null, riders: () => S.vown, world: () => world, rules: () => cleanRules(world.gr), status: () => statusOf(S), gameFile: S.gameFile, worldDir, saveWorld, exportWorld: S.exportWorld, log,
     get port() { const a = srv.address(); return a && typeof a === 'object' ? a.port : o.port; },
     players: () => [...S.clients.values()],
     say(txt) { broadcast({ t: 'sys', txt: '[Server] ' + txt }); log('[Server] ' + txt); },
@@ -196,9 +209,9 @@ export function createServer(opts = {}) {
     close() {                           // tell everyone, save, stop
       clearInterval(tick); clearInterval(autosave);
       for (const c of [...pending]) drop(c, 'The server is shutting down.', true);
-      const h = S.host; S.host = null;
+      const hs = [...S.hosts.values()]; S.hosts.clear(); S.startHost = null;
       saveWorld('shutdown');
-      return Promise.all([h ? h.stop() : null, new Promise((resolve) => { srv.close(() => resolve()); srv.closeAllConnections?.(); })]).then(() => {});
+      return Promise.all([...hs.map((h) => h.stop()), new Promise((resolve) => { srv.close(() => resolve()); srv.closeAllConnections?.(); })]).then(() => {});
     },
   };
   return api;

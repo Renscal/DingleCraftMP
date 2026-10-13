@@ -17,7 +17,9 @@
    Since 6.15 the host also runs the Overworld's water (tickFlow), its fire (updateFires: a player's game sends it the
    cells to light and is told which are alight) and its falling blocks (they are entities, so they came with the rest;
    players see them fall through n9_ents.js), and every furnace nobody has open (furnaceTick, ntHostBeScan).
-   Other dimensions are not hosted yet: there, the players' games still run the mobs between them as before. */
+   One game holds one dimension, so since 6.17 the server runs one host per dimension: the Overworld's from the start (it
+   alone cooks the furnaces and runs the market: NET.hprim), the Nether's and the Aether's from the moment a player first
+   goes there. Each is "player 0" to the players in its dimension. Puppet Purgatory stays each player's own. */
 
 /* how far around each player the host keeps chunks, in chunks */
 const NT_HOSTR=5;
@@ -26,26 +28,26 @@ const NT_HOST={id:0};
 
 /* ----- on a player's game ----- */
 /* is the server running the mobs where this player is? */
-function ntHosted(){return NET.hosted===true&&!NET.host&&DIM==='over';}
+function ntHosted(){return !NET.host&&NET.hdims.indexOf(DIM)>=0;}
 
 /* ----- on the server's game ----- */
 /* Become the host: load the server's world like a save (blocks and chests; no player, no entities), then put back the
    mobs the server had saved. w is the world as the server keeps it, mobs the list ntHostSnap made last time. */
-function ntHostStart(w,mobs,vehs){
+function ntHostStart(w,mobs,vehs,dim,primary){
   const sp=w.spawn&&typeof w.spawn.x==='number'?[w.spawn.x,w.spawn.y,w.spawn.z]:[0.5,WH-8,0.5];
-  const d={...w,f:w.f||SAVE_FORMAT,edits:w.edits||{},be:w.be||{},mode:'s',dim:'over',ents:[],player:{x:sp[0],y:sp[1],z:sp[2],spawn:sp}};
+  const d={...w,f:w.f||SAVE_FORMAT,edits:w.edits||{},be:w.be||{},mode:'s',dim:dim||'over',ents:[],player:{x:sp[0],y:sp[1],z:sp[2],spawn:sp}};
   delete d.mp;delete d.stash;delete d.players;delete d.drops;delete d.mobs;
   applySave(d);
   NET.on=true;NET.host=true;NET.hosted=false;NET.st='on';NET.id=0;NET.name='';NET.acc=0;NET.q.length=0;NET.pend=null;
   NET.mobs.clear();NET.mseq=0;NET.mobT=0;NET.drops.clear();NET.dim=DIM;NET.dseq=0;NET.dropIn=false;NET.scanT=0;
   NET.beS.clear();NET.grS=JSON.stringify(GR);NET.tPrev=timeOfDay;
-  NET.hp0=P;NET.hpl=[];NET.hrr=0;NET.hsnT=0;NET.hchT=0;
+  NET.hp0=P;NET.hpl=[];NET.hrr=0;NET.hsnT=0;NET.hchT=0;NET.hprim=primary!==false;NET.hdims=[];
   NET.fx.clear();NET.fseq=0;NET.vehs.clear();NET.vseq=0;NET.vehT=0;
   WORLD.name='';enterGame();
   ntWdReset();NET.mktT=0;
   let n=0;
   for(const o of (Array.isArray(mobs)?mobs:[]))if(ntHostRestore(o))n++;
-  for(const o of (Array.isArray(vehs)?vehs:[]))if(o&&ntVehMake(['0v'+(++NET.vseq).toString(36),o.t,o.x,o.y,o.z,o.yaw,o.hp]))n++;
+  for(const o of (Array.isArray(vehs)?vehs:[]))if(o&&ntVehMake(['0'+(DIM==='over'?'':DIM[0])+'v'+(++NET.vseq).toString(36),o.t,o.x,o.y,o.z,o.yaw,o.hp]))n++;
   return n;
 }
 /* one saved mob back into the world; false if this game does not know its kind */
@@ -81,7 +83,7 @@ function ntHostSnap(){
 function ntHostPlayers(){
   const out=[];
   for(const p of NET.peers.values()){
-    if(!p.has||p.dim!=='over')continue;
+    if(!p.has||p.dim!==DIM)continue;
     let q=p.px;
     if(!q){q=p.px=newPlayer([p.tx,p.ty,p.tz]);q.nid=p.id;q.hitAt=-9;}
     q.x=p.tx;q.y=p.ty;q.z=p.tz;q.yaw=p.tyaw;q.pitch=p.pitch;q.vx=q.vy=q.vz=0;q.onGround=true;
@@ -161,7 +163,7 @@ function ntHostMobsOut(){
     if(e.dead||!ntMobShared(e))continue;
     if(!e.rid){
       if(e.ox==null){e.ox=+e.x.toFixed(1);e.oz=+e.z.toFixed(1);}
-      e.rid='0.'+(++NET.mseq).toString(36);NET.mobs.set(e.rid,e);
+      e.rid='0'+(DIM==='over'?'':DIM[0])+'.'+(++NET.mseq).toString(36);NET.mobs.set(e.rid,e);
     }
     let near=false;
     for(const q of NET.hpl)if(Math.hypot(q.x-e.x,q.z-e.z)<=128){near=true;break;}
@@ -192,9 +194,9 @@ function ntHostTick(dt){
     updateFires(dt);
     try{P=pl[NET.hrr%pl.length];tickSpawners(dt*pl.length);}finally{P=NET.hp0;}   /* spawners, for one player in turn (6.16) */
   }
-  if(NET.peers.size){updateStocks(dt);ntHostMkt();}        /* one market for everyone */
+  if(NET.peers.size&&NET.hprim){updateStocks(dt);ntHostMkt();}   /* one market for everyone */
   ntWdTick();
-  if(NET.peers.size){furnaceTick(dt);ntHostBeScan();}      /* furnaces cook wherever they stand, as long as anyone is playing */
+  if(NET.peers.size&&NET.hprim){furnaceTick(dt);ntHostBeScan();}   /* furnaces cook wherever they stand, as long as anyone is playing (one game does: the Overworld's) */
   ntHostMobsOut();
   ntHostVehsOut();
   ntFxTick();

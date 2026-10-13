@@ -21,6 +21,16 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — Every dimension
+
+*Game version 6.17, released 2026-10-13.*
+
+- EVERY DIMENSION. The server now runs the Nether and the Aether the way it runs the Overworld: its own mobs, water, fire, falling blocks, spawners and vehicles, saved with the world.
+- Each dimension gets its own copy of the game on the server, woken the moment the first of you steps through a portal. Imps no longer depend on whose computer is nearest.
+- Mobs stay in their dimension, and so do their save files: server owners will find entities/nether next to entities/over.
+- Puppet Purgatory is still yours alone. It was built around one player's suffering and it would be rude to share.
+- Server owners: each dimension somebody has visited since the server started costs about another 110 MB.
+
 ## Release 1.1 — The world remembers
 
 *Game version 6.16, released 2026-10-13.*

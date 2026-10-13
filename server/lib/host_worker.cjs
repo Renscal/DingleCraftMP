@@ -1,7 +1,8 @@
 /* host_worker.cjs: the server's own game, in a thread of its own (started by lib/host.mjs).
    It loads the stand-in browser (headless.cjs), then the game's script, and tells the game to become the host
    (ntHostStart, src/net/n8_host.js): from then on the game runs the Overworld's mobs for every player.
-     the thread's data     { game: the script file, world: the server's world, mobs and vehs: the saved mobs and vehicles }
+     the thread's data     { game: the script file, world: the server's world, mobs and vehs: the saved mobs and vehicles of
+                           this dimension, dim: which one, primary: it also cooks the furnaces and runs the market }
      from the server       a protocol message (an object), handed to the game's ntMsg exactly like one from a socket
      to the server         a protocol message (JSON text, as the game's socket would send it), or {ready}, {log}, {error}
    The game is ticked 20 times a second, in steps of at most 50 ms (the game's own limit), a few at once if it fell behind. */
@@ -17,7 +18,7 @@ try {
   const V = global.__vox;
   if (!V || typeof V.ntHostStart !== 'function') throw new Error('this game build cannot be a host (it needs 6.13 or newer)');
   V.NET.ws = { readyState: 1, send: (text) => say(text), close() {} };
-  const n = V.ntHostStart(workerData.world, workerData.mobs, workerData.vehs);
+  const n = V.ntHostStart(workerData.world, workerData.mobs, workerData.vehs, workerData.dim, workerData.primary);
   parentPort.on('message', (m) => { try { V.ntMsg(m); } catch (e) { say({ log: 'the server game could not take a ' + (m && m.t) + ' message: ' + e.message }); } });
   let last = Date.now(), bad = 0;
   setInterval(() => {

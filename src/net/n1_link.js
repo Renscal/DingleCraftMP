@@ -87,7 +87,7 @@ function ntRetryStop(){
 function ntLeave(){
   if(!NET.on&&NET.st==='off'&&!NET.ws)return;
   const ws=NET.ws;NET.ws=null;
-  NET.on=false;NET.st='off';NET.pend=null;NET.q.length=0;NET.beS.clear();NET.drops.clear();NET.hosted=false;NET.fx.clear();NET.vehs.clear();
+  NET.on=false;NET.st='off';NET.pend=null;NET.q.length=0;NET.beS.clear();NET.drops.clear();NET.hosted=false;NET.hdims=[];NET.fx.clear();NET.vehs.clear();
   NET.mobs.clear();NET.lockK=null;NET.lockWant=null;NET.saveT=-1;NET.op=false;NET.prot=0;NET.spawn=null;
   ntClearPeers();
   if(ws){try{ws.onclose=null;ws.close();}catch(e){}}
@@ -100,7 +100,8 @@ function ntMsg(m){
   switch(m.t){
     case 'welcome':
       NET.id=m.id|0;NET.name=''+(m.name||PNAME);NET.server=''+(m.server||'server');NET.pvp=m.pvp!==false;NET.motd=''+(m.motd||'');
-      NET.hosted=m.host===true;                             /* the server runs the Overworld's mobs itself (n8_host.js) */
+      NET.hosted=m.host===true;                             /* the server runs games of its own (n8_host.js), for these dimensions */
+      NET.hdims=Array.isArray(m.hdims)?m.hdims.map(String):(NET.hosted?['over']:[]);
       NET.pend={world:m.world||{},player:m.player||null,edits:{},be:{},n:0};
       ntClearPeers();
       for(const p of (m.players||[]))ntPeerAdd(p.id,p.name,p.pose);

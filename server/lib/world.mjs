@@ -77,6 +77,7 @@ export function cleanMobs(list) {
     const o = { t: m.t, x: m.x, y: m.y, z: m.z, yaw: num(m.yaw, -1e4, 1e4, 0), hp: num(m.hp, 0, 1e6, 1) };
     if (typeof m.name === 'string' && m.name) o.name = cleanText(m.name, 24);
     if (Number.isFinite(m.ox) && Number.isFinite(m.oz)) { o.ox = m.ox; o.oz = m.oz; }
+    if (typeof m.d === 'string' && m.d !== 'over' && m.d in DIM_PFX) o.d = m.d;   // which dimension (the Overworld is not spelled out)
     out.push(o);
     if (out.length >= 4000) break;
   }
@@ -210,9 +211,9 @@ export function worldFiles(world) {
     const o = { type: m.t, x: m.x, y: m.y, z: m.z, yaw: m.yaw, health: m.hp };
     if (m.name) o.name = m.name;
     if (m.ox !== undefined) o.origin = [m.ox, m.oz];
-    entsIn('over', m.x, m.z).mobs.push(o);
+    entsIn(m.d || 'over', m.x, m.z).mobs.push(o);
   }
-  for (const v of vehicles || []) entsIn('over', v.x, v.z).vehicles.push({ type: v.t, x: v.x, y: v.y, z: v.z, yaw: v.yaw, health: v.hp });
+  for (const v of vehicles || []) entsIn(v.d || 'over', v.x, v.z).vehicles.push({ type: v.t, x: v.x, y: v.y, z: v.z, yaw: v.yaw, health: v.hp });
   for (const [rk, e] of ents) {
     const [folder, r] = rk.split('/'), [rx, rz] = r.split('.').map(Number);
     const listText = (arr) => (arr.length ? '[\n' + arr.map((m) => '    ' + line(m)).join(',\n') + '\n  ]' : '[]');
@@ -278,11 +279,11 @@ export function readWorldDir(dir) {
     const folder = rel.split('/')[1];
     if (dimPrefix(folder) === null) continue;
     const file = read(rel), items = file.items || {};
-    if (folder === 'over') for (const m of Array.isArray(file.mobs) ? file.mobs : []) {
-      if (m && typeof m === 'object') world.mobs.push({ t: m.type, x: m.x, y: m.y, z: m.z, yaw: m.yaw, hp: m.health, name: m.name, ...(Array.isArray(m.origin) ? { ox: m.origin[0], oz: m.origin[1] } : {}) });
+    for (const m of Array.isArray(file.mobs) ? file.mobs : []) {
+      if (m && typeof m === 'object') world.mobs.push({ d: folder, t: m.type, x: m.x, y: m.y, z: m.z, yaw: m.yaw, hp: m.health, name: m.name, ...(Array.isArray(m.origin) ? { ox: m.origin[0], oz: m.origin[1] } : {}) });
     }
-    if (folder === 'over') for (const v of Array.isArray(file.vehicles) ? file.vehicles : []) {
-      if (v && typeof v === 'object') world.vehicles.push({ t: v.type, x: v.x, y: v.y, z: v.z, yaw: v.yaw, hp: v.health });
+    for (const v of Array.isArray(file.vehicles) ? file.vehicles : []) {
+      if (v && typeof v === 'object') world.vehicles.push({ d: folder, t: v.type, x: v.x, y: v.y, z: v.z, yaw: v.yaw, hp: v.health });
     }
     for (const id of Object.keys(items)) { const it = items[id]; if (it && typeof it === 'object') world.drops[id] = { dim: folder, x: it.x, y: it.y, z: it.z, st: it.item, age: +it.ageSeconds || 0 }; }
   }

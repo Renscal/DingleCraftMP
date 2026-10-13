@@ -149,6 +149,9 @@ Full map: `docs/ARCHITECTURE.md` (PART-to-file table, systems index, how each up
   also runs the Overworld's water, fire and falling blocks and every furnace nobody has open; a player's game skips them
   where `ntHosted()` (`ntSimHere`, `checkFalling`, `ntIgnite`, `ntNoTick`). When the host applies a player's edit it
   sends what follows from it (`NET.apd`, not `NET.ap`): a new simulation that reacts to block edits works on the host for free.
+  Since 6.17 there is one host per dimension (`S.hosts`: Overworld from the start and the only one that cooks furnaces and
+  runs the market, `NET.hprim`; Nether and Aether on first entry; never Purgatory), and "player 0" is the host of the
+  sender's dimension, so nothing in host code may assume the Overworld (`ntHosted()` and `c.hdim`, never `'over'`).
   World-level save fields are the server's since 6.16: a new one that should be shared goes in `NT_WD` (and
   `WORLD_LISTS` and `DATA_FILES` in the server) if it is a list, and a new per-player one in the four keys `ntSave` adds. The server owns blocks, block entities (one player in a chest at a
   time), dropped items, time, rules, rights (ops, bans, the whitelist, spawn protection, slash commands in

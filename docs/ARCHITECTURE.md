@@ -452,6 +452,17 @@ get them inside `welcome.world`, which `applySave` already reads. The host runs 
 on a hosted player's game) and the stock market (`updateStocks` returns where `NET.hosted`; the host sends `mkt` every
 2 s). Four save fields are the player's and ride in `save`: `snl`, `mg`, `demon`, `cr`.
 
+**One host per dimension (6.17).** A game holds one dimension (`DIM`, the chunk keys, the entity list), so the server
+runs one worker per hosted dimension: `S.hosts` maps `over` / `nether` / `aether` to a host, each started by
+`S.startHost(dim)` (the Overworld's at start, the others from the `pose` handler when a player first shows up there,
+and again if one has stopped). A late host is sent `join` and `pose` for everyone already online. `welcome` carries
+`hdims`, and `ntHosted()` is "is my dimension in it". Messages to player 0 go to the host of the sender's dimension
+(`peerOf`); what a host sends is scoped to `c.hdim`. Every host receives all `edits`, `be`, `drop`, `time`, `gr` and
+`wd`. Only the Overworld's host (`primary`, `NET.hprim`) cooks furnaces and runs the market. `hsnap` replaces only the
+sender's dimension in `world.mobs` / `world.vehicles`, which carry `d` outside the Overworld and are written to
+`entities/<dimension>/`. On a dimension change the client sends its pose first, so everything after it is routed to the
+new dimension's host.
+
 **Shared since 6.11:** villagers, Nuke Kegs and the bosses that are plain mobs (`boss`, `titan`, `infernis`,
 `valkyra`), through the same owner/puppet path. A boss is not handed over while its owner is within 40 blocks. The kinds a
 structure spawns (`NT_UNIQ`) carry their spawn spot, and two of a kind from one spot are one mob (`ntMobTwin`), so a

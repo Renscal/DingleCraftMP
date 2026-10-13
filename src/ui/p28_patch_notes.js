@@ -3,7 +3,14 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'The world remembers',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Every dimension',lines:[
+    'EVERY DIMENSION. The server now runs the Nether and the Aether the way it runs the Overworld: its own mobs, water, fire, falling blocks, spawners and vehicles, saved with the world.',
+    'Each dimension gets its own copy of the game on the server, woken the moment the first of you steps through a portal. Imps no longer depend on whose computer is nearest.',
+    'Mobs stay in their dimension, and so do their save files: server owners will find entities/nether next to entities/over.',
+    'Puppet Purgatory is still yours alone. It was built around one player&#x27;s suffering and it would be rude to share.',
+    'Server owners: each dimension somebody has visited since the server started costs about another 110 MB.',
+  ]},
+ {v:'6.16',label:'Release 1.1',title:'The world remembers',lines:[
     'THE WORLD REMEMBERS. A server used to forget everything about its world that was not a block. Which villages had been found, which bosses were dead, what the stocks cost: all of it lived in each player&#x27;s game and left when they did.',
     'Now the server keeps it. A village one of you finds is found for all of you, and is populated once. A dimension boss you kill stays dead for the friend who logs in tomorrow.',
     'ONE STOCK MARKET. The server runs it and everyone sees the same prices. Your shares and your balance are still yours. Yes, this means you can no longer both be right about the price of anything.',

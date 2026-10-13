@@ -36,7 +36,9 @@
 // player tp / give / mode (commands), and mheir {from} to the player nearest to one who just left (their mobs are yours).
 // Every type has a per-second limit (RATE in lib/config.mjs, or its own counter here); lib/server.mjs counts the total.
 //
-// The server's own game (6.13, lib/host.mjs) is a player too, with id 0 and c.host set. It runs the Overworld's mobs, so:
+// The server's own game (6.13, lib/host.mjs) is a player too, with id 0 and c.host set. Since 6.17 there is one per
+// dimension (S.hosts: 'over', 'nether', 'aether'; c.hdim says which), each started when the first player enters, and "player
+// 0" means the game of the sender's own dimension. It runs that dimension's mobs, so:
 //   it may send only edits, drop, dropAt, take (gone), mobs, mgone, boom, and three of its own:
 //     hurt {to, dmg, kx, kz, by, how}   hurt      (to that player: a mob it runs hit them)
 //     xp {to, n}                        xp        (to that player: they picked up XP it dropped)
@@ -116,10 +118,10 @@ function cleanVeh(a) {
   return a;
 }
 /* the server's own game, if it is running */
-const hostOf = (S) => (S.host && !S.host.stopped ? S.host.c : null);
+const hostOf = (S, dim) => { const h = S.hosts.get(dim || 'over'); return h && !h.stopped ? h.c : null; };
 const HOST_ONLY = new Set(['hurt', 'xp', 'hsnap', 'mkt', 'fire']);
 /* the player a message is addressed to: a real one, or the server's own game (id 0) */
-const peerOf = (S, id) => (id === 0 ? (S.host && !S.host.stopped ? S.host.c : null) : S.clients.get(id));
+const peerOf = (S, id, c) => (id === 0 ? hostOf(S, c.host ? c.hdim : c.pose && c.pose.dim) : S.clients.get(id));   // player 0 is the game of the sender's own dimension
 
 /* what a player can be seen riding (the game's vehicle kinds) */
 const RIDES = new Set(['car', 'skate', 'cart', 'boat', 'plane']);
@@ -201,7 +203,7 @@ function hello(S, net, c, m) {
   const saved = world.players[playerKey(c.name)] || null;
   c.gm = saved && (saved.gm === 'c' || saved.gm === 's') ? saved.gm : null;
   const { edits, be, players, drops, spawn, ...meta } = world;   // meta: seed, mode, time, rules and whatever else the save carried
-  net.send(c, { t: 'welcome', proto: PROTO, id: c.id, name: c.name, server: o.name, motd: o.motd, pvp: !!o.pvp, host: !!(S.host && !S.host.stopped),
+  net.send(c, { t: 'welcome', proto: PROTO, id: c.id, name: c.name, server: o.name, motd: o.motd, pvp: !!o.pvp, host: S.hdims.length > 0, hdims: S.hdims,
     world: { ...meta, mode: c.gm || world.mode }, player: saved,
     players: [...S.clients.values()].filter((p) => p !== c && p.ready).map((p) => ({ id: p.id, name: p.name, pose: p.pose })) });
   net.send(c, permOf(S, c));
@@ -238,7 +240,7 @@ function hello(S, net, c, m) {
    - the mobs their game was running go to the nearest player who can see them (mheir). */
 export function forget(S, net, c) {
   for (const [k, id] of S.locks) if (id === c.id) S.locks.delete(k);
-  for (const [vid, id] of S.vown) if (id === c.id) { S.vown.delete(vid); const h = hostOf(S); if (h) net.send(h, { t: 'vfree', id: vid }); }   // the vehicle they sat on is the server's again
+  for (const [vid, id] of S.vown) if (id === c.id) { S.vown.delete(vid); for (const h of S.hosts.values()) if (!h.stopped) net.send(h.c, { t: 'vfree', id: vid }); }   // the vehicle they sat on is the server's again
   const p = c.pose, sv = S.world.players[playerKey(c.name)];
   if (!p) return;
   if (sv && typeof sv === 'object' && !(p.fl & 4) && (sv.dim || 'over') === p.dim) { sv.x = p.x; sv.y = p.y; sv.z = p.z; sv.yaw = p.yaw; sv.pitch = p.pitch; S.dirty = true; }
@@ -332,6 +334,7 @@ export function handleMessage(S, net, c, m, size) {
         dim: DIMS.has(m.dim) ? m.dim : 'over', held: num(m.held, 0, 99999, 0) | 0, hp: num(m.hp, 0, 9999, 20), fl: num(m.fl, 0, 255, 0) | 0, ms: c.ms };
       /* what they wear (four item ids, 0 for a bare slot) and what they ride: only sent on when there is something to say */
       if (Array.isArray(m.ar) && m.ar.length === 4 && m.ar.some((v) => v)) c.pose.ar = m.ar.map((v) => num(v, 0, 99999, 0) | 0);
+      if (S.startHost && (!was || was.dim !== c.pose.dim)) S.startHost(c.pose.dim);   // the first player into a dimension wakes the game that runs it
       if (typeof m.rv === 'string' && RIDES.has(m.rv)) { c.pose.rv = m.rv; c.pose.ry = num(m.ry, -1e4, 1e4, 0); c.pose.rh = num(m.rh, -8, 8, 0); }
       syncAround(S, net, c, c.pose.dim, c.pose.x, c.pose.z);
       /* players nearby see every pose; everyone else gets one a second (enough for the player list), and a change of
@@ -370,7 +373,7 @@ export function handleMessage(S, net, c, m, size) {
         const mine = p.sent ? out.filter((e) => p.sent.has(e[0])) : out;
         if (mine.length) net.send(p, { t: 'edits', e: mine });
       }
-      if (!c.host && S.host && !S.host.stopped) net.send(S.host.c, { t: 'edits', e: out });   // the server's game has every chunk it has built
+      if (!c.host) for (const h of S.hosts.values()) if (!h.stopped) net.send(h.c, { t: 'edits', e: out });   // the server's games have every chunk they have built
       return;
     }
     case 'open': {                     // a player wants to use a chest or furnace: one at a time
@@ -500,7 +503,7 @@ export function handleMessage(S, net, c, m, size) {
         if (!Array.isArray(m.m)) return;
         const list = m.m.map(cleanMob).filter(Boolean);
         for (const p of S.clients.values()) {
-          if (!p.ready || !p.pose || p.pose.dim !== 'over') continue;
+          if (!p.ready || !p.pose || p.pose.dim !== c.hdim) continue;
           const mine = list.filter((a) => Math.hypot(a[2] - p.pose.x, a[4] - p.pose.z) <= LIMITS.mobRange);
           if (mine.length) net.send(p, { t: 'mobs', from: 0, m: mine });
         }
@@ -514,7 +517,7 @@ export function handleMessage(S, net, c, m, size) {
     case 'mgone': {                    // some of them are gone (dead: with a death, not just out of sight)
       if (c.host) {
         const ids = Array.isArray(m.ids) ? m.ids.filter((v) => typeof v === 'string' && v.length <= 24) : [];
-        if (ids.length) net.broadcast({ t: 'mgone', from: 0, ids, dead: m.dead ? 1 : 0 }, null, (p) => !!p.pose && p.pose.dim === 'over');
+        if (ids.length) net.broadcast({ t: 'mgone', from: 0, ids, dead: m.dead ? 1 : 0 }, null, (p) => !!p.pose && p.pose.dim === c.hdim);
         return;
       }
       if (!c.pose || !Array.isArray(m.ids) || m.ids.length > LIMITS.mobsPerMsg || size > LIMITS.mobBlob) return;
@@ -523,20 +526,20 @@ export function handleMessage(S, net, c, m, size) {
       return;
     }
     case 'mgive': {                    // "you are nearer to this mob than I am: your game runs it from now on"
-      const to = peerOf(S, m.to), mob = cleanMob(m.m);
-      if (!to || to === c || !to.ready || !mob || (to.host ? !c.pose || c.pose.dim !== 'over' : !near(c.pose, to.pose, LIMITS.mobRange))) return;
+      const to = peerOf(S, m.to, c), mob = cleanMob(m.m);
+      if (!to || to === c || !to.ready || !mob || (to.host ? !c.pose : !near(c.pose, to.pose, LIMITS.mobRange))) return;
       net.send(to, { t: 'mgive', from: c.id, m: mob });
       return;
     }
     case 'mhit': {                     // a player hit a mob that another player's game is running
-      const to = peerOf(S, m.to);
-      if (!to || to === c || !to.ready || typeof m.id !== 'string' || m.id.length > 24 || (to.host ? !c.pose || c.pose.dim !== 'over' : !near(c.pose, to.pose, LIMITS.mobRange)) || !allow(c, 'mhit', 12, now)) return;
+      const to = peerOf(S, m.to, c);
+      if (!to || to === c || !to.ready || typeof m.id !== 'string' || m.id.length > 24 || (to.host ? !c.pose : !near(c.pose, to.pose, LIMITS.mobRange)) || !allow(c, 'mhit', 12, now)) return;
       net.send(to, { t: 'mhit', from: c.id, name: c.name, id: m.id, dmg: num(m.dmg, 0, 1e6, 1), kx: num(m.kx, -1e3, 1e3, 0), kz: num(m.kz, -1e3, 1e3, 0) });
       return;
     }
     case 'boom': {                     // an explosion in this player's game: the others nearby feel it (the holes travel as edits)
       if (!c.host && (!c.pose || !allow(c, 'boom', 20, now))) return;
-      const at = c.host ? { dim: 'over', x: num(m.x, -3e7, 3e7, 0), z: num(m.z, -3e7, 3e7, 0) } : { dim: c.pose.dim, x: num(m.x, -3e7, 3e7, c.pose.x), z: num(m.z, -3e7, 3e7, c.pose.z) };
+      const at = c.host ? { dim: c.hdim, x: num(m.x, -3e7, 3e7, 0), z: num(m.z, -3e7, 3e7, 0) } : { dim: c.pose.dim, x: num(m.x, -3e7, 3e7, c.pose.x), z: num(m.z, -3e7, 3e7, c.pose.z) };
       if (!c.host && !near(c.pose, at, LIMITS.mobRange)) return;
       const mob = !!m.mob;
       net.broadcast({ t: 'boom', from: c.id, name: c.host ? '' : c.name, x: at.x, y: num(m.y, -256, 1024, c.host ? 40 : c.pose.y), z: at.z, r: num(m.r, 0, 64, 3), mob: mob ? 1 : 0, hurt: mob || o.pvp ? 1 : 0 },
@@ -556,7 +559,10 @@ export function handleMessage(S, net, c, m, size) {
       return;
     }
     case 'hsnap': {                    // (the server's game) every mob and vehicle it has, for the next save
-      world.mobs = cleanMobs(m.mobs); world.vehicles = cleanMobs(m.vehs).filter((v) => RIDES.has(v.t)); S.dirty = true;
+      { const d = c.hdim, others = (list) => (Array.isArray(list) ? list.filter((x) => (x.d || 'over') !== d) : []);   // each dimension's game reports its own
+        world.mobs = others(world.mobs).concat(cleanMobs(m.mobs).map((x) => (d === 'over' ? x : { ...x, d })));
+        world.vehicles = others(world.vehicles).concat(cleanMobs(m.vehs).filter((v) => RIDES.has(v.t)).map((x) => (d === 'over' ? x : { ...x, d }))); }
+      S.dirty = true;
       return;
     }
     case 'wd': {                       // a game learnt something about the world: a structure found, a boss dead, a spawner placed or broken
@@ -579,20 +585,20 @@ export function handleMessage(S, net, c, m, size) {
       return;
     }
     case 'ign': {                      // a player's game asks the server's to light these cells
-      const h = hostOf(S), cells = cleanCells(m.c);
-      if (h && c.pose && c.pose.dim === 'over' && cells.length) net.send(h, { t: 'ign', c: cells, from: c.id });
+      const h = hostOf(S, c.pose && c.pose.dim), cells = cleanCells(m.c);
+      if (h && c.pose && cells.length) net.send(h, { t: 'ign', c: cells, from: c.id });
       return;
     }
     case 'fire': {                     // (the server's game) these cells are alight
       const cells = cleanCells(m.c);
-      if (cells.length) net.broadcast({ t: 'fire', c: cells }, c, (p) => !!p.pose && p.pose.dim === 'over' && Math.hypot(p.pose.x - cells[0][0], p.pose.z - cells[0][2]) <= LIMITS.mobRange);
+      if (cells.length) net.broadcast({ t: 'fire', c: cells }, c, (p) => !!p.pose && p.pose.dim === c.hdim && Math.hypot(p.pose.x - cells[0][0], p.pose.z - cells[0][2]) <= LIMITS.mobRange);
       return;
     }
     case 'fx': {                       // something started flying in this game: the players nearby get a copy to look at
       if (!Array.isArray(m.f) || m.f.length > 40 || (!c.host && !c.pose)) return;
       const list = m.f.map(cleanFx).filter(Boolean);
       if (!list.length) return;
-      const dim = c.host ? 'over' : c.pose.dim;
+      const dim = c.host ? c.hdim : c.pose.dim;
       for (const p of S.clients.values()) {
         if (p === c || !p.ready || !p.pose || p.pose.dim !== dim) continue;
         const mine = list.filter((a) => Math.hypot(a[2] - p.pose.x, a[4] - p.pose.z) <= LIMITS.fxRange);
@@ -602,7 +608,7 @@ export function handleMessage(S, net, c, m, size) {
     }
     case 'fxgone': {
       if (!Array.isArray(m.ids) || m.ids.length > 60 || (!c.host && !c.pose)) return;
-      const ids = m.ids.filter((v) => typeof v === 'string' && v.length <= 17), dim = c.host ? 'over' : c.pose.dim;
+      const ids = m.ids.filter((v) => typeof v === 'string' && v.length <= 17), dim = c.host ? c.hdim : c.pose.dim;
       if (ids.length) net.broadcast({ t: 'fxgone', ids }, c, (p) => !!p.pose && p.pose.dim === dim && (c.host || near(p.pose, c.pose, LIMITS.fxRange * 2)));
       return;
     }
@@ -611,14 +617,14 @@ export function handleMessage(S, net, c, m, size) {
       let list = m.v.map(cleanVeh).filter(Boolean);
       if (c.host) {
         for (const p of S.clients.values()) {
-          if (!p.ready || !p.pose || p.pose.dim !== 'over') continue;
+          if (!p.ready || !p.pose || p.pose.dim !== c.hdim) continue;
           const mine = list.filter((a) => !S.vown.has(a[0]) && Math.hypot(a[2] - p.pose.x, a[4] - p.pose.z) <= LIMITS.vehRange);
           if (mine.length) net.send(p, { t: 'vehs', from: 0, v: mine });
         }
         return;
       }
-      const h = hostOf(S);
-      if (!h || !c.pose || c.pose.dim !== 'over') return;
+      const h = hostOf(S, c.pose && c.pose.dim);
+      if (!h || !c.pose) return;
       list = list.filter((a) => S.vown.get(a[0]) === c.id);
       if (!list.length) return;
       net.broadcast({ t: 'vehs', from: c.id, v: list }, c, (p) => near(p.pose, c.pose, LIMITS.vehRange));
@@ -626,8 +632,8 @@ export function handleMessage(S, net, c, m, size) {
       return;
     }
     case 'vgive': case 'vtake': case 'vfree': {   // a vehicle changes hands between a player and the server's game
-      const h = hostOf(S), v = m.t === 'vfree' ? null : cleanVeh(m.v), id = v ? v[0] : m.id;
-      if (!h || !c.pose || c.pose.dim !== 'over' || typeof id !== 'string' || !VEH_ID_RE.test(id) || (m.t !== 'vfree' && !v)) return;
+      const h = hostOf(S, c.pose && c.pose.dim), v = m.t === 'vfree' ? null : cleanVeh(m.v), id = v ? v[0] : m.id;
+      if (!h || !c.pose || typeof id !== 'string' || !VEH_ID_RE.test(id) || (m.t !== 'vfree' && !v)) return;
       const rider = S.clients.get(S.vown.get(id));
       if (rider && rider !== c && rider.ready) { if (m.t === 'vtake') net.send(c, { t: 'vno', id }); return; }   // someone else is on it: theirs stands
       if (m.t === 'vtake') S.vown.set(id, c.id); else S.vown.delete(id);
@@ -636,18 +642,18 @@ export function handleMessage(S, net, c, m, size) {
     }
     case 'vgone': {                    // broken, or lost to the void
       if (!Array.isArray(m.ids) || m.ids.length > 60) return;
-      const h = hostOf(S);
+      const h = c.host ? c : hostOf(S, c.pose && c.pose.dim), vdim = c.host ? c.hdim : c.pose && c.pose.dim;
       if (!h) return;
       const ids = m.ids.filter((v) => typeof v === 'string' && VEH_ID_RE.test(v) && (c.host || S.vown.get(v) === c.id));
       if (!ids.length) return;
       for (const id of ids) S.vown.delete(id);
-      net.broadcast({ t: 'vgone', ids }, c, (p) => !!p.pose && p.pose.dim === 'over');
+      net.broadcast({ t: 'vgone', ids }, c, (p) => !!p.pose && p.pose.dim === vdim);
       if (!c.host) net.send(h, { t: 'vgone', ids });
       return;
     }
     case 'vhit': {                     // a hit on a vehicle goes to whoever runs it
-      const h = hostOf(S);
-      if (!h || !c.pose || c.pose.dim !== 'over' || typeof m.id !== 'string' || !VEH_ID_RE.test(m.id)) return;
+      const h = hostOf(S, c.pose && c.pose.dim);
+      if (!h || !c.pose || typeof m.id !== 'string' || !VEH_ID_RE.test(m.id)) return;
       const rider = S.clients.get(S.vown.get(m.id)), to = rider && rider.ready ? rider : h;
       if (to !== c) net.send(to, { t: 'vhit', from: c.id, id: m.id, dmg: num(m.dmg, 0, 1e5, 1) });
       return;
