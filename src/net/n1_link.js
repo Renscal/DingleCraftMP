@@ -88,7 +88,7 @@ function ntLeave(){
   if(!NET.on&&NET.st==='off'&&!NET.ws)return;
   const ws=NET.ws;NET.ws=null;
   NET.on=false;NET.st='off';NET.pend=null;NET.q.length=0;NET.beS.clear();NET.drops.clear();NET.hosted=false;NET.hdims=[];NET.fx.clear();NET.vehs.clear();
-  NET.mobs.clear();NET.lockK=null;NET.lockWant=null;NET.saveT=-1;NET.op=false;NET.prot=0;NET.spawn=null;
+  NET.mobs.clear();NET.lockK=null;NET.lockWant=null;NET.saveT=-1;NET.sigS=undefined;NET.crS='';NET.sigT=0;NET.op=false;NET.prot=0;NET.spawn=null;
   ntClearPeers();
   if(ws){try{ws.onclose=null;ws.close();}catch(e){}}
   ntStatus(NET.why||'',!!NET.why);NET.why='';

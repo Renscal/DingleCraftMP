@@ -3,7 +3,15 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Closed for the season',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'The server remembers',lines:[
+    '<b>THE SERVER REMEMBERS.</b> On a server your inventory used to be saved when you dropped something, picked something up, or pressed Save. Mine for an hour, craft a diamond pickaxe, eat, level up, and then have the browser tab crash: the server remembered you as you were an hour ago, holding dirt. Not any more.',
+    '<b>Within a second.</b> Anything that changes about you (what you carry, what you wear, your health, your hunger, your experience, your spawn) reaches the server about a second later, by itself. A flurry of changes goes as one message, and when nothing changes nothing is sent.',
+    '<b>Where you stand.</b> Your position goes along with every save, and on its own every ten seconds while you are on the move.',
+    '<b>The last word.</b> Closing the tab, leaving the page or pressing Disconnect sends one final save on the way out. If the line simply drops, the server keeps the last thing it heard, which is now at most a second old.',
+    '<b>Light on the wire.</b> A save no longer carries the whole world along for the ride, and your paintings and records travel only when you have changed one. The server keeps the copies it already has.',
+    '<b>When the server stops.</b> Every player&#x27;s latest state is written to their file as it shuts down.',
+  ]},
+ {v:'6.33',label:'Release 1.1',title:'Closed for the season',lines:[
     '<b>CLOSED FOR THE SEASON.</b> Three new game rules: The Nether, The Aether and Puppet Purgatory. All on, as always, unless you turn one off. Turn one off and that place is shut: nothing in the world leads to it any more. The Overworld is not on the list. You have to live somewhere.',
     '<b>The Nether, off.</b> Obsidian frames will not light, however much you click at them. A portal that already stands hums at you and goes nowhere, and says so.',
     '<b>The Aether, off.</b> The glowstone frame keeps its thirst to itself. You keep your water.',

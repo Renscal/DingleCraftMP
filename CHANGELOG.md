@@ -21,6 +21,17 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — The server remembers
+
+*Game version 6.34, released 2026-10-13.*
+
+- **THE SERVER REMEMBERS.** On a server your inventory used to be saved when you dropped something, picked something up, or pressed Save. Mine for an hour, craft a diamond pickaxe, eat, level up, and then have the browser tab crash: the server remembered you as you were an hour ago, holding dirt. Not any more.
+- **Within a second.** Anything that changes about you (what you carry, what you wear, your health, your hunger, your experience, your spawn) reaches the server about a second later, by itself. A flurry of changes goes as one message, and when nothing changes nothing is sent.
+- **Where you stand.** Your position goes along with every save, and on its own every ten seconds while you are on the move.
+- **The last word.** Closing the tab, leaving the page or pressing Disconnect sends one final save on the way out. If the line simply drops, the server keeps the last thing it heard, which is now at most a second old.
+- **Light on the wire.** A save no longer carries the whole world along for the ride, and your paintings and records travel only when you have changed one. The server keeps the copies it already has.
+- **When the server stops.** Every player's latest state is written to their file as it shuts down.
+
 ## Release 1.1 — Closed for the season
 
 *Game version 6.33, released 2026-10-13.*

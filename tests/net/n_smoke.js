@@ -299,6 +299,29 @@ boot.run(async()=>{
   }
 
   /* ===== 11. saving ===== */
+  /* 6.34: the server always has the player as they are now, with nobody pressing Save */
+  {const key=V.getPName().toLowerCase(),rec=()=>W.players[key]||{};
+    const seen=new Set();let base='';const watch=setInterval(()=>{const v=rec().seen;if(v&&v!==base)seen.add(v);},2);const mark=()=>{base=rec().seen||'';seen.clear();};
+    const run=async n=>{for(let i=0;i<n;i++){step(1);await sleep(4);}};   /* frames of 40-60 ms of game time, with time for the socket between them */
+    await run(30);await sleep(60);mark();
+    V.P.inv[5]={id:B.DIRT,count:1};V.redrawHotbar&&V.redrawHotbar();
+    for(let i=0;i<50;i++){V.P.inv[5].count=1+i;if(i%5===0){step(1);await sleep(2);}}        /* 50 changes inside half a second of play */
+    await run(28);await sleep(80);
+    ok('a change to the inventory reaches the server within about a second, unasked (slot 5: '+((rec().inv||[])[5]||{}).count+')',!!rec().inv&&!!rec().inv[5]&&rec().inv[5].id===B.DIRT&&rec().inv[5].count===50);
+    ok('  ... and a burst of 50 changes was one save, not fifty ('+seen.size+')',seen.size===1);
+    mark();await run(40);await sleep(60);
+    ok('nothing changes: nothing is sent ('+seen.size+' saves in two seconds)',seen.size===0);
+    V.P.hp=13;V.P.armor=V.P.armor||[null,null,null,null];V.P.xp=(V.P.xp||0)+7;await run(30);await sleep(80);
+    ok('health and experience count as changes too',rec().hp===13&&rec().xp===Math.round(V.P.xp));
+    V.P.hp=20;await run(30);await sleep(60);mark();const x0=V.P.x;V.P.x=x0+6;await run(60);await sleep(60);const early=seen.size;
+    for(let i=0;i<8;i++){V.NET.acc+=1.3;await run(4);}await sleep(80);
+    ok('standing somewhere new is not sent at once ('+early+'), but is within ten seconds ('+(rec().x||0).toFixed(1)+')',early===0&&Math.abs(rec().x-(x0+6))<0.6);
+    V.P.x=x0;
+    /* the Creativity works travel only when they change, and the server keeps the last ones */
+    clearInterval(watch);
+    V.P.inv[5]={id:B.DIRT,count:3};V.ntBye();await until(()=>!!rec().inv&&!!rec().inv[5]&&rec().inv[5].count===3,1500);
+    ok('the page going away sends a last save at once',rec().inv[5].count===3);
+    V.P.inv[5]=null;await run(30);await sleep(60);}
   {V.P.inv[3]={id:B.GLASS,count:11};V.P.hp=20;const px=V.P.x,pz=V.P.z;
     const r=await V.saveToStorage(V.snapshot('x').name||'whatever',true);await until(()=>{const q=W.players[V.getPName().toLowerCase()];return !!(q&&q.inv&&q.inv[3]&&q.inv[3].count===11);},2000);   /* the 60 s autosave may already have put an older record there */
     const rec=W.players[V.getPName().toLowerCase()];
@@ -564,7 +587,16 @@ boot.run(async()=>{
       const S7=createServer({port:0,data:OUT,world:'world',quiet:true,noGame:true});await S7.listen();
       const stamp=f=>fs.statSync(path.join(WD,f)).mtimeMs,t0={r:stamp('region/over/r.0.0.json'),p:stamp('playerdata/bea.json')};await sleep(30);
       S7.world().players.bea.hp=7;S7.world().drops={};S7.saveWorld();await S7.close();
-      ok('a later save rewrites only the files that changed and removes a file whose region emptied out',stamp('region/over/r.0.0.json')===t0.r&&stamp('playerdata/bea.json')>t0.p&&rj('playerdata/bea.json').hp===7&&!fs.existsSync(path.join(WD,'entities','over','r.0.0.json')));}
+      ok('a later save rewrites only the files that changed and removes a file whose region emptied out',stamp('region/over/r.0.0.json')===t0.r&&stamp('playerdata/bea.json')>t0.p&&rj('playerdata/bea.json').hp===7&&!fs.existsSync(path.join(WD,'entities','over','r.0.0.json')));
+      /* 6.34: whatever a player last sent is what is on disk after the server stops, with no autosave in between */
+      const S8=createServer({port:0,data:OUT,world:'world',quiet:true,noGame:true});await S8.listen();
+      const b8=raw(S8.port,{});await b8.open;await until(()=>!!b8.last('ready'));
+      b8.send({t:'save',player:{x:4,y:61,z:5,hp:9,inv:[{id:B.STONE,count:3}],cr:{works:['one']}}});await sleep(40);
+      b8.send({t:'save',player:{x:8,y:62,z:9,hp:15,inv:[{id:B.STONE,count:44}]}});await sleep(60);
+      await S8.close();
+      const p8=rj('playerdata/bea.json');
+      ok('the server stops: the player file holds the last save it was sent (hp '+p8.hp+', '+((p8.inv||[])[0]||{}).count+' stone at '+p8.x+')',p8.hp===15&&p8.x===8&&p8.inv[0].count===44);
+      ok('  ... and the Creativity works from the save before, which the last one did not carry',!!p8.cr&&JSON.stringify(p8.cr)==='{"works":["one"]}');}
     fs.rmSync(OUT,{recursive:true,force:true});}
   await window.storage.delete('vxw:nsolo');
 });

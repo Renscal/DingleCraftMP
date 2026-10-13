@@ -18,18 +18,18 @@ if(typeof window!=='undefined'&&!window.storage){
 function storageOK(){return typeof window!=='undefined'&&window.storage&&typeof window.storage.set==='function';}
 async function setLastWorld(n){try{await window.storage.set('vxwlast',n);}catch(e){}}
 async function getLastWorld(){try{const r=await window.storage.get('vxwlast');return r&&r.value;}catch(e){return null;}}
-function snapshot(name){
+function snapshot(name,lite){   /* lite (6.34): leave the blocks, chests and entities out; what is left is cheap to make every second */
   const edits={};
-  for(const [k,ed] of chunkEdits){
+  for(const [k,ed] of (lite?[]:chunkEdits)){
     if(!ed.size)continue;
     if(MGS.has(k)){const om=mgEditsSave(k,ed);if(om)edits[k]=om;continue;}
     const o={};for(const [lk,id] of ed)o[lk]=id;
     edits[k]=o;
   }
   const be={};
-  for(const [k,b] of blockEnts)be[k]=b;
+  if(!lite)for(const [k,b] of blockEnts)be[k]=b;
   const ents=[];
-  for(const e of entities){
+  for(const e of (lite?[]:entities)){
     if(e.dead)continue;
     if(e.t==='mob'&&MOBT[e.mt].pmob){mpSnapMob(e,ents);continue;}
     if(e.t==='mob'&&MOBT[e.mt].mg)continue;

@@ -456,7 +456,10 @@ export function handleMessage(S, net, c, m, size) {
     }
     case 'save': {                     // this player's own state (inventory, position...), handed back when they next join
       if (!m.player || typeof m.player !== 'object' || size > LIMITS.playerBlob) return;
-      world.players[playerKey(c.name)] = { ...m.player, name: c.name, seen: new Date().toISOString(), ...(c.gm ? { gm: c.gm } : {}), ...(c.skin ? { skin: c.skin } : {}) };
+      const key = playerKey(c.name), had = world.players[key];
+      world.players[key] = { ...m.player, name: c.name, seen: new Date().toISOString(), ...(c.gm ? { gm: c.gm } : {}), ...(c.skin ? { skin: c.skin } : {}) };
+      // 6.34: a game sends its Creativity works only when they change; a save without them keeps the ones already here
+      if (!('cr' in m.player) && had && had.cr !== undefined) world.players[key].cr = had.cr;
       S.dirty = true;
       return;
     }

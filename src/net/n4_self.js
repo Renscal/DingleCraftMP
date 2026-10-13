@@ -5,11 +5,38 @@
 
 /* ----- this player: save, pose, chat, death ----- */
 function ntSave(quiet){
-  const s=snapshot('');
-  const ok=ntSend({t:'save',player:{...s.player,dim:s.dim,mp:s.mp,stash:s.stash,snl:s.snl,mg:s.mg,demon:s.demon,cr:s.cr}});   /* the last four: this player's own, see na_data.js */
+  const s=snapshot('',true);         /* the server keeps the blocks, chests and entities itself */
+  const pl={...s.player,dim:s.dim,mp:s.mp,stash:s.stash,snl:s.snl,mg:s.mg,demon:s.demon};   /* the last three, and cr: this player's own, see na_data.js */
+  /* the Creativity works can be most of a megabyte: sent when they change, and the server keeps the last ones it was sent */
+  const crS=s.cr===undefined?'':JSON.stringify(s.cr);
+  if(crS!==NET.crS)pl.cr=s.cr;
+  const ok=ntSend({t:'save',player:pl});
+  if(ok){NET.crS=crS;NET.sigS=ntSaveSig();NET.posS=ntSavePos();NET.posT=NET.acc;}
   if(!quiet)showToast(ok?'Saved to the server':'Not connected');
   return ok;
 }
+/* ----- the server always has the player as they are now (6.34) -----
+   Twice a second what the save holds about this player (not where they stand) is put side by side with what was last
+   sent; a difference asks for a save half a second on, so a change reaches the server within a second and a burst of
+   changes is one save. Where they stand goes with any save, and by itself every ten seconds while they move. The last
+   word is sent as the page goes away (ntBye) and by Disconnect (quitToTitle saves before it leaves). */
+function ntSaveSig(){
+  const st=s=>s?[s.id,s.count,s.dur,s.ench,s.mob,s.psn]:0;
+  return JSON.stringify([Math.round(P.hp),Math.round(P.hunger),P.sel,Math.round(P.xp||0),P.mode,P.dead?1:0,DIM,P.spawn,P.inv.map(st),(P.armor||[]).map(st),
+    Math.round(P.db||0),(P.own||[]).length,P.stox?+P.stox.bal.toFixed(2):0,P.bp?1:0,P.bpLvl|0,P.cos,P.fx||0]);
+}
+/* where they stand, to the block */
+function ntSavePos(){return Math.round(P.x)+','+Math.round(P.y)+','+Math.round(P.z);}
+/* twice a second (from ntFrame): has anything changed since the last save? */
+function ntSaveWatch(){
+  if(NET.acc-(NET.sigT||0)<0.5)return;
+  NET.sigT=NET.acc;
+  if(NET.sigS===undefined){NET.sigS=ntSaveSig();NET.posS=ntSavePos();NET.posT=NET.acc;return;}   /* the first look: this is what the server handed us */
+  const due=NET.acc+0.5;
+  if(ntSaveSig()!==NET.sigS||(NET.acc-NET.posT>=10&&ntSavePos()!==NET.posS)){if(NET.saveT<0||NET.saveT>due)NET.saveT=due;}
+}
+/* the page is going away: one last save */
+function ntBye(){if(NET.on&&playing&&P)try{ntSave(true);}catch(e){}}
 /* ask for a save about a second from now (several askings make one save): after anything that moved an item between the
    inventory and the world, so the server never remembers an inventory that still holds what now lies on the ground */
 function ntSaveSoon(){if(NET.saveT<0)NET.saveT=NET.acc+1;}
@@ -64,6 +91,8 @@ function ntFrame(dt){
   if(NET.dim!==DIM){ntEntsDim();ntDropsScan();NET.poseS='';NET.poseT=NET.acc;ntSend(ntPoseNow());}
   if(P.hurtT<=0)NET.dmgRef=LASTDMG;
   ntLockTick();
+  if(!NET.bye){NET.bye=true;if(typeof addEventListener==='function'){addEventListener('pagehide',ntBye);addEventListener('beforeunload',ntBye);}}
+  ntSaveWatch();
   if(NET.saveT>=0&&NET.acc>=NET.saveT){NET.saveT=-1;ntSave(true);}
   if(NET.acc-NET.poseT>=0.066){
     const m=ntPoseNow(),s=JSON.stringify(m);
