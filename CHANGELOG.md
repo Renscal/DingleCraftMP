@@ -21,6 +21,14 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — Hemlock, a little less hidden
+
+*Game version 6.45, released 2026-10-13.*
+
+- **HEMLOCK, A LITTLE LESS HIDDEN.** Last update made wild hemlock fifty times rarer, which turned out to mean one plant in about two thousand chunks: not hidden so much as missing. It is now about one plant in a hundred chunks of ordinary country.
+- **What that means on foot.** A hundred chunks is a square ten chunks on a side, 160 blocks each way. Walk grassland for a few minutes and you should pass one. Open plains have more, forests fewer, and desert, snow and sea have none: it only grows on bare grass.
+- **Carrots are unchanged.** Wild carrots are still two to three times as common as hemlock, so most of what looks like a carrot is one. Check the leaves anyway.
+
 ## Release 1.1 — Afraid of the dark
 
 *Game version 6.44, released 2026-10-13.*

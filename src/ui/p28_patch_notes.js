@@ -3,7 +3,12 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Afraid of the dark',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Hemlock, a little less hidden',lines:[
+    '<b>HEMLOCK, A LITTLE LESS HIDDEN.</b> Last update made wild hemlock fifty times rarer, which turned out to mean one plant in about two thousand chunks: not hidden so much as missing. It is now about one plant in a hundred chunks of ordinary country.',
+    '<b>What that means on foot.</b> A hundred chunks is a square ten chunks on a side, 160 blocks each way. Walk grassland for a few minutes and you should pass one. Open plains have more, forests fewer, and desert, snow and sea have none: it only grows on bare grass.',
+    '<b>Carrots are unchanged.</b> Wild carrots are still two to three times as common as hemlock, so most of what looks like a carrot is one. Check the leaves anyway.',
+  ]},
+ {v:'6.44',label:'Release 1.1',title:'Afraid of the dark',lines:[
     '<b>AFRAID OF THE DARK.</b> Monsters used to follow a timetable: on the surface at night, somewhere underground by day, and never within eight blocks of a torch. They did not care how dark it actually was, and they did not check where they were standing. They do both now.',
     '<b>Dark means dark.</b> A monster can appear anywhere there is no light at all: no torchlight reaching the spot, and no daylight. Build a sealed room with no torch in it and things will turn up in it at noon. Light it properly and nothing will.',
     '<b>Torches work honestly.</b> A torch protects exactly as far as its light reaches, which is further than before, and one torch in the corner of a big hall no longer covers the far end. Lava and glowstone count too.',

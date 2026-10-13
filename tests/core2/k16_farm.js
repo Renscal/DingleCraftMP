@@ -133,8 +133,9 @@ boot.run(async()=>{
   {let wild={[B.CARROTS]:0,[B.HEMLOCK]:0},ripe=true,onGrass=true;const px=Math.floor(V.P.x),pz=Math.floor(V.P.z);
     const G=V.genChunk;let n=0;
     if(typeof G==='function'){const pcx=Math.floor(V.P.x/16),pcz=Math.floor(V.P.z/16);for(let cx=pcx-12;cx<pcx+12;cx++)for(let cz=pcz-12;cz<pcz+12;cz++){const bl=G(cx,cz);for(let i=0;i<bl.length;i++)if(bl[i]===B.CARROTS||bl[i]===B.HEMLOCK){wild[bl[i]]++;n++;}}}
-    /* 6.44: hemlock is 50 times rarer than a wild carrot. Counted over four million columns by the generator's own rule */
+    /* 6.45: about one hemlock plant per hundred chunks of ordinary country. Counted over four million columns by the generator's own rule,
+       and in the 576 real chunks round the start (where about one column in eight is bare grass) */
     let wc=0,wh=0;for(let x=0;x<2000;x++)for(let z=0;z<2000;z++){const w=V.farmWild(x*3+7,z*3-11);if(w===B.CARROTS)wc++;else if(w===B.HEMLOCK)wh++;}
-    ok('the world has wild carrots ('+wild[B.CARROTS]+' in 576 chunks nearby, ripe: a generated plant has meta 0); over 4,000,000 columns the rule gives '+wc+' carrots and '+wh+' hemlock, one hemlock to about 50 carrots',
-      typeof G!=='function'||(wild[B.CARROTS]>3&&n<2000&&V.cropStage(0)===7&&wc>2100&&wc<2700&&wh>25&&wh<80&&wc/wh>30&&wc/wh<90&&Math.round(V.FARM_WILD.carrot/V.FARM_WILD.hemlock)===50));}
+    ok('the world has wild carrots ('+wild[B.CARROTS]+') and wild hemlock ('+wild[B.HEMLOCK]+') in the 576 chunks nearby, ripe (a generated plant has meta 0); over 4,000,000 columns the rule gives '+wc+' carrots and '+wh+' hemlock (2400 and 1200 expected)',
+      typeof G!=='function'||(wild[B.CARROTS]>3&&wild[B.HEMLOCK]>=1&&wild[B.HEMLOCK]<40&&n<2000&&V.cropStage(0)===7&&wc>2100&&wc<2700&&wh>1000&&wh<1400&&V.FARM_WILD.hemlock===0.0003));}
 });

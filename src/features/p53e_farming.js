@@ -104,9 +104,11 @@ idef(IT.CARROT,{name:'Carrot',icon:'i_carrot',food:3,plant:B.CARROTS});
 idef(IT.HROOT,{name:'Hemlock Root',icon:'i_hroot',plant:B.HEMLOCK});
 /* tall grass gives seeds now and then */
 DEFS[B.TALLGRASS].pdrop=()=>Math.random()<0.125?{id:IT.SEEDS,count:1}:null;
-/* the wild plant the world generator puts on a bare grass column, or 0: a carrot about 6 times in 10,000, hemlock 50
-   times more rarely than that (6.44; they were equally common in 6.39). Its own hash, so nothing else generated moves. */
-const FARM_WILD={carrot:0.0006,hemlock:0.000012};
+/* the wild plant the world generator puts on a bare grass column, or 0: a carrot about 6 times in 10,000 and hemlock
+   about 3 (6.45). Only about one column in eight is bare grass, so in ordinary country that comes to roughly one hemlock
+   plant in a hundred chunks, more in open plains and none in desert, snow or sea. (6.39 had them equal; 6.44 made
+   hemlock 50 times rarer, which was too rare to find.) Its own hash, so nothing else generated moves. */
+const FARM_WILD={carrot:0.0006,hemlock:0.0003};
 function farmWild(wx,wz){
   const r=h2(wx,wz,SEED+7117);
   return r<FARM_WILD.carrot?B.CARROTS:r<FARM_WILD.carrot+FARM_WILD.hemlock?B.HEMLOCK:0;
