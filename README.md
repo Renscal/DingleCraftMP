@@ -16,6 +16,7 @@ The whole game is about 41,000 lines of plain JavaScript, built here from per-sy
 `dinglecraft_v<version>.html` you can double-click. three.js is bundled inside that file, so it plays offline.
 
 > DINGLECRAFT is an independent fan-made game. NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG
+> DINGLECRAFT MP is an fanmade modification of the game. This has not been checked or reveiwed by Dan Dingle and he therefore does not carry any resposibility for the mod's functionality.
 > OR MICROSOFT. Other names belong to their owners. Free to play and tinker with, not to redistribute: see [LICENSE](LICENSE).
 
 ---
@@ -151,5 +152,4 @@ ghosts and "the others" (a few rare, unsettling events). They are ordinary sourc
 ## Licence
 
 Source-available, no redistribution: you may play it, read it, tinker with it and make videos of it, but not hand it out
-or sell it. The full terms are in [LICENSE](LICENSE). Third-party components keep their own licences
-([THIRD_PARTY.md](THIRD_PARTY.md)). The AI players need your own Anthropic key; nothing in this repository includes one.
+or sell it. The full terms are in [LICENSE](LICENSE). Third-party components keep their own licences.
