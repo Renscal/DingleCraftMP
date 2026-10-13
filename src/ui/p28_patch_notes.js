@@ -3,7 +3,14 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Lava is not a wall',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Names through walls',lines:[
+    '<b>NAMES THROUGH WALLS.</b> Your friend walks behind a hill and their name walks behind it too, which is the exact moment you wanted to know where they went. A name tag is now drawn over everything. Mountains, castles, the casino: the name floats on top.',
+    '<b>Dim means hidden.</b> With a clear line from your eye to their head the name is at full strength. Put something solid between you and it fades to about a third. So one glance tells you who is there and whether you can actually see them.',
+    '<b>Glass does not count.</b> A window, leaves or a torch in the way is not a wall. Stone behind the window is.',
+    '<b>Sneaking is for sneaks.</b> Hold Shift and your name dims for everyone, and behind a wall it is not drawn at all. Hide-and-seek works again. Ambushes also work again. We are sorry and you are welcome.',
+    '<b>Cheap.</b> The game checks each player&#x27;s line a few times a second, not every frame, and the dead and people in other dimensions stay hidden as before.',
+  ]},
+ {v:'6.28',label:'Release 1.1',title:'Lava is not a wall',lines:[
     '<b>LAVA IS NOT A WALL.</b> You could look through water. You could not look through lava: the crosshair stopped on it as if it were a brick, so a block aimed at the far bank of a lava pool landed on top of the lava, and a block aimed INTO the lava went nowhere at all. Lava is a liquid. The game has been told.',
     '<b>Look through it.</b> The crosshair passes through lava, still or flowing, to whatever is behind it. Mobs see through it the same way, which is fair, because so do you.',
     '<b>Build into it.</b> Put a block where lava is and the lava is gone: a source is plugged for good, and what had run out of it drains away. Plug a stream and it runs round your block. Bridging a lava lake no longer needs a ritual.',

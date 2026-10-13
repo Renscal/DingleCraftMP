@@ -21,6 +21,16 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — Names through walls
+
+*Game version 6.29, released 2026-10-13.*
+
+- **NAMES THROUGH WALLS.** Your friend walks behind a hill and their name walks behind it too, which is the exact moment you wanted to know where they went. A name tag is now drawn over everything. Mountains, castles, the casino: the name floats on top.
+- **Dim means hidden.** With a clear line from your eye to their head the name is at full strength. Put something solid between you and it fades to about a third. So one glance tells you who is there and whether you can actually see them.
+- **Glass does not count.** A window, leaves or a torch in the way is not a wall. Stone behind the window is.
+- **Sneaking is for sneaks.** Hold Shift and your name dims for everyone, and behind a wall it is not drawn at all. Hide-and-seek works again. Ambushes also work again. We are sorry and you are welcome.
+- **Cheap.** The game checks each player's line a few times a second, not every frame, and the dead and people in other dimensions stay hidden as before.
+
 ## Release 1.1 — Lava is not a wall
 
 *Game version 6.28, released 2026-10-13.*

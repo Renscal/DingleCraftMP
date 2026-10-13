@@ -8,6 +8,40 @@
 const NT_SHIRTS=[0x3b82d9,0xd94a4a,0x3fae5a,0xa24bd1,0xe0b030,0x2fb5b5,0xd9648f,0x7a8a99];
 /* the vehicles a player can be seen riding (entity kinds); each has a mesh builder in the core, looked up when needed */
 const NT_RIDES={car:1,skate:1,cart:1,boat:1,plane:1};
+/* ----- name tags (6.29) -----
+   A name is drawn over everything, so you can find your friends through a hill: at full strength with a clear line from
+   your eye to their head, dimmer with something solid in the way. Someone sneaking shows a dimmer name, and none at all
+   through a wall: that is what sneaking is for. The line is looked along once every NT_TAGEVERY frames for each player
+   (not all on the same frame), with the same ray the crosshair uses; blocks you can see through (glass, leaves, a torch)
+   do not count as being in the way. */
+const NT_TAGORDER=9990,NT_TAGEVERY=6;
+/* how strongly a name is drawn: seen = a clear line to the head, sneak = they are sneaking. 0 = not drawn */
+function ntTagAlpha(seen,sneak){return sneak?(seen?0.45:0):(seen?1:0.35);}
+/* is there a clear line from (ax,ay,az) to (bx,by,bz)? */
+function ntTagSeen(ax,ay,az,bx,by,bz){
+  let dx=bx-ax,dy=by-ay,dz=bz-az,d=Math.hypot(dx,dy,dz);
+  if(d<0.01)return true;
+  dx/=d;dy/=d;dz/=d;
+  let t0=0;
+  for(let i=0;i<6;i++){                                    /* through at most five see-through blocks */
+    const h=raycastB(ax+dx*t0,ay+dy*t0,az+dz*t0,dx,dy,dz,d-t0);
+    if(!h)return true;
+    if(DEFS[h.id].opq)return false;
+    t0+=h.t+1.01;
+    if(t0>=d)return true;
+  }
+  return false;
+}
+/* once a frame for a visible player: look along the line when it is this player's turn, then set the tag */
+function ntTagTick(p,M){
+  const tag=M.tag;
+  if(!tag)return;
+  if(p.tagSeen===undefined||(frameCount+p.id)%NT_TAGEVERY===0)
+    p.tagSeen=ntTagSeen(camera.position.x,camera.position.y,camera.position.z,p.x,p.y+((p.fl&2)?1.4:1.62),p.z);
+  const a=ntTagAlpha(p.tagSeen,!!(p.fl&2));
+  tag.visible=a>0;
+  if(tag.material.opacity!==a)tag.material.opacity=a;
+}
 /* ----- the other players ----- */
 function ntHash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
 /* a player joined (or was already there when we did) */
@@ -87,8 +121,8 @@ function ntPeerMesh(p){
       c.fillStyle='rgba(0,0,0,0.45)';c.fillRect((256-w)/2,6,w,36);
       c.fillStyle='#fff';c.textAlign='center';c.textBaseline='middle';c.fillText(p.name,128,25,244);
       const tx=new THREE.CanvasTexture(cv);tx.magFilter=THREE.NearestFilter;
-      const sm=new THREE.SpriteMaterial({map:tx,transparent:true,depthWrite:false});sm.ntOwn=true;
-      const sp=new THREE.Sprite(sm);sp.scale.set(1.6,0.3,1);sp.position.y=2.25;G.add(sp);M.tag=sp;
+      const sm=new THREE.SpriteMaterial({map:tx,transparent:true,depthWrite:false,depthTest:false});sm.ntOwn=true;   /* 6.29: drawn over everything; ntTagTick dims it behind a wall */
+      const sp=new THREE.Sprite(sm);sp.scale.set(1.6,0.3,1);sp.position.y=2.25;sp.renderOrder=NT_TAGORDER;G.add(sp);M.tag=sp;
     }
   }catch(e){}
   scene.add(G);
@@ -152,6 +186,7 @@ function ntPeersTick(dt){
     M.G.visible=true;
     M.G.position.set(p.x,p.y-((p.fl&2)?0.12:0),p.z);
     M.G.rotation.y=p.yaw;
+    ntTagTick(p,M);
     M.head.rotation.x=p.pitch*0.55;
     if(M._skin!==(p.skin||'')){M._skin=p.skin||'';skinLoadInto(M.skinCv,M.skinTex,M._skin,ntHood(p));}   /* they changed their skin */
     ntPeerTool(p);ntPeerArmor(p);ntPeerRide(p);
