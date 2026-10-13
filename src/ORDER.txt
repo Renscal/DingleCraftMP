@@ -97,6 +97,7 @@ net/n6_menu.js
 net/n7_mobs.js
 net/n8_host.js
 net/n9_ents.js
+net/na_data.js
 
 # PART 57: the Malgorath Update
 malgorath/m0_contract.js

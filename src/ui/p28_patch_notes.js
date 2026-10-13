@@ -3,7 +3,15 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'The server runs the water',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'The world remembers',lines:[
+    'THE WORLD REMEMBERS. A server used to forget everything about its world that was not a block. Which villages had been found, which bosses were dead, what the stocks cost: all of it lived in each player&#x27;s game and left when they did.',
+    'Now the server keeps it. A village one of you finds is found for all of you, and is populated once. A dimension boss you kill stays dead for the friend who logs in tomorrow.',
+    'ONE STOCK MARKET. The server runs it and everyone sees the same prices. Your shares and your balance are still yours. Yes, this means you can no longer both be right about the price of anything.',
+    'Spawners are run by the server too, once, not once per bystander.',
+    'What is yours stays yours: the Snail, your business with Malgorath, and your own paintings and songs now travel with your player. Until now a painting did not survive leaving the server. Sorry about that.',
+    'Server owners: a new data folder in the world holds all of this, a readable file each.',
+  ]},
+ {v:'6.15',label:'Release 1.1',title:'The server runs the water',lines:[
     'THE SERVER RUNS THE WATER. And the fire. And the sand. In the Overworld of a server that plays along, those are now the server&#x27;s business and happen exactly once.',
     'Water: poured by you, flowed by the server. No more two games arguing about where the puddle ends.',
     'Sand and gravel: dig under it and the server drops it. Everyone watches it fall. Nobody gets a bonus sand item because three people were standing nearby.',

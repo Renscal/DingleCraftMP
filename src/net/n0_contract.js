@@ -31,6 +31,8 @@
 /*                   mobs; the players' games only draw them             */
 /*   n9_ents.js      what flies (seen by everyone, 6.14) and what you    */
 /*                   ride (kept by the server's game, 6.14)              */
+/*   na_data.js      what the world remembers (6.16): found structures,  */
+/*                   dead bosses, spawners, nukes, the stock market      */
 /*                                                                       */
 /* Load rules: PART 58 loads before PARTs 57-54, so their names are      */
 /* runtime-only here (typeof-guarded). No THREE constructor, clock,      */
@@ -61,18 +63,20 @@
 /* And four for the world the server runs (6.15, behind NET.on):         */
 /*   checkFalling -> ntHosted      igniteAt -> ntIgnite                  */
 /*   updateFires -> ntHosted       furnaceTick -> ntNoTick               */
+/*   tickSpawners -> ntHosted      updateStocks -> NET.hosted (6.16)     */
 /*                                                                       */
 /* Protocol: JSON text frames over one WebSocket, {t:'<type>', ...}.     */
 /*   client -> server: hello pose rd edits open close be drop dropAt     */
 /*                     take chat cmd hit save spawn time gr sleep death  */
 /*                     mobs mgone mgive mhit boom ping fx fxgone vehs    */
-/*                     vgive vtake vfree vgone vhit ign                  */
+/*                     vgive vtake vfree vgone vhit ign wd               */
+/*   the server's game -> server, also: mkt                              */
 /*   the server's game -> server, also: hurt xp hsnap                    */
 /*   server -> client: welcome perm edits bes drops ready (the join),    */
 /*                     then join leave pose edits be lock drop undrop    */
 /*                     took chat sys hit time gr kick tp give mode perm  */
 /*                     mobs mgone mgive mhit boom pong mheir hurt xp     */
-/*                     fx fxgone vehs vgone vno vhit fire                */
+/*                     fx fxgone vehs vgone vno vhit fire wd mkt         */
 /* Messages are compressed by the browser and the server between them    */
 /* (permessage-deflate); nothing here knows about it.                    */
 /* NT_PROTO must equal PROTO in the server (tests/net/n_static.js).      */
@@ -111,7 +115,8 @@ const NET={on:false,st:'off',ws:null,id:0,name:'',server:'',pvp:true,ap:false,pe
   op:false,prot:0,spawn:null,lockK:null,lockWant:null,saveT:-1,rdS:0,mobs:new Map(),mseq:0,mobT:0,ownT:0,dmgRef:null,guardT:-9,
   pw:'',retryN:0,retryH:0,pingT:0,pingN:0,pingAt:0,ms:0,rxAt:0,act:false,
   hosted:false,host:false,hp0:null,hpl:[],hrr:0,hsnT:0,hchT:0,
-  fx:new Map(),fseq:0,vehs:new Map(),vseq:0,vehT:0,ignQ:[],fbT:0,apd:false};   /* ignQ: cells to light (to the server's game) or lit (to the players); fbT: the host's furnace report timer */   /* n9_ents.js: flying things and vehicles by id, their counters, the vehicle timer */
+  fx:new Map(),fseq:0,vehs:new Map(),vseq:0,vehT:0,ignQ:[],fbT:0,apd:false,
+  wd:{},wdT:0,mktT:0};   /* na_data.js: each world list as last agreed with the server, the timers for them and for the market */   /* ignQ: cells to light (to the server's game) or lit (to the players); fbT: the host's furnace report timer */   /* n9_ents.js: flying things and vehicles by id, their counters, the vehicle timer */
 
 /* everything the suites reach, spread into window.__vox by src/boot/export_boot.js */
 
@@ -121,4 +126,5 @@ const NTEX={NET,NT_PROTO,NT_PORT,ntUrl,ntConnect,ntLeave,ntDown,ntMsg,ntSend,ntE
   ntRetry,ntRetryStop,ntPing,ntMobAdopt,ntPeerArmor,ntPeerRide,ntMobState,ntMobTwin,
   ntHosted,ntHostStart,ntHostTick,ntHostSnap,ntHostPlayers,ntHostAim,ntHostHurt,ntMobFull,
   ntFxTick,ntFxIn,ntFxGone,ntFxPup,ntVehTick,ntVehsIn,ntVehsGone,ntVehHit,ntVehPup,ntEntPup,ntHostVehSnap,
-  spawnArrow,spawnBoat,hitCar,ntIgnite,ntFireIn,ntNoTick,ntHostBeScan,checkFalling,igniteAt,updateFires,furnaceTick,tickFlow,getFires:()=>fires};   /* three core names the suites need to shoot, launch and hit with */
+  spawnArrow,spawnBoat,hitCar,ntIgnite,ntFireIn,ntNoTick,ntHostBeScan,checkFalling,igniteAt,updateFires,furnaceTick,tickFlow,getFires:()=>fires,
+  ntWdGet,ntWdTick,ntWdIn,ntWdReset,ntMktIn,ntHostMkt,tickSpawners,updateStocks,getMKT:()=>MKT,getSPW:()=>SPW,getNUKES:()=>NUKES,getVSEEN:()=>VSEEN,getINFKILL:()=>INFKILL};   /* three core names the suites need to shoot, launch and hit with */

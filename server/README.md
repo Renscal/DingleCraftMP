@@ -1,6 +1,6 @@
 # The DINGLECRAFT multiplayer server
 
-No dependencies and nothing to install: `dinglecraft-server.mjs` plus the `lib/` folder beside it. It needs [Node.js](https://nodejs.org) 20 or newer and a game build of 6.15 or newer.
+No dependencies and nothing to install: `dinglecraft-server.mjs` plus the `lib/` folder beside it. It needs [Node.js](https://nodejs.org) 20 or newer and a game build of 6.16 or newer.
 
 ## Start it
 
@@ -141,6 +141,11 @@ data/
       over/r.0.0.json               what lies, walks or is parked in that region: dropped items, mobs, vehicles
     playerdata/
       dan.json                      one file per player who has ever joined
+    data/
+      structures.json               which villages, dungeons, parks and roosts have been found; where the spawners stand
+      bosses.json                   which dimension bosses are dead
+      nukes.json                    where a mega nuke went off
+      market.json                   what the stocks cost
 ```
 
 - **A region** is 32 x 32 chunks (512 x 512 blocks) and is named after its place in the world: `r.<x>.<z>`, so
@@ -153,6 +158,8 @@ data/
 - **`playerdata`** holds each player's position, dimension, health, hunger, spawn point, XP, Dingle Bucks, game mode,
   `armor` and `inv` (one slot per line; `0` is an empty slot). The file is named after the player in lower case, with
   unusual characters spelled as `%xx`.
+- **`data`** (6.16) holds what the world remembers besides its blocks. Each file starts with an `about` line saying what
+  is in it. A structure listed as found is not populated again, for anyone; a boss listed as dead stays dead.
 - Only the files that changed are rewritten on a save, each through a `.tmp` file and a rename, and a region file whose
   content is gone is removed. A file that cannot be parsed stops the server with its name; it is never overwritten.
 - A world from before 6.12 (`data/world.vxw.json`) is converted to a folder on the first start. The old file is left
@@ -241,6 +248,9 @@ Shared by everyone, kept by the server and saved every 30 seconds:
 - explosions (everyone nearby is hurt, not just the player whose game set it off), and arrows and bullets between players
 - each player's inventory, armour, XP, Dingle Bucks, spawn point, position and game mode, by name
 - the world spawn, where new players appear (the first player's game finds it; `/setworldspawn` moves it)
+- what the world remembers (6.16): which structures have been found and populated, which dimension bosses are dead,
+  where spawners stand and mega nukes went off. One game finding a village finds it for everyone
+- the stock market (6.16): one market, run by the server's game. Each player's shares and balance are their own
 - chat, the player list (with each player's ping), players' positions, what they hold, the armour they wear and the car,
   boat, plane, cart or skateboard they are riding, punches and sword hits between players
 - the sound and the dust of a block another player places or breaks nearby
@@ -254,9 +264,10 @@ Not shared yet: each player's own game still plays these by itself, so two playe
   What a mob drops when you kill it is shared like any other dropped item; the XP goes to the player whose game ran it
 - vehicles outside the Overworld, or on a server with `simulate` off: you see one under the player riding it; an empty
   one is only in the game that placed it
-- which bosses are already dead: a boss comes back for a player who was not there when it died
-- paintings and records from the Creativity Update (the works are stored per player)
-- the stock market
+- the dungeon boss and the Stone Titan have no record of their own: the dungeon boss is covered by its dungeon being
+  marked as found, the Titan is summoned by hand
+- paintings and records from the Creativity Update: each player's works are saved with that player (6.16), but a work
+  handed to another player does not show for them
 
 Loot is rolled once (6.15): a chest the world already has can only be changed by the player who has it open, so a later
 visitor's game cannot refill a structure's chest with loot of its own. Outside the

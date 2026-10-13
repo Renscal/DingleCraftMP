@@ -139,6 +139,7 @@ function initMarket(){
 }
 initMarket();
 function updateStocks(dt){
+  if(NET.on&&NET.hosted)return;   /* PART 58: one market for everyone: the server's game runs it and tells the prices */
   MKT.acc+=dt;
   let moved=false;
   while(MKT.acc>=0.5){

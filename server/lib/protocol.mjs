@@ -60,6 +60,9 @@
 // sand (their results are ordinary edits from player 0), cooks every furnace nobody has open (be from player 0), and burns:
 //   ign {c: [[x, y, z]...]}                       -> the server's game (a player's game asks for these cells to be lit)
 //   fire {c}  (the server's game)                 fire      (to players nearby: these are alight)
+// What the world remembers (6.16): any game may add to one of the world's lists (and take a spawner off its list);
+//   wd {k, add, del}                              wd        (to everyone else, and the server's game)
+//   mkt {p, mu}  (the server's game)              mkt       (the stock prices, to everyone)
 // A chest that already has a record can only be rewritten by the player who has it open: a later visitor's game, which
 // filled the same chest with loot of its own, is sent the server's copy back. Loot is rolled once.
 import crypto from 'node:crypto';
@@ -90,7 +93,11 @@ function near(a, b, dist) {
 }
 
 /* what the server's own game may send, and what only it may send */
-const HOST_SENDS = new Set(['edits', 'drop', 'dropAt', 'take', 'mobs', 'mgone', 'boom', 'hurt', 'xp', 'hsnap', 'fx', 'fxgone', 'vehs', 'vgone', 'be', 'fire']);
+const HOST_SENDS = new Set(['edits', 'drop', 'dropAt', 'take', 'mobs', 'mgone', 'boom', 'hurt', 'xp', 'hsnap', 'fx', 'fxgone', 'vehs', 'vgone', 'be', 'fire', 'wd', 'mkt']);
+/* the lists the world keeps (na_data.js in the game): found structures, dead bosses, spawners, nuke sites */
+export const WORLD_LISTS = ['vseen', 'nseen', 'aseen', 'pseen', 'wdseen', 'lsseen', 'rseen', 'infkill', 'valkill', 'spw', 'nukes'];
+/* entries for one of them from a game: short strings or whole numbers, at most 200 */
+const cleanList200 = (list) => (Array.isArray(list) ? list.filter((v) => (typeof v === 'string' && v.length > 0 && v.length <= 40 && !/[\u0000-\u001f]/.test(v)) || Number.isInteger(v)).slice(0, 200).map(String) : []);
 /* the kinds of thing that fly, and a vehicle's id */
 const FX_KINDS = new Set(['arrow', 'blt', 'nade', 'tnt', 'fireb', 'lavab', 'rock', 'abomb', 'xp', 'fall']);
 /* a list of block cells [[x, y, z]...] from a game, at most 64, whole numbers only */
@@ -110,7 +117,7 @@ function cleanVeh(a) {
 }
 /* the server's own game, if it is running */
 const hostOf = (S) => (S.host && !S.host.stopped ? S.host.c : null);
-const HOST_ONLY = new Set(['hurt', 'xp', 'hsnap']);
+const HOST_ONLY = new Set(['hurt', 'xp', 'hsnap', 'mkt', 'fire']);
 /* the player a message is addressed to: a real one, or the server's own game (id 0) */
 const peerOf = (S, id) => (id === 0 ? (S.host && !S.host.stopped ? S.host.c : null) : S.clients.get(id));
 
@@ -550,6 +557,25 @@ export function handleMessage(S, net, c, m, size) {
     }
     case 'hsnap': {                    // (the server's game) every mob and vehicle it has, for the next save
       world.mobs = cleanMobs(m.mobs); world.vehicles = cleanMobs(m.vehs).filter((v) => RIDES.has(v.t)); S.dirty = true;
+      return;
+    }
+    case 'wd': {                       // a game learnt something about the world: a structure found, a boss dead, a spawner placed or broken
+      if (!WORLD_LISTS.includes(m.k)) return;
+      const add = cleanList200(m.add), del = m.k === 'spw' ? cleanList200(m.del) : [];
+      const have = new Set((Array.isArray(world[m.k]) ? world[m.k] : []).map(String)), news = add.filter((v) => !have.has(v)), gone = del.filter((v) => have.has(v));
+      if (!news.length && !gone.length) return;
+      for (const v of gone) have.delete(v);
+      for (const v of news) if (have.size < LIMITS.listLen) have.add(v);
+      world[m.k] = [...have]; S.dirty = true;
+      net.broadcast({ t: 'wd', k: m.k, add: news, del: gone }, c);
+      return;
+    }
+    case 'mkt': {                      // (the server's game) what the stocks cost
+      const clean = (o) => { const r = {}; if (o && typeof o === 'object') for (const k of Object.keys(o).slice(0, 64)) if (/^[A-Za-z0-9_]{1,12}$/.test(k) && Number.isFinite(o[k])) r[k] = o[k]; return r; };
+      const p = clean(m.p), mu = clean(m.mu);
+      if (!Object.keys(p).length) return;
+      world.market = { p, mu }; S.dirty = true;
+      net.broadcast({ t: 'mkt', p, mu }, c);
       return;
     }
     case 'ign': {                      // a player's game asks the server's to light these cells

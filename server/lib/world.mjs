@@ -16,6 +16,11 @@
 //     entities/<dimension>/r.<rx>.<rz>.json  everything that lies or walks in that region: the dropped items and the mobs
 //     playerdata/<name>.json            one file per player who has ever joined: position, health, hunger, spawn point,
 //                                       inventory, armour, XP, game mode
+//     data/structures.json              which villages, dungeons, parks and roosts have been found (so each is populated
+//                                       once), and where the spawners stand
+//     data/bosses.json                  which dimension bosses are dead
+//     data/nukes.json                   where a mega nuke went off
+//     data/market.json                  what the stocks cost
 // Only what changed since the last save is written (each file through a .tmp and a rename), and a file whose region
 // emptied out is removed. A world from before 6.12 (one world.vxw.json) is read once and written out as a folder; the old
 // file is left where it was. exportWorld turns the folder back into that one file, which the game can import.
@@ -113,6 +118,13 @@ export function adoptWorld(d, o) {
 export const REGION = 32;             // chunks along one side of a region file
 const CHUNK = 16;                     // blocks along one side of a chunk (the game's CH)
 const LAYOUT = 1;                     // the folder layout's own version number, in level.json
+/* the world's own records, by the data/ file each is kept in (the names are the save format's) */
+const DATA_FILES = {
+  structures: { about: 'Which structures have been found, so each is populated once (vseen villages, nseen and aseen the Nether and Aether ones, pseen parks, wdseen dungeons, lsseen, rseen roosts), and where the spawners stand (spw).', keys: ['vseen', 'nseen', 'aseen', 'pseen', 'wdseen', 'lsseen', 'rseen', 'spw'] },
+  bosses: { about: 'Which dimension bosses are dead: the fortresses of the Nether (infkill) and the citadels of the Aether (valkill) whose boss has been killed.', keys: ['infkill', 'valkill'] },
+  nukes: { about: 'Where a mega nuke went off: [x, y, z, dimension] or "x,y,z,dimension" (0 Overworld, 1 Nether, 2 Aether, 3 Puppet Purgatory).', keys: ['nukes'] },
+  market: { about: 'What the stocks cost (p) and where each is drifting (mu).', keys: ['market'] },
+};
 const DIM_OF = Object.fromEntries(Object.entries(DIM_PFX).map(([dim, pfx]) => [pfx, dim]));   // 'n;' -> 'nether'
 /* the folder a key's dimension prefix ('' or 'n;' ...) is stored under, and back. A prefix this server has no name for
    (a newer game's dimension) gets a folder of its own, so nothing is lost. */
@@ -149,6 +161,13 @@ function lines(obj, indent) {
 export function worldFiles(world) {
   const out = new Map();
   const { edits, be, players, drops, mobs, vehicles, ...level } = world;
+  /* data/<name>.json: the world's own records leave level.json for a file each (only the ones this world has) */
+  for (const name of Object.keys(DATA_FILES)) {
+    const doc = {};
+    for (const k of DATA_FILES[name].keys) if (level[k] !== undefined) { doc[k] = level[k]; delete level[k]; }
+    if (!Object.keys(doc).length) continue;
+    out.set(`data/${name}.json`, '{\n  "about": ' + line(DATA_FILES[name].about) + ',\n' + Object.keys(doc).map((k) => '  ' + line(k) + ': ' + line(doc[k])).join(',\n') + '\n}\n');
+  }
   out.set('level.json', JSON.stringify({ layout: LAYOUT, regionSize: REGION, chunkSize: CHUNK, ...level }, null, 2) + '\n');
 
   /* region/<dim>/r.<rx>.<rz>.json: chunk by chunk, the changed blocks ("lx,y,lz": block id) and the block entities */
@@ -240,6 +259,11 @@ export function readWorldDir(dir) {
   const { layout, regionSize, chunkSize, ...level } = read('level.json');
   if (regionSize && regionSize !== REGION) throw new Error(`${path.join(dir, 'level.json')} says regions are ${regionSize} chunks wide; this server reads ${REGION}`);
   const world = { ...level, edits: {}, be: {}, players: {}, drops: {}, mobs: [], vehicles: [] };
+  for (const rel of listJson(dir, 'data')) {
+    const name = rel.split('/')[1].replace(/\.json$/, ''), doc = read(rel);
+    if (!DATA_FILES[name] || !doc || typeof doc !== 'object') continue;
+    for (const k of DATA_FILES[name].keys) if (doc[k] !== undefined) world[k] = doc[k];
+  }
   for (const rel of listJson(dir, 'region')) {
     const pfx = dimPrefix(rel.split('/')[1]);
     if (pfx === null) continue;

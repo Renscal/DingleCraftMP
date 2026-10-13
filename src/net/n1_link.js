@@ -116,6 +116,8 @@ function ntMsg(m){
       if(m.n===NET.pingN&&NET.pingAt){NET.ms=Math.max(0,Math.min(9999,Math.round(Date.now()-NET.pingAt)));NET.pingAt=0;}
       return;
     case 'mheir':if(NET.on)ntMobAdopt(m.from|0);return;
+    case 'wd':if(NET.on)ntWdIn(m);return;
+    case 'mkt':if(NET.on)ntMktIn(m);return;
     case 'fire':if(NET.on&&!NET.host)ntFireIn(m);return;
     case 'ign':if(NET.host&&Array.isArray(m.c))for(const c of m.c)if(Array.isArray(c))igniteAt(c[0]|0,c[1]|0,c[2]|0);return;   /* only the server's game is sent these */
     case 'fx':if(NET.on)ntFxIn(m);return;
@@ -208,6 +210,8 @@ function ntEnter(){
     if(!pl){resetWorld();SEED=w.seed|0;const ws=NET.spawn,sp=ws?[ws.x,ws.y,ws.z]:findSpawn();pl={x:sp[0],y:sp[1],z:sp[2],spawn:sp};if(!ws)found=sp;}
     const d={...w,f:w.f||SAVE_FORMAT,edits:W.edits,be:W.be,player:pl,dim:pl.dim||'over',ents:[]};
     if('mp' in pl){d.mp=pl.mp;d.stash=pl.stash;}else{delete d.mp;delete d.stash;}   /* purgatory progress is per player */
+    /* ...and so are the Snail, Malgorath, the old demon and this player's own Creativity works (6.16: they used to be lost on leaving) */
+    for(const k of ['snl','mg','demon','cr']){if(pl[k]!=null)d[k]=pl[k];else delete d[k];}
     applySave(d);
   }catch(e){
     if(typeof console!=='undefined')console.error('[net]',e);
@@ -221,6 +225,7 @@ function ntEnter(){
   NET.drops.clear();NET.dim=DIM;NET.dseq=0;NET.dropIn=false;
   NET.mobs.clear();NET.mseq=0;NET.mobT=0;NET.ownT=0;NET.lockK=null;NET.lockWant=null;NET.saveT=-1;NET.rdS=RD;NET.dmgRef=LASTDMG;NET.guardT=-9;
   NET.fx.clear();NET.fseq=0;NET.vehs.clear();NET.vseq=0;NET.vehT=0;NET.ignQ.length=0;
+  ntWdReset();NET.mktT=0;
   ntRetryStop();NET.pingT=0;NET.pingN=0;NET.pingAt=0;NET.ms=0;NET.rxAt=Date.now();NET.act=false;
   if(found)ntSend({t:'spawn',x:found[0],y:found[1],z:found[2]});
   for(const d of (W.drops||[]))ntDropKnow(d);   /* they appear as their chunks load (ntDropsScan) */

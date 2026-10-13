@@ -18,7 +18,10 @@
    10 (6.14) vehicles are the server's: a placed car is handed over and everyone gets it, getting on makes it the rider's
       (a second rider is refused), getting off gives it back, a hit on a parked one breaks it once, and they are saved
    11 (6.15) the world the server runs: its game flows the water and drops the sand (a player's game does neither and is
-      shown the sand falling), lights and burns the fire a player's game asks for, and cooks a furnace nobody has open */
+      shown the sand falling), lights and burns the fire a player's game asks for, and cooks a furnace nobody has open
+   12 (6.16) what the world remembers: a structure one game finds is found for everyone, a dead boss stays dead, a spawner
+      that is gone is taken off the list by the server's game, the stock market is the server's and one for all, a player's
+      own things (the Snail, Malgorath, their Creativity works) travel with their save, and all of it is in data/ on disk */
 'use strict';
 const boot=require('../lib/c_boot.js'),{ok}=boot;
 const path=require('path'),fs=require('fs'),{pathToFileURL}=require('url');
@@ -204,6 +207,28 @@ boot.run(async()=>{
         /* with the window open it is this player's to cook */
         V.NET.lockK=fk;ok('with its window open, it is this player\'s game that cooks it',V.ntNoTick(fb)===false);V.NET.lockK=null;}
       V.P.mode='s';V.P.flying=false;}
+
+    /* ===== 12. what the world remembers ===== */
+    {const hx=Math.floor(P.x)+20,hy=Math.min(70,Math.floor(P.y)+26),hz=Math.floor(P.z);
+      await bea.pose(hx-4+0.5,hy+1,hz+0.5);bea.clear();
+      V.getVSEEN().add('9,-9');
+      ok('a village this player\'s game finds is found for everyone: the server is told within a second and passes it on',await pumpUntil(()=>bea.by('wd').some(m=>m.k==='vseen'&&m.add.includes('9,-9')),4000)&&W.vseen.includes('9,-9'));
+      bea.send({t:'wd',k:'infkill',add:['3,4','3,4',{},'x'.repeat(60)]});
+      ok('a boss another player killed is dead here too',await pumpUntil(()=>V.getINFKILL().has('3,4'),3000)&&JSON.stringify(W.infkill)==='["3,4"]');
+      bea.clear();bea.send({t:'wd',k:'vseen',del:['9,-9']});bea.send({t:'wd',k:'pvp',add:['1']});bea.send({t:'wd',k:'vseen',add:['9,-9']});await sleep(80);await pump(4);
+      ok('these lists only grow: a player cannot take a village off, name a list of their own, or be echoed what is already known',W.vseen.includes('9,-9')&&V.getVSEEN().has('9,-9')&&!('pvp' in W)&&bea.by('wd').length===0);
+      /* a spawner that is not there any more */
+      {const sk=(hx+1)+','+(hy+3)+','+hz;bea.clear();bea.send({t:'wd',k:'spw',add:[sk]});
+        ok('a spawner one game knows of is on everyone\'s list',await pumpUntil(()=>V.getSPW().has(sk),3000)&&W.spw.includes(sk));
+        ok('...and when no spawner stands there, the server\'s game takes it off for everyone (this player\'s game runs no spawners here)',await pumpUntil(()=>!V.getSPW().has(sk)&&!W.spw.includes(sk),8000)&&bea.by('wd').some(m=>m.k==='spw'&&m.del.includes(sk)));}
+      /* the market */
+      {bea.clear();const t0=V.getMKT().t;
+        ok('the stock market is the server\'s: its game announces the prices every 2 seconds, and the server keeps them',await pumpUntil(()=>bea.by('mkt').length>=2,8000)&&Object.values(bea.last('mkt').p).every(v=>typeof v==='number'&&v>0)&&!!W.market&&Object.keys(W.market.p).length===Object.keys(bea.last('mkt').p).length);
+        const last=bea.last('mkt'),k0=Object.keys(last.p)[0];await pump(6);
+        ok('...and this player\'s game runs no market of its own: it shows the server\'s prices',V.getMKT().t===t0&&Math.abs(V.getMKT().p[k0]-bea.by('mkt').filter(m=>m.p[k0]===V.getMKT().p[k0]).length*0-V.getMKT().p[k0])===0&&bea.by('mkt').some(m=>m.p[k0]===V.getMKT().p[k0]));}
+      /* a player's own things travel with their save */
+      {await V.saveToStorage('x',true);await sleep(120);const rec=W.players.dan;
+        ok('the save a player sends carries what is theirs alone: the Snail and the old demon (and Malgorath and their Creativity works, once they have any)',!!rec&&('snl' in rec)&&rec.demon&&typeof rec.demon==='object'&&!('vseen' in rec)&&!('market' in rec));}}
     await V.quitToTitle();}
 
   /* ===== 7. saved with the world ===== */
@@ -214,10 +239,14 @@ boot.run(async()=>{
     const all=files.flatMap(f=>JSON.parse(fs.readFileSync(path.join(dir,f),'utf8')).mobs||[]);
     ok('the world folder lists the mobs under entities/, by region: type, place, health, a villager\'s name and spot ('+all.length+' mobs)',nSaved>0&&all.length===nSaved&&all.some(m=>m.type==='alien'&&m.name==='Zorp'&&Array.isArray(m.origin))&&all.every(m=>typeof m.type==='string'&&typeof m.health==='number'));
     const S2=createServer({port:0,data:OUT,world:'world',noGame:true,hostGame:GAME,quiet:true});await S2.listen();
+    {const dj=f=>JSON.parse(fs.readFileSync(path.join(OUT,'world','data',f),'utf8')),lvl=JSON.parse(fs.readFileSync(path.join(OUT,'world','level.json'),'utf8'));
+      ok('the world\'s own records are in data/, a file each, with a line saying what they are: structures, bosses, the market',dj('structures.json').vseen.includes('9,-9')&&typeof dj('structures.json').about==='string'&&dj('bosses.json').infkill.includes('3,4')&&
+        Object.keys(dj('market.json').market.p).length>0&&!('vseen' in lvl)&&!('market' in lvl)&&!('infkill' in lvl)&&typeof lvl.seed==='number');}
     {const vs=files.flatMap(f=>JSON.parse(fs.readFileSync(path.join(dir,f),'utf8')).vehicles||[]);
       ok('...and the vehicles beside them',vs.some(v=>v.type==='boat'&&typeof v.health==='number')&&S2.world().vehicles.some(v=>v.t==='boat'));}
     ok('a restarted server reads them back',S2.world().mobs.length===nSaved&&await until(()=>S2.host()&&S2.host().ready,20000));
     const b2=raw(S2.port,'Bea');await b2.open;await until(()=>!!b2.last('ready'));await b2.pose(sx,sy,sz);
+    ok('a restarted server still knows them, and a joining player is given them with the world',S2.world().vseen.includes('9,-9')&&S2.world().infkill.includes('3,4')&&b2.last('welcome').world.vseen.includes('9,-9')&&!!b2.last('welcome').world.market);
     ok('...and its game puts them back in the world: the villager is there again, by name, for the next player',await until(()=>[...b2.mobs().values()].some(a=>a[1]==='alien'&&a[8]==='Zorp'),8000));
     ok('...and the boat is back on the water, the server\'s to keep',await until(()=>b2.by('vehs').some(m=>m.from===0&&m.v.some(a=>a[1]==='boat')),8000));
     await S2.close();}

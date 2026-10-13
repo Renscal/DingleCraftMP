@@ -23,7 +23,7 @@ export const LIMITS = {
   frame: 2 * 1024 * 1024,        // biggest message a client may send, in bytes
   backlog: 32 * 1024 * 1024,     // a client with this much unsent data queued is dropped
   editsPerMsg: 8192,             // block edits in one message
-  playerBlob: 512 * 1024,        // a saved player (inventory and all)
+  playerBlob: 1536 * 1024,       // a saved player (inventory and all, and since 6.16 their own Creativity works: up to 600 KB)
   beBlob: 64 * 1024,             // one chest or furnace
   dropBlob: 4096,                // one dropped item
   rulesBlob: 4096,               // a game-rules change
@@ -48,6 +48,7 @@ export const LIMITS = {
   quietDrop: 20000,              // ... and before it gives up on them
   sentSlack: 8,                  // chunks beyond a player's view the server still counts as "they have it"
   mobs: 4000,                    // mobs the world file holds at once
+  listLen: 20000,                // entries in one of the world's lists (found structures, spawners...)
   fxRange: 96,                   // how far something that flies is announced
   vehRange: 128,                 // ... and how far a vehicle is
 };
@@ -55,7 +56,7 @@ export const LIMITS = {
 /* messages from one player per second, by type (pose, chat, cmd, hit, mobs, mhit and boom keep their own counters in
    lib/protocol.mjs). Over the limit, a message is dropped without a word: a real game never gets near these. */
 export const RATE = { edits: 40, be: 60, open: 20, close: 20, drop: 80, dropAt: 80, take: 80, save: 4, rd: 4, time: 10, gr: 4, sleep: 6, death: 20,
-  spawn: 2, mgone: 20, mgive: 200, ping: 4, fx: 70, fxgone: 70, vehs: 30, vgive: 20, vtake: 20, vfree: 20, vgone: 20, vhit: 20, ign: 20 };
+  spawn: 2, mgone: 20, mgive: 200, ping: 4, fx: 70, fxgone: 70, vehs: 30, vgive: 20, vtake: 20, vfree: 20, vgone: 20, vhit: 20, ign: 20, wd: 30 };
 
 /* the save format's own keys, checked before anything is stored under them */
 export const CK_RE = /^(?:[a-z];)?-?\d{1,7},-?\d{1,7}$/;            // chunk key: optional dimension prefix + cx,cz

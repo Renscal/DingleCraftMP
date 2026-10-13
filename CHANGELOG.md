@@ -21,6 +21,17 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — The world remembers
+
+*Game version 6.16, released 2026-10-13.*
+
+- THE WORLD REMEMBERS. A server used to forget everything about its world that was not a block. Which villages had been found, which bosses were dead, what the stocks cost: all of it lived in each player's game and left when they did.
+- Now the server keeps it. A village one of you finds is found for all of you, and is populated once. A dimension boss you kill stays dead for the friend who logs in tomorrow.
+- ONE STOCK MARKET. The server runs it and everyone sees the same prices. Your shares and your balance are still yours. Yes, this means you can no longer both be right about the price of anything.
+- Spawners are run by the server too, once, not once per bystander.
+- What is yours stays yours: the Snail, your business with Malgorath, and your own paintings and songs now travel with your player. Until now a painting did not survive leaving the server. Sorry about that.
+- Server owners: a new data folder in the world holds all of this, a readable file each.
+
 ## Release 1.1 — The server runs the water
 
 *Game version 6.15, released 2026-10-13.*

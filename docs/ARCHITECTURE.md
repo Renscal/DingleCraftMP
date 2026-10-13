@@ -444,6 +444,14 @@ the edit are queued and sent, and only the echo of the edited cell is removed. F
 ones every 2 s (`ntHostBeScan`); the server refuses the host's write while a player holds the lock and sends it the
 holder's copy. Chests: a `be` that would rewrite an existing chest is refused unless the sender holds its lock.
 
+**What the world remembers (6.16, `src/net/na_data.js`).** The save's world-level lists (`NT_WD`: the structure SEEN
+sets, `infkill`, `valkill`, `spw`, `nukes`) are the server's. Every game, the host included, diffs its own copy against
+the last agreed one once a second and sends additions (`wd`; removals only for `spw`); the server unions them into the
+world, stores them under `data/` and passes them on, and `ntWdIn` writes them into the game's own sets. Joining players
+get them inside `welcome.world`, which `applySave` already reads. The host runs the spawners (`tickSpawners` returns
+on a hosted player's game) and the stock market (`updateStocks` returns where `NET.hosted`; the host sends `mkt` every
+2 s). Four save fields are the player's and ride in `save`: `snl`, `mg`, `demon`, `cr`.
+
 **Shared since 6.11:** villagers, Nuke Kegs and the bosses that are plain mobs (`boss`, `titan`, `infernis`,
 `valkyra`), through the same owner/puppet path. A boss is not handed over while its owner is within 40 blocks. The kinds a
 structure spawns (`NT_UNIQ`) carry their spawn spot, and two of a kind from one spot are one mob (`ntMobTwin`), so a

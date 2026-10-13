@@ -56,7 +56,7 @@ tools/          art/ (packers, fal client: PAID) assets/ (unpack, repack) qa/ (m
                 scan_secrets.mjs scan_history.mjs grep-safe.sh lib/private_terms.cjs
 server/         the multiplayer server: dinglecraft-server.mjs (the front door) + lib/ (config, world, websocket, protocol,
                 commands, http, host, server, cli; headless.cjs + host_worker.cjs are the thread its own game runs in), no dependencies; Start Server.bat; its data/ is gitignored. The world on disk is a
-                folder (level.json, region/, entities/, playerdata/; the layout is in lib/world.mjs and server/README.md)
+                folder (level.json, region/, entities/, playerdata/, data/; the layout is in lib/world.mjs and server/README.md)
 client/         the desktop client: an Electron wrapper (main.js) around the same html; optional, nobody needs it to play
 docs/           ARCHITECTURE BUILD TESTING QA ASSETS RELEASING PARITY ROADMAP LEGACY LANDMINES
 build/ dist/ out/   gitignored outputs
@@ -136,8 +136,8 @@ Full map: `docs/ARCHITECTURE.md` (PART-to-file table, systems index, how each up
   one saved object each (`MP`, `save.cr`, `save.mg`), written only when it differs from the default.
 - **Multiplayer** (PART 58, `src/net/`: `n0_contract` state and the map, `n1_link` connection and messages, `n2_world`
   blocks, chests and their locks, `n3_drops`, `n4_self` this player and the frame tick, `n5_players`, `n6_menu`,
-  `n7_mobs` shared mobs and explosions, `n8_host` the server's own game, `n9_ents` what flies and what you ride): 33 core
-  hooks, 27 behind `NET.on` (or `e.pup`) and 6 behind `NET.host`, all of which only PART 58 sets, so single player is byte-for-byte the old behaviour.
+  `n7_mobs` shared mobs and explosions, `n8_host` the server's own game, `n9_ents` what flies and what you ride, `na_data` what the world remembers): 35 core
+  hooks, 29 behind `NET.on` (or `e.pup`) and 6 behind `NET.host`, all of which only PART 58 sets, so single player is byte-for-byte the old behaviour.
   **The server runs the game** (6.13, first step): `server/lib/host.mjs` loads the html's own script headless in a worker
   thread and that game ("the host", player id 0) spawns, runs and saves the Overworld's shared mobs. The game knows one
   player, so the host points `P` at the nearest real player before each entity update (`ntHostAim`); anything a brain
@@ -148,7 +148,9 @@ Full map: `docs/ARCHITECTURE.md` (PART-to-file table, systems index, how each up
   new projectile kind needs an entry in `NT_FX` (and `FX_KINDS` in the server) or nobody else sees it. Since 6.15 the host
   also runs the Overworld's water, fire and falling blocks and every furnace nobody has open; a player's game skips them
   where `ntHosted()` (`ntSimHere`, `checkFalling`, `ntIgnite`, `ntNoTick`). When the host applies a player's edit it
-  sends what follows from it (`NET.apd`, not `NET.ap`): a new simulation that reacts to block edits works on the host for free. The server owns blocks, block entities (one player in a chest at a
+  sends what follows from it (`NET.apd`, not `NET.ap`): a new simulation that reacts to block edits works on the host for free.
+  World-level save fields are the server's since 6.16: a new one that should be shared goes in `NT_WD` (and
+  `WORLD_LISTS` and `DATA_FILES` in the server) if it is a list, and a new per-player one in the four keys `ntSave` adds. The server owns blocks, block entities (one player in a chest at a
   time), dropped items, time, rules, rights (ops, bans, the whitelist, spawn protection, slash commands in
   `server/lib/commands.mjs`) and players-by-name. Outside the Overworld (or with `simulate` off) it does not run the game: there an ordinary mob (`NT_MOBS`) is simulated by the
   game of the nearest player and shown to the others as a puppet (since 6.11 also villagers, Nuke Kegs and the plain

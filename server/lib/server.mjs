@@ -31,7 +31,7 @@ import { pageHandler, statusOf } from './http.mjs';
 import { startHost, gameScript } from './host.mjs';
 
 /* what the server's own game is told along with the players (the rest is not its business, or goes to it by name) */
-const HOST_WANTS = new Set(['join', 'leave', 'pose', 'be', 'drop', 'undrop', 'time', 'gr']);
+const HOST_WANTS = new Set(['join', 'leave', 'pose', 'be', 'drop', 'undrop', 'time', 'gr', 'wd']);
 
 /* make one server (not yet listening). Throws if the world file exists but cannot be read. */
 export function createServer(opts = {}) {

@@ -203,6 +203,7 @@ function closeEnch(){
 /* ----- mob spawners ----- */
 const SPW=new Map(); /* bkey -> cooldown */
 function tickSpawners(dt){
+  if(NET.on&&ntHosted())return;   /* PART 58: where the server runs the world, the spawners are its to run */
   if(!P||P.dead)return;
   for(const [k,cd] of SPW){
     const p=dimP(k);

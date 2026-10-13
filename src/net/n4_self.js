@@ -6,7 +6,7 @@
 /* ----- this player: save, pose, chat, death ----- */
 function ntSave(quiet){
   const s=snapshot('');
-  const ok=ntSend({t:'save',player:{...s.player,dim:s.dim,mp:s.mp,stash:s.stash}});
+  const ok=ntSend({t:'save',player:{...s.player,dim:s.dim,mp:s.mp,stash:s.stash,snl:s.snl,mg:s.mg,demon:s.demon,cr:s.cr}});   /* the last four: this player's own, see na_data.js */
   if(!quiet)showToast(ok?'Saved to the server':'Not connected');
   return ok;
 }
@@ -72,6 +72,7 @@ function ntFrame(dt){
     NET.scanT=NET.acc;
     ntBeScan();
     ntDropsScan();
+    ntWdTick();
     const g=JSON.stringify(GR);
     if(g!==NET.grS){NET.grS=g;ntSend({t:'gr',gr:{...GR}});}
     if(RD!==NET.rdS){NET.rdS=RD;ntSend({t:'rd',v:RD+3});}

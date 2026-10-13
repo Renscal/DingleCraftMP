@@ -42,6 +42,7 @@ function ntHostStart(w,mobs,vehs){
   NET.hp0=P;NET.hpl=[];NET.hrr=0;NET.hsnT=0;NET.hchT=0;
   NET.fx.clear();NET.fseq=0;NET.vehs.clear();NET.vseq=0;NET.vehT=0;
   WORLD.name='';enterGame();
+  ntWdReset();NET.mktT=0;
   let n=0;
   for(const o of (Array.isArray(mobs)?mobs:[]))if(ntHostRestore(o))n++;
   for(const o of (Array.isArray(vehs)?vehs:[]))if(o&&ntVehMake(['0v'+(++NET.vseq).toString(36),o.t,o.x,o.y,o.z,o.yaw,o.hp]))n++;
@@ -189,7 +190,10 @@ function ntHostTick(dt){
     for(const q of pl)if(q.xp>0){ntSend({t:'xp',to:q.nid,n:Math.round(q.xp)});q.xp=0;}
     tickFlow(dt);                                          /* water, fire: only this game runs them in the Overworld (6.15) */
     updateFires(dt);
+    try{P=pl[NET.hrr%pl.length];tickSpawners(dt*pl.length);}finally{P=NET.hp0;}   /* spawners, for one player in turn (6.16) */
   }
+  if(NET.peers.size){updateStocks(dt);ntHostMkt();}        /* one market for everyone */
+  ntWdTick();
   if(NET.peers.size){furnaceTick(dt);ntHostBeScan();}      /* furnaces cook wherever they stand, as long as anyone is playing */
   ntHostMobsOut();
   ntHostVehsOut();
