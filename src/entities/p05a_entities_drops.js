@@ -79,7 +79,8 @@ function updateDrop(e,dt){
   if(e.age>300&&!crKeepDrop(e)){removeEnt(e);return;}
   if(crKeepDrop(e)&&!chunkAt(Math.floor(e.x),Math.floor(e.z)))return;
   e.vy-=GRAV*0.7*dt;
-  if(getBlock(Math.floor(e.x),Math.floor(e.y),Math.floor(e.z))===B.WATER){e.vy=lerp(e.vy,1.2,0.1);}
+  if(getBlock(Math.floor(e.x),Math.floor(e.y),Math.floor(e.z))===B.WATER){e.vy=lerp(e.vy,1.2,0.1);
+    const lf=liqFlow(Math.floor(e.x),Math.floor(e.y),Math.floor(e.z));e.vx+=lf[0]*6*dt;e.vz+=lf[1]*6*dt;}   /* 6.25: running water carries it */
   const fr=e.onGround?Math.exp(-dt*9):Math.exp(-dt*0.6);
   e.vx*=fr;e.vz*=fr;
   moveBody(e,e.vx*dt,e.vy*dt,e.vz*dt,false);

@@ -50,7 +50,7 @@ boot.run(async()=>{
 
   /* ---- 4. the core hooks ---- */
   const hooks=[
-    ['world/p03c_chunk_store.js',"if(NET.on&&!NET.ap)ntEdit(ckey(cx,cz),lx+','+y+','+lz,id);"],
+    ['world/p03c_chunk_store.js',"if(NET.on&&!NET.ap)ntEdit(ckey(cx,cz),lx+','+y+','+lz,ev);"],
     ['core/p07e_save_load.js','if(NET.on)return ntSave(quiet);'],
     ['core/p07f_world_lifecycle.js','ntLeave();'],
     ['core/p07h_boot_loop.js',' ntFrame(dt);'],   /* the space: hrEntFrame(dt); ends the same way */

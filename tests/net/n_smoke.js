@@ -137,7 +137,7 @@ boot.run(async()=>{
     ok('an edit in an unloaded chunk waits in chunkEdits',!V.chunks.has(fk)&&V.snapshot('x').edits[fk]['3,40,5']===B.STONE);
     ok('an edit in another dimension waits under that dimension\'s key',V.snapshot('x').edits['n;2,2']['1,30,1']===B.TORCH);}
   {const n=Object.keys(W.edits).length;
-    bea.send({t:'edits',e:[['../x','1,1,1',1],[ckOf(ax,az),'1,1,1',999],[ckOf(ax,az),'x',1],['1,1','1,1,1',-1],'junk',[1,2,3]]});
+    bea.send({t:'edits',e:[['../x','1,1,1',1],[ckOf(ax,az),'1,1,1',4096],[ckOf(ax,az),'x',1],['1,1','1,1,1',-1],'junk',[1,2,3]]});
     bea.send({t:'edits',e:'nope'});bea.send({t:'nonsense'});await sleep(60);
     ok('the server ignores bad edits (bad keys, bad ids, junk)',Object.keys(W.edits).length===n&&W.edits[ckOf(ax,az)]['1,1,1']===undefined&&!bea.closed);}
 

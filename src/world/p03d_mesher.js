@@ -67,6 +67,43 @@ function addQuadBack(b,x,y,z,F,uvr,br,lower){
   b.ix.push(s,s+2,s+1,s,s+3,s+2);
   b.vc+=4;
 }
+/* A liquid cell (6.25): the surface slopes. Each corner of the top stands at the average height of the liquid in the
+   four cells that share it (full height where one of them has the same liquid on top of it), the sides follow those
+   corners, and every face has its twin behind it. gb reads a block, gm a meta, both in chunk-local coordinates. */
+function addLiquid(b,x,y,z,id,d,gb,gm){
+  const H=[[0,0],[0,0]];
+  for(let i=0;i<2;i++)for(let j=0;j<2;j++){
+    let sum=0,w=0,full=false;
+    for(let dx=i-1;dx<=i;dx++)for(let dz=j-1;dz<=j;dz++){
+      const cid=gb(x+dx,y,z+dz);
+      if(cid===id){
+        if(gb(x+dx,y+1,z+dz)===id){full=true;continue;}
+        const h=liqHeight(gm(x+dx,y,z+dz)),k=h>=0.8?10:1;
+        sum+=h*k;w+=k;
+      }else if(DEFS[cid].solid===false)w+=1;
+    }
+    H[i][j]=full?1:(w?sum/w:0);
+  }
+  for(let f=0;f<6;f++){
+    const F=FACES[f];
+    if(!faceVisible(id,gb(x+F.n[0],y+F.n[1],z+F.n[2])))continue;
+    const uvr=tileUV(f===0?d._t.top:(f===1?d._t.bot:d._t.side));
+    const u0=uvr[0],v0=uvr[1],u1=uvr[2],v1=uvr[3],uvs=[[u0,v0],[u1,v0],[u1,v1],[u0,v1]];
+    for(let side=0;side<2;side++){
+      const sg=side?-1:1;
+      for(let i=0;i<4;i++){
+        const V=F.verts[i];
+        b.p.push(x+V[0],y+(V[1]===1?H[V[0]][V[2]]:0),z+V[2]);
+        b.n.push(sg*F.n[0],sg*F.n[1],sg*F.n[2]);
+        b.u.push(uvs[i][0],uvs[i][1]);
+        b.c.push(F.sh,F.sh,F.sh);
+      }
+      const s=b.vc;
+      if(side)b.ix.push(s,s+2,s+1,s,s+3,s+2);else b.ix.push(s,s+1,s+2,s,s+2,s+3);
+      b.vc+=4;
+    }
+  }
+}
 function addCross(b,x,y,z,d){
   const uvr=tileUV(d._t.side);
   const u0=uvr[0],v0=uvr[1],u1=uvr[2],v1=uvr[3];
@@ -87,7 +124,7 @@ function addCross(b,x,y,z,d){
   }
 }
 function meshChunk(ch){
-  const bl=ch.bl,x0=ch.cx*CH,z0=ch.cz*CH;
+  const bl=ch.bl,mt=ch.mt,x0=ch.cx*CH,z0=ch.cz*CH;
   const bufs={op:newBuf(),cut:newBuf(),wat:newBuf()};
   const gb=(x,y,z)=>{
     if(y<0)return B.BEDROCK;
@@ -95,6 +132,7 @@ function meshChunk(ch){
     if(x>=0&&x<CH&&z>=0&&z<CH)return bl[bidx(x,y,z)];
     return getBlock(x0+x,y,z0+z);
   };
+  const gm=(x,y,z)=>(y<0||y>=WH)?0:((x>=0&&x<CH&&z>=0&&z<CH)?mt[bidx(x,y,z)]:getMeta(x0+x,y,z0+z));
   for(let lx=0;lx<CH;lx++)for(let lz=0;lz<CH;lz++)for(let y=0;y<WH;y++){
     const id=bl[bidx(lx,y,lz)];
     if(id===B.AIR)continue;
@@ -108,6 +146,7 @@ function meshChunk(ch){
     if(d.door){addDoor(bufs.cut,lx,y,lz,d);continue;}
     if(d.wt){addWallTorch(bufs.cut,lx,y,lz,d);continue;}
     if(d.cross){addCross(bufs.cut,lx,y,lz,d);continue;}
+    if(id===B.WATER||id===B.LAVA){addLiquid(bufs.wat,lx,y,lz,id,d,gb,gm);continue;}   /* 6.25: levels (p18) */
     for(let f=0;f<6;f++){
       const F=FACES[f];
       const nid=gb(lx+F.n[0],y+F.n[1],lz+F.n[2]);

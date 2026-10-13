@@ -20,6 +20,10 @@ Grep for names with `tools/grep-safe.sh`.
 
 ## Core gameplay
 
+- **Liquids (6.25):** a block edit may be `id | meta << 8`. Compare ids with `& 255`; never write an edit value straight
+  into `ch.bl`. A source hung in mid-air in a test runs off: clear `LIQ.w` / `LIQ.l` (or build a floor) before looking
+  at it. `liqFlow` is zero at a source on purpose: the frozen smoke stands the player in one. `applySave` makes a new
+  player object, so a test that loads a save must re-read `V.P`.
 - **`doUse` branch order** (`src/core/p04d_player_update.js`): the early right-click branches (laser, dragon feed and
   mount, compass) sit above the dungeon-egg branch, which sits above eat/place. Anything below the eat branch loses food
   items to hunger. Put new early branches next to the existing early ones.

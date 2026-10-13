@@ -79,7 +79,8 @@ function updatePlayer(dt){
   P._sp=!!KEY.Space;
   /* -- water state -- */
   const fb=getBlock(Math.floor(P.x),Math.floor(P.y+0.4),Math.floor(P.z));
-  P.inWater=fb===B.WATER;
+  const fbx=Math.floor(P.x),fby=Math.floor(P.y+0.4),fbz=Math.floor(P.z);
+  P.inWater=fb===B.WATER&&P.y+0.4<fby+liqTop(fbx,fby,fbz);   /* 6.25: up to where the water really stands */
   P.inLava=fb===B.LAVA;
   if(P.inLava){
     P.lavaAcc=(P.lavaAcc||0)+dt;
@@ -87,7 +88,7 @@ function updatePlayer(dt){
       burstParticles(P.x,P.y+0.8,P.z,B.LAVA,4,0.5);}
   }else P.lavaAcc=0;
   const ep=eyePos();
-  P.eyeWater=getBlock(Math.floor(ep[0]),Math.floor(ep[1]),Math.floor(ep[2]))===B.WATER;
+  P.eyeWater=getBlock(Math.floor(ep[0]),Math.floor(ep[1]),Math.floor(ep[2]))===B.WATER&&ep[1]<Math.floor(ep[1])+liqTop(Math.floor(ep[0]),Math.floor(ep[1]),Math.floor(ep[2]));
   /* -- wish direction -- */
   const sy=Math.sin(P.yaw),cy=Math.cos(P.yaw);
   let wx=-sy*f+cy*s, wz=-cy*f-sy*s;
@@ -111,6 +112,7 @@ function updatePlayer(dt){
   const k=1-Math.exp(-dt*rate);
   P.vx=lerp(P.vx,wx*spd,k);
   P.vz=lerp(P.vz,wz*spd,k);
+  if(P.inWater&&!fly){const lf=liqFlow(fbx,fby,fbz);P.vx+=lf[0]*4*dt;P.vz+=lf[1]*4*dt;}   /* 6.25: running water carries you along, gently (about two thirds of a block a second) */
   /* -- vertical -- */
   if(fly){
     const vt=(terrOpen||cineOpen)?0:(KEY.Space?9:0)+(KEY.ShiftLeft?-9:0);
@@ -496,7 +498,7 @@ function doUse(dt){
         for(let t2=0.5;t2<=4.5&&!got;t2+=0.2){
           const bx=Math.floor(be2[0]+bl2[0]*t2),by=Math.floor(be2[1]+bl2[1]*t2),bz=Math.floor(be2[2]+bl2[2]*t2);
           const id2=getBlock(bx,by,bz);
-          if(id2===B.WATER||id2===B.LAVA){got=id2;gx2=bx;gy2=by;gz2=bz;}
+          if((id2===B.WATER||id2===B.LAVA)&&(getMeta(bx,by,bz)&15)===0){got=id2;gx2=bx;gy2=by;gz2=bz;}   /* 6.25: a bucket fills from a source, not from a trickle */
           else if(DEFS[id2].solid)break;
         }
         if(got){
@@ -517,9 +519,8 @@ function doUse(dt){
           const cur=getBlock(tx2,ty2,tz2);
           if(cur===B.AIR||DEFS[cur].replace||cur===B.WATER||cur===B.LAVA){
             const liq=st.id===IT.BUCKET_W?B.WATER:B.LAVA;
-            setBlock(tx2,ty2,tz2,liq);
-            if(liq===B.WATER)flowPush(tx2,ty2,tz2);
-            lavaWaterCheck(tx2,ty2,tz2);
+            if(liq===B.WATER&&DIM==='nether'){burstParticles(tx2+0.5,ty2+0.5,tz2+0.5,B.WOOL,10,0.6);playS('sizzle');}   /* 6.25: water does not last down here */
+            else{setBlock(tx2,ty2,tz2,liq,0);lavaWaterCheck(tx2,ty2,tz2);}
             P.inv[P.sel]={id:IT.BUCKET,count:1};
             redrawHotbar();playS('place');P.swing=1;
           }

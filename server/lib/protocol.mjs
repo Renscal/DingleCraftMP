@@ -11,7 +11,8 @@
 //                                                 edits (s:1), bes and drops (add:1) for the chunks that came into range
 //   ping {n, ms}                                  pong {n}  (the game times the round trip and reports it in the next ping)
 //   rd {v}                                        -         (how far that player's game draws, in chunks)
-//   edits {e: [[chunkKey, localKey, id, by?]...]} edits     (to players who have that chunk; by 1: a player's own hand did it)
+//   edits {e: [[chunkKey, localKey, id, by?]...]} edits     (to players who have that chunk; by 1: a player's own hand did it;
+//                                                 id is the block id plus its meta << 8, 0..4095: a liquid carries its level)
 //   open {k}                                      be, lock {k, ok, by}   (a chest is used by one player at a time)
 //   close {k}                                     -
 //   be {k, v|null}                                be        (or be back to the sender if someone else holds the lock)
@@ -369,7 +370,7 @@ export function handleMessage(S, net, c, m, size) {
       for (const e of m.e) {
         if (!Array.isArray(e) || typeof e[0] !== 'string' || typeof e[1] !== 'string' || !CK_RE.test(e[0]) || !LK_RE.test(e[1])) continue;
         const id = e[2];
-        if (!Number.isInteger(id) || id < 0 || id > 255) continue;
+        if (!Number.isInteger(id) || id < 0 || id > 4095) continue;   // a block id (0..255) with its meta above it (6.25: a liquid's level, 4 bits)
         if (prot && e[0][1] !== ';') {   // spawn protection: the Overworld, a square around the world spawn
           const ck = e[0].split(','), lk = e[1].split(',');
           if (Math.abs(ck[0] * 16 + +lk[0] + 0.5 - sp.x) <= prot && Math.abs(ck[1] * 16 + +lk[2] + 0.5 - sp.z) <= prot) continue;

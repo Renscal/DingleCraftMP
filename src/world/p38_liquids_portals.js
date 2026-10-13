@@ -16,27 +16,6 @@ tile('i_bucketl',c=>{c.clearRect(0,0,16,16);
   c.fillStyle='#b8bcc4';c.fillRect(4,6,8,7);c.fillRect(3,6,1,5);c.fillRect(12,6,1,5);
   c.fillStyle='#e85d1a';c.fillRect(5,6,6,2);c.fillStyle='#ffb03d';c.fillRect(7,6,2,1);
   c.fillStyle='#d8dce4';c.fillRect(4,4,1,2);c.fillRect(11,4,1,2);c.fillRect(5,3,6,1);});
-function lavaWaterCheck(x,y,z){
-  const NB=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
-  const here=getBlock(x,y,z);
-  if(here===B.LAVA){
-    for(const nb of NB)if(getBlock(x+nb[0],y+nb[1],z+nb[2])===B.WATER){
-      setBlock(x,y,z,B.OBSIDIAN);
-      burstParticles(x+0.5,y+0.7,z+0.5,B.OBSIDIAN,8,0.7);
-      playS('dig');
-      return;
-    }
-  }else if(here===B.WATER){
-    for(const nb of NB){
-      const nx2=x+nb[0],ny2=y+nb[1],nz2=z+nb[2];
-      if(getBlock(nx2,ny2,nz2)===B.LAVA){
-        setBlock(nx2,ny2,nz2,B.OBSIDIAN);
-        burstParticles(nx2+0.5,ny2+0.7,nz2+0.5,B.OBSIDIAN,8,0.7);
-        playS('dig');
-      }
-    }
-  }
-}
 /* portals: frames are 4 wide x 5 tall with a 2x3 interior */
 function frameOK(ox,oy,oz,ax,frameId){
   const dx=ax==='x'?1:0,dz=ax==='x'?0:1;
@@ -50,7 +29,8 @@ function frameOK(ox,oy,oz,ax,frameId){
   }
   for(let i=0;i<2;i++)for(let j=0;j<3;j++){
     const c2=getBlock(ox+dx*i,oy+j,oz+dz*i);
-    if(c2!==B.AIR&&!DEFS[c2].replace)return false;
+    /* 6.25: a trickle of water or lava across the doorway does not stop a portal opening (a source still does) */
+    if(c2!==B.AIR&&!DEFS[c2].replace&&!(isLiq(c2)&&(getMeta(ox+dx*i,oy+j,oz+dz*i)&15)!==0))return false;
   }
   return true;
 }

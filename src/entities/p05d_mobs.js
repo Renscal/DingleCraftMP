@@ -309,6 +309,7 @@ function updateMob(e,dt){
   /* physics */
   const mfb=getBlock(Math.floor(e.x),Math.floor(e.y+0.3),Math.floor(e.z));
   const inW=mfb===B.WATER;
+  if(inW){const lf=liqFlow(Math.floor(e.x),Math.floor(e.y+0.4),Math.floor(e.z));e.vx+=lf[0]*4*dt;e.vz+=lf[1]*4*dt;}   /* 6.25: running water carries it */
   if(mfb===B.LAVA)hurtMob(e,2,0,0);
   if(e.onGround&&getBlock(Math.floor(e.x),Math.floor(e.y)-1,Math.floor(e.z))===B.TRAMP){e.vy=7;e.onGround=false;}
   if(inW){e.vy=lerp(e.vy,2.2,0.08);}else e.vy-=GRAV*dt;

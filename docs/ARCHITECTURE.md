@@ -463,6 +463,16 @@ sender's dimension in `world.mobs` / `world.vehicles`, which carry `d` outside t
 `entities/<dimension>/`. On a dimension change the client sends its pose first, so everything after it is routed to the
 new dimension's host.
 
+**Liquids with levels (6.25, `src/features/p18_armor_boats_water_qol.js`).** Water and lava carry a level in the chunk's
+meta byte (0 a source, 1 to 7 flowing, 8 falling). Nothing ticks until a block changes: `setBlock` calls `liqWake`, which
+puts the liquid cells at and around the change in `LIQ.w` / `LIQ.l`; `tickFlow` runs `liqStep` on each list at its own
+interval (`liqRule`: water 0.25 s, lava 1.5 s, Nether lava 0.5 s), at most 600 cells a tick. `liqCell` first recomputes
+a flowing cell from its neighbours (so a stream with no source dries up; two water sources make a third), then moves it:
+down first, sideways toward the nearest drop (`liqDirs`), hardening lava where it meets water (`lavaWaterCheck`,
+`liqHarden`) and washing out torches, flowers and grass (`liqCanEnter`, `liqPut`). The mesher draws a liquid with
+`addLiquid`: corner heights averaged over the four cells sharing the corner. `liqTop` and `liqFlow` feed the swim checks
+and the push on the player, mobs and drops. On a hosted dimension only the host runs it (`ntSimHere`, unchanged).
+
 **Shared since 6.11:** villagers, Nuke Kegs and the bosses that are plain mobs (`boss`, `titan`, `infernis`,
 `valkyra`), through the same owner/puppet path. A boss is not handed over while its owner is within 40 blocks. The kinds a
 structure spawns (`NT_UNIQ`) carry their spawn spot, and two of a kind from one spot are one mob (`ntMobTwin`), so a

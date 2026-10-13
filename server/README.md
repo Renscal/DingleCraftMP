@@ -1,6 +1,6 @@
 # The DINGLECRAFT multiplayer server
 
-No dependencies and nothing to install: `dinglecraft-server.mjs` plus the `lib/` folder beside it. It needs [Node.js](https://nodejs.org) 20 or newer and a game build of 6.18 or newer.
+No dependencies and nothing to install: `dinglecraft-server.mjs` plus the `lib/` folder beside it. It needs [Node.js](https://nodejs.org) 20 or newer and a game build of 6.25 or newer.
 
 ## Start it
 
@@ -158,7 +158,8 @@ data/
 - **A region** is 32 x 32 chunks (512 x 512 blocks) and is named after its place in the world: `r.<x>.<z>`, so
   `r.0.0` holds blocks 0 to 511 and `r.-1.0` holds -512 to -1 (`blocksFrom` in the file says where it starts). Inside,
   each chunk lists its changed `blocks` (`"x,y,z in the chunk": block id`; the untouched terrain is not stored, it comes
-  from the seed) and its `blockEntities` (chests, furnaces, terrariums, display stands) by their place in the world.
+  from the seed; a number of 256 or more is flowing water or lava: the id is the remainder after dividing by 256, the
+  level is the quotient) and its `blockEntities` (chests, furnaces, terrariums, display stands) by their place in the world.
 - **`entities`** follows the same regions: each dropped item with its position, the item itself and its age in seconds,
   each of the Overworld's mobs with its type, position, health, a villager's name and the spot a structure spawned
   it at (`origin`), and each vehicle with its type, position and health.

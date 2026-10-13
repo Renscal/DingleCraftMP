@@ -255,6 +255,13 @@ boot.run(async()=>{
     a.clear();a.send({t:'take',id:'plain001.1'});await until(()=>!!a.last('took'),1500);
     ok('a drop that was not thrown (a broken block) is its own maker\'s to take at once, as before',!!a.last('took'));}
 
+  /* ===== 6d. a block with a level (6.25) ===== */
+  {const sp0=S.opts.spawnProtection;S.opts.spawnProtection=0;bo.clear();const flow=9|(3<<8);
+    a.send({t:'edits',e:[['2,2','1,50,1',flow],['2,2','2,50,1',9|(8<<8)],['2,2','3,50,1',4096],['2,2','4,50,1',-1],['2,2','5,50,1',2.5]]});await until(()=>!!bo.last('edits'),1500);
+    const e=(bo.last('edits')||{e:[]}).e;
+    ok('a block edit may carry a meta above its id (a liquid\'s level): passed on and stored as it came; a number that is no block is dropped',e.length===2&&e[0][2]===flow&&e[1][2]===(9|(8<<8))&&W.edits['2,2']['1,50,1']===flow&&!('3,50,1' in W.edits['2,2'])&&!('4,50,1' in W.edits['2,2'])&&!('5,50,1' in W.edits['2,2']));
+    S.opts.spawnProtection=sp0;}
+
   /* ===== 6c. skins (6.24) ===== */
   {const png=(w,h,pad)=>{const b=Buffer.alloc(33+(pad||40));Buffer.from([137,80,78,71,13,10,26,10]).copy(b,0);b.writeUInt32BE(13,8);b.write('IHDR',12,'latin1');b.writeUInt32BE(w,16);b.writeUInt32BE(h,20);return b.toString('base64');};
     const good=png(64,64),old=png(64,32);

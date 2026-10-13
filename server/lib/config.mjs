@@ -11,11 +11,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /* the multiplayer protocol version: a game and a server with different numbers refuse each other */
-export const PROTO = 3;
+export const PROTO = 4;
 /* seconds per in-game day */
 export const DAY_LEN = 600;
 /* the oldest game build that can talk to this server */
-export const MIN_GAME = '6.13';
+export const MIN_GAME = '6.25';
 /* the folder the server lives in (one up from lib/): data/ and a dropped-in game html are looked for here */
 export const SERVER_DIR = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 

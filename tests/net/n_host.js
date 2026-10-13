@@ -178,12 +178,13 @@ boot.run(async()=>{
     /* ===== 11. the world the server runs ===== */
     {const hx=Math.floor(P.x)+20,hy=Math.min(70,Math.floor(P.y)+26),hz=Math.floor(P.z);   /* the stone ledge from section 9, above the trees */
       const E=(x,y,z,id)=>[Math.floor(x/16)+','+Math.floor(z/16),(x-Math.floor(x/16)*16)+','+y+','+(z-Math.floor(z/16)*16),id];
-      const from0=(id,pred)=>bea.by('edits').some(m=>m.e.some(e=>e[2]===id&&(!pred||pred(e))));
+      const from0=(id,pred)=>bea.by('edits').some(m=>m.e.some(e=>(e[2]&255)===id&&(!pred||pred(e))));   /* (6.25: a liquid's level rides above its id) */
       await bea.pose(hx-4+0.5,hy+1,hz+0.5);V.P.x=hx-6+0.5;V.P.y=hy+3;V.P.z=hz+0.5;V.P.vy=0;V.P.mode='c';V.P.flying=true;await pump(40);
       ok('where the server runs the world, a player\'s game flows no water of its own',V.ntSimHere(hx,hz)===false&&V.ntHosted()===true);
       /* water set on the ledge runs off its edge: only the server\'s game does that */
       bea.clear();bea.send({t:'edits',e:[E(hx+2,hy+1,hz,B.WATER)]});
       ok('water a player pours is flowed by the server\'s game: the cells it runs into arrive as edits',await pumpUntil(()=>from0(B.WATER),8000));
+      ok('...with their levels: the server\'s game sends flowing water as the id with its level above it',bea.by('edits').some(m=>m.e.some(e=>(e[2]&255)===B.WATER&&(e[2]>>8)>0)));
       ok('...and this player\'s game has them too, without having flowed anything itself',await pumpUntil(()=>V.getBlock(hx+3,hy,hz)===B.WATER||V.getBlock(hx+3,hy+1,hz)===B.WATER,6000));
       /* sand put in mid-air falls on the server, and is seen falling here */
       {bea.clear();const sy0=hy+6;V.setBlock(hx-2,sy0,hz+6,B.SAND);const fell=()=>V.entities.filter(e=>e.t==='fall'&&!e.dead).length;
@@ -191,13 +192,16 @@ boot.run(async()=>{
         ok('the server\'s game drops it: the block is taken away, and the players are shown it falling',await pumpUntil(()=>V.getBlock(hx-2,sy0,hz+6)===B.AIR,5000)&&
           await pumpUntil(()=>bea.by('fx').some(m=>m.from===0&&m.f.some(a=>a[1]==='fall'&&a[10]===B.SAND)),3000)&&[...NET.fx.values()].some(e=>e.fxk==='fall'&&e.pup));
         ok('...and where it lands it is a block again for everyone (or, on a spot that is taken, a dropped item), and the falling copy is gone',
-          await pumpUntil(()=>bea.by('edits').some(m=>m.e.some(e=>e[2]===B.SAND&&+e[1].split(',')[1]<sy0))||bea.by('drop').some(d=>d.st.id===B.SAND),12000)&&fell()===0&&await pumpUntil(()=>![...NET.fx.values()].some(e=>e.fxk==='fall'&&!e.dead),6000));}
+          await pumpUntil(()=>bea.by('edits').some(m=>m.e.some(e=>(e[2]&255)===B.SAND&&+e[1].split(',')[1]<sy0))||bea.by('drop').some(d=>d.st.id===B.SAND),12000)&&fell()===0&&await pumpUntil(()=>![...NET.fx.values()].some(e=>e.fxk==='fall'&&!e.dead),6000));}
       /* fire */
       {const fx=hx-1,fy=hy+1,fz=hz+1;V.setBlock(fx,fy,fz,B.PLANK_O);await pump(10);bea.clear();
         V.igniteAt(fx,fy,fz);
         ok('a fire this player\'s game would light is not lit here: the server\'s game is asked',!V.getFires().has(fx+','+fy+','+fz));
         ok('the server\'s game lights it and says so: the flames show here and for the others',await pumpUntil(()=>V.getFires().has(fx+','+fy+','+fz),4000)&&bea.by('fire').some(m=>m.c.some(c=>c[0]===fx&&c[1]===fy&&c[2]===fz)));
         ok('...and burns the block down, for everyone, once',await pumpUntil(()=>V.getBlock(fx,fy,fz)===B.AIR,5000)&&await until(()=>bea.by('edits').some(m=>m.e.some(e=>e[2]===B.AIR)),2000));}
+      {const wx=hx+3,wy=hy+1,wz=hz;await pumpUntil(()=>V.getBlock(wx,wy,wz)===B.WATER||V.getBlock(wx,hy,wz)===B.WATER,3000);
+        const where=V.getBlock(wx,wy,wz)===B.WATER?wy:hy;
+        ok('the level arrives with the block: this player\'s game holds the same flowing water the server\'s does',V.getBlock(wx,where,wz)===B.WATER&&(V.getMeta(wx,where,wz)&15)>0);}
       /* a furnace nobody has open */
       {const ore=+Object.keys(V.SMELT)[0],fuel=+Object.keys(V.FUELS)[0],fk=(hx+1)+','+(hy+1)+','+(hz-1);
         bea.clear();bea.send({t:'be',k:fk,v:{t:'furnace',in:{id:ore,count:2},fuel:{id:fuel,count:2},out:null,burn:0,burnMax:0,cook:0}});

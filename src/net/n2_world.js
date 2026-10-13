@@ -26,7 +26,8 @@ function ntFlush(){
    even in a loaded chunk it is written without side effects: nothing falls, flows or pops because of it.
    by: another player did it by hand, just now: if it is close, it is heard and (a broken block) seen. */
 function ntApplyEdit(k,lk,id,raw,by){
-  if(typeof k!=='string'||typeof lk!=='string'||!(id>=0&&id<256))return;
+  if(typeof k!=='string'||typeof lk!=='string'||!(id>=0&&id<4096))return;
+  const bid=id&255,bmt=id>>8;                              /* 6.25: a block on the wire is its id, with its meta (a liquid's level) above it */
   const kd=k[1]===';'?k.slice(0,2):'';
   const c=(kd?k.slice(2):k).split(','),p=lk.split(',');
   const cx=+c[0],cz=+c[1],lx=+p[0],y=+p[1],lz=+p[2];
@@ -36,9 +37,9 @@ function ntApplyEdit(k,lk,id,raw,by){
   if(ch&&keyDim(k)===DIM&&!raw){
     if(by&&P&&playing){
       const was=ch.bl[bidx(lx,y,lz)];
-      if(was!==id){
-        if(id===B.AIR&&was&&Math.hypot(x-P.x,z-P.z)<24)burstParticles(x+0.5,y+0.5,z+0.5,was,8,0.5);
-        playSAt(id===B.AIR?'dig':'place',x+0.5,y+0.5,z+0.5);
+      if(was!==bid){
+        if(bid===B.AIR&&was&&Math.hypot(x-P.x,z-P.z)<24)burstParticles(x+0.5,y+0.5,z+0.5,was,8,0.5);
+        playSAt(bid===B.AIR?'dig':'place',x+0.5,y+0.5,z+0.5);
       }
     }
     if(NET.host){
@@ -47,22 +48,22 @@ function ntApplyEdit(k,lk,id,raw,by){
          editing game's to drop (NET.apd), as between players. */
       const n=NET.q.length;
       NET.apd=true;
-      try{setBlock(x,y,z,id);}finally{NET.apd=false;}
+      try{setBlock(x,y,z,bid,bmt);}finally{NET.apd=false;}
       for(let i=n;i<NET.q.length;i++)if(NET.q[i][0]===k&&NET.q[i][1]===lk&&NET.q[i][2]===id){NET.q.splice(i,1);break;}
       return;                                              /* whatever the cell holds now is what this game made of it (sand set in mid-air has already left) */
     }else{
       NET.ap=true;
-      try{setBlock(x,y,z,id);}finally{NET.ap=false;}
+      try{setBlock(x,y,z,bid,bmt);}finally{NET.ap=false;}
     }
-    if(ch.bl[bidx(lx,y,lz)]===id)return;                 /* a protected cell refused it: record it below anyway */
+    if(ch.bl[bidx(lx,y,lz)]===bid&&ch.mt[bidx(lx,y,lz)]===bmt)return;   /* a protected cell refused it: record it below anyway */
   }
-  if(ch&&ch.bl[bidx(lx,y,lz)]!==id){ch.bl[bidx(lx,y,lz)]=id;ch.dirty=true;
+  if(ch&&(ch.bl[bidx(lx,y,lz)]!==bid||ch.mt[bidx(lx,y,lz)]!==bmt)){ch.bl[bidx(lx,y,lz)]=bid;ch.mt[bidx(lx,y,lz)]=bmt;ch.dirty=true;
     if(raw&&keyDim(k)===DIM){if(lx===0)markDirty(cx-1,cz);if(lx===CH-1)markDirty(cx+1,cz);if(lz===0)markDirty(cx,cz-1);if(lz===CH-1)markDirty(cx,cz+1);}}
   let ed=chunkEdits.get(k);
   if(!ed){ed=ch?ch.edits:new Map();chunkEdits.set(k,ed);}
   ed.set(lk,id);
   const tk=kd+x+','+y+','+z;
-  if(isTorch(id))torches.add(tk);else torches.delete(tk);
+  if(isTorch(bid))torches.add(tk);else torches.delete(tk);
 }
 
 /* ----- chests, furnaces and the other block entities ----- */

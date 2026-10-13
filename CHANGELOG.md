@@ -21,6 +21,21 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — Water finds its level
+
+*Game version 6.25, released 2026-10-13.*
+
+- WATER FINDS ITS LEVEL. Until today every drop of water was a whole block of it. Pour a bucket on a hill and you got a staircase of full blocks that never went away.
+- Now liquids flow properly. A source spreads seven blocks, thinner as it goes, and the surface slopes. It runs toward the nearest drop, falls as a column, and spreads again where it lands.
+- Take the source away and the stream runs dry, block by block.
+- Two sources with a gap between them, on solid ground, fill the gap with a third. Infinite water is back on the menu. Lava does not do this, because that would be alarming.
+- Lava flows too: slowly, three blocks in the Overworld, seven and faster in the Nether. It lights what it touches while Fire Tick is on.
+- Water on a lava source is obsidian. Water on flowing lava is cobblestone. Lava falling onto water is stone. Build a generator. You know you want to.
+- Running water washes away tall grass, flowers and torches (they drop), and pushes you, the mobs and anything lying in it downstream.
+- A bucket only fills from a source, not from a trickle. Water poured in the Nether hisses and is gone.
+- Old worlds load as they are. Every water block you already have counts as a source, so yesterday's puddles are today's permanent ponds.
+- Server owners: this needs the 6.25 server. An older game and a newer server refuse each other.
+
 ## Release 1.1 — A face of your own
 
 *Game version 6.24, released 2026-10-13.*

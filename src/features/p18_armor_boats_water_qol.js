@@ -1,44 +1,228 @@
 /* ===================================================================== */
 /* PART 18 — armor, boats, flowing water, QOL  (2.0)                     */
 /* ===================================================================== */
-/* ----- flowing water ----- */
-const FLOWQ=[];const FLOWS=new Set();
-function flowPush(x,y,z){
-  if(y<0||y>=WH)return;
-  const k=x+','+y+','+z;
-  if(FLOWS.has(k)||FLOWQ.length>4000)return;
-  FLOWS.add(k);FLOWQ.push([x,y,z]);
+/* ----- liquids with levels (6.25) ----- */
+/* Water and lava have a level. Beside every block id a chunk keeps one more byte (ch.mt, "meta"):
+     bits 0-2   the level: 0 is a source, 1 to 7 is flowing, lower and lower
+     bit 3      falling: fed from above; it stands as tall as a source and spreads like one where it lands
+   Only liquids use it. In a save, on the wire and in a region file a block is still one number: the id, plus the meta
+   shifted up 8 bits when there is any, so a world from before 6.25 (all plain ids: every water block a source) loads as it is.
+   The rules are the usual ones:
+     down first; a liquid that can fall does not spread sideways, unless it is a source
+     sideways it loses 1 a block (lava in the Overworld 2), toward the nearest drop within 4 blocks (lava 2) if there is one
+     a flowing block is whatever its neighbours feed it: take the source away and the stream runs dry
+     still water between two sources, standing on something solid or on a source, becomes a source; lava never does
+     water on a lava source makes obsidian, on flowing lava cobblestone; lava falling onto water makes stone
+     it washes away what a hand could brush aside (tall grass, flowers, torches), which drop as items
+   Only cells that something happened next to are ever looked at (LIQ.w, LIQ.l: the cells due at the next tick): the sea
+   does nothing until somebody digs beside it. Water ticks every 0.25 s, lava every 1.5 s (0.5 s in the Nether), at most
+   600 cells a tick; the rest wait. */
+const LIQ={w:new Map(),l:new Map(),wT:0,lT:0};
+const LIQ_H4=[[1,0],[-1,0],[0,1],[0,-1]];
+/* the numbers for a liquid in a dimension: how much it loses a block sideways, how far it looks for a drop, how often it ticks */
+function liqRule(L,dim){
+  const w=L===B.WATER,n=dim==='nether';
+  return {drop:(w||n)?1:2,far:(w||n)?4:2,every:w?0.25:(n?0.5:1.5)};
 }
-function flowAround(x,y,z){
-  flowPush(x+1,y,z);flowPush(x-1,y,z);
-  flowPush(x,y,z+1);flowPush(x,y,z-1);
-  flowPush(x,y-1,z);
+/* is this block id a liquid that flows? */
+function isLiq(id){return id===B.WATER||id===B.LAVA;}
+/* the meta byte of a cell (0 outside the world or an unbuilt chunk) */
+function getMeta(x,y,z){
+  if(y<0||y>=WH)return 0;
+  const cx=Math.floor(x/CH),cz=Math.floor(z/CH),ch=chunks.get(ckey(cx,cz));
+  return ch?ch.mt[bidx(x-cx*CH,y,z-cz*CH)]:0;
+}
+/* how much liquid a meta stands for, 8 (a source, or falling) down to 1 */
+function liqAmt(m){return (m&8)||!(m&7)?8:8-(m&7);}
+/* how tall the liquid in a cell stands, as a part of the block: 8/9 for a source, less as it thins (1 when the same
+   liquid is above it: the mesher and the swim checks ask for that themselves) */
+function liqHeight(m){return liqAmt(m)/9;}
+/* the top of the liquid at a block cell, as a height above the cell's floor: 0 if there is none */
+function liqTop(x,y,z){
+  const id=getBlock(x,y,z);
+  if(!isLiq(id))return 0;
+  return getBlock(x,y+1,z)===id?1:liqHeight(getMeta(x,y,z));
+}
+/* which way the liquid in a cell is running, as [x, z] (length 1, or 0 0 where it stands still: a source is a spring, it
+   feeds the stream but does not run itself) */
+function liqFlow(x,y,z){
+  const id=getBlock(x,y,z);
+  if(!isLiq(id))return [0,0];
+  const m0=getMeta(x,y,z);
+  if((m0&15)===0)return [0,0];
+  const a=liqAmt(m0);
+  let fx=0,fz=0;
+  for(const o of LIQ_H4){
+    const nid=getBlock(x+o[0],y,z+o[1]);
+    let d=0;
+    if(nid===id)d=a-liqAmt(getMeta(x+o[0],y,z+o[1]));
+    else if(nid===B.AIR&&a<8)d=a;
+    fx+=o[0]*d;fz+=o[1]*d;
+  }
+  const l=Math.hypot(fx,fz);
+  return l>0?[fx/l,fz/l]:[0,0];
+}
+/* something changed at a cell: it and its six neighbours are due a look, if they hold a liquid */
+function liqWake(x,y,z){
+  for(const o of [[0,0,0],[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]]){
+    const X=x+o[0],Y=y+o[1],Z=z+o[2],id=getBlock(X,Y,Z);
+    if(id!==B.WATER&&id!==B.LAVA)continue;
+    const set=id===B.WATER?LIQ.w:LIQ.l;
+    if(set.size<8000)set.set(X+','+Y+','+Z,[X,Y,Z]);
+  }
+}
+/* (the names the rest of the game calls: they mean "look here") */
+function flowPush(x,y,z){liqWake(x,y,z);}
+function flowAround(x,y,z){liqWake(x,y,z);}
+/* may a liquid move into a cell holding this block? Air, and the things a hand could brush aside */
+function liqCanEnter(id){
+  if(id===B.AIR)return true;
+  const d=DEFS[id];
+  return !!d&&d.solid===false&&!isLiq(id)&&d.hard>=0&&(!!d.replace||!!d.cross||isTorch(id));
+}
+/* lava that water has reached: a source becomes obsidian, a flow becomes cobblestone */
+function liqHarden(x,y,z){
+  if(getBlock(x,y,z)!==B.LAVA)return;
+  const to=(getMeta(x,y,z)&15)?B.COBBLE:B.OBSIDIAN;
+  setBlock(x,y,z,to);
+  if(getBlock(x,y,z)!==to)return;
+  burstParticles(x+0.5,y+0.7,z+0.5,to,8,0.7);playS('dig');
+}
+/* a liquid has just arrived in (or been poured into) a cell: where water and lava touch, the lava hardens */
+function lavaWaterCheck(x,y,z){
+  const here=getBlock(x,y,z);
+  if(here===B.LAVA){
+    if(getBlock(x,y+1,z)===B.WATER){liqHarden(x,y,z);return;}
+    for(const o of LIQ_H4)if(getBlock(x+o[0],y,z+o[1])===B.WATER){liqHarden(x,y,z);return;}
+  }else if(here===B.WATER){
+    if(getBlock(x,y-1,z)===B.LAVA)liqHarden(x,y-1,z);
+    for(const o of LIQ_H4)if(getBlock(x+o[0],y,z+o[1])===B.LAVA)liqHarden(x+o[0],y,z+o[1]);
+  }
+}
+/* put a liquid into a cell it may enter; what was there (a flower, a torch) is washed out and drops */
+function liqPut(L,x,y,z,meta,old){
+  if(old!==B.AIR){
+    const dr=blockDrop(old);
+    setBlock(x,y,z,B.AIR);
+    if(getBlock(x,y,z)!==B.AIR)return;
+    if(dr)spawnDrop(x+0.5,y+0.4,z+0.5,{id:dr.id,count:dr.count},0,1.5,0);
+  }
+  setBlock(x,y,z,L,meta);
+  if(getBlock(x,y,z)===L)lavaWaterCheck(x,y,z);
+}
+/* is there a way down under this cell for the liquid? */
+function liqHole(L,x,y,z){
+  if(y<=0)return false;
+  const b=getBlock(x,y-1,z);
+  return liqCanEnter(b)||(b===L&&(getMeta(x,y-1,z)&15)!==0);
+}
+/* The sideways directions a liquid at a cell spreads in: the ones that reach a drop soonest (looking at most far blocks
+   along the floor), or every open one if no drop is in reach. */
+function liqDirs(L,x,y,z,far){
+  const open=[],dist=[];
+  const pass=(X,Z)=>{const id=getBlock(X,y,Z);return liqCanEnter(id)||(id===L&&(getMeta(X,y,Z)&15)!==0);};
+  for(const o of LIQ_H4){
+    const sx=x+o[0],sz=z+o[1];
+    if(!pass(sx,sz))continue;
+    let d=1000,front=[[sx,sz]];
+    const seen=new Set([x+','+z,sx+','+sz]);
+    for(let step=0;step<far&&d===1000;step++){
+      const next=[];
+      for(const c of front){
+        if(liqHole(L,c[0],y,c[1])){d=step;break;}
+        for(const q of LIQ_H4){const X=c[0]+q[0],Z=c[1]+q[1],k=X+','+Z;if(seen.has(k)||!pass(X,Z))continue;seen.add(k);next.push([X,Z]);}
+      }
+      front=next;
+    }
+    open.push(o);dist.push(d);
+  }
+  const best=Math.min(1000,...dist);
+  return best===1000?open:open.filter((o,i)=>dist[i]===best);
+}
+/* One cell of liquid L, one tick: first what it is (a flowing cell is what its neighbours make it), then where it goes. */
+function liqCell(L,x,y,z){
+  if(getBlock(x,y,z)!==L)return;
+  const water=L===B.WATER,RL=liqRule(L,DIM),drop=RL.drop;
+  let m=getMeta(x,y,z);
+  const src=(m&15)===0;
+  if(!src){
+    let nm=-1;
+    if(getBlock(x,y+1,z)===L)nm=8;
+    else{
+      let best=0,srcs=0;
+      for(const o of LIQ_H4){
+        if(getBlock(x+o[0],y,z+o[1])!==L)continue;
+        const mm=getMeta(x+o[0],y,z+o[1]);
+        if((mm&15)===0)srcs++;
+        if(liqAmt(mm)>best)best=liqAmt(mm);
+      }
+      if(water&&srcs>=2){
+        const b=getBlock(x,y-1,z);
+        if(DEFS[b].solid!==false||(b===L&&(getMeta(x,y-1,z)&15)===0))nm=0;
+      }
+      if(nm<0&&best-drop>0)nm=8-(best-drop);
+    }
+    if(nm<0){setBlock(x,y,z,B.AIR);return;}
+    if(nm!==m){setBlock(x,y,z,L,nm);if(getBlock(x,y,z)!==L)return;m=nm;}
+  }
+  /* down */
+  let fell=false;
+  if(y>0){
+    const b=getBlock(x,y-1,z);
+    if(b===L){
+      const bm=getMeta(x,y-1,z);
+      if((bm&15)!==0){fell=true;if(!(bm&8))setBlock(x,y-1,z,L,8);}
+    }else if(liqCanEnter(b)){liqPut(L,x,y-1,z,8,b);fell=getBlock(x,y-1,z)===L;}
+    else if(isLiq(b)){
+      if(water)liqHarden(x,y-1,z);                          /* water onto lava */
+      else{setBlock(x,y-1,z,B.STONE);if(getBlock(x,y-1,z)===B.STONE){burstParticles(x+0.5,y-0.3,z+0.5,B.STONE,8,0.7);playS('dig');}}   /* lava onto water: stone */
+    }
+  }
+  if(!water&&GR.fireTick&&Math.random()<0.12){const o=LIQ_H4[(Math.random()*4)|0];igniteAt(x+o[0],y+((Math.random()*2)|0),z+o[1]);}
+  if(fell&&!((getMeta(x,y,z)&15)===0))return;
+  /* sideways */
+  const na=liqAmt(m)-drop;
+  if(na<=0)return;
+  const nl=8-na;
+  for(const o of liqDirs(L,x,y,z,RL.far)){
+    const X=x+o[0],Z=z+o[1],nid=getBlock(X,y,Z);
+    if(nid===L){const mm=getMeta(X,y,Z);if((mm&15)!==0&&!(mm&8)&&(mm&7)>nl)setBlock(X,y,Z,L,nl);}
+    else if(liqCanEnter(nid))liqPut(L,X,y,Z,nl,nid);
+  }
+  for(const o of LIQ_H4){                                   /* the other liquid beside it */
+    const nid=getBlock(x+o[0],y,z+o[1]);
+    if(nid!==L&&isLiq(nid)){if(water)liqHarden(x+o[0],y,z+o[1]);else{liqHarden(x,y,z);return;}}
+  }
+}
+/* one tick of one liquid: every cell that is due, up to the budget */
+function liqStep(L,set){
+  if(!set.size)return;
+  const cells=[...set.values()];
+  set.clear();
+  let n=0;
+  for(const c of cells){
+    if(n>=600){set.set(c[0]+','+c[1]+','+c[2],c);continue;}
+    const x=c[0],y=c[1],z=c[2];
+    if(!chunkAt(x,z))continue;
+    if(NET.on&&!ntSimHere(x,z))continue;   /* PART 58: one game flows the water here, the others get its edits */
+    n++;
+    liqCell(L,x,y,z);
+  }
+}
+/* a chunk was built: the liquid in it that was still moving when it was last seen moves on */
+function liqResume(ch){
+  for(const [lk,v] of ch.edits){
+    if(!(v>>8))continue;
+    const p=lk.split(','),X=ch.cx*CH+ +p[0],Y=+p[1],Z=ch.cz*CH+ +p[2],set=(v&255)===B.WATER?LIQ.w:LIQ.l;
+    if(set.size<8000)set.set(X+','+Y+','+Z,[X,Y,Z]);
+  }
 }
 let flowT=0;
 function tickFlow(dt){
-  flowT-=dt;
-  if(flowT>0)return;
-  flowT=0.22;
-  let n=0;
-  while(FLOWQ.length&&n<70){
-    const c=FLOWQ.shift();
-    const x=c[0],y=c[1],z=c[2];
-    FLOWS.delete(x+','+y+','+z);
-    n++;
-    if(!chunkAt(x,z))continue;
-    if(NET.on&&!ntSimHere(x,z))continue;   /* PART 58: one game flows the water here, the others get its edits */
-    if(getBlock(x,y,z)!==B.AIR)continue;
-    const above=getBlock(x,y+1,z)===B.WATER;
-    let side=false,deep=false;
-    for(const o of [[1,0],[-1,0],[0,1],[0,-1]]){
-      if(getBlock(x+o[0],y,z+o[1])===B.WATER){
-        side=true;
-        if(getBlock(x+o[0],y+1,z+o[1])===B.WATER)deep=true;
-      }
-    }
-    const belowSolid=DEFS[getBlock(x,y-1,z)].solid;
-    if(above||(side&&(deep||!belowSolid))){setBlock(x,y,z,B.WATER);lavaWaterCheck(x,y,z);}
-  }
+  LIQ.wT-=dt;
+  if(LIQ.wT<=0){LIQ.wT=liqRule(B.WATER,DIM).every;liqStep(B.WATER,LIQ.w);}
+  LIQ.lT-=dt;
+  if(LIQ.lT<=0){LIQ.lT=liqRule(B.LAVA,DIM).every;liqStep(B.LAVA,LIQ.l);}
 }
 
 /* ----- armor ----- */

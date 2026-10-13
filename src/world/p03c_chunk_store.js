@@ -1,6 +1,6 @@
 /* ----- chunk store ----- */
-const chunks=new Map();        /* ckey -> {bl,cx,cz,dirty,meshes,edits} */
-const chunkEdits=new Map();    /* ckey -> Map("lx,y,lz" -> id)  (persists across unload) */
+const chunks=new Map();        /* ckey -> {bl,mt,cx,cz,dirty,meshes,edits}  (mt: a meta byte per block, 6.25: liquid levels, p18) */
+const chunkEdits=new Map();    /* ckey -> Map("lx,y,lz" -> id, or id | meta<<8)  (persists across unload) */
 const blockEnts=new Map();     /* bkey -> {t:'furnace'|'chest',...} */
 const torches=new Set();       /* bkey of placed torches */
 let frameCount=0;
@@ -10,9 +10,10 @@ function createChunk(cx,cz){
   const bl=genChunk(cx,cz);
   let ed=chunkEdits.get(k);
   if(!ed){ed=new Map();chunkEdits.set(k,ed);}
+  const mt=new Uint8Array(bl.length);
   for(const [lk,id] of ed){
-    const p=lk.split(',');
-    bl[bidx(+p[0],+p[1],+p[2])]=id;
+    const p=lk.split(','),i=bidx(+p[0],+p[1],+p[2]);
+    bl[i]=id&255;mt[i]=id>>8;
   }
   for(const [lk,id] of ed){
     if(id!==B.FLOWER_R&&id!==B.FLOWER_Y&&id!==B.TALLGRASS&&id!==B.CACTUS)continue;
@@ -21,8 +22,9 @@ function createChunk(cx,cz){
       LWN.set(bkey(cx*CH+ +p[0],+p[1],cz*CH+ +p[2]),{p:id,cd:0});
   }
   applyCraters(bl,ed,cx,cz);
-  const ch={bl,cx,cz,dirty:true,meshes:null,edits:ed};
+  const ch={bl,mt,cx,cz,dirty:true,meshes:null,edits:ed};
   chunks.set(k,ch);
+  liqResume(ch);
   markDirty(cx-1,cz);markDirty(cx+1,cz);markDirty(cx,cz-1);markDirty(cx,cz+1);
   return ch;
 }
@@ -41,8 +43,9 @@ function getBlock(x,y,z){
   if(!ch)return B.AIR;
   return ch.bl[bidx(x-cx*CH,y,z-cz*CH)];
 }
-function setBlock(x,y,z,id){
+function setBlock(x,y,z,id,meta){
   if(y<0||y>=WH)return;
+  meta=meta|0;
   if(MGP_ON&&mgProtect(x,y,z,id))return;
   const cx=Math.floor(x/CH),cz=Math.floor(z/CH);
   const ch=chunks.get(ckey(cx,cz));
@@ -50,10 +53,14 @@ function setBlock(x,y,z,id){
   const lx=x-cx*CH,lz=z-cz*CH;
   const i=bidx(lx,y,lz);
   const old=ch.bl[i];
-  if(old===id)return;
-  ch.bl[i]=id;
-  ch.edits.set(lx+','+y+','+lz,id);
-  if(NET.on&&!NET.ap)ntEdit(ckey(cx,cz),lx+','+y+','+lz,id);   /* PART 58: multiplayer */
+  if(old===id&&ch.mt[i]===meta)return;
+  ch.bl[i]=id;ch.mt[i]=meta;
+  const ev=meta?id|(meta<<8):id;                            /* what is saved and sent: the id, with the meta above it when there is any */
+  ch.edits.set(lx+','+y+','+lz,ev);
+  if(NET.on&&!NET.ap)ntEdit(ckey(cx,cz),lx+','+y+','+lz,ev);   /* PART 58: multiplayer */
+  if(old===id){ch.dirty=true;liqWake(x,y,z);              /* only the level changed: the mesh and the liquid next door, nothing else */
+    if(lx===0)markDirty(cx-1,cz);if(lx===CH-1)markDirty(cx+1,cz);if(lz===0)markDirty(cx,cz-1);if(lz===CH-1)markDirty(cx,cz+1);
+    return;}
   const k=bkey(x,y,z);
   if(isTorch(old))torches.delete(k);
   if(isTorch(id))torches.add(k);
@@ -62,8 +69,7 @@ function setBlock(x,y,z,id){
     if(isDoorId(getBlock(x,py,z)))setBlock(x,py,z,B.AIR);
   }
   ch.dirty=true;
-  if(id===B.WATER)flowAround(x,y,z);
-  else if(id===B.AIR&&old!==B.AIR)flowPush(x,y,z);
+  liqWake(x,y,z);
   if(id===B.TCORE)TITQ.push({x,y,z,t:2.2,pT:0});
   if(lx===0)markDirty(cx-1,cz);
   if(lx===CH-1)markDirty(cx+1,cz);

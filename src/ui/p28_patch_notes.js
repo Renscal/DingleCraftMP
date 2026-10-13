@@ -3,7 +3,19 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'A face of your own',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Water finds its level',lines:[
+    'WATER FINDS ITS LEVEL. Until today every drop of water was a whole block of it. Pour a bucket on a hill and you got a staircase of full blocks that never went away.',
+    'Now liquids flow properly. A source spreads seven blocks, thinner as it goes, and the surface slopes. It runs toward the nearest drop, falls as a column, and spreads again where it lands.',
+    'Take the source away and the stream runs dry, block by block.',
+    'Two sources with a gap between them, on solid ground, fill the gap with a third. Infinite water is back on the menu. Lava does not do this, because that would be alarming.',
+    'Lava flows too: slowly, three blocks in the Overworld, seven and faster in the Nether. It lights what it touches while Fire Tick is on.',
+    'Water on a lava source is obsidian. Water on flowing lava is cobblestone. Lava falling onto water is stone. Build a generator. You know you want to.',
+    'Running water washes away tall grass, flowers and torches (they drop), and pushes you, the mobs and anything lying in it downstream.',
+    'A bucket only fills from a source, not from a trickle. Water poured in the Nether hisses and is gone.',
+    'Old worlds load as they are. Every water block you already have counts as a source, so yesterday&#x27;s puddles are today&#x27;s permanent ponds.',
+    'Server owners: this needs the 6.25 server. An older game and a newer server refuse each other.',
+  ]},
+ {v:'6.24',label:'Release 1.1',title:'A face of your own',lines:[
     'A FACE OF YOUR OWN. The player is now a proper blocky figure that wears a skin: head, body, arms and legs, each with a second layer for hats, jackets and sleeves.',
     'Settings has a new row: Your skin. Pick a PNG, 64 by 64 (the older 64 by 32 works too), under 50 KB, and you are wearing it. Nothing is looked up or downloaded: it is your file, kept in your browser.',
     'No skin? You get the house one, painted fresh: the orange hoodie and charcoal trousers the game has always worn.',
