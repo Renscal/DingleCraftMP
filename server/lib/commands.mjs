@@ -193,6 +193,11 @@ const COMMANDS = {
     S.saveWorld('asked');
     return `${Object.keys(S.world.edits).length} edited chunks, ${Object.keys(S.world.be).length} chests and furnaces, ${Object.keys(S.world.drops).length} dropped items`;
   } },
+  export: { op: true, use: '/export', run: ({ S }) => {
+    let file = null;
+    try { file = S.exportWorld ? S.exportWorld() : null; } catch (e) { return 'Export failed: ' + e.message; }
+    return file ? 'The world was written as one file the game can import: ' + file : 'This server keeps no world on disk.';
+  } },
   stop: { con: true, use: '/stop', run: () => undefined },   // the program itself stops (lib/cli.mjs); listed here for /help
   w: { alias: 'msg' }, tell: { alias: 'msg' }, whisper: { alias: 'msg' }, gm: { alias: 'gamemode' }, players: { alias: 'list' }, '?': { alias: 'help' },
   unban: { alias: 'pardon' },

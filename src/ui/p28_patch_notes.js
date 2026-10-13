@@ -3,7 +3,15 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Multiplayer, tightened',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'The world is a folder',lines:[
+    'THE WORLD IS A FOLDER. Server owners: the one big world file is gone. A world is now a folder you can open and read, laid out like a certain other block game: level.json, region, entities, playerdata.',
+    'region holds the changed blocks, chests and furnaces, 512 by 512 blocks to a file, each file named after its place in the world. entities holds what is lying around in that region. playerdata has one file per player who ever joined: where they are, their health, hunger, spawn point and every slot of their inventory, one per line.',
+    'Saving writes only the files that changed. A big world no longer rewrites itself in full every 30 seconds because somebody placed a torch.',
+    'Your old world.vxw.json is converted on the first start and left where it was, untouched, in case you want it back.',
+    'New command for operators: /export writes the whole world as one file again, for taking it back to single player.',
+    'Nothing changes for players. This is the ground floor for the next step: the server running the world itself.',
+  ]},
+ {v:'6.11',label:'Release 1.1',title:'Multiplayer, tightened',lines:[
     'MULTIPLAYER, TIGHTENED. Same server, fewer ways for it to let you down. Needs the 6.11 server: a 6.10 game and a 6.11 server politely refuse each other.',
     'Lost your connection? The game now tries to get back in by itself: five tries over about 25 seconds, and you come back where the server last saw you, not where you last saved. Kicks, bans and shutdowns are still final.',
     'A heartbeat every 2 seconds: the game notices a dead line in 12 seconds and the server gives up on a silent player after 20 (it used to be 45). Hold TAB to see everyone&#x27;s ping.',

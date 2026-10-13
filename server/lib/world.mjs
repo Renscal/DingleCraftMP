@@ -1,14 +1,26 @@
-// world.mjs: the world as data. Making one, adopting a save file, applying the settings file, writing it to disk, and the
-// small validators for things that get stored in it. No sockets.
+// world.mjs: the world as data. Making one, adopting a save file, applying the settings file, reading and writing the world
+// folder, and the small validators for things that get stored in it. No sockets.
 //
-// The world is a normal DINGLECRAFT save (what the game's Export World writes) plus two tables of the server's own:
+// In memory the world is a normal DINGLECRAFT save (what the game's Export World writes) plus the server's own tables:
 //   { f, v, name, seed, mode, time, gr (game rules), edits {chunkKey: {localKey: blockId}}, be {blockKey: blockEntity},
 //     players {lowercase name: saved player (+ gm, that player's own game mode)}, drops {id: {dim, x, y, z, st, age}},
 //     spawn {x, y, z} (where new players start), ...whatever else the save carried }
+//
+// On disk it is a folder, laid out like a Minecraft world and written as JSON a person can read and edit (6.12):
+//   <world>/
+//     level.json                        the world itself: name, seed, mode, time, spawn, rules, and whatever else a save carried
+//     region/<dimension>/r.<rx>.<rz>.json    the changed blocks and the chests and furnaces of one region: 32 x 32 chunks
+//                                            (512 x 512 blocks), named after its place in the world
+//     entities/<dimension>/r.<rx>.<rz>.json  everything that lies or walks in that region (today: the dropped items)
+//     playerdata/<name>.json            one file per player who has ever joined: position, health, hunger, spawn point,
+//                                       inventory, armour, XP, game mode
+// Only what changed since the last save is written (each file through a .tmp and a rename), and a file whose region
+// emptied out is removed. A world from before 6.12 (one world.vxw.json) is read once and written out as a folder; the old
+// file is left where it was. exportWorld turns the folder back into that one file, which the game can import.
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { RULES, cleanRules } from './config.mjs';
+import { RULES, DIM_PFX, cleanRules } from './config.mjs';
 
 /* the game's hashSeed (src/core/p07f_world_lifecycle.js): a number as typed, words hashed, blank = random */
 export function hashSeed(str) {
@@ -78,20 +90,200 @@ export function adoptWorld(d, o) {
   return w;
 }
 
-/* The world the server starts with: the file if there is one, else a new world ({world, isNew}).
-   worldFile null (or o.memory) means "never touch the disk". A file that cannot be read is an error, never replaced:
-   the host decides what to do with a damaged world. */
-export function openWorld(worldFile, o, log) {
-  if (o.memory || !worldFile || !fs.existsSync(worldFile)) {
-    const world = newWorld(o);
-    if (!o.memory) log(`world: none found, generating a new one (seed ${world.seed}, ${world.mode === 'c' ? 'creative' : 'survival'})`);
-    return { world, isNew: !o.memory };
+/* ---- the world folder ---- */
+export const REGION = 32;             // chunks along one side of a region file
+const CHUNK = 16;                     // blocks along one side of a chunk (the game's CH)
+const LAYOUT = 1;                     // the folder layout's own version number, in level.json
+const DIM_OF = Object.fromEntries(Object.entries(DIM_PFX).map(([dim, pfx]) => [pfx, dim]));   // 'n;' -> 'nether'
+/* the folder a key's dimension prefix ('' or 'n;' ...) is stored under, and back. A prefix this server has no name for
+   (a newer game's dimension) gets a folder of its own, so nothing is lost. */
+const dimFolder = (pfx) => DIM_OF[pfx] || 'dim-' + pfx[0];
+const dimPrefix = (folder) => (folder in DIM_PFX ? DIM_PFX[folder] : /^dim-[a-z]$/.test(folder) ? folder[4] + ';' : null);
+const splitKey = (k) => (k[1] === ';' ? [k.slice(0, 2), k.slice(2)] : ['', k]);
+const regionOf = (cx, cz) => Math.floor(cx / REGION) + '.' + Math.floor(cz / REGION);
+const blockRegion = (x, z) => regionOf(Math.floor(x / CHUNK), Math.floor(z / CHUNK));
+
+/* where a world lives: { dir, legacy }. The "world" setting names the folder (inside the data folder unless a full path).
+   A name ending in .json is a world from before 6.12, or an exported single-player save: the folder is that name without
+   the ending, and the file is read once if the folder does not exist yet. */
+export function worldPlace(dataDir, setting) {
+  const p = path.resolve(dataDir, setting);
+  if (/\.json$/i.test(p)) return { dir: p.replace(/(\.vxw)?\.json$/i, ''), legacy: p };
+  return { dir: p, legacy: p + '.vxw.json' };
+}
+
+/* the file a player is kept in: their lower-case name, with anything a file system might mind spelled as %xx. (A name
+   Windows reserves, like "con", gets a trailing %, which no real name can produce.) The name inside the file is the truth. */
+export function playerFile(key) {
+  const safe = key.replace(/[^a-z0-9_-]/g, (c) => '%' + c.charCodeAt(0).toString(16).padStart(2, '0'));
+  return (/^(con|prn|aux|nul|com\d|lpt\d)$/.test(safe) || !safe ? safe + '%' : safe) + '.json';
+}
+
+const line = (v) => JSON.stringify(v);
+/* an object as one "key": value pair per line, each value on a single line: readable, diffable, and not a page per chest */
+function lines(obj, indent) {
+  const keys = Object.keys(obj);
+  return keys.length ? '{\n' + keys.map((k) => indent + '  ' + line(k) + ': ' + line(obj[k])).join(',\n') + '\n' + indent + '}' : '{}';
+}
+
+/* The world as files: a Map of path (relative to the world folder, forward slashes) -> text. */
+export function worldFiles(world) {
+  const out = new Map();
+  const { edits, be, players, drops, ...level } = world;
+  out.set('level.json', JSON.stringify({ layout: LAYOUT, regionSize: REGION, chunkSize: CHUNK, ...level }, null, 2) + '\n');
+
+  /* region/<dim>/r.<rx>.<rz>.json: chunk by chunk, the changed blocks ("lx,y,lz": block id) and the block entities */
+  const regions = new Map();           // 'over/0.-1' -> { 'cx,cz': { blocks, blockEntities } }
+  const chunkIn = (folder, cx, cz) => {
+    const rk = folder + '/' + regionOf(cx, cz);
+    let r = regions.get(rk);
+    if (!r) regions.set(rk, r = {});
+    return r[cx + ',' + cz] || (r[cx + ',' + cz] = { blocks: null, blockEntities: null });
+  };
+  for (const k of Object.keys(edits)) {
+    if (!Object.keys(edits[k]).length) continue;
+    const [pfx, ck] = splitKey(k), c = ck.split(',');
+    chunkIn(dimFolder(pfx), +c[0], +c[1]).blocks = edits[k];
   }
-  let d;
-  try { d = JSON.parse(fs.readFileSync(worldFile, 'utf8')); } catch (e) { throw new Error(`the world file ${worldFile} is damaged (${e.message}). Fix it, or move it away to start a new world.`); }
-  const world = adoptWorld(d, o);
-  log(`world: loaded ${worldFile} (seed ${world.seed}, ${Object.keys(world.edits).length} edited chunks, ${Object.keys(world.players).length} known players)`);
-  return { world, isNew: false };
+  for (const k of Object.keys(be)) {
+    const [pfx, bk] = splitKey(k), p = bk.split(',');
+    const ch = chunkIn(dimFolder(pfx), Math.floor(p[0] / CHUNK), Math.floor(p[2] / CHUNK));
+    (ch.blockEntities || (ch.blockEntities = {}))[bk] = be[k];
+  }
+  for (const [rk, chunks] of regions) {
+    const [folder, r] = rk.split('/'), [rx, rz] = r.split('.').map(Number);
+    const body = Object.keys(chunks).sort().map((ck) => {
+      const c = chunks[ck];
+      return '    ' + line(ck) + ': {\n      "blocks": ' + line(c.blocks || {}) + ',\n      "blockEntities": ' + lines(c.blockEntities || {}, '      ') + '\n    }';
+    }).join(',\n');
+    out.set(`region/${folder}/r.${r}.json`, `{\n  "dimension": ${line(folder)},\n  "region": [${rx}, ${rz}],\n  "blocksFrom": [${rx * REGION * CHUNK}, ${rz * REGION * CHUNK}],\n  "chunks": {\n${body}\n  }\n}\n`);
+  }
+
+  /* entities/<dim>/r.<rx>.<rz>.json: what lies in that region */
+  const ents = new Map();
+  for (const id of Object.keys(drops)) {
+    const d = drops[id], folder = DIM_PFX[d.dim] === undefined ? 'over' : d.dim, rk = folder + '/' + blockRegion(d.x, d.z);
+    let r = ents.get(rk);
+    if (!r) ents.set(rk, r = {});
+    r[id] = { x: d.x, y: d.y, z: d.z, item: d.st, ageSeconds: Math.round(d.age || 0) };
+  }
+  for (const [rk, items] of ents) {
+    const [folder, r] = rk.split('/'), [rx, rz] = r.split('.').map(Number);
+    out.set(`entities/${folder}/r.${r}.json`, `{\n  "dimension": ${line(folder)},\n  "region": [${rx}, ${rz}],\n  "items": ${lines(items, '  ')}\n}\n`);
+  }
+
+  /* playerdata/<name>.json */
+  for (const key of Object.keys(players)) {
+    const p = players[key];
+    if (!p || typeof p !== 'object') continue;
+    const { inv, armor, ...rest } = p;
+    const head = JSON.stringify({ player: key, ...rest }, null, 2).replace(/\n}$/, '');
+    const list = (name, arr) => (Array.isArray(arr) ? `,\n  ${line(name)}: [\n${arr.map((it) => '    ' + line(it)).join(',\n')}\n  ]` : '');
+    out.set('playerdata/' + playerFile(key), head + list('armor', armor) + list('inv', inv) + '\n}\n');
+  }
+  return out;
+}
+
+const md5 = (t) => crypto.createHash('md5').update(t).digest('hex');
+/* every .json file under a folder of the world, as paths relative to the world folder */
+function listJson(dir, sub) {
+  const out = [];
+  (function walk(rel) {
+    let names = [];
+    try { names = fs.readdirSync(path.join(dir, rel), { withFileTypes: true }); } catch { return; }
+    for (const n of names) {
+      if (n.isDirectory()) walk(rel + '/' + n.name);
+      else if (n.name.endsWith('.json')) out.push(rel + '/' + n.name);
+    }
+  })(sub);
+  return out;
+}
+
+/* Read a world folder. Returns { world (not yet adopted), seen }: seen is path -> md5 of every file read, which
+   writeWorld uses to write only what changed and to remove a file whose content is gone. A file that cannot be parsed
+   is an error that names it. */
+export function readWorldDir(dir) {
+  const seen = new Map();
+  const read = (rel) => {
+    const text = fs.readFileSync(path.join(dir, rel), 'utf8');
+    seen.set(rel, md5(text));
+    try { return JSON.parse(text); } catch (e) { throw new Error(`${path.join(dir, rel)} is damaged (${e.message}). Fix it, or move the world folder away to start a new world.`); }
+  };
+  const { layout, regionSize, chunkSize, ...level } = read('level.json');
+  if (regionSize && regionSize !== REGION) throw new Error(`${path.join(dir, 'level.json')} says regions are ${regionSize} chunks wide; this server reads ${REGION}`);
+  const world = { ...level, edits: {}, be: {}, players: {}, drops: {} };
+  for (const rel of listJson(dir, 'region')) {
+    const pfx = dimPrefix(rel.split('/')[1]);
+    if (pfx === null) continue;
+    const chunks = read(rel).chunks || {};
+    for (const ck of Object.keys(chunks)) {
+      const c = chunks[ck] || {};
+      if (c.blocks && Object.keys(c.blocks).length) world.edits[pfx + ck] = c.blocks;
+      for (const bk of Object.keys(c.blockEntities || {})) world.be[pfx + bk] = c.blockEntities[bk];
+    }
+  }
+  for (const rel of listJson(dir, 'entities')) {
+    const folder = rel.split('/')[1];
+    if (dimPrefix(folder) === null) continue;
+    const items = read(rel).items || {};
+    for (const id of Object.keys(items)) { const it = items[id]; if (it && typeof it === 'object') world.drops[id] = { dim: folder, x: it.x, y: it.y, z: it.z, st: it.item, age: +it.ageSeconds || 0 }; }
+  }
+  for (const rel of listJson(dir, 'playerdata')) {
+    const { player, ...p } = read(rel);
+    if (typeof player === 'string' && player) world.players[playerKey(player)] = p;
+  }
+  return { world, seen };
+}
+
+/* Write the world folder: only the files whose text changed since the last write (or the read), each through a .tmp and a
+   rename so a crash never leaves half a file, and remove the ones whose content is gone. seen (path -> md5) is updated.
+   Returns how many files were written or removed. */
+export function writeWorld(dir, world, seen) {
+  const files = worldFiles(world);
+  let n = 0;
+  for (const [rel, text] of files) {
+    const h = md5(text);
+    if (seen.get(rel) === h) continue;
+    const file = path.join(dir, rel);
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file + '.tmp', text);
+    fs.renameSync(file + '.tmp', file);
+    seen.set(rel, h); n++;
+  }
+  for (const rel of [...seen.keys()]) {
+    if (files.has(rel)) continue;
+    try { fs.unlinkSync(path.join(dir, rel)); } catch { /* already gone */ }
+    seen.delete(rel); n++;
+  }
+  return n;
+}
+
+/* the world as the one file the game's Import World reads (and a server from before 6.12 used) */
+export function exportWorld(world) {
+  return JSON.stringify(world);
+}
+
+/* The world the server starts with ({world, isNew, seen}): the folder if there is one, else a world file from before 6.12
+   (or an exported single-player save) next to it, else a new world. place null (or o.memory) means "never touch the
+   disk". Anything that cannot be read is an error, never replaced: the host decides what to do with a damaged world. */
+export function openWorld(place, o, log) {
+  if (!o.memory && place && fs.existsSync(path.join(place.dir, 'level.json'))) {
+    const { world: raw, seen } = readWorldDir(place.dir);
+    const world = adoptWorld(raw, o);
+    log(`world: loaded ${place.dir} (seed ${world.seed}, ${Object.keys(world.edits).length} edited chunks, ${Object.keys(world.players).length} known players)`);
+    return { world, isNew: false, seen };
+  }
+  if (!o.memory && place && fs.existsSync(place.legacy) && fs.statSync(place.legacy).isFile()) {
+    let d;
+    try { d = JSON.parse(fs.readFileSync(place.legacy, 'utf8')); } catch (e) { throw new Error(`the world file ${place.legacy} is damaged (${e.message}). Fix it, or move it away to start a new world.`); }
+    const world = adoptWorld(d, o);
+    log(`world: read ${place.legacy} (seed ${world.seed}, ${Object.keys(world.edits).length} edited chunks, ${Object.keys(world.players).length} known players)`);
+    log(`world: from now on it lives in the folder ${place.dir}; the old file is left where it is and is no longer used`);
+    return { world, isNew: true, seen: new Map() };
+  }
+  const world = newWorld(o);
+  if (!o.memory) log(`world: none found, generating a new one (seed ${world.seed}, ${world.mode === 'c' ? 'creative' : 'survival'})`);
+  return { world, isNew: !o.memory, seen: new Map() };
 }
 
 /* The settings file decides: its rules and (when given) its mode are applied on every start, over whatever the world file
@@ -101,10 +293,4 @@ export function applySettings(world, rules, mode) {
   if (mode !== undefined) world.mode = mode === 'c' ? 'c' : 's';
 }
 
-/* write the world next to itself and rename it into place: a crash never leaves a half-written world behind */
-export function writeWorld(worldFile, world) {
-  fs.mkdirSync(path.dirname(worldFile), { recursive: true });
-  const tmp = worldFile + '.tmp';
-  fs.writeFileSync(tmp, JSON.stringify(world));
-  fs.renameSync(tmp, worldFile);
-}
+

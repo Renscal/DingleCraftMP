@@ -499,7 +499,10 @@ boot.run(async()=>{
     const save=V.snapshot('nexport');await V.quitToTitle();await window.storage.delete('vxw:nexport');
     fs.writeFileSync(path.join(OUT,'world.vxw.json'),JSON.stringify(save));
     fs.writeFileSync(path.join(OUT,'dinglecraft_v'+V.GAME_VERSION+'.html'),'<!doctype html><title>stand-in</title>');
+    const WD=path.join(OUT,'world'),rj=f=>JSON.parse(fs.readFileSync(path.join(WD,f),'utf8')),oldBytes=fs.readFileSync(path.join(OUT,'world.vxw.json'),'utf8');
     const S2=createServer({port:0,data:OUT,world:'world.vxw.json',quiet:true});await S2.listen();const W2=S2.world();
+    ok('a world file from before 6.12 (or an exported save) becomes a world folder at once, and the file is left as it was',fs.existsSync(path.join(WD,'level.json'))&&rj('level.json').seed===save.seed&&S2.worldDir===WD&&
+      fs.readFileSync(path.join(OUT,'world.vxw.json'),'utf8')===oldBytes&&fs.readdirSync(path.join(WD,'region','over')).every(n=>/^r\.-?\d+\.-?\d+\.json$/.test(n)));
     ok('an exported single-player world is adopted (seed, mode, edits; no player, ents or bots)',W2.seed===save.seed&&W2.mode==='c'&&Object.keys(W2.edits).length===Object.keys(save.edits).length&&
       !('player' in W2)&&!('ents' in W2)&&!('bots' in W2)&&!('bots' in W2.gr));
     ok('a game html next to the world is served at /',/stand-in/.test(await fetch('http://127.0.0.1:'+S2.port+'/').then(x=>x.text()))&&S2.status().version===V.GAME_VERSION);
@@ -516,25 +519,38 @@ boot.run(async()=>{
       ok('a rule changed in the game is reported for the settings file (known rules only)',!!told&&told.fireTick===false&&told.keepInv===true&&!('bots' in told));
       await S3.close();}
     /* no world file: one is generated and written at once; a damaged one is refused and left alone */
-    {const D3=path.join(OUT,'fresh');const S4=createServer({port:0,data:D3,quiet:true,noGame:true,seed:'9'});const wf=path.join(D3,'world.vxw.json');
-      ok('no world file: a new world is generated and is on disk before the server even listens',fs.existsSync(wf)&&JSON.parse(fs.readFileSync(wf,'utf8')).seed===9&&S4.world().seed===9);
+    {const D3=path.join(OUT,'fresh');const S4=createServer({port:0,data:D3,quiet:true,noGame:true,seed:'9'});const wf=path.join(D3,'world','level.json');
+      ok('no world: a new one is generated and is on disk (a folder) before the server even listens',fs.existsSync(wf)&&JSON.parse(fs.readFileSync(wf,'utf8')).seed===9&&S4.world().seed===9);
       await S4.listen();await S4.close();
       const S5=createServer({port:0,data:D3,quiet:true,noGame:true,seed:'1234'});
       ok('the next start loads that world (the seed setting no longer matters)',S5.world().seed===9);await S5.listen();await S5.close();
       fs.writeFileSync(wf,'{"seed": 9, "edits": {');let err='';try{createServer({port:0,data:D3,quiet:true,noGame:true});}catch(e){err=e.message;}
-      ok('a damaged world file stops the server with a reason and is not overwritten',/damaged/.test(err)&&fs.readFileSync(wf,'utf8')==='{"seed": 9, "edits": {');}
+      ok('a damaged file in the world folder stops the server with a reason that names it, and is not overwritten',/level\.json is damaged/.test(err)&&fs.readFileSync(wf,'utf8')==='{"seed": 9, "edits": {');}
     /* the real program: a first run writes every rule into server.json; an edited file is applied on the next run */
     {const cp=require('child_process'),SV=path.join(REPO,'server','dinglecraft-server.mjs'),D2=path.join(OUT,'cli');
       const runIt=()=>cp.spawnSync(process.execPath,[SV,'--data',D2,'--port','0','--seed','5'],{input:'stop\n',encoding:'utf8',timeout:20000});
       const r1=runIt(),c1=JSON.parse(fs.readFileSync(path.join(D2,'server.json'),'utf8'));
       ok('first run: server.json lists the mode and all '+Object.keys(RULES).length+' game rules with the server defaults',r1.status===0&&c1.mode==='s'&&JSON.stringify(c1.rules)===JSON.stringify(RULES)&&c1.rules.cheats===false);
-      ok('first run: the new world is on disk with those rules',JSON.parse(fs.readFileSync(path.join(D2,'world.vxw.json'),'utf8')).gr.cheats===false);
+      ok('first run: the new world is on disk with those rules',JSON.parse(fs.readFileSync(path.join(D2,'world','level.json'),'utf8')).gr.cheats===false&&c1.world==='world');
       c1.rules.keepInv=true;c1.rules.dayCycle=false;c1.mode='c';delete c1.rules.snail;fs.writeFileSync(path.join(D2,'server.json'),JSON.stringify(c1));
-      const r2=runIt(),w2=JSON.parse(fs.readFileSync(path.join(D2,'world.vxw.json'),'utf8')),c2=JSON.parse(fs.readFileSync(path.join(D2,'server.json'),'utf8'));
+      const r2=runIt(),w2=JSON.parse(fs.readFileSync(path.join(D2,'world','level.json'),'utf8')),c2=JSON.parse(fs.readFileSync(path.join(D2,'server.json'),'utf8'));
       ok('an edited server.json is applied to the existing world on the next start (rules and mode; same seed)',r2.status===0&&w2.gr.keepInv===true&&w2.gr.dayCycle===false&&w2.mode==='c'&&w2.seed===5);
       ok('a rule deleted from the file keeps the world\'s value and is written back in',w2.gr.snail===true&&c2.rules.snail===true&&c2.rules.keepInv===true&&c2.mode==='c');}
-    const back=JSON.parse(fs.readFileSync(path.join(OUT,'world.vxw.json'),'utf8'));
-    ok('the world file is written on shutdown: the new edit, the player by name, still a loadable save shape',back.edits['0,0']['1,50,1']===B.STONE&&back.drops['savesave.1'].st.count===2&&back.players.bea.x===1&&back.seed===save.seed&&back.f===save.f&&!fs.existsSync(path.join(OUT,'world.vxw.json.tmp')));
+    {const reg=rj('region/over/r.0.0.json'),ent=rj('entities/over/r.0.0.json'),bea2=rj('playerdata/bea.json'),lvl=rj('level.json');
+      ok('the world folder is written on shutdown: the new edit in its region file, the dropped item in that region\'s entities, the player in a file of her own',
+        reg.dimension==='over'&&reg.chunks['0,0'].blocks['1,50,1']===B.STONE&&ent.items['savesave.1'].item.count===2&&ent.items['savesave.1'].x===3&&bea2.player==='bea'&&bea2.x===1&&bea2.y===60&&Array.isArray(bea2.inv)&&
+        lvl.seed===save.seed&&lvl.f===save.f&&!('edits' in lvl)&&!('players' in lvl)&&!('drops' in lvl));
+      const all=[];(function walk(d){for(const n of fs.readdirSync(d,{withFileTypes:true}))n.isDirectory()?walk(path.join(d,n.name)):all.push(n.name);})(WD);
+      ok('nothing half-written is left behind, and every file is JSON a person can read (indented, one thing per line)',all.every(n=>n.endsWith('.json'))&&fs.readFileSync(path.join(WD,'playerdata','bea.json'),'utf8').split('\n').length>5&&fs.readFileSync(path.join(WD,'region','over','r.0.0.json'),'utf8').split('\n').length>6);
+      const {readWorldDir,adoptWorld,exportWorld}=await import(pathToFileURL(path.join(REPO,'server','lib','world.mjs')).href);
+      const again=adoptWorld(readWorldDir(WD).world,{}),one=JSON.parse(exportWorld(again));
+      ok('the folder reads back as the same world, and exports as one file the game can import',again.edits['0,0']['1,50,1']===B.STONE&&again.drops['savesave.1'].st.count===2&&again.players.bea.x===1&&Object.keys(again.edits).length===Object.keys(S2.world().edits).length&&
+        one.seed===save.seed&&one.edits['0,0']['1,50,1']===B.STONE&&one.f===save.f);
+      /* only what changed is written */
+      const S7=createServer({port:0,data:OUT,world:'world',quiet:true,noGame:true});await S7.listen();
+      const stamp=f=>fs.statSync(path.join(WD,f)).mtimeMs,t0={r:stamp('region/over/r.0.0.json'),p:stamp('playerdata/bea.json')};await sleep(30);
+      S7.world().players.bea.hp=7;S7.world().drops={};S7.saveWorld();await S7.close();
+      ok('a later save rewrites only the files that changed and removes a file whose region emptied out',stamp('region/over/r.0.0.json')===t0.r&&stamp('playerdata/bea.json')>t0.p&&rj('playerdata/bea.json').hp===7&&!fs.existsSync(path.join(WD,'entities','over','r.0.0.json')));}
     fs.rmSync(OUT,{recursive:true,force:true});}
   await window.storage.delete('vxw:nsolo');
 });

@@ -55,7 +55,8 @@ tests/          core/ (frozen) lib/ (boot chain, paths.js) texpacks/ purgatory/ 
 tools/          art/ (packers, fal client: PAID) assets/ (unpack, repack) qa/ (muted browser rigs) hooks/ (git hooks)
                 scan_secrets.mjs scan_history.mjs grep-safe.sh lib/private_terms.cjs
 server/         the multiplayer server: dinglecraft-server.mjs (the front door) + lib/ (config, world, websocket, protocol,
-                commands, http, server, cli), no dependencies; Start Server.bat; its data/ is gitignored
+                commands, http, server, cli), no dependencies; Start Server.bat; its data/ is gitignored. The world on disk is a
+                folder (level.json, region/, entities/, playerdata/; the layout is in lib/world.mjs and server/README.md)
 client/         the desktop client: an Electron wrapper (main.js) around the same html; optional, nobody needs it to play
 docs/           ARCHITECTURE BUILD TESTING QA ASSETS RELEASING PARITY ROADMAP LEGACY LANDMINES
 build/ dist/ out/   gitignored outputs

@@ -54,7 +54,7 @@ The first run writes `data/server.json`. Edit it and restart, or pass the same t
 | `mode` | `--mode` | `s` | `s` survival or `c` creative: what new players start in (an operator can give one player another with `/gamemode`); applied on every start |
 | `pvp` | `--no-pvp` | true | whether players can hurt each other |
 | `rules` | | see below | the world's game rules; applied on every start |
-| `world` | `--world` | `world.vxw.json` | the world file, inside the data folder unless it is a full path |
+| `world` | `--world` | `world` | the world folder, inside the data folder unless it is a full path. A name ending in `.json` is a world file from before 6.12 or an exported save: it is read once into a folder of the same name |
 | `game` | `--game` | found automatically | the game html to hand out |
 | | `--data` | `data/` next to the server | where `server.json` and the world live |
 | `ops` | | `[]` | the operators, by name: they may use every command and build at spawn |
@@ -121,7 +121,39 @@ world each time the server starts. Stop the server, edit the file, start it agai
 - A first run next to an existing world file (one exported from single player, say) takes that world's mode and rules as
   the starting values.
 - `seed` only matters when the world is created. To start over with a new seed, stop the server and delete (or rename)
-  the world file.
+  the world folder.
+
+## The world folder
+
+The world is a folder of JSON files a person can read and edit (with the server stopped), laid out like a Minecraft world:
+
+```
+data/
+  server.json                       the settings (above)
+  world/
+    level.json                      the world itself: name, seed, mode, time of day, world spawn, game rules
+    region/
+      over/r.0.0.json               the Overworld, region 0,0: changed blocks, chests and furnaces
+      over/r.-1.0.json
+      nether/r.0.0.json             one folder per dimension: over, nether, aether, puppet
+    entities/
+      over/r.0.0.json               what lies in that region (today: the dropped items)
+    playerdata/
+      dan.json                      one file per player who has ever joined
+```
+
+- **A region** is 32 x 32 chunks (512 x 512 blocks) and is named after its place in the world: `r.<x>.<z>`, so
+  `r.0.0` holds blocks 0 to 511 and `r.-1.0` holds -512 to -1 (`blocksFrom` in the file says where it starts). Inside,
+  each chunk lists its changed `blocks` (`"x,y,z in the chunk": block id`; the untouched terrain is not stored, it comes
+  from the seed) and its `blockEntities` (chests, furnaces, terrariums, display stands) by their place in the world.
+- **`entities`** follows the same regions: each dropped item with its position, the item itself and its age in seconds.
+- **`playerdata`** holds each player's position, dimension, health, hunger, spawn point, XP, Dingle Bucks, game mode,
+  `armor` and `inv` (one slot per line; `0` is an empty slot). The file is named after the player in lower case, with
+  unusual characters spelled as `%xx`.
+- Only the files that changed are rewritten on a save, each through a `.tmp` file and a rename, and a region file whose
+  content is gone is removed. A file that cannot be parsed stops the server with its name; it is never overwritten.
+- A world from before 6.12 (`data/world.vxw.json`) is converted to a folder on the first start. The old file is left
+  where it was and is not used again: delete it once you are happy.
 
 ## Commands
 
@@ -144,6 +176,7 @@ The first operator is made from the server window (`op <name>`) or by adding the
 | `/whitelist <on \| off \| add \| remove \| list> [player]` | operators | |
 | `/op <player>`, `/deop <player>` | operators | |
 | `/say <text>`, `/seed`, `/save` | operators | |
+| `/export` | operators | writes the whole world as one file (`world.export.vxw.json`, next to the world folder) that the game's Import World reads |
 | `stop` | the server window only | saves and stops |
 
 Changes to the operators, the bans, the whitelist and the default mode are written back into `server.json`.
@@ -151,10 +184,11 @@ Changes to the operators, the bans, the whitelist and the default mode are writt
 ## Hosting a single-player world
 
 Export the world from the game's pause menu (Export World), save the file as `server/data/world.vxw.json` and start the
-server. The seed, the game rules, every block edit and every chest come along. The exporter's own inventory does not (a
+server: it is read once and becomes the folder `server/data/world/`. The seed, the game rules, every block edit and every chest come along. The exporter's own inventory does not (a
 player's things are stored per name once they have joined), and neither do that world's mobs or vehicles.
 
-The server's world file is still a normal save with a `players` table added, so it can be imported back into the game.
+To take a server's world back into single player, run `/export` (or `export` in the server window) and import the file
+it writes.
 
 ## What is shared, and what is not
 

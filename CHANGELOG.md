@@ -21,6 +21,17 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — The world is a folder
+
+*Game version 6.12, released 2026-10-13.*
+
+- THE WORLD IS A FOLDER. Server owners: the one big world file is gone. A world is now a folder you can open and read, laid out like a certain other block game: level.json, region, entities, playerdata.
+- region holds the changed blocks, chests and furnaces, 512 by 512 blocks to a file, each file named after its place in the world. entities holds what is lying around in that region. playerdata has one file per player who ever joined: where they are, their health, hunger, spawn point and every slot of their inventory, one per line.
+- Saving writes only the files that changed. A big world no longer rewrites itself in full every 30 seconds because somebody placed a torch.
+- Your old world.vxw.json is converted on the first start and left where it was, untouched, in case you want it back.
+- New command for operators: /export writes the whole world as one file again, for taking it back to single player.
+- Nothing changes for players. This is the ground floor for the next step: the server running the world itself.
+
 ## Release 1.1 — Multiplayer, tightened
 
 *Game version 6.11, released 2026-10-13.*

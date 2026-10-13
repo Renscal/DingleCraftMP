@@ -77,7 +77,7 @@ export function cleanRules(r) {
 }
 
 /* a fresh data/server.json (rules is filled in from the world on the first run: lib/cli.mjs) */
-export const DEFAULTS = { port: 40162, name: 'A DINGLECRAFT Server', motd: '', password: '', maxPlayers: 8, seed: '', mode: 's', pvp: true, world: 'world.vxw.json', game: '', rules: null,
+export const DEFAULTS = { port: 40162, name: 'A DINGLECRAFT Server', motd: '', password: '', maxPlayers: 8, seed: '', mode: 's', pvp: true, world: 'world', game: '', rules: null,
   ops: [], whitelist: false, allow: [], bans: [], spawnProtection: 16, sleepPercent: 100, viewChunks: 12, cert: '', key: '', origins: [] };
 
 /* a list of player names (or addresses) from the settings: lower case, no blanks, no repeats */
@@ -115,7 +115,8 @@ export const HELP = 'DINGLECRAFT multiplayer server\n\n  node dinglecraft-server
   '  --port <n>        port to listen on (default ' + DEFAULTS.port + ')\n  --name <text>     the server name players see\n  --motd <text>     a line shown to players when they join\n' +
   '  --password <text> require this password to join\n  --max <n>         most players at once (default 8)\n  --seed <text>     seed for a NEW world (blank = random)\n' +
   '  --mode s|c        survival or creative (applied on every start)\n  --no-pvp          players cannot hurt each other\n' +
-  '  --world <file>    the world file (default world.vxw.json in the data folder); an exported single-player world works\n' +
+  '  --world <name>    the world folder (default "world" in the data folder). Name an exported single-player world\n' +
+  '                    (a .json file) and it is read once into a folder of the same name\n' +
   '  --game <file>     the game html to hand out at http://<address>:<port>/\n  --data <dir>      where the world and server.json live (default: data/ next to the server)\n' +
   '  --cert <file> --key <file>   a TLS certificate and its private key (PEM): the server then speaks https:// and wss://\n\n' +
   'The same settings live in data/server.json (the command line wins), and so do the world\'s game rules:\n' +

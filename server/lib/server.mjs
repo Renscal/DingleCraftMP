@@ -5,8 +5,10 @@
 //   await S.listen();   ...   await S.close();
 //
 // Options are the settings of data/server.json (lib/config.mjs DEFAULTS) plus a few for programs and tests:
-//   data      the folder for the world file (default: data/ next to the server)
-//   world     the world file's name inside it; '' = never write anything      memory  true = a throwaway world, no disk at all
+//   data      the folder the world lives in (default: data/ next to the server)
+//   world     the world folder's name inside it (lib/world.mjs has the layout); a name ending in .json is a world file from
+//             before 6.12 or an exported save, read once into a folder of the same name; '' = never write anything
+//   memory    true = a throwaway world, no disk at all
 //   noGame    true = do not look for a game html to hand out                  quiet   true = no log lines
 //   onRules   called with the rules when a player changes one in the game
 //   onSettings called when a command changed the ops, the bans, the whitelist or the default game mode
@@ -19,7 +21,7 @@ import http from 'node:http';
 import https from 'node:https';
 import path from 'node:path';
 import { DEFAULTS, LIMITS, SERVER_DIR, cleanRules, cleanList, findGame } from './config.mjs';
-import { openWorld, applySettings, writeWorld } from './world.mjs';
+import { openWorld, applySettings, writeWorld, worldPlace, exportWorld } from './world.mjs';
 import { acceptUpgrade, newConn, textFrame, readFrames, PING, CLOSE } from './websocket.mjs';
 import { handleMessage, worldTick, forget, playerKey } from './protocol.mjs';
 import { runCommand } from './commands.mjs';
@@ -32,14 +34,15 @@ export function createServer(opts = {}) {
   o.whitelist = o.whitelist === true;
   const log = o.quiet ? () => {} : (...a) => console.log(new Date().toTimeString().slice(0, 8), ...a);
   const dataDir = path.resolve(o.data || path.join(SERVER_DIR, 'data'));
-  const worldFile = o.world ? path.resolve(dataDir, o.world) : null;   // null: nothing is ever written (tests)
+  const place = o.world && !o.memory ? worldPlace(dataDir, o.world) : null;   // null: nothing is ever written (tests)
+  const worldDir = place ? place.dir : null;
   const game = o.noGame ? null : findGame(o.game, dataDir);
   o.origins = cleanList(o.origins).map((s) => s.replace(/\/+$/, ''));
   /* TLS: read once, at start. A file that is named but cannot be read stops the server rather than quietly serving in the clear. */
   const tls = o.cert && o.key ? { cert: fs.readFileSync(path.resolve(dataDir, o.cert)), key: fs.readFileSync(path.resolve(dataDir, o.key)) } : null;
 
   /* ---- the world ---- */
-  const { world, isNew } = openWorld(worldFile, o, log);
+  const { world, isNew, seen } = openWorld(place, o, log);
   applySettings(world, o.rules, opts.mode);    // opts, not o: a mode nobody asked for must not override the world file's
 
   /* ---- the server's state, shared with lib/protocol.mjs and lib/http.mjs ---- */
@@ -56,12 +59,19 @@ export function createServer(opts = {}) {
   const pending = new Set();            // every open socket, joined or not (for timeouts and shutdown)
 
   function saveWorld(why) {
-    if (!worldFile || !S.dirty) return false;
-    try { writeWorld(worldFile, world); S.dirty = false; if (why) log(`world saved (${why})`); return true; }
+    if (!worldDir || !S.dirty) return false;
+    try { const n = writeWorld(worldDir, world, seen); S.dirty = false; if (why) log(`world saved (${why}: ${n} file${n === 1 ? '' : 's'} changed)`); return true; }
     catch (e) { log('WORLD SAVE FAILED: ' + e.message); return false; }
   }
   S.saveWorld = saveWorld;              // the /save command
-  if (isNew && worldFile) saveWorld('new world: ' + worldFile);   // on disk before anyone joins
+  /* the /export command: the whole world as the one file the game can import, next to the world folder */
+  S.exportWorld = () => {
+    if (!worldDir) return null;
+    const file = worldDir + '.export.vxw.json';
+    fs.writeFileSync(file + '.tmp', exportWorld(world)); fs.renameSync(file + '.tmp', file);
+    return file;
+  };
+  if (isNew && worldDir) saveWorld('new world: ' + worldDir);   // on disk before anyone joins
 
   /* ---- sending ---- */
   function sendRaw(c, buf) {
@@ -151,7 +161,7 @@ export function createServer(opts = {}) {
 
   /* ---- what the caller gets ---- */
   const api = {
-    opts: o, secure: !!tls, world: () => world, rules: () => cleanRules(world.gr), status: () => statusOf(S), gameFile: S.gameFile, worldFile, saveWorld, log,
+    opts: o, secure: !!tls, world: () => world, rules: () => cleanRules(world.gr), status: () => statusOf(S), gameFile: S.gameFile, worldDir, saveWorld, exportWorld: S.exportWorld, log,
     get port() { const a = srv.address(); return a && typeof a === 'object' ? a.port : o.port; },
     players: () => [...S.clients.values()],
     say(txt) { broadcast({ t: 'sys', txt: '[Server] ' + txt }); log('[Server] ' + txt); },
