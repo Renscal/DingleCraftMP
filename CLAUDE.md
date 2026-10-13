@@ -81,8 +81,8 @@ build/ dist/ out/   gitignored outputs
    controls only, no feature blurbs).
 8. **Look at it**, muted, in a real browser, in OG and Hyperreal, if it is visual (`docs/QA.md`).
 9. **Ship.** Patch notes, `npm run gate`, `npm run release`, commit with `TZ=UTC0`, tag (`docs/RELEASING.md`).
-   **Every update is pushed**: after each finished update (tests green), commit and push to the DingleCraftMP repository
-   on GitHub. The access token lives in the machine's git credentials, never in this file or any other repo file (hard
+   **Every update is pushed**: work on the `Experimental` branch, and after each finished update (tests green) commit and
+   push it to the DingleCraftMP repository on GitHub (`git push mp Experimental`). `main` moves only when the owner says so. The access token lives in the machine's git credentials, never in this file or any other repo file (hard
    rule 2: a token in a tracked file is published with the next push, and GitHub revokes it on sight).
 10. **Announce** with playful per-feature patch notes, plus the test counts `npm run release` prints (the in-game
     patch-notes screen is retired; `PATCH_LOG` is the data behind `CHANGELOG.md`).
