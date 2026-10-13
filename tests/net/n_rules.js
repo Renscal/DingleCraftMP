@@ -255,6 +255,26 @@ boot.run(async()=>{
     a.clear();a.send({t:'take',id:'plain001.1'});await until(()=>!!a.last('took'),1500);
     ok('a drop that was not thrown (a broken block) is its own maker\'s to take at once, as before',!!a.last('took'));}
 
+  /* ===== 6c. skins (6.24) ===== */
+  {const png=(w,h,pad)=>{const b=Buffer.alloc(33+(pad||40));Buffer.from([137,80,78,71,13,10,26,10]).copy(b,0);b.writeUInt32BE(13,8);b.write('IHDR',12,'latin1');b.writeUInt32BE(w,16);b.writeUInt32BE(h,20);return b.toString('base64');};
+    const good=png(64,64),old=png(64,32);
+    await sleep(1010);bo.clear();a.clear();a.send({t:'skin',png:good});await until(()=>!!bo.last('skin'),1500);
+    ok('a skin is passed on to the other players with its wearer',!!bo.last('skin')&&bo.last('skin').id===a.id&&bo.last('skin').png===good&&a.by('skin').length===0);
+    {const j=await join('Skinny');ok('...and a player who joins later is given it with the list of players',j.last('welcome').players.find(p=>p.id===a.id).skin===good&&!('skin' in j.last('welcome').players.find(p=>p.id===bo.id)));await j.quit();}
+    a.send({t:'save',player:{x:0,y:40,z:0,inv:[]}});await sleep(60);
+    ok('it is kept with the player, and a save from their game does not wipe it',W.players.ann.skin===good);
+    await sleep(1010);bo.clear();a.clear();
+    a.send({t:'skin',png:png(128,128)});await until(()=>!!a.last('sys'),1500);
+    ok('a picture of the wrong size is refused, with a word to the sender, and nobody else hears of it',/did not take that skin/.test(a.last('sys').txt)&&bo.by('skin').length===0&&W.players.ann.skin===good);
+    a.clear();a.send({t:'skin',png:png(64,64,60000)});await until(()=>!!a.last('sys'),1500);
+    ok('...and so is one that is too big',/did not take that skin/.test((a.last('sys')||{}).txt||'')&&bo.by('skin').length===0);
+    await sleep(1010);a.clear();a.send({t:'skin',png:'not base64 !!'});a.send({t:'skin',png:Buffer.from('plain text, not a picture, long enough to have a header').toString('base64')});await sleep(120);
+    ok('...and rubbish, and text dressed as base64',a.by('sys').length===2&&bo.by('skin').length===0);
+    await sleep(1010);bo.clear();a.send({t:'skin',png:old});await until(()=>!!bo.last('skin'),1500);
+    ok('the older 64x32 kind is a skin too',bo.last('skin').png===old);
+    await sleep(1010);bo.clear();a.send({t:'skin',png:''});await until(()=>!!bo.last('skin'),1500);
+    ok('an empty one means the default again: passed on, and taken off the player',bo.last('skin').png===''&&!('skin' in W.players.ann));}
+
   /* ===== 12. the line (6.11) ===== */
   const {textFrame,readFrames,DEFLATE_MIN}=await lib('lib/websocket.mjs'),{RATE}=await lib('lib/config.mjs'),zlib=require('zlib'),net=require('net');
   await sleep(1010);

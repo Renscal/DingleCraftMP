@@ -44,6 +44,8 @@
     <input id="s_fov" class="range" type="range" min="50" max="110" step="1" value="75">
     <div class="mlabel">Your name</div>
     <input id="s_pname" class="mc-in" maxlength="16" autocomplete="off" spellcheck="false">
+    <div class="mlabel">Your skin (a PNG, 64 x 64; kept in this browser)</div>
+    <div class="sskin"><canvas id="s_skinpv" width="144" height="128" aria-label="Your skin, front and back"></canvas><div class="sskinb"><input id="s_skin" type="file" accept=".png,image/png" aria-label="Choose a skin file"><button id="s_skinreset" class="mc-btn">Reset to default</button></div></div>
     <div class="mlabel">Mouse sensitivity: <span id="s_sensv">100</span>%</div>
     <input id="s_sens" class="range" type="range" min="10" max="300" step="5" value="100">
     <div class="mlabel">Sound volume: <span id="s_sfxv">100</span>%</div>

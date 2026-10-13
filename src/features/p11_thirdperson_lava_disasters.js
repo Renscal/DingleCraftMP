@@ -14,31 +14,11 @@ tile('lava',c=>{c.fillStyle='#e2641e';c.fillRect(0,0,16,16);
 let camMode=0,plModel=null,plAnim=0;
 function mkPlayerModel(){
   if(HRE.on&&P){const M=hrPlayerModel();if(M)return M;}
-  const G=new THREE.Group();
-  const mat=c=>new THREE.MeshLambertMaterial({color:c});
-  const skin=mat(0xe8b88f),shirt=mat(0xd9822b),pants=mat(0x34343a),shoe=mat(0x2b2b30);   /* Dan: orange hoodie, charcoal trousers */
-  const head=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.5,0.5),skin);head.position.y=1.62;G.add(head);
-  const eyeM=mat(0x2b2430);
-  for(const sx of[-1,1]){
-    const e=new THREE.Mesh(new THREE.BoxGeometry(0.07,0.08,0.02),eyeM);
-    e.position.set(sx*0.11,1.66,-0.26);G.add(e);head.attach?head.attach(e):0;
-  }
-  const body=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.72,0.27),shirt);body.position.y=1.0;G.add(body);
-  const mkLimb=(m,w,h)=>{
-    const piv=new THREE.Group();
-    const me=new THREE.Mesh(new THREE.BoxGeometry(w,h,w),m);
-    me.position.y=-h/2;piv.add(me);G.add(piv);return piv;
-  };
-  const aL=mkLimb(shirt,0.18,0.66),aR=mkLimb(shirt,0.18,0.66);
-  aL.position.set(-0.34,1.32,0);aR.position.set(0.34,1.32,0);
-  const lL=mkLimb(pants,0.21,0.66),lR=mkLimb(pants,0.21,0.66);
-  lL.position.set(-0.13,0.66,0);lR.position.set(0.13,0.66,0);
-  for(const sx of[-1,1]){
-    const s=new THREE.Mesh(new THREE.BoxGeometry(0.22,0.1,0.26),shoe);
-    s.position.set(sx*0.13,0.05,-0.02);G.add(s);
-  }
-  scene.add(G);
-  return {G,head,aL,aR,lL,lR,shoes:null};
+  /* 6.24: a blocky figure wearing a skin (features/p53b_skin.js): the player's own picture, or the default one, which is
+     still the orange hoodie and charcoal trousers. The same handles as before. */
+  const M=skinModel(skinOwn().tex);
+  scene.add(M.G);
+  return M;
 }
 function updatePlayerMesh(dt){
   if(!playing||!P){if(plModel)plModel.G.visible=false;return;}

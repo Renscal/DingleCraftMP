@@ -104,7 +104,7 @@ function ntMsg(m){
       NET.hdims=Array.isArray(m.hdims)?m.hdims.map(String):(NET.hosted?['over']:[]);
       NET.pend={world:m.world||{},player:m.player||null,edits:{},be:{},n:0};
       ntClearPeers();
-      for(const p of (m.players||[]))ntPeerAdd(p.id,p.name,p.pose);
+      for(const p of (m.players||[])){const q=ntPeerAdd(p.id,p.name,p.pose);if(q)q.skin=ntSkinUrl(p.skin);}
       return;
     case 'edits':
       if(!Array.isArray(m.e))return;
@@ -117,6 +117,7 @@ function ntMsg(m){
       if(m.n===NET.pingN&&NET.pingAt){NET.ms=Math.max(0,Math.min(9999,Math.round(Date.now()-NET.pingAt)));NET.pingAt=0;}
       return;
     case 'mheir':if(NET.on)ntMobAdopt(m.from|0);return;
+    case 'skin':{const p=NET.peers.get(m.id);if(p)p.skin=ntSkinUrl(m.png);return;}   /* another player's skin (or '' for the default) */
     case 'wd':if(NET.on)ntWdIn(m);return;
     case 'mkt':if(NET.on)ntMktIn(m);return;
     case 'fire':if(NET.on&&!NET.host)ntFireIn(m);return;
@@ -229,6 +230,7 @@ function ntEnter(){
   ntWdReset();NET.mktT=0;
   ntRetryStop();NET.pingT=0;NET.pingN=0;NET.pingAt=0;NET.ms=0;NET.rxAt=Date.now();NET.act=false;
   if(found)ntSend({t:'spawn',x:found[0],y:found[1],z:found[2]});
+  if(SKINS.url)ntSkinSend();                                /* what this player wears (nothing is sent for the default) */
   for(const d of (W.drops||[]))ntDropKnow(d);   /* they appear as their chunks load (ntDropsScan) */
   WORLD.name='';enterGame();WORLD.name=(w.name||NET.server||'server');   /* never becomes this browser's "last world" */
   sysMsg('Connected to '+NET.server+' as '+NET.name+'. '+(NET.peers.size?NET.peers.size+' other player'+(NET.peers.size===1?'':'s')+' online.':'You are the first one here.'));

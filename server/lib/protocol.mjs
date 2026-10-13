@@ -64,6 +64,7 @@
 //   ign {c: [[x, y, z]...]}                       -> the server's game (a player's game asks for these cells to be lit)
 //   fire {c}  (the server's game)                 fire      (to players nearby: these are alight)
 // What the world remembers (6.16): any game may add to one of the world's lists (and take a spawner off its list);
+//   skin {png}                                    skin (+id)  (a player's skin, base64 of a small PNG, or '' for the default)
 //   wd {k, add, del}                              wd        (to everyone else, and the server's game)
 //   mkt {p, mu}  (the server's game)              mkt       (the stock prices, to everyone)
 // A chest that already has a record can only be rewritten by the player who has it open: a later visitor's game, which
@@ -117,6 +118,15 @@ function cleanVeh(a) {
   if (!Array.isArray(a) || a.length < 7 || a.length > 8 || typeof a[0] !== 'string' || !VEH_ID_RE.test(a[0]) || !RIDES.has(a[1])) return null;
   for (let i = 2; i < a.length; i++) if (!Number.isFinite(a[i])) return null;
   return a;
+}
+/* a skin as a game sends it: base64 of a PNG that is 64x64 or 64x32 and small. '' clears it. null: not a skin. */
+function cleanSkin(png) {
+  if (png === '' || png == null) return '';
+  if (typeof png !== 'string' || png.length > LIMITS.skinB64 || /[^A-Za-z0-9+/=]/.test(png)) return null;
+  const b = Buffer.from(png, 'base64');
+  if (b.length < 33 || b.readUInt32BE(0) !== 0x89504e47 || b.readUInt32BE(4) !== 0x0d0a1a0a || b.toString('latin1', 12, 16) !== 'IHDR') return null;
+  const w = b.readUInt32BE(16), h = b.readUInt32BE(20);
+  return w === 64 && (h === 64 || h === 32) ? png : null;
 }
 /* the server's own game, if it is running */
 const hostOf = (S, dim) => { const h = S.hosts.get(dim || 'over'); return h && !h.stopped ? h.c : null; };
@@ -206,7 +216,7 @@ function hello(S, net, c, m) {
   const { edits, be, players, drops, spawn, ...meta } = world;   // meta: seed, mode, time, rules and whatever else the save carried
   net.send(c, { t: 'welcome', proto: PROTO, id: c.id, name: c.name, server: o.name, motd: o.motd, pvp: !!o.pvp, host: S.hdims.length > 0, hdims: S.hdims,
     world: { ...meta, mode: c.gm || world.mode }, player: saved,
-    players: [...S.clients.values()].filter((p) => p !== c && p.ready).map((p) => ({ id: p.id, name: p.name, pose: p.pose })) });
+    players: [...S.clients.values()].filter((p) => p !== c && p.ready).map((p) => ({ id: p.id, name: p.name, pose: p.pose, ...(p.skin ? { skin: p.skin } : {}) })) });
   net.send(c, permOf(S, c));
   /* where they will appear: their saved place, else the world spawn. Without either (the very first player of a world that
      has no spawn yet) there is nothing to centre on, so they get everything. */
@@ -435,7 +445,7 @@ export function handleMessage(S, net, c, m, size) {
     }
     case 'save': {                     // this player's own state (inventory, position...), handed back when they next join
       if (!m.player || typeof m.player !== 'object' || size > LIMITS.playerBlob) return;
-      world.players[playerKey(c.name)] = { ...m.player, name: c.name, seen: new Date().toISOString(), ...(c.gm ? { gm: c.gm } : {}) };
+      world.players[playerKey(c.name)] = { ...m.player, name: c.name, seen: new Date().toISOString(), ...(c.gm ? { gm: c.gm } : {}), ...(c.skin ? { skin: c.skin } : {}) };
       S.dirty = true;
       return;
     }
@@ -567,6 +577,15 @@ export function handleMessage(S, net, c, m, size) {
         world.mobs = others(world.mobs).concat(cleanMobs(m.mobs).map((x) => (d === 'over' ? x : { ...x, d })));
         world.vehicles = others(world.vehicles).concat(cleanMobs(m.vehs).filter((v) => RIDES.has(v.t)).map((x) => (d === 'over' ? x : { ...x, d }))); }
       S.dirty = true;
+      return;
+    }
+    case 'skin': {                     // what a player wears: checked, kept with the player, passed on ('' is the default)
+      const png = cleanSkin(m.png);
+      if (png === null) return net.send(c, { t: 'sys', txt: 'The server did not take that skin (it wants a PNG, 64 x 64, under 50 KB).' });
+      c.skin = png;
+      const rec = world.players[playerKey(c.name)];
+      if (rec && typeof rec === 'object') { if (png) rec.skin = png; else delete rec.skin; S.dirty = true; }
+      net.broadcast({ t: 'skin', id: c.id, png }, c);
       return;
     }
     case 'wd': {                       // a game learnt something about the world: a structure found, a boss dead, a spawner placed or broken

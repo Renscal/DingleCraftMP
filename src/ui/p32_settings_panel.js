@@ -17,6 +17,7 @@ function syncSetUI(){
   sl('s_sens',Math.round(MSENS*100));sl('s_sfx',Math.round(SFXVOL*100));sl('s_mus',Math.round(MUSVOL*100));
   if(typeof grApplyUI==='function')grApplyUI();
   if(typeof rpSync==='function')rpSync();
+  skinPreview();                                            /* 6.24: the skin row (features/p53b_skin.js) */
 }
 function openSet(){setOpen=true;syncSetUI();const el=$('settings');if(el)el.style.display='flex';}
 function closeSet(noBack){setOpen=false;const el=$('settings');if(el)el.style.display='none';if(!noBack)restorePause();}

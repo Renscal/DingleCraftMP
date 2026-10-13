@@ -213,6 +213,10 @@ select.mc-in{appearance:auto}
 #pause .panel{min-width:min(340px,100%)}
 #settings{z-index:30;background:rgba(0,0,0,.5)}
 #settings .panel{width:min(560px,100%)}
+.sskin{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.sskinb{display:flex;flex-direction:column;gap:8px;min-width:0}
+#s_skinpv{width:144px;height:128px;image-rendering:pixelated;background:#8f8f8f;border:2px solid #373737}
+#s_skin{font:inherit;font-size:13px;max-width:100%}
 #death{z-index:35;background:rgba(120,0,0,.45)}
 #death h1{color:#fff;font-size:44px;text-shadow:3px 3px 0 #3f0000;margin:0 0 16px}
 #help{z-index:50;background:rgba(0,0,0,.6)}

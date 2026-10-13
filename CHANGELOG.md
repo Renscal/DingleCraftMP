@@ -21,6 +21,16 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — A face of your own
+
+*Game version 6.24, released 2026-10-13.*
+
+- A FACE OF YOUR OWN. The player is now a proper blocky figure that wears a skin: head, body, arms and legs, each with a second layer for hats, jackets and sleeves.
+- Settings has a new row: Your skin. Pick a PNG, 64 by 64 (the older 64 by 32 works too), under 50 KB, and you are wearing it. Nothing is looked up or downloaded: it is your file, kept in your browser.
+- No skin? You get the house one, painted fresh: the orange hoodie and charcoal trousers the game has always worn.
+- On a server everyone sees your skin, and you see theirs. Players without one each keep a hoodie in their own colour, so you can still tell your friends apart.
+- Armour, hats and held tools sit on the new figure as they did on the old one. The Hyperreal player is unchanged.
+
 ## Release 1.1 — Hands on the inventory
 
 *Game version 6.23, released 2026-10-13.*

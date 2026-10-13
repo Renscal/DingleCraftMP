@@ -163,7 +163,7 @@ export function createServer(opts = {}) {
     if (!up) return;
     /* a client: the socket's parsing state plus what the game protocol keeps about a player */
     const c = Object.assign(newConn(sock, up.deflate), { addr: sock.remoteAddress || '?', id: 0, name: '', ready: false,
-      seen: Date.now(), born: Date.now(), pose: null, poseT: 0, chatT: 0, chatN: 0, ms: 0, msgT: 0, msgN: 0, flood: 0,
+      seen: Date.now(), born: Date.now(), pose: null, poseT: 0, chatT: 0, chatN: 0, ms: 0, msgT: 0, msgN: 0, flood: 0, skin: '',
       rd: o.viewChunks, sent: null, sk: '', farT: 0, hitT: 0, lastHit: null, sleepT: 0, sleepAt: null, gm: null, rate: {} });
     pending.add(c);
     sock.on('data', (d) => {

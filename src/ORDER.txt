@@ -87,6 +87,7 @@ features/p52_big_dingle.js
 ui/p53_chat.js
 ui/p06f_debug.js
 ui/p06g_invmouse.js
+features/p53b_skin.js
 
 # PART 58: multiplayer (the client for server/dinglecraft-server.mjs)
 net/n0_contract.js

@@ -2,7 +2,7 @@
 /* The other players. A peer is {id, name, has (a pose has arrived), x y z yaw (where the body is drawn), tx ty tz tyaw
    (where the last pose says it is), pt (when that pose arrived, on NET.acc), pitch, dim, held, hp, fl (the pose flags, see
    ntPoseNow), ar (the four armour item ids, or null), rv ry rh (the vehicle they ride: kind, heading, how far below them),
-   ms (their ping), M (the body, built on first sight), anim / sw / spd (walk cycle, arm swing, measured speed)}. Poses arrive about 15 times a second; ntPeersTick
+   ms (their ping), skin (the skin they sent, a data address, or '' for the default), M (the body, built on first sight), anim / sw / spd (walk cycle, arm swing, measured speed)}. Poses arrive about 15 times a second; ntPeersTick
    eases the body toward the latest one every frame. Bodies are only shown in the dimension the local player is in. */
 
 const NT_SHIRTS=[0x3b82d9,0xd94a4a,0x3fae5a,0xa24bd1,0xe0b030,0x2fb5b5,0xd9648f,0x7a8a99];
@@ -15,7 +15,7 @@ function ntPeerAdd(id,name,pose){
   id=id|0;if(!id||id===NET.id)return null;
   ntPeerDel(id);
   const p={id,name:''+(name||'Player'),has:false,x:0,y:0,z:0,yaw:0,pitch:0,tx:0,ty:0,tz:0,tyaw:0,pt:-9,dim:'over',held:0,hp:20,fl:0,M:null,anim:0,sw:0,spd:0,
-    ar:null,rv:'',ry:0,rh:0,ms:0};
+    ar:null,rv:'',ry:0,rh:0,ms:0,skin:''};
   NET.peers.set(id,p);
   if(pose)ntPeerPose(p,pose);
   return p;
@@ -50,31 +50,34 @@ function ntPeerUnmesh(p){
     if(o.geometry&&!o.geometry.ntKeep)o.geometry.dispose();
     if(o.material&&o.material.ntOwn){if(o.material.map)o.material.map.dispose();o.material.dispose();}});
 }
-/* a boxy player like the third-person one, in this player's own colours, with the name over the head */
+/* the address of a skin as the server passes it on (bare base64), or '' if it is not a skin after all */
+function ntSkinUrl(png){
+  if(typeof png!=='string'||!png)return '';
+  const url='data:image/png;base64,'+png;
+  return skinCheck(skinBytes(url)).ok?url:'';
+}
+/* tell the server what this player wears ('' is the default) */
+function ntSkinSend(){ntSend({t:'skin',png:SKINS.url?SKINS.url.replace(/^data:image\/png;base64,/,''):''});}
+/* the hoodie a player without a skin of their own wears: one of eight colours, by name */
+function ntHood(p){return '#'+NT_SHIRTS[ntHash(p.name.toLowerCase())%NT_SHIRTS.length].toString(16).padStart(6,'0');}
+/* The same figure the player's own third-person view has (skinModel, features/p53b_skin.js), in the skin that player sent,
+   or the default one with a hoodie in their own colour, and the name over the head. */
 function ntPeerMesh(p){
-  const G=new THREE.Group();
+  const cv=skinCanvas(),tex=skinTexture(cv);
+  skinLoadInto(cv,tex,p.skin||'',ntHood(p));
+  const S=skinModel(tex);
+  for(const m of S.skinMats)m.ntOwn=true;
+  const G=S.G,head=S.head,aL=S.aL,aR=S.aR,lL=S.lL,lR=S.lR;
   const mat=c=>{const m=new THREE.MeshLambertMaterial({color:c});m.ntOwn=true;return m;};
-  const h=ntHash(p.name.toLowerCase());
-  const skin=mat(0xe8b88f),shirt=mat(NT_SHIRTS[h%NT_SHIRTS.length]),pants=mat(0x34343a),shoe=mat(0x2b2b30),eyeM=mat(0x2b2430);
-  const head=new THREE.Group();head.position.y=1.62;G.add(head);
-  head.add(new THREE.Mesh(new THREE.BoxGeometry(0.5,0.5,0.5),skin));
-  for(const sx of[-1,1]){const e=new THREE.Mesh(new THREE.BoxGeometry(0.07,0.08,0.02),eyeM);e.position.set(sx*0.11,0.04,-0.26);head.add(e);}
-  const body=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.72,0.27),shirt);body.position.y=1.0;G.add(body);
-  const mkLimb=(m,w,hh)=>{const piv=new THREE.Group();const me=new THREE.Mesh(new THREE.BoxGeometry(w,hh,w),m);me.position.y=-hh/2;piv.add(me);G.add(piv);return piv;};
-  const aL=mkLimb(shirt,0.18,0.66),aR=mkLimb(shirt,0.18,0.66);
-  aL.position.set(-0.34,1.32,0);aR.position.set(0.34,1.32,0);
-  const lL=mkLimb(pants,0.21,0.66),lR=mkLimb(pants,0.21,0.66);
-  lL.position.set(-0.13,0.66,0);lR.position.set(0.13,0.66,0);
-  for(const sx of[-1,1]){const s=new THREE.Mesh(new THREE.BoxGeometry(0.22,0.1,0.26),shoe);s.position.set(sx*0.13,0.05,-0.02);G.add(s);}
   /* armour: plates a little larger than the limb under them, hidden until worn. Slot 0 helmet, 1 chestplate (body and
      arms), 2 leggings, 3 boots; each slot has one material, tinted to what is worn (ntPeerArmor). */
   const arm=[0,1,2,3].map(()=>({mat:mat(0xd8d8d8),parts:[],col:''}));
   const plate=(slot,par,w,hh,d,y)=>{const me=new THREE.Mesh(new THREE.BoxGeometry(w,hh,d),arm[slot].mat);me.position.y=y;me.visible=false;par.add(me);arm[slot].parts.push(me);};
-  plate(0,head,0.56,0.56,0.56,0);
-  plate(1,G,0.56,0.76,0.33,1.0);plate(1,aL,0.24,0.42,0.24,-0.19);plate(1,aR,0.24,0.42,0.24,-0.19);
-  plate(2,lL,0.25,0.44,0.25,-0.2);plate(2,lR,0.25,0.44,0.25,-0.2);
-  plate(3,lL,0.26,0.2,0.3,-0.56);plate(3,lR,0.26,0.2,0.3,-0.56);
-  const M={G,head,aL,aR,lL,lR,tag:null,_toolId:0,_tool:null,arm,_arS:'',veh:null,_veh:''};
+  plate(0,head,0.54,0.54,0.54,0);
+  plate(1,S.chestA,0.54,0.74,0.32,0);plate(1,aL,0.29,0.42,0.29,-0.19);plate(1,aR,0.29,0.42,0.29,-0.19);
+  plate(2,lL,0.28,0.44,0.28,-0.2);plate(2,lR,0.28,0.44,0.28,-0.2);
+  plate(3,lL,0.3,0.2,0.3,-0.58);plate(3,lR,0.3,0.2,0.3,-0.58);
+  const M={G,head,aL,aR,lL,lR,tag:null,_toolId:0,_tool:null,arm,_arS:'',veh:null,_veh:'',skinCv:cv,skinTex:tex,_skin:p.skin||''};
   try{
     if(typeof THREE.Sprite==='function'&&typeof THREE.CanvasTexture==='function'&&typeof document!=='undefined'){
       const cv=document.createElement('canvas'),c=cv.getContext('2d');
@@ -150,6 +153,7 @@ function ntPeersTick(dt){
     M.G.position.set(p.x,p.y-((p.fl&2)?0.12:0),p.z);
     M.G.rotation.y=p.yaw;
     M.head.rotation.x=p.pitch*0.55;
+    if(M._skin!==(p.skin||'')){M._skin=p.skin||'';skinLoadInto(M.skinCv,M.skinTex,M._skin,ntHood(p));}   /* they changed their skin */
     ntPeerTool(p);ntPeerArmor(p);ntPeerRide(p);
     if(p.fl&8){M.lL.rotation.x=M.lR.rotation.x=-1.15;M.aL.rotation.x=M.aR.rotation.x=-0.5;}
     else{

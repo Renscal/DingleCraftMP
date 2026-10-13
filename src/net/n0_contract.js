@@ -73,14 +73,14 @@
 /*   client -> server: hello pose rd edits open close be drop dropAt     */
 /*                     take chat cmd hit save spawn time gr sleep death  */
 /*                     mobs mgone mgive mhit boom ping fx fxgone vehs    */
-/*                     vgive vtake vfree vgone vhit ign wd               */
+/*                     vgive vtake vfree vgone vhit ign wd skin          */
 /*   the server's game -> server, also: mkt                              */
 /*   the server's game -> server, also: hurt xp hsnap                    */
 /*   server -> client: welcome perm edits bes drops ready (the join),    */
 /*                     then join leave pose edits be lock drop undrop    */
 /*                     took chat sys hit time gr kick tp give mode perm  */
 /*                     mobs mgone mgive mhit boom pong mheir hurt xp     */
-/*                     fx fxgone vehs vgone vno vhit fire wd mkt         */
+/*                     fx fxgone vehs vgone vno vhit fire wd mkt skin    */
 /* Messages are compressed by the browser and the server between them    */
 /* (permessage-deflate); nothing here knows about it.                    */
 /* NT_PROTO must equal PROTO in the server (tests/net/n_static.js).      */
@@ -132,4 +132,4 @@ const NTEX={NET,NT_PROTO,NT_PORT,ntUrl,ntConnect,ntLeave,ntDown,ntMsg,ntSend,ntE
   ntHosted,ntHostStart,ntHostTick,ntHostSnap,ntHostPlayers,ntHostAim,ntHostHurt,ntMobFull,
   ntFxTick,ntFxIn,ntFxGone,ntFxPup,ntVehTick,ntVehsIn,ntVehsGone,ntVehHit,ntVehPup,ntEntPup,ntHostVehSnap,
   spawnArrow,spawnBoat,hitCar,ntIgnite,ntFireIn,ntNoTick,ntHostBeScan,checkFalling,igniteAt,updateFires,furnaceTick,tickFlow,getFires:()=>fires,
-  ntWdGet,ntWdTick,ntWdIn,ntWdReset,ntMktIn,ntHostMkt,tickSpawners,updateStocks,ntServedMenu,loadWorldByName,importWorldFile,getMKT:()=>MKT,getSPW:()=>SPW,getNUKES:()=>NUKES,getVSEEN:()=>VSEEN,getINFKILL:()=>INFKILL};   /* three core names the suites need to shoot, launch and hit with */
+  ntWdGet,ntWdTick,ntWdIn,ntWdReset,ntMktIn,ntHostMkt,tickSpawners,updateStocks,ntServedMenu,loadWorldByName,importWorldFile,ntSkinUrl,ntSkinSend,ntPeerMesh,getMKT:()=>MKT,getSPW:()=>SPW,getNUKES:()=>NUKES,getVSEEN:()=>VSEEN,getINFKILL:()=>INFKILL};   /* three core names the suites need to shoot, launch and hit with */

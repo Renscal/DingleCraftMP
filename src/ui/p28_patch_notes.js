@@ -3,7 +3,14 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Hands on the inventory',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'A face of your own',lines:[
+    'A FACE OF YOUR OWN. The player is now a proper blocky figure that wears a skin: head, body, arms and legs, each with a second layer for hats, jackets and sleeves.',
+    'Settings has a new row: Your skin. Pick a PNG, 64 by 64 (the older 64 by 32 works too), under 50 KB, and you are wearing it. Nothing is looked up or downloaded: it is your file, kept in your browser.',
+    'No skin? You get the house one, painted fresh: the orange hoodie and charcoal trousers the game has always worn.',
+    'On a server everyone sees your skin, and you see theirs. Players without one each keep a hoodie in their own colour, so you can still tell your friends apart.',
+    'Armour, hats and held tools sit on the new figure as they did on the old one. The Hyperreal player is unchanged.',
+  ]},
+ {v:'6.23',label:'Release 1.1',title:'Hands on the inventory',lines:[
     'HANDS ON THE INVENTORY. One click per slot was honest work. Now the mouse does what your hands expect.',
     'Hold a stack and drag left across empty slots: it is shared out evenly, and you watch the numbers as you go. Drag right: one item in each slot you cross, and another every time you cross it again.',
     'Double-click while holding a stack and every matching item in the window jumps onto it, part stacks first.',
