@@ -139,7 +139,8 @@ const peerOf = (S, id, c) => (id === 0 ? hostOf(S, c.host ? c.hdim : c.pose && c
 const RIDES = new Set(['car', 'skate', 'cart', 'boat', 'plane']);
 
 /* is it night (the game's sunUp, src/core/p07a_render_sound.js, turned around)? */
-const isNight = (time) => Math.sin(time * Math.PI * 2) <= 0.02;
+/* full night: after the sunset (0.5 to 0.575 of a day) and before the sunrise (0.925 to 1). The game's dayRamp, src/core/p07a_render_sound.js */
+const isNight = (time) => { const f = ((time % 1) + 1) % 1; return f >= 0.575 && f <= 0.925; };
 
 /* the chunk key a block key ("x,y,z", with the same dimension prefix) lies in; '' if it is not a block key */
 function beChunk(k) {

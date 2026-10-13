@@ -14,7 +14,7 @@
    ===================================================================== */
 'use strict';
 
-const GAME_VERSION = '6.30';
+const GAME_VERSION = '6.31';
 const RELEASE_LABEL = 'Release 1.1';   /* the public name of this game version (docs/RELEASING.md): GAME_VERSION stays the internal, monotonic number */
 var HIT_HOW=null,EXPL_BY=null;  /* damage attribution (PART 53) */
 var TP={id:'og',q:-1,qr:1,hr:false,busy:false,want:null,shadow:false,mods:[],live:[],og:null,ogR:null,ogF:null,ev:{},warm:null,devTexBase:null};  /* texture packs (PART 54) */
@@ -23,7 +23,7 @@ const SAVE_FORMAT  = 1;
 const CH = 16;            // chunk size (x,z)
 const WH = 80;            // world height
 const SEA = 30;           // sea level
-const DAY_LEN = 600;      // seconds per full day
+const DAY_LEN = 1200;     // seconds per full day (6.31: 20 minutes; the server's DAY_LEN must match)
 const GRAV = 24;
 const REACH = 5;
 

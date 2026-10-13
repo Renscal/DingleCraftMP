@@ -1,6 +1,6 @@
 # The DINGLECRAFT multiplayer server
 
-No dependencies and nothing to install: `dinglecraft-server.mjs` plus the `lib/` folder beside it. It needs [Node.js](https://nodejs.org) 20 or newer and a game build of 6.25 or newer.
+No dependencies and nothing to install: `dinglecraft-server.mjs` plus the `lib/` folder beside it. It needs [Node.js](https://nodejs.org) 20 or newer and a game build of 6.31 or newer.
 
 ## Start it
 

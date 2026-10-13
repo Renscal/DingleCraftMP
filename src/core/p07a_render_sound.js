@@ -3,7 +3,31 @@
 /* ===================================================================== */
 let scene=null,camera=null,renderer=null,matOp=null,matCut=null,matWat=null;
 let timeOfDay=0.3;
-function sunUp(){return Math.sin(timeOfDay*Math.PI*2)>0.02;}
+/* ----- the parts of a day (6.31) -----
+   timeOfDay is a fraction of a day: 0 the end of sunrise, 0.25 noon, 0.5 the start of sunset, 0.75 midnight. The sun and
+   moon turn at an even speed; how bright it is does not follow them evenly: full day for half the day (10 of the 20
+   minutes), a sunset of 1.5 minutes, full night for 7, a sunrise of 1.5. The server keeps the same numbers
+   (isNight in server/lib/protocol.mjs). */
+const DAY_DUSK=0.5,DAY_RAMP=0.075;                         /* sunset starts at 0.5 and takes 0.075 of a day; sunrise ends at 1 */
+/* 1 in full day, 0 in full night, a straight line between during sunset and sunrise */
+function dayRamp(t){
+  const f=((t%1)+1)%1;
+  if(f<=DAY_DUSK)return 1;
+  if(f<DAY_DUSK+DAY_RAMP)return 1-(f-DAY_DUSK)/DAY_RAMP;
+  if(f<=1-DAY_RAMP)return 0;
+  return (f-(1-DAY_RAMP))/DAY_RAMP;
+}
+/* the same, eased: how much daylight there is */
+function dayLight(t){const r=dayRamp(t);return r*r*(3-2*r);}
+/* a stand-in for the sun's height for anything that colours the sky by it: 1 at noon, 0.18 where full day meets the
+   sunset or the sunrise, -0.25 where they meet full night, -1 at midnight */
+function dayElev(t){
+  const f=((t%1)+1)%1,r=dayRamp(t);
+  if(r>=1)return 0.18+0.82*Math.sin(f/DAY_DUSK*Math.PI);
+  if(r<=0)return -0.25-0.75*Math.sin((f-DAY_DUSK-DAY_RAMP)/(1-DAY_DUSK-2*DAY_RAMP)*Math.PI);
+  return -0.25+0.43*r;
+}
+function sunUp(){return dayRamp(timeOfDay)>0;}
 
 /* ----- procedural sound (WebAudio) ----- */
 let AC=null,noiseBuf=null;

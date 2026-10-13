@@ -21,6 +21,16 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — The long day
+
+*Game version 6.31, released 2026-10-13.*
+
+- **THE LONG DAY.** A day used to last ten minutes and exactly half of it was dark, which is a fine schedule for a bat. A day is now twenty minutes: ten of full daylight, a minute and a half of sunset, seven of night, a minute and a half of sunrise.
+- **More day, less night.** You get ten whole minutes to build before anything with too many legs turns up, and the night is over in seven instead of dragging on for half your evening.
+- **Proper sunsets.** The sky takes its time going orange and coming back. The sun and moon cross the sky at the same steady pace as ever; it is the light that learned some manners.
+- **Everything keeps time.** Monsters, burning zombies, beds, the night music, the torch glow and the Stage Door's moods all read the same new clock. A world saved at dusk loads at dusk.
+- **Servers.** The server counts the same twenty minutes and agrees with every game about when it is night, so a bed vote opens the moment the sky is fully dark. A 6.31 server needs 6.31 games: the clocks would disagree otherwise. /time night now lands just inside the dark.
+
 ## Release 1.1 — Jump, then swing
 
 *Game version 6.30, released 2026-10-13.*

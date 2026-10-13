@@ -3,7 +3,14 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Jump, then swing',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'The long day',lines:[
+    '<b>THE LONG DAY.</b> A day used to last ten minutes and exactly half of it was dark, which is a fine schedule for a bat. A day is now twenty minutes: ten of full daylight, a minute and a half of sunset, seven of night, a minute and a half of sunrise.',
+    '<b>More day, less night.</b> You get ten whole minutes to build before anything with too many legs turns up, and the night is over in seven instead of dragging on for half your evening.',
+    '<b>Proper sunsets.</b> The sky takes its time going orange and coming back. The sun and moon cross the sky at the same steady pace as ever; it is the light that learned some manners.',
+    '<b>Everything keeps time.</b> Monsters, burning zombies, beds, the night music, the torch glow and the Stage Door&#x27;s moods all read the same new clock. A world saved at dusk loads at dusk.',
+    '<b>Servers.</b> The server counts the same twenty minutes and agrees with every game about when it is night, so a bed vote opens the moment the sky is fully dark. A 6.31 server needs 6.31 games: the clocks would disagree otherwise. /time night now lands just inside the dark.',
+  ]},
+ {v:'6.30',label:'Release 1.1',title:'Jump, then swing',lines:[
     '<b>JUMP, THEN SWING.</b> Critical hits are in. Hit something while you are falling and the hit does half as much again. A fist does 1.5. A diamond sword does a great deal more than that. Gravity has always been on your side; now it is on your side in a fight.',
     '<b>The rule.</b> You must be off the ground and on the way down. Not on the way up, not standing, not in water or lava, not riding anything, not sprinting, and not flying in creative. Jump, wait for the top, swing on the way down.',
     '<b>You will know.</b> A crit throws a burst of gold sparks off the target and makes a sharp bright sound instead of the usual thud.',

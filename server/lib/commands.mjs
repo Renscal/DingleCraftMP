@@ -38,7 +38,7 @@ function setTime(S, net, v) {
 
 /* a time of day from a word or a number; NaN when it is neither */
 function parseTime(a) {
-  const words = { day: 0.05, morning: 0.05, noon: 0.25, sunset: 0.5, night: 0.55, midnight: 0.75 };
+  const words = { day: 0.05, morning: 0.05, noon: 0.25, sunset: 0.5, night: 0.6, midnight: 0.75 };
   return a in words ? words[a] : (a === '' ? NaN : Number(a));
 }
 

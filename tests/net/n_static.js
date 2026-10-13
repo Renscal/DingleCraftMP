@@ -146,7 +146,8 @@ boot.run(async()=>{
       want.every(k=>k==='cheats'?(R[k]===false&&D[k]===true):R[k]===D[k]));
     const RD=fs.readFileSync(path.join(REPO,'server','README.md'),'utf8');
     ok('server/README.md documents every rule',want.every(k=>RD.includes('| `'+k+'` |')&&RD.includes('"'+k+'": ')));}
-  ok('the server knows the length of a day',/const DAY_LEN = 600;/.test(SV)&&/const DAY_LEN = 600;/.test(readSrc('core/p01a_prologue.js')));
+  {const sv=/const DAY_LEN = (\d+);/.exec(SV),gm=/const DAY_LEN = (\d+);/.exec(readSrc('core/p01a_prologue.js'));   /* 6.31: 1200 */
+    ok('the server knows the length of a day',!!sv&&!!gm&&sv[1]===gm[1]&&sv[1]==='1200');}
   {const bat=fs.readFileSync(path.join(REPO,'server','Start Server.bat'),'utf8');
     ok('Start Server.bat: CRLF throughout, runs the server from its own folder, checks for Node',!/[^\r]\n/.test(bat)&&bat.includes('"%~dp0dinglecraft-server.mjs"')&&/where node/.test(bat));}
   ok('server/README.md exists and names what is not shared',/not shared/i.test(fs.readFileSync(path.join(REPO,'server','README.md'),'utf8')));

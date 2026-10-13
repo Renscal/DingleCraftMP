@@ -85,7 +85,7 @@
 /* (permessage-deflate); nothing here knows about it.                    */
 /* NT_PROTO must equal PROTO in the server (tests/net/n_static.js).      */
 /* ===================================================================== */
-const NT_PROTO=4,NT_PORT=40162;
+const NT_PROTO=5,NT_PORT=40162;
 /* All multiplayer state, in one object:
      on      true while playing on a server (every core hook checks this)
      st      'off' | 'connecting' | 'on'          ws    the WebSocket

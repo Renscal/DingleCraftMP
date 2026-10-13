@@ -218,7 +218,7 @@ function hrSky(dt,snap){
   const ug=over&&!fullbright?ugT:0;HRL.ug=ug;
   const th=timeOfDay*Math.PI*2,c=Math.cos(th),s=Math.sin(th);
   hrLdir(HRL.sunDir,c,s);hrLdir(HRL.moonDir,-c,-s);
-  const p=hrPalE(s),K=HRL.K,HS=HRL.HS,HG=HRL.HG,AM=HRL.AM,F=HRL.F,Z=HRL.Z,H=HRL.H,SC=HRL.SC,W=HRL_K;
+  const p=hrPalE(dayElev(timeOfDay)),K=HRL.K,HS=HRL.HS,HG=HRL.HG,AM=HRL.AM,F=HRL.F,Z=HRL.Z,H=HRL.H,SC=HRL.SC,W=HRL_K;
   let keyI,hemiI,ambI,exp,fogN,fogF,flat=0,bloomM=1,hazeDen=.0045,hazeFall=.015,hazeBase=SEA,hazeMax=.75,hazeOn=Q.haze?1:0,aoM=1,
     starsO=0,cloudV=over||aeth,moonV=false,sunV=1,dusk=0,D=HRL.sunDir,wA=0;
   if(neth){
@@ -244,7 +244,7 @@ function hrSky(dt,snap){
     hrLcp(HS,p.sky);hrLcp(HG,p.gnd);hemiI=p.hemiI*lerp(1,.05,ug);hrLcp(AM,W.amb);ambI=lerp(.06,.12,ug);
     hrLcp(Z,p.zen);hrLcp(H,p.hor);const fu=lerp(1,.06,ug);F[0]=H[0]*fu;F[1]=H[1]*fu;F[2]=H[2]*fu;   /* caves fog to dark, not to sky */
     exp=Math.min(2.2,p.exp*lerp(1,1.5,ug));fogN=RD*CH*0.45;fogF=RD*CH*0.98;
-    const df=hrLcl((s+.16)*2.4,0,1);starsO=hrLcl(1-df*1.6,0,1)*.9*(1-ug);moonV=true;dusk=hrLcl(1-Math.abs(s)*4,0,1)*.85;
+    const dr=dayRamp(timeOfDay),df=dr*dr*(3-2*dr);starsO=hrLcl(1-df*1.6,0,1)*.9*(1-ug);moonV=true;dusk=(1-Math.abs(dr*2-1))*.85;
     /* Malgorath arena grade (plan Q4 default): ash fog, red rim, extra bloom inside ~40 blocks of (1000.5, 1000.5) */
     const _mg=hrMgGrade(dt,snap);
     wA=_mg?_mg.w:hrLcl((40-Math.hypot(P.x-(DEMON_X+.5),P.z-(DEMON_Z+.5)))/15,0,1);

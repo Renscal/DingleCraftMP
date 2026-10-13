@@ -198,7 +198,7 @@ function blightPatch(m){
   return m;
 }
 /* how much of the torch glow shows: all of it at night, a quarter by day (0 night .. 1 day) */
-function lightDay(t){return clamp(Math.sin(t*Math.PI*2)*4+0.4,0,1);}
+function lightDay(t){return dayLight(t);}
 /* once a frame (from updateChunks): finish any spreading left over, set the glow for the hour, tint the mobs */
 function lightTick(){
   if(NET.host)return;

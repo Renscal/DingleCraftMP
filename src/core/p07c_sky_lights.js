@@ -82,9 +82,9 @@ function updateSky(dt){
   const ci=colInfo(Math.floor(P.x),Math.floor(P.z));
   const under=(P.y+1.4)<(ci.h-1.5)?1:0;
   ugT=lerp(ugT,under,1-Math.exp(-dt*2.5));
-  const sh=Math.sin(timeOfDay*Math.PI*2);            /* 1 noon, -1 midnight */
-  const df=clamp((sh+0.16)*2.4,0,1);                 /* day factor */
-  const dusk=clamp(1-Math.abs(sh)*4,0,1)*0.85;
+  const dr=dayRamp(timeOfDay);                       /* 6.31: the parts of a day (core/p07a) */
+  const df=dr*dr*(3-2*dr);                           /* day factor */
+  const dusk=(1-Math.abs(dr*2-1))*0.85;
   let r=lerp(NIGHTC[0],DAYC[0],df),g=lerp(NIGHTC[1],DAYC[1],df),b=lerp(NIGHTC[2],DAYC[2],df);
   r=lerp(r,DUSKC[0],dusk);g=lerp(g,DUSKC[1],dusk);b=lerp(b,DUSKC[2],dusk);
   scene.background.setRGB(r/255,g/255,b/255);
