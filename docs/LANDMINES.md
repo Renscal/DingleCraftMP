@@ -169,3 +169,24 @@ Grep for names with `tools/grep-safe.sh`.
 - The core quartet (`tests/core/`) is frozen. Its `require('./game.js')` is why the gate copies it into the build folder.
 - Real-clock smokes flake under CPU load. Do not run two heavy gates at once.
 - Static servers without `Cache-Control` serve stale builds to Chrome. Use `scripts/serve.mjs` (no-store) or `?b=<time>`.
+
+## Multiplayer (PART 58)
+
+- `PROTO` (server) and `NT_PROTO` (game) change together, with any change to a message. `n_static` compares them.
+- The server has no terrain. It can check reach, rights, locks and shapes; it cannot check that a block was there. Do not
+  write a server rule that needs to know what the world looks like.
+- A puppet mob (`e.pup`) never goes through `updateMob`. Anything that damages mobs must call `hurtMob` (which forwards
+  the hit to the owner); writing `e.hp` directly on a puppet is silently overwritten by the next state message.
+- Only `NT_MOBS` travel. A mob with its own brain (`T.pmob`, `T.mg`, `T.fly`, alien, snake, blockling, titan) needs its
+  state on the wire before it can be added there: a puppet of one would stand still and lie about its hit points.
+- `stashEnts` drops puppets and networked drops instead of stashing them. A new entity kind that PART 58 mirrors needs
+  the same guard, or a dimension change turns other players' things into this player's own.
+- An `edits` message with `s:1` is old news about a chunk that just came into range. It must never go through `setBlock`
+  (sand would fall, water would flow, torches would pop, and the results would be sent back as new edits).
+- `openModal` on a shared block entity returns without opening anything and opens later, when the server grants the
+  lock. Code that calls `openModal(kind, bek)` and then touches the window in the same breath (a title, a slot) will be
+  touching nothing: do it for private block entities only (`ntBeShared` false), as the purgatory trunk does.
+- The suites: a raw test player must send a `pose` before it can hit, pick up, hold a lock at a distance, or receive
+  mobs. Commands are limited to 8 a second per player. `n_rules` freezes the day cycle so it can compare times exactly.
+- `AG_T` does not advance on a server (the AI players are off), so nothing in PART 58 may use it as a clock: `NET.acc` is
+  the clock, and `NET.dmgRef` is how a death tells a fresh `LASTDMG` from a stale one.

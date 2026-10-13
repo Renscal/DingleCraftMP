@@ -32,7 +32,7 @@ const names = [...E, ...S].map((e) => e.name);
 ok('gate entry names are unique', new Set(names).size === names.length);
 const missing = E.filter((e) => !exists(e.suite)).map((e) => e.suite);
 ok('every listed suite exists' + (missing.length ? ' (missing: ' + missing.join(', ') + ')' : ''), missing.length === 0);
-const SUITE_DIRS = ['tests/core', 'tests/texpacks', 'tests/purgatory', 'tests/pilot', 'tests/creativity', 'tests/malgorath', 'tests/repo', 'tests/ui'];
+const SUITE_DIRS = ['tests/core', 'tests/texpacks', 'tests/purgatory', 'tests/pilot', 'tests/creativity', 'tests/malgorath', 'tests/repo', 'tests/ui', 'tests/net'];
 const listed = new Set([...E.map((e) => e.suite), ...(G.helpers || [])]);
 const unlisted = SUITE_DIRS.flatMap((d) => walk(d)).filter((f) => f.endsWith('.js') && !listed.has(f));
 ok('every .js under the suite dirs is a gate entry or a listed helper' + (unlisted.length ? ' (unlisted: ' + unlisted.join(', ') + ')' : ''), unlisted.length === 0);
@@ -109,8 +109,9 @@ for (const f of JS) read(f).split('\n').forEach((l, i) => {
 });
 ok('no suite reaches for the legacy layout (dev/..., splice.py, gate.sh, hooks files, _stub/, ../../ requires)' + (legacyLook.length ? ' (' + legacyLook.slice(0, 6).join(' ') + ')' : ''), legacyLook.length === 0);
 const writers = JS.filter((f) => /\bwriteFileSync\(|\bappendFileSync\(|\bcreateWriteStream\(/.test(read(f)));
-ok('only the outputs-to-out/ suites write files (p4_boss, speedrun) plus og_trace --bless (' + writers.join(', ') + ')',
-  writers.every((f) => ['tests/purgatory/p4_boss.js', 'tests/pilot/speedrun.js', 'tests/texpacks/og_trace.js'].includes(f)) &&
+ok('only the outputs-to-out/ suites write files (p4_boss, speedrun, n_smoke: the server world round trip) plus og_trace --bless (' + writers.join(', ') + ')',
+  writers.every((f) => ['tests/purgatory/p4_boss.js', 'tests/pilot/speedrun.js', 'tests/texpacks/og_trace.js', 'tests/net/n_smoke.js'].includes(f)) &&
+  /outDir\('net'\)/.test(read('tests/net/n_smoke.js')) &&
   /outDir\('purgatory'\)/.test(read('tests/purgatory/p4_boss.js')) && /outDir\('pilot'\)/.test(read('tests/pilot/speedrun.js')));
 ok('tests/lib/paths.js computes every path from its own place or the environment', !/['"]\//.test(read('tests/lib/paths.js').replace(/\/\*[\s\S]*?\*\//g, '').replace(/'\/'/g, '')));
 

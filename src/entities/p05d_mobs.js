@@ -184,6 +184,7 @@ function spawnMob(mt,x,y,z){
   }
 }
 function hurtMob(e,dmg,kx,kz){
+  if(e.pup){ntMobHit(e,dmg,kx,kz);return;}   /* PART 58: its owner's game takes the hit */
   if(e.bot){agHurt(e.A,dmg,HIT_BY||'Dan',kx,kz,HIT_HOW||'melee');return;}
   if(MOBT[e.mt].mg){dmg=mgPreHurt(e,dmg,kx,kz);if(dmg<0)return;}
   if(MOBT[e.mt].pmob){dmg=mpPreHurt(e,dmg,kx,kz);if(dmg<0)return;}

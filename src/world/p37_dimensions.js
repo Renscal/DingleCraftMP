@@ -171,13 +171,14 @@ function stashEnts(){
     if(e.t==='mob'&&e.bot){if(e.A){agSyncFromBody(e.A);e.A.e=null;}removeEnt(e);continue;}
     if(e.t==='mob'&&MOBT[e.mt].pmob){mpSnapMob(e,null);removeEnt(e);continue;}
     if(e.t==='mob'&&MOBT[e.mt].mg){mgStashed(e);continue;}
+    if(e.t==='mob'&&e.pup){removeEnt(e);continue;}   /* PART 58: another player's mob is never ours to keep */
     if(e.t==='mob'){
       const o={t:e.mt,x:e.x,y:e.y,z:e.z,hp:e.hp};
       if(e.cellId)o.ci=e.cellId;
       if(e.mt==='alien'){o.nm=e.name;o.rel=e.rel;o.rom=e.rom;o.md=e.mood==='h'?'h':'c';o.hx=e.hx;o.hz=e.hz;}
       if(MOBT[e.mt].fly){o.tm=e.tame?1:0;o.fed=e.fed||0;o.ang=e.angry?1:0;o.hx=e.hx;o.hy=e.hy;o.hz=e.hz;}
       out.push(o);removeEnt(e);
-    }else if(e.t==='drop'&&e.st){out.push({t:'drop',x:e.x,y:e.y,z:e.z,st:e.st});removeEnt(e);}
+    }else if(e.t==='drop'&&e.st&&!e.nid){out.push({t:'drop',x:e.x,y:e.y,z:e.z,st:e.st});removeEnt(e);}
     else if(e.t==='car'||e.t==='skate'||e.t==='boat'||e.t==='cart'||e.t==='plane'){out.push({t:e.t,x:e.x,y:e.y,z:e.z,yaw:e.yaw||0});removeEnt(e);}
     else if(e.t!=='esnail')removeEnt(e);
   }

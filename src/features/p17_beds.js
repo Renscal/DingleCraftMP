@@ -37,6 +37,7 @@ function addBed(b,x,y,z){
 function doSleep(x,y,z){
   P.spawn=[x+0.5,y+1.3,z+0.5];
   if(!sunUp()){
+    if(NET.on&&ntSleep())return;   /* PART 58: on a server a bed is a vote */
     timeOfDay=Math.ceil(timeOfDay)+0.05;
     showToast('You sleep through the night. Respawn point set.');
     playS('sleep');

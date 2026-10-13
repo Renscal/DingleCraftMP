@@ -63,6 +63,7 @@ function frame(t){
     engineSnd(!paused&&!!P.ride&&(P.ride.t==='car'||P.ride.t==='plane'),P.ride?P.ride.spd:0);
     drawRing();
     drawDebug(dt);
+    ntFrame(dt);   /* PART 58: multiplayer (runs while paused too) */
     tickAgHud(dt);
     hudLayout();   /* toasts clear of menus, F3 and the player list clear of the HUD (p06e) */
     $('vignette').style.opacity=clamp(hurtFlash*2,0,0.55)+(P.hp<=4&&P.mode==='s'?0.12:0);

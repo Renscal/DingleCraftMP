@@ -201,6 +201,7 @@ function doMine(dt){
   const carT=pickCar(e[0],e[1],e[2],d[0],d[1],d[2],3.4);
   if(carT&&(!tgt||carT.t<tgt.t))tgt={e:carT.e,t:carT.t,car:true};
   const hit=raycastB(e[0],e[1],e[2],d[0],d[1],d[2],REACH);
+  if(NET.on&&ntMelee(e,d,Math.min(tgt?tgt.t:9,hit?hit.t:9))){MINE.active=false;MINE.prog=0;return;}   /* PART 58: another player is in the way */
   if(MGP_ON&&!tgt)mgSwingMiss(e,d,hit);
   if(tgt&&(!hit||tgt.t<hit.t)){
     MINE.active=false;MINE.prog=0;
@@ -222,7 +223,7 @@ function doMine(dt){
   }
   if(!hit){MINE.active=false;MINE.prog=0;return;}
   const dd=DEFS[hit.id];
-  if(dd.hard<0||(MGP_ON&&mgProtected(hit.x,hit.y,hit.z,'mine'))){MINE.active=false;MINE.prog=0;return;}
+  if(dd.hard<0||(MGP_ON&&mgProtected(hit.x,hit.y,hit.z,'mine'))||(NET.on&&ntGuard(hit.x,hit.z))){MINE.active=false;MINE.prog=0;return;}
   P.swing=Math.max(P.swing,0.6);
   if(P.mode==='c'){
     if(P.atkT<=0){P.atkT=0.22;breakBlock(hit.x,hit.y,hit.z,false);}
@@ -679,6 +680,7 @@ function doUse(dt){
       }
       if(!blocked&&DIM==='puppet'&&!mpPlaceOK(tx,ty,tz,pid))blocked=true;
       if(!blocked&&MGP_ON&&!mgPlaceOK(tx,ty,tz,pid))blocked=true;
+      if(!blocked&&NET.on&&ntGuard(tx,tz))blocked=true;   /* PART 58: spawn protection */
       if(!blocked&&ty>=0&&ty<WH){
         setBlock(tx,ty,tz,pid);
         lawnCheck(tx,ty,tz);

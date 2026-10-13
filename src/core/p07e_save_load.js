@@ -249,6 +249,7 @@ function applySave(d){
 }
 async function saveToStorage(name,quiet){
   if(!playing)return false;
+  if(NET.on)return ntSave(quiet);   /* PART 58: a server world is saved by the server, never into this browser */
   const j=JSON.stringify(snapshot(name));
   if(j.length>4.5e6&&!quiet)showToast('World save is getting large ('+(j.length/1e6).toFixed(1)+' MB)');
   if(!storageOK()){if(!quiet)showToast('No save storage here — use Export instead');return false;}

@@ -40,6 +40,7 @@ function damagePlayer(n,kx,kz){
 function die(){
   if(AG_ACTIVE&&!P.dead)agOnDanDeath();
   P.dead=true;
+  if(NET.on)ntDied();
   P.deathPos=[Math.floor(P.x),Math.floor(P.y),Math.floor(P.z)];
   if(DIM==='puppet')mpOnDeath();
   else if(mgOnDie()){}

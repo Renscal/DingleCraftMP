@@ -12,7 +12,7 @@
 /* behind it stays.                                                      */
 /* ===================================================================== */
 const TM={view:'main',booted:false,live:false,disarm:null,ready:false};
-function tmEls(){return {main:$('tmain'),new:$('tnew'),load:$('tload'),gr:$('tgr'),name:$('tname'),cred:$('tcred')};}
+function tmEls(){return {main:$('tmain'),new:$('tnew'),load:$('tload'),gr:$('tgr'),name:$('tname'),cred:$('tcred'),mp:$('tmp')};}
 function tmVisible(el){return !!el&&!el.hidden&&(typeof el.getClientRects!=='function'||el.getClientRects().length>0);}
 /* the focusable controls of the active view, in order */
 function tmItems(){

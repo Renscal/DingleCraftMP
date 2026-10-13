@@ -44,6 +44,7 @@ src/            the game, about 190 files, joined in src/ORDER.txt order (the on
   core/ world/ entities/ ui/ features/   PARTs 1-52 (the original sandbox, every update's core hooks folded in)
   ai_players/   PART 53      texpacks/ PART 54 (+ models/, loaders/)      purgatory/ PART 55
   creativity/   PART 56      malgorath/ PART 57 (+ hr/: the PART 57 HR block)     boot/export_boot.js
+  net/          PART 58 (the multiplayer client, game 6.10)
 html/           head.html in 18 pieces (html/ORDER.txt) + tail.html; css/ per system, dom/ by region
 assets/         logo.png, title/ (menu panorama), vendor/ (three.js r128, inlined), packed/{hr,mg}/ (429 WebP + sidecars +
                 manifests), pack-inputs/
@@ -53,6 +54,8 @@ tests/          core/ (frozen quartet) lib/ (boot chain, paths.js) texpacks/ pur
 tools/          art/ (packers, fal client: PAID) assets/ (unpack, repack) qa/ (muted browser rigs) hooks/ (git hooks)
                 scan_secrets.mjs scan_history.mjs grep-safe.sh lib/private_terms.cjs
 brain/          the AI players' local server (bring your own key)
+server/         the multiplayer server: dinglecraft-server.mjs (the front door) + lib/ (config, world, websocket, protocol,
+                commands, http, server, cli), no dependencies; Start Server.bat; its data/ is gitignored
 docs/           ARCHITECTURE BUILD TESTING QA ASSETS BRAIN RELEASING PARITY ROADMAP LEGACY LANDMINES
 build/ dist/ out/   gitignored outputs
 ```
@@ -78,6 +81,9 @@ build/ dist/ out/   gitignored outputs
    controls only, no feature blurbs).
 8. **Look at it**, muted, in a real browser, in OG and Hyperreal, if it is visual (`docs/QA.md`).
 9. **Ship.** Patch notes, `npm run gate`, `npm run release`, commit with `TZ=UTC0`, tag (`docs/RELEASING.md`).
+   **Every update is pushed**: after each finished update (tests green), commit and push to the DingleCraftMP repository
+   on GitHub. The access token lives in the machine's git credentials, never in this file or any other repo file (hard
+   rule 2: a token in a tracked file is published with the next push, and GitHub revokes it on sight).
 10. **Announce** with playful per-feature patch notes, plus the test counts `npm run release` prints (the in-game
     patch-notes screen is retired; `PATCH_LOG` is the data behind `CHANGELOG.md`).
 
@@ -110,7 +116,7 @@ Full map: `docs/ARCHITECTURE.md` (PART-to-file table, systems index, how each up
 
 - **One classic script**: `'use strict'` at the top of `core/p01a_prologue.js` covers all; ~3,500 shared top-level names,
   none duplicated; function declarations hoist across files. Never split into separate script tags.
-- **Load order ≠ PART order**: core 1-52, 53, then updates newest first (57, 56, 55, 54), the PART 57 HR block, the cast
+- **Load order ≠ PART order**: core 1-52, 53, then updates newest first (58, 57, 56, 55, 54), the PART 57 HR block, the cast
   loaders, the export branch. Names from later-loading (older) updates are runtime-only and `typeof`-guarded. New
   updates go immediately before `malgorath/m0_contract.js` in `src/ORDER.txt`, with a section guard in
   `scripts/guards.json`.
@@ -123,6 +129,15 @@ Full map: `docs/ARCHITECTURE.md` (PART-to-file table, systems index, how each up
   top-level button wiring).
 - **Updates talk to the core through registries** (`PREG`, `CRREG`, `MGREG`, `tpRegister`, `HR.MODELS`) and keep state in
   one saved object each (`MP`, `save.cr`, `save.mg`), written only when it differs from the default.
+- **Multiplayer** (PART 58, `src/net/`: `n0_contract` state and the map, `n1_link` connection and messages, `n2_world`
+  blocks, chests and their locks, `n3_drops`, `n4_self` this player and the frame tick, `n5_players`, `n6_menu`,
+  `n7_mobs` shared mobs and explosions): 21 core hooks, all behind `NET.on` (or `e.pup`, which only PART 58 sets), so
+  single player is byte-for-byte the old behaviour. The server owns blocks, block entities (one player in a chest at a
+  time), dropped items, time, rules, rights (ops, bans, the whitelist, spawn protection, slash commands in
+  `server/lib/commands.mjs`) and players-by-name. It never runs the game: an ordinary mob (`NT_MOBS`) is simulated by the
+  game of the nearest player and shown to the others as a puppet; vehicles, bosses and every special cast stay local to
+  each client. Anything that writes blocks must go through `setBlock`, anything that drops an item through `spawnDrop`,
+  and anything that hurts a mob through `hurtMob`, or it will not reach other players.
 
 **ID ledger** (`docs/ARCHITECTURE.md` section 7): grep before allocating. Next free at v6.3: block ids 217, 218, 219, 248,
 249 (212 stays undefined on purpose); item ids 309, 339, then 366+. Purgatory ids are assigned only in

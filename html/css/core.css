@@ -140,8 +140,9 @@ select.mc-in{appearance:auto}
 #title .panel.tview{width:min(480px,100%);max-width:min(480px,100%);max-height:none;overflow:visible;padding:18px 20px 20px;
   box-shadow:0 14px 50px rgba(0,0,0,.55)}
 #title .panel h2{font-size:22px;margin:0 0 10px;text-align:center}
-#tnew .trow,#tload .trow,#tcred .trow{margin-top:14px}
-#tnew .trow .mc-btn,#tload .trow .mc-btn,#tcred .trow .mc-btn{padding:12px 8px;font-size:16px}
+#tnew .trow,#tload .trow,#tcred .trow,#tmp .trow{margin-top:14px}
+#tnew .trow .mc-btn,#tload .trow .mc-btn,#tcred .trow .mc-btn,#tmp .trow .mc-btn{padding:12px 8px;font-size:16px}
+#t_mp_status{min-height:1.3em}#t_mp_status.bad{color:#a3231a}
 #title .panel.tview#tcred{width:min(600px,100%);max-width:min(600px,100%)}
 .tseg{display:flex;gap:6px;margin:2px 0 8px}
 .tseg .mc-btn{flex:1;margin:0;padding:10px 6px}

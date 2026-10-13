@@ -5,12 +5,13 @@
   <div id="tstage">
     <header id="thead">
       <img id="tlogo" src="data:image/png;base64,{{LOGO_PNG_BASE64}}" alt="DINGLECRAFT">
-      <div id="ttag"><span id="t_ver">Release 1.0</span></div>
+      <div id="ttag"><span id="t_ver">Release 1.1</span></div>
     </header>
     <nav id="tmain" class="tview" aria-label="Main menu">
       <button id="t_continue" class="mc-btn tgo" style="display:none"></button>
       <button id="t_go_new" class="mc-btn">Create New World</button>
       <button id="t_go_load" class="mc-btn">Load World</button>
+      <button id="t_go_mp" class="mc-btn">Multiplayer</button>
       <button id="t_help" class="mc-btn">Controls</button>
       <button id="t_patch" class="mc-btn" hidden style="display:none">What’s New</button>
       <button id="t_reddit" class="mc-btn">r/DanDingle</button>
@@ -73,6 +74,20 @@
       <div class="trow">
         <button id="t_back_load" class="mc-btn">Back</button>
         <button id="t_import" class="mc-btn">Import World (.vxw.json)</button>
+      </div>
+    </section>
+    <section id="tmp" class="tview panel" aria-labelledby="tmp_h" hidden>
+      <h2 id="tmp_h">Multiplayer</h2>
+      <label class="mlabel" for="t_mp_addr">Server address</label>
+      <input id="t_mp_addr" class="mc-in" maxlength="120" autocomplete="off" spellcheck="false" placeholder="e.g. 192.168.1.20:40162">
+      <label class="mlabel" for="t_mp_pw">Password (only if the server has one)</label>
+      <input id="t_mp_pw" class="mc-in" type="password" maxlength="64" autocomplete="off">
+      <div class="mlabel" id="t_mp_name"></div>
+      <div class="mlabel" id="t_mp_status" role="status"></div>
+      <p class="twarn">Blocks, chests, dropped items, chat, the time of day and the other players are shared. Mobs and vehicles are your own. Your inventory is kept by the server.</p>
+      <div class="trow">
+        <button id="t_back_mp" class="mc-btn">Back</button>
+        <button id="t_mp_go" class="mc-btn tgo">Join Server</button>
       </div>
     </section>
     <section id="tcred" class="tview panel" aria-labelledby="tcred_h" hidden>

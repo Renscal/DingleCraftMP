@@ -95,6 +95,16 @@ ai_players/a8_mind.js
 ai_players/a9_ui.js
 ai_players/mob_helpers.js
 
+# PART 58: multiplayer (the client for server/dinglecraft-server.mjs)
+net/n0_contract.js
+net/n1_link.js
+net/n2_world.js
+net/n3_drops.js
+net/n4_self.js
+net/n5_players.js
+net/n6_menu.js
+net/n7_mobs.js
+
 # PART 57: the Malgorath Update
 malgorath/m0_contract.js
 malgorath/m1_layout.js

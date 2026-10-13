@@ -24,6 +24,8 @@ tokens.json
 # dependencies and local brain state
 node_modules/
 brain/data/
+# the multiplayer server's world, settings and any game html dropped next to it
+server/data/
 brain/STOP
 # local art-tool spend ledger (FAL_LEDGER_DIR: costs.md + BUDGET, wherever it points)
 .art-ledger/

@@ -53,6 +53,7 @@ function setBlock(x,y,z,id){
   if(old===id)return;
   ch.bl[i]=id;
   ch.edits.set(lx+','+y+','+lz,id);
+  if(NET.on&&!NET.ap)ntEdit(ckey(cx,cz),lx+','+y+','+lz,id);   /* PART 58: multiplayer */
   if(AG_ACTIVE)ownTrack(x,y,z,old,id);
   const k=bkey(x,y,z);
   if(isTorch(old))torches.delete(k);

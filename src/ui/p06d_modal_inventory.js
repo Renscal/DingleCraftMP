@@ -179,6 +179,7 @@ function addInvSlots(parent){
 }
 function arrowEl(){const a=document.createElement('div');a.className='marrow';a.textContent='\u2192';return a;}
 function openModal(kind,bek){
+  if(NET.on&&bek&&ntBeAsk(kind,bek))return;   /* PART 58: a shared chest is asked for first (one player at a time) */
   closeModal(true);
   MODAL.kind=kind;MODAL.slots=[];MODAL.grid=null;MODAL.gw=0;MODAL.be=null;MODAL.bek=bek||null;
   MODAL.rset=DIM==='puppet'?piRecipeSet(kind):RECIPES;

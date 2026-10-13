@@ -44,7 +44,8 @@ The original game was written as numbered `PART`s, 1 to 52. Every big update sin
 ```
 src/core, world, entities, ui, features   PARTs 1-52    the original sandbox (v1.0 to v5.8), with every update's core hooks in place
 src/ai_players/                           PART 53       AI players (v5.9)
-src/malgorath/                            PART 57       the Malgorath Update (v6.3)        <- newest update
+src/net/                                  PART 58       multiplayer (v6.10)                <- newest update
+src/malgorath/                            PART 57       the Malgorath Update (v6.3)
 src/creativity/                           PART 56       the Creativity Update (v6.2)
 src/purgatory/                            PART 55       Puppet Purgatory (v6.1, recast in Release 1.0)
 src/texpacks/t*.js                        PART 54       texture packs (v6.0)
@@ -329,6 +330,90 @@ In the core: world stamping (`mgStampChunk`), protection of his site (`MGP_ON`, 
 `updateMob` to `mgBrain`, `hurtMob` to `mgPreHurt`, which always returns -1), player hooks (`mgUse`, `mgEggUse`,
 `mgPlaceOK`, `mgSteal`, `mgSwingMiss`, `mgOnDie`, `mgOnRespawn`), saves (`mgSaveFields`, `mgLoad`, `mgLoadDemon`,
 `mgReset`, `mgEditsSave`), the boot (`mgBoot`) and a handful of gadget and weapon guards.
+
+### Multiplayer (PART 58, `src/net/`, plus `server/`)
+
+| file | what |
+|---|---|
+| `n0_contract.js` | the protocol number, the `NET` state object (every field explained), `NTEX`, the map of hooks and messages |
+| `n1_link.js` | the connection: `ntConnect`, `ntDown`, `ntLeave`, every incoming message (`ntMsg`), entering the world (`ntEnter`) |
+| `n2_world.js` | block edits (`ntEdit`, `ntFlush`, `ntApplyEdit`) and block entities (`ntBeScan`, `ntApplyBE`) |
+| `n3_drops.js` | dropped items |
+| `n4_self.js` | this player: `ntSave`, the pose, chat, death, and `ntFrame` (the per-frame tick) |
+| `n5_players.js` | the other players: bodies and name tags, the Tab list rows, melee (`ntMelee`) |
+| `n6_menu.js` | the Multiplayer screen on the title |
+| `n7_mobs.js` | shared mobs (owner and puppet, the hand-over), explosions that reach other players |
+
+Eight small files on the client, and on the server a dependency-free Node program: `server/dinglecraft-server.mjs` is the
+front door (and what tests import), `Start Server.bat` starts it on Windows, and the code is in `server/lib/`:
+
+| module | what | depends on |
+|---|---|---|
+| `config.mjs` | settings, limits, key regexes, the game rules (`RULES`), the command line, `findGame` | nothing |
+| `world.mjs` | the world as data: new, load, apply the settings file, atomic save, validators (`cleanStack`, `num`) | config |
+| `websocket.mjs` | the WebSocket wire format (handshake, frames) | nothing; knows nothing about the game |
+| `protocol.mjs` | what every game message means (`handleMessage`), the join sequence, the checks (reach, rights, chest locks), the once-a-second `worldTick` | config, world, commands; knows nothing about sockets |
+| `commands.mjs` | the slash commands, for operators in the game and for the server window (`runCommand`), `isOp`, spawn protection's radius | config, world; knows nothing about sockets |
+| `http.mjs` | the game page at `/` and `/status` | config |
+| `server.mjs` | `createServer`: state, sending, connections, clocks | all of the above |
+| `cli.mjs` | the program: `server.json`, the banner, console commands | config, server |
+
+Its own [README](../server/README.md) covers running it. They speak JSON text frames over one WebSocket
+(`NT_PROTO` in the game, `PROTO` in the server; `n_static` checks they match).
+
+**The server is a keeper, not a simulator.** It never runs the game. It holds one world in the save format
+(`{seed, mode, time, gr, edits, be, ...}` plus a `players` table keyed by lower-case name), so `--world` accepts a file
+exported from the pause menu, and it relays the rest. On join it sends `welcome` (world meta, your saved player or null,
+who is online), `perm` (your rights, the world spawn), the edits of the chunks around you in batches, the block entities,
+the dropped items, then `ready`; the client builds a save-shaped object and calls `applySave`, so joining is literally
+loading a save.
+
+**It has no terrain, so it checks what it can without one.** It cannot tell whether a block was really there, but it does
+check: who may change the time and the rules (operators, or anyone with Cheats on), that a PvP hit came from within reach
+and outside the cooldown, that a player is standing by the item they pick up, that only the holder of a chest's lock
+writes to it, that an edit is not inside the protected spawn square, and it words every death message itself. Everything
+else is still each player's own game being honest.
+
+**Interest.** Each connection has the set of chunk keys it has been sent (`c.sent`). A pose that crosses into a new chunk
+makes `syncAround` send the edits of every chunk newly within `rd` chunks (the client's draw distance + 3) as
+`{t:'edits', s:1}`; the client applies an `s:1` edit in a loaded chunk straight into the block array (`ntApplyEdit`'s
+`raw`), so old news never makes sand fall or water flow. Live edits go only to connections that have the chunk. Poses go
+at full rate to players within 128 blocks in the same dimension, and once a second (and on a change of dimension) to
+everyone else, which is what the Tab list needs.
+
+| shared (server-owned) | how |
+|---|---|
+| block edits, all dimensions | `setBlock` queues `[ckey, "lx,y,lz", id]`; `ntFlush` sends about 15 times a second; `ntApplyEdit` applies a received edit through `setBlock` under `NET.ap` (so it is not sent back), or straight into `chunkEdits` when the chunk is not loaded |
+| chests, furnaces, terrariums, displays | `ntBeScan` once a second compares each block entity with its last sent signature (`ntBeSig`: a furnace's timers are left out, each client ticks its own copy); `ntApplyBE` updates the object in place so an open window keeps working |
+| dropped items | every drop made while connected gets an id (`ntDropSpawned`, the tail of `spawnDrop`) and is sent once with its velocity; `NET.drops` is the client's copy of the server's table, in every dimension. A drop has a body (an ordinary `'drop'` entity tagged `e.nid`) only while its chunk is loaded here (`ntDropsScan`, once a second and on a dimension change); each client runs the physics of its own copy. Pickup is asked of the server (`ntDropTake` -> `take` -> `took` for one player, `undrop` for the rest), so nothing is duplicated. Drops spawned while a remote edit is being applied (`NET.ap`) are suppressed, networked drops never go into `ENT_STASH`, and drops do not merge online |
+| time of day, game rules | the server's clock is sent every 5 s; a local jump (the debug menu) is sent up and `GR` is polled once a second (`bots` never travels), and the server takes either only from an operator or with Cheats on, otherwise it sends its own value back. A bed sends `sleep`: a vote that lasts 30 s, counted against `sleepPercent` |
+| chest locks | `openModal` asks first (`ntBeAsk` sends `open`); the server answers with the latest contents and `lock`; `ntLockTick` sends the contents and `close` the frame the window shuts. A holder who left or walked 12 blocks away has let go |
+| ordinary mobs (`NT_MOBS`) | one owner each: the nearest player's game runs the mob (so its brain, which only knows the local player, chases the nearest player) and sends `mobs` 8 times a second; everyone else has a puppet (`e.pup`: `ntMobPup` instead of `updateMob`, and `hurtMob` forwards the hit as `mhit`). Twice a second an owner hands a mob to a clearly nearer player (`mgive`), or to anyone in range while its own game is paused. A puppet silent for 3 s is removed. Never saved |
+| explosions, arrows, bullets | `explode` tells the players nearby (`boom`: the bang and the damage; the holes are ordinary edits); the player's own arrows and bullets test other players (`ntShot`) and send a `hit` |
+| flowing water | `tickFlow` asks `ntSimHere`: of the players within 48 blocks of a cell, the lowest id flows it, and the result reaches the others as edits |
+| rights and commands | `perm` carries op, the protected radius and the world spawn; `doMine` and `doUse` ask `ntGuard`; a chat line starting with `/` goes to the server as `cmd`; the server answers with `sys`, or `tp` / `give` / `mode` to the player concerned |
+| players | a pose 15 times a second (position, look, dimension, held item, health, flags; flag 32 = this game is paused); peers are drawn by `ntPeerMesh` and eased in `ntPeersTick`. Each has their own game mode (`gm` in the players table, over the world's default) |
+| each player's own state | `saveToStorage` is redirected to `ntSave` (the `player` part of a snapshot, the dimension, the purgatory state): the autosave, Save World and quitting all go to the server, and a server world never touches local storage |
+| chat, PvP | `chatSubmit` to `ntChat`; `doMine` asks `ntMelee` whether another player is the nearest thing on the look ray |
+
+**Not shared:** vehicles, bosses, dragons, villagers, snakes, blocklings, titans, the Purgatory and Malgorath casts, the
+AI players (forced off), XP orbs, creativity works, the stock market and the structure SEEN sets. Each client simulates
+those itself. Fire, falling blocks and structure processing also still run on every client: their block writes travel as
+ordinary edits and converge on the last writer.
+
+In the core: `setBlock` (`ntEdit`), `saveToStorage` (`ntSave`), `quitToTitle` (`ntLeave`), the frame (`ntFrame`, which
+also runs while paused), `doMine` (`ntMelee`), `die` (`ntDied`), `chatSubmit` (`ntChat`), `renderTab` (`ntTabRows`),
+`spawnDrop` (`ntDropSpawned`), `updateDrop` (`ntDropTake`, plus `!NET.on` on the merge), `chatSubmit` again (`ntCmd`),
+`doSleep` (`ntSleep`), `openModal` (`ntBeAsk`), `doMine` and `doUse` (`ntGuard`), `updateEntities` (`ntMobPup`),
+`hurtMob` (`ntMobHit`), `explode` (`ntBoom`), `updateArrow` and `updateBullet` (`ntShot`), `tickFlow` (`ntSimHere`),
+`stashEnts` (`!e.nid`, and puppets are dropped), the title (`#tmp`, `tmEls`) and `NTEX` in the exports. Every one is
+behind `NET.on`, or behind `e.pup` / `e.nid`, which only PART 58 sets. `n_static` counts them: 21 calls.
+
+**The next steps.** The special casts (bosses, dragons, villagers, vehicles) each need their own state on the wire before
+they can be puppets: `mpSnapMob` and the save code's entity records are the starting shapes. A mob whose owner drops off
+the server is lost after 3 s; the server could reassign it instead. Mobs are not saved with the server's world. The
+server still trusts each game about its own inventory and movement: moving the inventory to the server (slot-level
+chest moves instead of the lock) is the change that would let it run for strangers.
 
 ## 7. ID ledger
 

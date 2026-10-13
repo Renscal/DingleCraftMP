@@ -55,6 +55,7 @@ function updateArrow(e,dt){
       LASTDMG={by:e.owner==='m'?'Skeleton':(e.owner||null),how:'arrow',t:AG_T};damagePlayer(e.dmg,e.vx,e.vz);removeEnt(e);return;
     }
   }
+  if(NET.on&&e.owner==='p'&&ntShot(nx,ny,nz,e.dmg,e.vx,e.vz)){removeEnt(e);return;}   /* PART 58: another player */
   if(solidAt(Math.floor(nx),Math.floor(ny),Math.floor(nz))){
     playS('thud');
     if(e.owner==='p'&&Math.random()<0.85)spawnDrop(e.x,e.y,e.z,{id:IT.ARROW,count:1},0,0.5,0);
@@ -88,6 +89,7 @@ function explode(x,y,z,r,byMob,owner){
   const pa=ACTOR,ph=HIT_BY,pw=HIT_HOW,pe=EXPL_BY;
   ACTOR=owner||null;HIT_BY=owner||(byMob?'Boomer':null);HIT_HOW='tnt';EXPL_BY=HIT_BY;
   try{explode0(x,y,z,r,byMob);}finally{ACTOR=pa;HIT_BY=ph;HIT_HOW=pw;EXPL_BY=pe;}
+  if(NET.on)ntBoom(x,y,z,r,byMob);   /* PART 58: the other players nearby feel it too */
 }
 function explode0(x,y,z,r,byMob){
   playS('boom');

@@ -73,6 +73,21 @@ hour with all three bots). The brain prints a running total, logs spend locally 
 stops spending the moment a file named `STOP` exists in `brain/`. Details: [docs/BRAIN.md](docs/BRAIN.md) and
 [brain/README.md](brain/README.md).
 
+## Multiplayer (game 6.10 and up)
+
+Host a world for your friends with the server in [`server/`](server/README.md). It has no dependencies and needs only Node.js 20+:
+
+```sh
+npm run build                         # makes dist/dinglecraft_v<version>.html, which the server hands out
+node server/dinglecraft-server.mjs    # on Windows: double-click server/Start Server.bat
+```
+
+Players open the address the server prints (`http://<your address>:40162/`), or open their own copy of the game and
+choose **Multiplayer**. Blocks, chests, dropped items, chat, the time of day and the players are shared and kept by the server,
+ordinary mobs are shared between the players near them, and operators have slash commands (`/tp`, `/give`, `/gamemode`,
+`/ban`...); vehicles and bosses are still each player's own. The details, the settings and the limits are in
+[server/README.md](server/README.md).
+
 ## Build
 
 ```
@@ -128,6 +143,7 @@ scripts/             build, serve, bump, release, gate, changelog (Node, no depe
 tests/               every test suite, fixtures, and the repo's own checks
 tools/               art packers and art tools, muted browser QA rigs, the secrets scan
 brain/               the AI players' local server (bring your own key)
+server/              the multiplayer server (game 6.10+): dinglecraft-server.mjs + lib/, Start Server.bat for Windows, its own README
 docs/                how everything works (start with ARCHITECTURE.md)
 ```
 

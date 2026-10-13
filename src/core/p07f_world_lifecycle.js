@@ -49,6 +49,7 @@ async function quitToTitle(){
   $('death').style.display='none';
   if(typeof mg2HudHide==='function')mg2HudHide();   /* Malgorath's bar never follows Dan back to the title */
   $('title').style.display='flex';
+  ntLeave();   /* PART 58: multiplayer */
   refreshWorldList();
 }
 async function refreshWorldList(){

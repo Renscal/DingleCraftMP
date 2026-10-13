@@ -218,6 +218,7 @@ function updateBullet(e,dt){
         removeEnt(e);return;
       }
     }
+    if(NET.on&&ntShot(nx,ny,nz,e.dmg,e.vx,e.vz)){removeEnt(e);return;}   /* PART 58: another player */
     const bid=getBlock(Math.floor(nx),Math.floor(ny),Math.floor(nz));
     if(DEFS[bid].solid!==false){
       burstParticles(nx,ny,nz,bid,4,0.3);

@@ -19,6 +19,8 @@ if(typeof window==='undefined'||typeof __VOXTEST!=='undefined'){
     /* Release 1.0 seams: the menu music, the volume buses, the player's name */
     tmusStart,tmusStop,getTMUS:()=>TMUS,acVol,setVols:(s,m)=>{SFXVOL=s;MUSVOL=m;acVol();},getVols:()=>({sfx:SFXVOL,mus:MUSVOL}),getAC:()=>AC,pnBack,pnText,pnSet,pnValid,pnClean,
     getPName:()=>PNAME,setPName:n=>{PNAME=n;},getPNSet:()=>PNAME_SET,setPNSet:v=>{PNAME_SET=!!v;},setSound:v=>{soundOn=!!v;},getSettingsP:()=>SETTINGS_P,
-    tgrOpen,tgrSave,getTGR:()=>TGR,syncSetUI,mg2HudHide:()=>{if(typeof mg2HudHide==='function')mg2HudHide();}};
+    tgrOpen,tgrSave,getTGR:()=>TGR,syncSetUI,mg2HudHide:()=>{if(typeof mg2HudHide==='function')mg2HudHide();},
+    /* v6.10: multiplayer (PART 58); its names are nt* / NET / NT_* only, so nothing here can clash */
+    ...NTEX};
   boot();
 }

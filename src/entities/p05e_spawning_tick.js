@@ -108,7 +108,7 @@ function updateEntities(dt){
     else if(e.t==='abomb')updateBomb(e,dt);
     else if(e.t==='mcloud')updateMcloud(e,dt);
     else if(e.t==='pproj')puUpdate(e,dt);
-    else if(e.t==='mob'){if(e.bot)agBodyTick(e,dt);else updateMob(e,dt);}
+    else if(e.t==='mob'){if(e.bot)agBodyTick(e,dt);else if(e.pup)ntMobPup(e,dt);else updateMob(e,dt);}   /* e.pup: PART 58, a mob another player's game runs */
   }
   if(HRE.corpses.length)hrTickCorpses(dt);
   pruneEnts();

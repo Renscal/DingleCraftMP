@@ -26,6 +26,7 @@ function tickFlow(dt){
     FLOWS.delete(x+','+y+','+z);
     n++;
     if(!chunkAt(x,z))continue;
+    if(NET.on&&!ntSimHere(x,z))continue;   /* PART 58: one game flows the water here, the others get its edits */
     if(getBlock(x,y,z)!==B.AIR)continue;
     const above=getBlock(x,y+1,z)===B.WATER;
     let side=false,deep=false;

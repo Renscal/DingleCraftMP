@@ -64,6 +64,7 @@ function spawnDrop(x,y,z,st,vx,vy,vz){
   scene.add(sp);
   entities.push({t:'drop',x,y,z,vx:vx||0,vy:vy||0,vz:vz||0,hw:0.12,h:0.24,
     onGround:false,st:{id:st.id,count:st.count,dur:st.dur,...(st.mob?{mob:st.mob}:{}),...(st.ench?{ench:st.ench}:{})},age:0,mesh:sp,m3d:(tp3||wp3||sp._hrCube)?1:0,bob:Math.random()*6});
+  if(NET.on)ntDropSpawned();   /* PART 58: every drop on a server is the server's */
 }
 function updateDrop(e,dt){
   e.age+=dt;
@@ -82,7 +83,7 @@ function updateDrop(e,dt){
       const pull=10*dt/Math.max(ds,0.25);
       e.x+=dx*pull;e.y+=dy*pull;e.z+=dz*pull;
     }
-    if(ds<0.75){
+    if(ds<0.75&&!(e.nid&&ntDropTake(e))){   /* PART 58: on a server, picking up is asked first */
       const before=e.st.count,left=invAddTo(P.inv,e.st);   /* invAddTo shrinks e.st as it goes: compare with the count from before */
       if(left<before){playS('pop');redrawHotbar();}
       if(e.st.count<=0){removeEnt(e);return;}
@@ -90,7 +91,7 @@ function updateDrop(e,dt){
   }
   if(AG_ACTIVE&&agTryPickup(e))return;
   /* merge with nearby same drops occasionally */
-  if(((frameCount+(e.bob*10|0))%30)===0&&e.st.count<stackMax(e.st.id)&&e.st.dur==null){
+  if(((frameCount+(e.bob*10|0))%30)===0&&e.st.count<stackMax(e.st.id)&&e.st.dur==null&&!NET.on){
     for(const o of entities){
       if(o!==e&&!o.dead&&o.t==='drop'&&o.st.id===e.st.id&&o.st.dur==null&&
          Math.abs(o.x-e.x)<1&&Math.abs(o.y-e.y)<1&&Math.abs(o.z-e.z)<1){
