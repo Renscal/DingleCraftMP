@@ -553,6 +553,8 @@ function doUse(dt){
     if(rEdge&&P.useT<=0)throwGrenade(st);
     rEdge=false;return;
   }
+  /* 6.39: a hoe, a watering can, something to plant (above the food branch: a carrot aimed at farmland is planted) */
+  if(st&&(d.hoe||d.wcan||d.plant)&&rEdge&&farmUse(st,d,hit)){rEdge=false;return;}
   /* food */
   if(st&&d.food&&P.hunger<20&&P.mode==='s'){
     P.eatT+=dt;P.swing=Math.max(P.swing,0.4);

@@ -28,7 +28,7 @@ boot.run(async()=>{
   ok('easel: solid, not opaque, cut bucket, cross icon, crm easel; painting cell: not solid, hidden, drops nothing, crm paint',
     D[213].solid!==false&&!D[213].opq&&D[213].bucket==='cut'&&D[213].cross&&D[213].crm==='easel'&&
     D[216].solid===false&&!D[216].opq&&D[216].hide&&D[216].drop===null&&D[216].crm==='paint'&&!D[214].hide&&!D[215].hide);
-  ok('212, 217-219 (spare) and 248, 249 (purgatory spares) stay undefined',[212,217,218,219,248,249].every(i=>!D[i]));
+  ok('212 and 249 stay undefined (217-219 and 248 are farming\'s since 6.39)',[212,249].every(i=>!D[i]));
   ok('every block id < 256 is now taken except those six',(()=>{for(let i=1;i<256;i++)if(!D[i]&&![212,217,218,219,248,249].includes(i))return false;return true;})());
   const bandUsed=Object.keys(D).map(Number).filter(i=>i>CRC.ID0&&i<=CRC.ID0+CRC.MAXN);
   ok('the work-id band '+(CRC.ID0+1)+'-'+(CRC.ID0+CRC.MAXN)+' holds no static def (works are synthesised at runtime)',bandUsed.length===0&&Object.keys(D).map(Number).every(i=>i<CRC.ID0||i>CRC.ID0+CRC.MAXN));
@@ -41,15 +41,15 @@ boot.run(async()=>{
   /* ---- tiles (plan 2.3) ---- */
   const T=V.CR_TILES;
   ok('13 tiles, registered at boot right after the last PART tile (slot '+I.tile0+' = after purgatory 284)',T.length===13&&I.tile0===285&&
-    T.every((n,i)=>C.Tl[n]===I.tile0+i)&&C.tn===I.tile0+T.length&&C.tn<=C.ATLAS*C.ATLAS);
+    T.every((n,i)=>C.Tl[n]===I.tile0+i)&&C.tn===I.tile0+T.length+((V.FARM&&V.FARM.tileN)|0)&&C.tn<=C.ATLAS*C.ATLAS);   /* 6.39: farming's tiles follow */
   const badT=[];for(const i of [213,214,215,216]){const t=D[i].tiles,ns=typeof t==='string'?[t]:[t.top,t.side,t.bot];for(const n of ns)if(C.Tl[n]===undefined||!/^cr_/.test(n))badT.push(i+':'+n);
     if(!D[i]._t)badT.push(i+':_t');}
   ok('every creativity tile name resolves (cr_ prefix) and the blocks were resolved by buildAtlas'+(badT.length?' ('+badT.join(' ')+')':''),badT.length===0);
-  ok('no tile name outside cr_* was added by PART 56 (purgatory pg_* slots 222-284 unchanged)',Object.keys(C.Tl).filter(n=>C.Tl[n]>=I.tile0).every(n=>/^cr_/.test(n))&&C.Tl.pg_deck===222&&C.Tl.pg_strunk_s===284);
+  ok('no tile name outside cr_* was added by PART 56 (purgatory pg_* slots 222-284 unchanged)',Object.keys(C.Tl).filter(n=>C.Tl[n]>=I.tile0&&C.Tl[n]<I.tile0+13).every(n=>/^cr_/.test(n))&&C.Tl.pg_deck===222&&C.Tl.pg_strunk_s===284);
 
   /* ---- recipes (plan 2.4) ---- */
   const R=V.RECIPES,N=V.CR_RECIPE_N;
-  ok('3 creativity recipes appended to RECIPES (98 + 3)',N===3&&R.length===101&&R.slice(98).map(r=>r.o).join()==='213,214,215');
+  ok('3 creativity recipes appended to RECIPES (98 + 3)',N===3&&R.length===101+(V.FARM_RECIPE_N|0)&&R.slice(98,101).map(r=>r.o).join()==='213,214,215');   /* 6.39: farming's seven follow them */
   const firstOf=v=>typeof v==='string'?V.GROUPS[v][0]:v;
   const gridOf=r=>{const g=Array(9).fill(null);if(r.p){r.p.forEach((row,y)=>[...row].forEach((ch,x)=>{if(ch!==' ')g[y*3+x]={id:firstOf(r.k[ch]),count:1};}));}
     else r.s.forEach((v,i)=>{g[i]={id:firstOf(v),count:1};});return g;};

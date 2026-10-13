@@ -26,6 +26,7 @@ function createChunk(cx,cz){
   chunks.set(k,ch);
   liqResume(ch);
   lightChunk(ch);                                          /* 6.26: block light (world/p03e_light.js) */
+  farmResume(ch);                                          /* 6.39: the crops still growing in it */
   markDirty(cx-1,cz);markDirty(cx+1,cz);markDirty(cx,cz-1);markDirty(cx,cz+1);
   return ch;
 }
@@ -53,8 +54,8 @@ function setBlock(x,y,z,id,meta){
   if(!ch)return;
   const lx=x-cx*CH,lz=z-cz*CH;
   const i=bidx(lx,y,lz);
-  const old=ch.bl[i];
-  if(old===id&&ch.mt[i]===meta)return;
+  const old=ch.bl[i],om=ch.mt[i];
+  if(old===id&&om===meta)return;
   ch.bl[i]=id;ch.mt[i]=meta;
   const ev=meta?id|(meta<<8):id;                            /* what is saved and sent: the id, with the meta above it when there is any */
   ch.edits.set(lx+','+y+','+lz,ev);
@@ -72,6 +73,7 @@ function setBlock(x,y,z,id,meta){
   ch.dirty=true;
   liqWake(x,y,z);
   if(old!==id)lightEdit(x,y,z);                            /* 6.26: block light follows every change */
+  farmNote(x,y,z,old,om,id,meta);                          /* 6.39: crops and farmland (features/p53e_farming.js) */
   if(id===B.TCORE)TITQ.push({x,y,z,t:2.2,pT:0});
   if(lx===0)markDirty(cx-1,cz);
   if(lx===CH-1)markDirty(cx+1,cz);

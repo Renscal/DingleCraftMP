@@ -3,7 +3,19 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'DingleCore',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Sow, water, wait',lines:[
+    '<b>SOW, WATER, WAIT.</b> Farming is in. There is a hoe, a watering can, three crops, and bread at the end of it. The game finally has something to do that is not a fight, a casino or a sixteen-metre demon.',
+    '<b>The hoe.</b> Two of a material over two sticks, in all five materials. Right-click grass or dirt that has air above it and it becomes farmland. The hoe wears like any tool.',
+    '<b>The watering can.</b> Four iron round a bucket. Fill it by right-clicking still water (the water stays where it is), and it holds eight waterings. Right-click dry farmland and it turns dark and watered.',
+    '<b>Water is your job.</b> A pond next to your field waters nothing. Rain waters nothing. Farmland is watered by the can and only the can, and it stays watered for five harvests of a ripe crop, then goes dry and wants watering again. Pulling up something unripe does not count.',
+    '<b>Wheat.</b> Tall grass drops Wheat Seeds about one time in eight. Plant them on farmland, wait about a day, and a ripe plant gives one Wheat and up to three seeds. Three Wheat in a row make Bread.',
+    '<b>Carrots.</b> Wild carrot plants grow here and there on grass. A ripe one gives two to four carrots. A carrot is food, and a carrot planted on farmland is next season.',
+    '<b>Hemlock.</b> Also wild. Also carrot-shaped. The leaves are a touch paler and bluer, the stems have small purple spots, and the root is cream instead of orange. It is called Hemlock Root and for the moment it does nothing whatsoever. We would not get attached to that.',
+    '<b>Good to know.</b> Crops only grow on watered farmland; on dry ground they just sit there. Dig the farmland out from under a crop and it pops off as its seed. Put a solid block on farmland and it is dirt again. Walk on it all you like.',
+    '<b>On a server.</b> Crops grow once, in the game that runs the land, and everyone sees the same field.',
+    '<b>LEFT AND RIGHT CLICK, PUT BACK.</b> The mouse-button change from 6.27 has been undone at the owner&#x27;s request. Clicking works exactly as it did before that update.',
+  ]},
+ {v:'6.38',label:'Release 1.1',title:'DingleCore',lines:[
     '<b>DIFFICULTY.</b> Worlds now have one: Easy, Normal or Hard. Normal is the game exactly as it was, and every world you already have is Normal. There is no Peaceful on the list: turning off mob spawning is still how you get a quiet life.',
     '<b>Easy.</b> Mobs hit for half, plus one, and never harder than they would on Normal. Hunger stops chewing on you at five hearts.',
     '<b>Hard.</b> Mobs hit half as hard again. A zombie that took three hearts takes four and a half. Hunger does not stop at half a heart any more. It finishes the job.',

@@ -21,6 +21,21 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — Sow, water, wait
+
+*Game version 6.39, released 2026-10-13.*
+
+- **SOW, WATER, WAIT.** Farming is in. There is a hoe, a watering can, three crops, and bread at the end of it. The game finally has something to do that is not a fight, a casino or a sixteen-metre demon.
+- **The hoe.** Two of a material over two sticks, in all five materials. Right-click grass or dirt that has air above it and it becomes farmland. The hoe wears like any tool.
+- **The watering can.** Four iron round a bucket. Fill it by right-clicking still water (the water stays where it is), and it holds eight waterings. Right-click dry farmland and it turns dark and watered.
+- **Water is your job.** A pond next to your field waters nothing. Rain waters nothing. Farmland is watered by the can and only the can, and it stays watered for five harvests of a ripe crop, then goes dry and wants watering again. Pulling up something unripe does not count.
+- **Wheat.** Tall grass drops Wheat Seeds about one time in eight. Plant them on farmland, wait about a day, and a ripe plant gives one Wheat and up to three seeds. Three Wheat in a row make Bread.
+- **Carrots.** Wild carrot plants grow here and there on grass. A ripe one gives two to four carrots. A carrot is food, and a carrot planted on farmland is next season.
+- **Hemlock.** Also wild. Also carrot-shaped. The leaves are a touch paler and bluer, the stems have small purple spots, and the root is cream instead of orange. It is called Hemlock Root and for the moment it does nothing whatsoever. We would not get attached to that.
+- **Good to know.** Crops only grow on watered farmland; on dry ground they just sit there. Dig the farmland out from under a crop and it pops off as its seed. Put a solid block on farmland and it is dirt again. Walk on it all you like.
+- **On a server.** Crops grow once, in the game that runs the land, and everyone sees the same field.
+- **LEFT AND RIGHT CLICK, PUT BACK.** The mouse-button change from 6.27 has been undone at the owner's request. Clicking works exactly as it did before that update.
+
 ## Release 1.1 — DingleCore
 
 *Game version 6.38, released 2026-10-13.*

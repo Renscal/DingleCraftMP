@@ -104,8 +104,8 @@ function addLiquid(b,x,y,z,id,d,gb,gm){
     }
   }
 }
-function addCross(b,x,y,z,d){
-  const uvr=tileUV(d._t.side);
+function addCross(b,x,y,z,d,ti){
+  const uvr=tileUV(ti>=0?ti:d._t.side);                    /* 6.39: ti: a picture chosen by the block's meta (a crop's growth) */
   const u0=uvr[0],v0=uvr[1],u1=uvr[2],v1=uvr[3];
   const quads=[
     [[x+.12,y,z+.12],[x+.88,y,z+.88],[x+.88,y+1,z+.88],[x+.12,y+1,z+.12]],
@@ -145,13 +145,13 @@ function meshChunk(ch){
     if(d.ramp){addRamp(bufs.cut,lx,y,lz,d);continue;}
     if(d.door){addDoor(bufs.cut,lx,y,lz,d);continue;}
     if(d.wt){addWallTorch(bufs.cut,lx,y,lz,d);continue;}
-    if(d.cross){addCross(bufs.cut,lx,y,lz,d);continue;}
+    if(d.cross){addCross(bufs.cut,lx,y,lz,d,d.crossM?d.crossM(gm(lx,y,lz)):-1);continue;}
     if(id===B.WATER||id===B.LAVA){addLiquid(bufs.wat,lx,y,lz,id,d,gb,gm);continue;}   /* 6.25: levels (p18) */
     for(let f=0;f<6;f++){
       const F=FACES[f];
       const nid=gb(lx+F.n[0],y+F.n[1],lz+F.n[2]);
       if(!faceVisible(id,nid))continue;
-      const ti=f===0?d._t.top:(f===1?d._t.bot:d._t.side);
+      const ti=f===0?(d.topM?d.topM(gm(lx,y,lz)):d._t.top):(f===1?d._t.bot:d._t.side);   /* 6.39: topM: farmland, dry or watered */
       const br=[0,0,0,0];
       for(let v=0;v<4;v++){
         let ao=3;

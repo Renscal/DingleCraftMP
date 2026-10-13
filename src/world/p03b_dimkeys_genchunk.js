@@ -98,7 +98,8 @@ function genChunk(cx,cz){
       if(r<.09)blocks[bidx(lx,h+1,lz)]=B.TALLGRASS;
       else if(r<.105)blocks[bidx(lx,h+1,lz)]=B.FLOWER_Y;
       else if(r<.12)blocks[bidx(lx,h+1,lz)]=B.FLOWER_R;
-      else{const f=bioFlower(ci.b,top,h,wx,wz);if(f)blocks[bidx(lx,h+1,lz)]=f;}
+      else{const f=bioFlower(ci.b,top,h,wx,wz);if(f)blocks[bidx(lx,h+1,lz)]=f;
+        else if(h2(wx,wz,SEED+7117)<.0012)blocks[bidx(lx,h+1,lz)]=h2(wx,wz,SEED+7118)<.5?B.CARROTS:B.HEMLOCK;}   /* 6.39: a wild carrot now and then. Or is it */
     }else if(top===B.SNOWGRASS||top===B.SAND){const f=bioFlower(ci.b,top,h,wx,wz);if(f)blocks[bidx(lx,h+1,lz)]=f;}
   }
   /* alien villages */

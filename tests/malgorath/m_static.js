@@ -24,15 +24,15 @@ boot.run(async()=>{
 
   /* ---- ids, tiles, names (plan 2.1) ---- */
   const free=[];for(let i=1;i<256;i++)if(!D[i])free.push(i);
-  ok('no new block id: the free ids below 256 are still exactly 212, 217, 218, 219, 248, 249',free.join()==='212,217,218,219,248,249');
+  ok('no new block id from PART 57: the free ids below 256 are 212 and 249 (farming took 217-219 and 248 in 6.39)',free.join()==='212,249');
   const st=Object.keys(D).map(Number).filter(i=>i>=256&&i<10000);
-  ok('one new static item: 365 is the highest static id; 309 and 339 stay unused',Math.max(...st)===365&&!D[309]&&!D[339]);
+  ok('PART 57 added one static item, 365; farming\'s (366-376, 6.39) are the only ones above it; 309 and 339 stay unused',st.includes(365)&&Math.max(...st)===376&&!D[309]&&!D[339]);
   const J=D[365];
   ok("item 365 is Malgorath's Jaw: a sword (dmg 10, dur 900), stack 1, hidden from the palette, off-atlas icon painter",!!J&&J.item&&J.name==="Malgorath's Jaw"&&J.tool&&J.tool.type==='sword'&&
     J.tool.dmg===10&&J.tool.dur===900&&J.stack===1&&J.hide===true&&typeof J.ipaint==='function'&&V.IT.MG_JAW===365&&V.MGC.JAW===365);
   ok("no other def is named Malgorath's Jaw (bots resolve names)",Object.keys(D).filter(i=>D[i].name==="Malgorath's Jaw").length===1);
   const Cc=V.crCore();
-  ok('no new atlas tile (tn 298 = 285 + 13 creativity tiles; no mg_ tile)',Cc.tn===285+V.CR_TILES.length&&!Object.keys(Cc.Tl).some(n=>/^mg/.test(n)));
+  ok('no new atlas tile (tn 298 = 285 + 13 creativity tiles; no mg_ tile)',Cc.tn===285+V.CR_TILES.length+((V.FARM&&V.FARM.tileN)|0)&&!Object.keys(Cc.Tl).some(n=>/^mg/.test(n)));
   const dm=MT.demon;
   ok('MOBT.demon: hp 300 (one round), boss, hostile, xp 0, hw 2.5, h 14, kbRes 1, pnc 1, mg boss, body/legc unchanged (the egg tile)',dm.hp===300&&dm.boss&&dm.hostile&&dm.xp===0&&
     dm.hw===2.5&&dm.h===14&&dm.kbRes===1&&dm.pnc===1&&dm.mg==='boss'&&dm.body==='#3d1014'&&dm.legc==='#1a1416');

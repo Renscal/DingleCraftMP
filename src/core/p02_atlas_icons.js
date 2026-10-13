@@ -219,6 +219,7 @@ let atlasCanvas=null, atlasTex=null;
 const AVGCOL={};
 function buildAtlas(){
   crTiles();
+  farmTiles();                                             /* 6.39: farming's pictures and recipes, after every older one (features/p53e_farming.js) */
   atlasCanvas=document.createElement('canvas');
   atlasCanvas.width=ATPX;atlasCanvas.height=ATPX;
   const g=atlasCanvas.getContext('2d');

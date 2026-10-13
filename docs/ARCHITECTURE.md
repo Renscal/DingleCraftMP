@@ -529,6 +529,13 @@ An id collision once silently broke a gun for two versions. **Grep before you al
   COMPASS 226, SUBBTN 227, BUCKET 228, BUCKET_W 229; armour 230-245 (`armorId(m,s)=230+m*4+s`); BUCKET_L 246; spawn
   eggs 250-264 (`EGG_BASE` + index in `EGG_MOBS`); gadgets 265-274; ROD 275, ROD_R 276, FISH 277, FISH_C 278,
   FIGURINE 279, POPCORN 280, M8BALL 281 (the Fortune Orb).
+- **Farming (6.39, `src/features/p53e_farming.js`):** blocks FARMLAND 217, WHEAT 218, CARROTS 219, HEMLOCK 248; items hoes
+  366-370 (`IT.HOE + m`), WCAN 371, SEEDS 372, WHEAT 373, BREAD 374, CARROT 375, HROOT 376. Its tiles and recipes are
+  registered at boot (`farmTiles`, from `buildAtlas` after `crTiles`) so no older tile or recipe moves. State is in
+  the meta byte: farmland 8 = watered, 0-7 = harvests left; a crop 0-7 = stages still to grow (0 is ripe, so a generated
+  wild plant is ripe). `farmNote` (from `setBlock`) keeps the list of growing crops; `farmTick` (from `tickFlow`) grows
+  them where `ntSimHere`. A block whose look depends on meta gives `topM` or `crossM` in its def. The only free block
+  id left is 249.
 - **Puppet Purgatory** (assigned only in `purgatory/p0_contract.js`, symbolic names `B.PG_*` / `IT.PG_*`): blocks 149-189,
   99, 117-119, 247 (never 212-219; 248 and 249 are spare); items 285-308, 310-338, 340-364 (309 and 339 spare). The
   atlas is 32×32 tiles (1024 slots); purgatory tiles are pinned at slots 222-284. Mob types `pg*` (`pmob:1`).
