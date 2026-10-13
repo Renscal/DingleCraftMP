@@ -3,7 +3,16 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'The world is a folder',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'The server runs the mobs',lines:[
+    'THE SERVER RUNS THE MOBS. Until now a mob on a server lived in whichever player&#x27;s game happened to be closest. Now the server plays the game too, without a screen, and every zombie, pig, villager, Nuke Keg and boss in the Overworld is its own.',
+    'What you notice: mobs keep moving while you sit in a menu. They no longer hiccup when you and a friend swap places. A village has one set of villagers no matter how many of you walk in.',
+    'Mobs are saved with the world. Stop the server, start it again, and the villager called Zorp is standing where you left him. Server owners can read the whole census in the entities folder.',
+    'Spawn eggs, critter jars, spawners and the pig cannon all hand their mob to the server the instant it appears. The pig keeps its speed.',
+    'A mob hits you through your own game, so your armour still counts and the death message still knows who did it.',
+    'Server owners: this costs about 110 MB of memory. Set simulate to false in server.json to go back to the old way.',
+    'Only the Overworld for now. The Nether, the Aether and Purgatory still work the old way, and so do arrows, vehicles and water. Those are next.',
+  ]},
+ {v:'6.12',label:'Release 1.1',title:'The world is a folder',lines:[
     'THE WORLD IS A FOLDER. Server owners: the one big world file is gone. A world is now a folder you can open and read, laid out like a certain other block game: level.json, region, entities, playerdata.',
     'region holds the changed blocks, chests and furnaces, 512 by 512 blocks to a file, each file named after its place in the world. entities holds what is lying around in that region. playerdata has one file per player who ever joined: where they are, their health, hunger, spawn point and every slot of their inventory, one per line.',
     'Saving writes only the files that changed. A big world no longer rewrites itself in full every 30 seconds because somebody placed a torch.',

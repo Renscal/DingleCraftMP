@@ -24,6 +24,7 @@
     { "group": "core", "name": "n_static.js", "suite": "tests/net/n_static.js", "repeat": 1, "clock": "static", "tiers": ["quick"] },
     { "group": "core", "name": "n_smoke.js", "suite": "tests/net/n_smoke.js", "repeat": 1, "clock": "real", "tiers": ["quick"] },
     { "group": "core", "name": "n_rules.js", "suite": "tests/net/n_rules.js", "repeat": 1, "clock": "real", "tiers": ["quick"] },
+    { "group": "core", "name": "n_host.js", "suite": "tests/net/n_host.js", "repeat": 1, "clock": "real", "tiers": ["quick"] },
 
     { "group": "texpacks", "name": "t0_static.js", "suite": "tests/texpacks/t0_static.js", "repeat": 1, "clock": "static", "tiers": ["quick"] },
     { "group": "texpacks", "name": "tA_static.js", "suite": "tests/texpacks/tA_static.js", "repeat": 1, "clock": "static", "tiers": ["quick"] },
@@ -92,7 +93,8 @@
     "c3_found.js": "Release 1.0 cycle (game v6.7), found works: Dan's own paintings and discs as rare loot (the lootFill roll: a seed + chest-cell hash, 1 in 40, no Math.random; minting through the registry; data md5-pinned to his save; hang, play, caps, bots, save/load, never in purgatory)",
     "n_static.js": "Release 1.1 (game v6.10), lane NET: the multiplayer statics (PART 58 placement, its eight files and guard, a comment on every file and function, nt*/NET names, load-time purity, the 21 core hooks each once and behind NET.on, which mobs are shared, the title markup, the dependency-free server (front door + eight commented lib/ modules) and its Windows launcher)",
     "n_smoke.js": "Release 1.1 (game v6.10), lane NET: multiplayer end to end and hermetic (the real server in process on an ephemeral 127.0.0.1 port, the headless game as one player, a raw socket as the other): join, blocks, chests, dropped items, poses, chat, PvP, time, game rules, saving by name, refusals, the settings file, the world file round trip under out/, and the game's half of the server rules (spawn protection, chest locks, the sleep vote, chunks arriving as you travel, shared mobs and their hand-over, explosions, arrows, who runs the water)",
-    "n_rules.js": "Release 1.1 (game v6.10), lane NET: the server's own rules over raw sockets (duplicate names, bans, the whitelist, operators and every command, server-worded deaths, checked PvP hits and pickups, drop ageing, the sleep vote, chest locks, the world spawn and its protection, chunks and poses by distance, the mob and explosion relays, rights for time and game rules)"
+    "n_rules.js": "Release 1.1 (game v6.10), lane NET: the server's own rules over raw sockets (duplicate names, bans, the whitelist, operators and every command, server-worded deaths, checked PvP hits and pickups, drop ageing, the sleep vote, chest locks, the world spawn and its protection, chunks and poses by distance, the mob and explosion relays, rights for time and game rules)",
+    "n_host.js": "Release 1.1 (game v6.13), lane NET: the server runs the Overworld's mobs (its own game in a worker thread: a handed-over mob, hits, loot, XP, damage to players, one villager per spot, natural spawning, a real game as a player, saving and restoring through entities/)"
   },
   "steps": [
     { "group": "repo", "name": "changelog", "cmd": ["node", "scripts/changelog.mjs", "--check"], "tiers": ["quick"], "when": { "file": "scripts/changelog.mjs" } },

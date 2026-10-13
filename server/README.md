@@ -1,6 +1,6 @@
 # The DINGLECRAFT multiplayer server
 
-No dependencies and nothing to install: `dinglecraft-server.mjs` plus the `lib/` folder beside it. It needs [Node.js](https://nodejs.org) 20 or newer and a game build of 6.11 or newer.
+No dependencies and nothing to install: `dinglecraft-server.mjs` plus the `lib/` folder beside it. It needs [Node.js](https://nodejs.org) 20 or newer and a game build of 6.13 or newer.
 
 ## Start it
 
@@ -64,6 +64,7 @@ The first run writes `data/server.json`. Edit it and restart, or pass the same t
 | `sleepPercent` | | 100 | how many of the players online must be in bed to skip the night |
 | `viewChunks` | | 12 | how far around a player the server sends block changes, chests and dropped items, for a game that does not say (the game asks for its own draw distance + 3) |
 | `cert`, `key` | `--cert`, `--key` | | a TLS certificate and its private key (PEM files, looked for in the data folder unless a full path). With both, the server is `https://` and `wss://` |
+| `simulate` | | `true` | the server runs the Overworld's mobs itself (see "The server runs the mobs"). `false`: the players' games do |
 | `origins` | | `[]` | web addresses whose pages may connect, e.g. `["https://play.example"]`. Empty: any page may (needed for "open your own copy of the game"). The server's own page, a game opened from a file and the desktop client are always let in |
 
 `data/` is ignored by git: the world, the settings and the password stay on your machine.
@@ -137,7 +138,7 @@ data/
       over/r.-1.0.json
       nether/r.0.0.json             one folder per dimension: over, nether, aether, puppet
     entities/
-      over/r.0.0.json               what lies in that region (today: the dropped items)
+      over/r.0.0.json               what lies or walks in that region: the dropped items and the mobs
     playerdata/
       dan.json                      one file per player who has ever joined
 ```
@@ -146,7 +147,9 @@ data/
   `r.0.0` holds blocks 0 to 511 and `r.-1.0` holds -512 to -1 (`blocksFrom` in the file says where it starts). Inside,
   each chunk lists its changed `blocks` (`"x,y,z in the chunk": block id`; the untouched terrain is not stored, it comes
   from the seed) and its `blockEntities` (chests, furnaces, terrariums, display stands) by their place in the world.
-- **`entities`** follows the same regions: each dropped item with its position, the item itself and its age in seconds.
+- **`entities`** follows the same regions: each dropped item with its position, the item itself and its age in seconds,
+  and each of the Overworld's mobs with its type, position, health, a villager's name and the spot a structure spawned
+  it at (`origin`).
 - **`playerdata`** holds each player's position, dimension, health, hunger, spawn point, XP, Dingle Bucks, game mode,
   `armor` and `inv` (one slot per line; `0` is an empty slot). The file is named after the player in lower case, with
   unusual characters spelled as `%xx`.
@@ -190,6 +193,25 @@ player's things are stored per name once they have joined), and neither do that 
 To take a server's world back into single player, run `/export` (or `export` in the server window) and import the file
 it writes.
 
+## The server runs the mobs
+
+Since 6.13 the server runs part of the game itself, the way a Minecraft server does. When it has a game file to hand out,
+it also loads that game without a screen, in a thread of its own, and that copy spawns, moves and saves every ordinary
+mob, villager, Nuke Keg and plain boss in the Overworld. The players' games only draw them.
+
+- Mobs spawn around every player (each with their own cap), go for the nearest player, and keep going while a player
+  has a menu open. A mob with nobody within 72 blocks waits where it is.
+- A mob hits a player through that player's own game, which applies their armour. What it drops and the XP it leaves
+  come from the server.
+- Whatever a player's game spawns (a spawn egg, a jar, a village being populated, a spawner) is handed to the server on
+  the spot. A village or a boss room gets one set of inhabitants however many players visit it.
+- Mobs are saved with the world: `entities/` lists each one with its type, place and health, and a restarted server puts
+  them back. Villagers and bosses stay where they are when everybody leaves; ordinary mobs still despawn.
+- It costs about 110 MB of memory with nobody on, and a few MB more for the land around each player.
+- `"simulate": false` in `server.json` turns it off (so does having no game file). Then the players' games run the
+  mobs between them, as before 6.13.
+- Only the Overworld so far. In the Nether, the Aether and Puppet Purgatory the players' games still run the mobs.
+
 ## What is shared, and what is not
 
 Shared by everyone, kept by the server and saved every 30 seconds:
@@ -224,8 +246,8 @@ Not shared yet: each player's own game still plays these by itself, so two playe
 - paintings and records from the Creativity Update (the works are stored per player)
 - the stock market
 
-Things that follow from that: loot chests in a structure refill the first time each player visits it. Mobs are not saved
-with the world: when the last player near one leaves, it is gone. When a player leaves or loses their connection, the
+Things that follow from that: loot chests in a structure refill the first time each player visits it. Outside the
+Overworld (and on a server with `simulate` off) mobs are not saved with the world: when the last player near one leaves, it is gone. When a player leaves or loses their connection, the
 mobs their game was running go to the nearest other player (they stand still for a moment first). A game that is paused
 (a menu open) hands its mobs to the nearest other player. Water is flowed by
 one game per area (the lowest-numbered player nearby); fire and falling blocks still run in every game, so now and then

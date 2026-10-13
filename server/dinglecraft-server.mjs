@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// DINGLECRAFT multiplayer server (game 6.11 and up). No dependencies: plain Node 20+, on Windows, macOS or Linux.
+// DINGLECRAFT multiplayer server (game 6.13 and up). No dependencies: plain Node 20+, on Windows, macOS or Linux.
 //
 //   node server/dinglecraft-server.mjs [--port 40162] [--world file] [--game file.html] [--seed text] [--mode s|c]
 //                                      [--name text] [--password text] [--max 8] [--no-pvp] [--data dir]
@@ -8,11 +8,12 @@
 // What it is: the keeper of one shared world. It owns the seed, the game rules, the time of day, every block edit, every
 // chest and furnace, every dropped item, and each player's inventory and position (by name); it relays positions, chat
 // and hits between players. It also serves the game's html on the same port, so friends only need http://<your address>:<port>/ .
-// What it is not: it does not run the game. Mobs, vehicles and bosses are simulated by each player's own
-// game and are not shared (server/README.md has the full list).
+// Since 6.13 it also runs part of the game: the Overworld's mobs are spawned, moved and saved by the server's own copy of
+// the game, running headless in a thread (lib/host.mjs), and the players' games only draw them. Everything else that
+// moves (projectiles, vehicles, water) is still each player's game; server/README.md has the full list.
 //
-// The world file is a normal DINGLECRAFT save (.vxw.json) with a "players" and a "drops" table added, so --world accepts a
-// world exported from the game's pause menu, and the server's file can be imported back into single player.
+// The world is a folder of readable JSON (level.json, region/, entities/, playerdata/: lib/world.mjs). --world also accepts
+// a world exported from the game's pause menu, and /export writes one file the game can import again.
 //
 // This file is only the front door. The server itself is in lib/:
 //   lib/config.mjs      settings, limits, the game rules, the command line          (no state)
@@ -21,6 +22,8 @@
 //   lib/protocol.mjs    what every game message means                                (knows nothing about sockets)
 //   lib/commands.mjs    the slash commands, for operators and for the server window
 //   lib/http.mjs        the game page and /status
+//   lib/host.mjs        the server's own game: starts it in a thread (lib/host_worker.cjs, with the hollow browser of
+//                       lib/headless.cjs) and passes messages to and from it
 //   lib/server.mjs      createServer: puts the above together
 //   lib/cli.mjs         the program: server.json, the banner, the console commands
 import fs from 'node:fs';

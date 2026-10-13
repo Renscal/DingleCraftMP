@@ -27,6 +27,8 @@
 /*                   name tags, the Tab list (with ping), melee hits     */
 /*   n6_menu.js      the Multiplayer screen on the title                 */
 /*   n7_mobs.js      shared mobs, and explosions that reach other players*/
+/*   n8_host.js      the server's own game (6.13): it runs the Overworld */
+/*                   mobs; the players' games only draw them             */
 /*                                                                       */
 /* Load rules: PART 58 loads before PARTs 57-54, so their names are      */
 /* runtime-only here (typeof-guarded). No THREE constructor, clock,      */
@@ -47,15 +49,21 @@
 /*   updateArrow, updateBullet -> ntShot                                 */
 /*   (and three guards: stashEnts skips e.nid and e.pup, drops do not    */
 /*   merge online)                                                       */
+/* Hooks for the server's own game (behind NET.host, n8_host.js):        */
+/*   damagePlayer -> ntHostHurt    updateEntities -> ntHostAim           */
+/*   mobFarFromAll -> ntHostFar    mobClearOfPlayers -> ntHostClear      */
+/*   countMobs -> ntHostNear       mobsTick -> ntHosted (a player's game */
+/*   spawns nothing natural where the server does)                       */
 /*                                                                       */
 /* Protocol: JSON text frames over one WebSocket, {t:'<type>', ...}.     */
 /*   client -> server: hello pose rd edits open close be drop dropAt     */
 /*                     take chat cmd hit save spawn time gr sleep death  */
 /*                     mobs mgone mgive mhit boom ping                   */
+/*   the server's game -> server, also: hurt xp hsnap                    */
 /*   server -> client: welcome perm edits bes drops ready (the join),    */
 /*                     then join leave pose edits be lock drop undrop    */
 /*                     took chat sys hit time gr kick tp give mode perm  */
-/*                     mobs mgone mgive mhit boom pong mheir             */
+/*                     mobs mgone mgive mhit boom pong mheir hurt xp     */
 /* Messages are compressed by the browser and the server between them    */
 /* (permessage-deflate); nothing here knows about it.                    */
 /* NT_PROTO must equal PROTO in the server (tests/net/n_static.js).      */
@@ -83,16 +91,21 @@ const NT_PROTO=3,NT_PORT=40162;
      pw      the password last used (memory only, for reconnecting)   retryN retryH   the reconnect attempt number and its timer
      pingT pingN pingAt ms   the heartbeat: when the last ping went (NET.acc), its number, when it went (wall clock), the last
              round trip in milliseconds      rxAt    when the last message arrived (wall clock): silence means the line is dead
-     act     this player's own hand is about to change a block (set by ntGuard, spent by ntEdit): others hear and see that one */
+     act     this player's own hand is about to change a block (set by ntGuard, spent by ntEdit): others hear and see that one
+     hosted  the server runs the Overworld's mobs (the welcome said so)      host   this game IS the server's (n8_host.js)
+     hp0 hpl hrr hsnT hchT   the host's own: its idle P, the players as stand-ins this tick, whose turn it is to be spawned
+             for, when the mobs were last reported for saving, when the chunks were last trimmed */
 
 const NET={on:false,st:'off',ws:null,id:0,name:'',server:'',pvp:true,ap:false,pend:null,why:'',
   peers:new Map(),drops:new Map(),dropIn:false,dseq:0,dim:'over',q:[],acc:0,poseT:0,poseS:'',scanT:0,beS:new Map(),grS:'',tPrev:0,tSet:false,stats:{in:0,out:0,edIn:0,edOut:0},
   op:false,prot:0,spawn:null,lockK:null,lockWant:null,saveT:-1,rdS:0,mobs:new Map(),mseq:0,mobT:0,ownT:0,dmgRef:null,guardT:-9,
-  pw:'',retryN:0,retryH:0,pingT:0,pingN:0,pingAt:0,ms:0,rxAt:0,act:false};
+  pw:'',retryN:0,retryH:0,pingT:0,pingN:0,pingAt:0,ms:0,rxAt:0,act:false,
+  hosted:false,host:false,hp0:null,hpl:[],hrr:0,hsnT:0,hchT:0};
 
 /* everything the suites reach, spread into window.__vox by src/boot/export_boot.js */
 
 const NTEX={NET,NT_PROTO,NT_PORT,ntUrl,ntConnect,ntLeave,ntDown,ntMsg,ntSend,ntEnter,ntEdit,ntFlush,ntApplyEdit,ntApplyBE,ntBeScan,ntBeSig,
   ntSave,ntPoseNow,ntFrame,ntPeerAdd,ntPeerDel,ntPeersTick,ntMelee,ntTabRows,ntOpenMenu,ntHash,ntHostHere,ntDropSpawned,ntDropTake,ntDropsScan,ntDropIn,ntDropGone,ntDropTook,
   ntCmd,ntSleep,ntBeAsk,ntLockMsg,ntLockTick,ntGuard,ntSaveSoon,ntSimHere,ntShot,ntMobShared,ntMobsTick,ntMobsIn,ntMobsGone,ntMobTaken,ntMobHurt,ntMobHit,ntMobPup,ntBoom,ntBoomIn,
-  ntRetry,ntRetryStop,ntPing,ntMobAdopt,ntPeerArmor,ntPeerRide,ntMobState,ntMobTwin};
+  ntRetry,ntRetryStop,ntPing,ntMobAdopt,ntPeerArmor,ntPeerRide,ntMobState,ntMobTwin,
+  ntHosted,ntHostStart,ntHostTick,ntHostSnap,ntHostPlayers,ntHostAim,ntHostHurt,ntMobFull};

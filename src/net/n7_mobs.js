@@ -32,6 +32,13 @@ function ntMobState(e){
   if(NT_UNIQ[e.mt]===1)a.push((''+(e.name||'')).slice(0,24),e.ox==null?a[2]:e.ox,e.oz==null?a[4]:e.oz);
   return a;
 }
+/* a mob as it is handed to the server's game: the same, always with a name and a spawn spot, plus how fast it is moving
+   (a pig out of the cannon is on its way somewhere) */
+function ntMobFull(e){
+  const a=ntMobState(e).slice(0,8);
+  a.push((''+(e.name||'')).slice(0,24),e.ox==null?a[2]:e.ox,e.oz==null?a[4]:e.oz,[e.vx,e.vy,e.vz].map(v=>+(+v||0).toFixed(2)).join(','));
+  return a;
+}
 /* the mob of this kind, other than e, that was spawned at the same spot (within 3 blocks) and that pup says is (true) or
    is not (false) another player's; null if there is none */
 function ntMobTwin(mt,ox,oz,pup,e){
@@ -45,6 +52,8 @@ function ntMobTwin(mt,ox,oz,pup,e){
 /* the player a mob of ours should belong to instead: one who is clearly nearer to it than we are (or anyone in range,
    if this game is paused or its player is dead), else null */
 function ntMobHeir(e){
+  if(NET.host)return null;                                 /* the server's game keeps what it has */
+  if(ntHosted())return NT_HOST;                            /* ...and where it runs the mobs, everything goes to it */
   const away=P.dead||paused,mine=away?1e9:Math.hypot(P.x-e.x,P.z-e.z);
   if(MOBT[e.mt].boss&&mine<40)return null;                 /* a boss stays with the game it is fighting */
   let best=null,bd=56;
@@ -57,7 +66,7 @@ function ntMobHeir(e){
 }
 /* hand a mob to another player's game: it becomes a puppet here */
 function ntMobGive(e,p){
-  ntSend({t:'mgive',to:p.id,m:ntMobState(e)});
+  ntSend({t:'mgive',to:p.id,m:p.id===0?ntMobFull(e):ntMobState(e)});
   e.pup=true;e.own=p.id;e.pupT=NET.acc;e.pfl=0;
   e.tx=e.x;e.ty=e.y;e.tz=e.z;e.tyaw=e.yaw||0;
 }
@@ -74,6 +83,7 @@ function ntMobMake(a){
   e.tx=a[2];e.ty=a[3];e.tz=a[4];e.tyaw=+a[5]||0;e.yaw=e.tyaw;
   if(typeof a[8]==='string'&&a[8]&&mt==='alien')e.name=a[8];
   if(typeof a[9]==='number'&&typeof a[10]==='number'){e.ox=a[9];e.oz=a[10];}
+  ntHostDress(e);
   NET.mobs.set(rid,e);
   return e;
 }
@@ -127,6 +137,12 @@ function ntMobTaken(m){
   e.x=+a[2]||0;e.y=+a[3]||0;e.z=+a[4]||0;e.yaw=+a[5]||0;e.vx=e.vy=e.vz=0;
   if(typeof a[6]==='number')e.hp=a[6];
   e.mode='idle';e.tT=0;e.fuse=0;e.hissed=false;
+  if(!NET.host)return;
+  /* on the server's game: a second villager or boss from a spot that already has one is refused (every player's game
+     populates the same village: the first one in is the one), and the mob keeps the speed and the home it came with */
+  if(NT_UNIQ[e.mt]===1&&e.ox!=null&&ntMobTwin(e.mt,e.ox,e.oz,false,e)){NET.mobs.delete(e.rid);removeEnt(e);ntSend({t:'mgone',ids:[a[0]]});return;}
+  if(typeof a[11]==='string'){const v=a[11].split(',').map(Number);if(v.length===3&&v.every(Number.isFinite)){e.vx=v[0];e.vy=v[1];e.vz=v[2];}}
+  if(e.mt==='alien'&&e.ox!=null){e.hx=e.ox;e.hz=e.oz;}
 }
 /* {t:'mheir'}: the player whose game ran these mobs is gone, and the server picked this game to carry on with them */
 function ntMobAdopt(from){
@@ -148,9 +164,10 @@ function ntMobHit(e,dmg,kx,kz){
 function ntMobHurt(m){
   const e=NET.mobs.get(m.id);
   if(!e||e.dead||e.pup||!playing)return;
-  const ph=HIT_BY,pw=HIT_HOW;
+  const ph=HIT_BY,pw=HIT_HOW,p0=P;
+  if(NET.host){const q=NET.hpl.find(o=>o.nid===(m.from|0));if(q)P=q;}   /* on the server's game: the one who hit it is "the player" it flees or turns on */
   HIT_BY=ntShown(m.name);HIT_HOW='melee';
-  try{hurtMob(e,+m.dmg||0,+m.kx||0,+m.kz||0);}finally{HIT_BY=ph;HIT_HOW=pw;}
+  try{hurtMob(e,+m.dmg||0,+m.kx||0,+m.kz||0);}finally{HIT_BY=ph;HIT_HOW=pw;P=p0;}
 }
 /* the updateEntities hook: a puppet's whole life. Ease toward the last state, face it, walk the legs */
 function ntMobPup(e,dt){
@@ -189,8 +206,8 @@ function ntMobsTick(dt){
   }
   if(gone.length)ntSend({t:'mgone',ids:gone.slice(0,60)});
   if(dead.length)ntSend({t:'mgone',ids:dead.slice(0,60),dead:1});
-  if(!NET.peers.size||!playing)return;                     /* alone: nobody to tell */
-  const give=NET.acc-NET.ownT>=0.5,out=[];
+  if((!NET.peers.size&&!ntHosted())||!playing)return;      /* alone, and no server game to hand them to: nobody to tell */
+  const give=ntHosted()||NET.acc-NET.ownT>=0.5,out=[];
   if(give)NET.ownT=NET.acc;
   for(const e of entities){
     if(e.dead||e.pup||!ntMobShared(e))continue;

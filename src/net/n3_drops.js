@@ -70,6 +70,7 @@ function ntDropTook(id){
 /* updateDrop, within reach: ask instead of taking. true = handled here */
 function ntDropTake(e){
   if(!NET.on)return false;
+  if(NET.host)return true;                                 /* the server's game picks nothing up: its "player" is a stand-in */
   if(NET.acc-(e.nreq==null?-9:e.nreq)<0.6)return true;
   const st=e.st,mx=stackMax(st.id);
   if(!P.inv.some(s=>!s||(mx>1&&st.dur==null&&s.id===st.id&&s.dur==null&&s.count<mx)))return true;   /* no room: leave it for someone else */

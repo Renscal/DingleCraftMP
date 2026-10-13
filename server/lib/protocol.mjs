@@ -35,9 +35,17 @@
 // The server also sends on its own: time (every 5 s), undrop (an item's 5 minutes are up), leave, sys, kick, to one
 // player tp / give / mode (commands), and mheir {from} to the player nearest to one who just left (their mobs are yours).
 // Every type has a per-second limit (RATE in lib/config.mjs, or its own counter here); lib/server.mjs counts the total.
+//
+// The server's own game (6.13, lib/host.mjs) is a player too, with id 0 and c.host set. It runs the Overworld's mobs, so:
+//   it may send only edits, drop, dropAt, take (gone), mobs, mgone, boom, and three of its own:
+//     hurt {to, dmg, kx, kz, by, how}   hurt      (to that player: a mob it runs hit them)
+//     xp {to, n}                        xp        (to that player: they picked up XP it dropped)
+//     hsnap {mobs}                      -         (every mob it has, kept for the next save: entities/ in the world folder)
+//   its mobs go to each player with only the ones within range of that player; no limits apply to it;
+//   it is sent join, leave, pose, edits, be, drop, undrop, time, gr, and the mgive and mhit addressed to player 0.
 import crypto from 'node:crypto';
 import { PROTO, DAY_LEN, MIN_GAME, LIMITS, RATE, RULES, CK_RE, LK_RE, BK_RE, DROP_ID_RE, DIMS, DIM_PFX, cleanRules, cmpVer } from './config.mjs';
-import { num, cleanName, cleanText, cleanStack, playerKey } from './world.mjs';
+import { num, cleanName, cleanText, cleanStack, cleanMobs, playerKey } from './world.mjs';
 import { runCommand, isOp, protRadius, permOf } from './commands.mjs';
 
 export { playerKey };
@@ -61,6 +69,12 @@ function passwordOK(S, pw) {
 function near(a, b, dist) {
   return !!a && !!b && a.dim === b.dim && Math.hypot(a.x - b.x, a.z - b.z) <= dist;
 }
+
+/* what the server's own game may send, and what only it may send */
+const HOST_SENDS = new Set(['edits', 'drop', 'dropAt', 'take', 'mobs', 'mgone', 'boom', 'hurt', 'xp', 'hsnap']);
+const HOST_ONLY = new Set(['hurt', 'xp', 'hsnap']);
+/* the player a message is addressed to: a real one, or the server's own game (id 0) */
+const peerOf = (S, id) => (id === 0 ? (S.host && !S.host.stopped ? S.host.c : null) : S.clients.get(id));
 
 /* what a player can be seen riding (the game's vehicle kinds) */
 const RIDES = new Set(['car', 'skate', 'cart', 'boat', 'plane']);
@@ -142,7 +156,7 @@ function hello(S, net, c, m) {
   const saved = world.players[playerKey(c.name)] || null;
   c.gm = saved && (saved.gm === 'c' || saved.gm === 's') ? saved.gm : null;
   const { edits, be, players, drops, spawn, ...meta } = world;   // meta: seed, mode, time, rules and whatever else the save carried
-  net.send(c, { t: 'welcome', proto: PROTO, id: c.id, name: c.name, server: o.name, motd: o.motd, pvp: !!o.pvp,
+  net.send(c, { t: 'welcome', proto: PROTO, id: c.id, name: c.name, server: o.name, motd: o.motd, pvp: !!o.pvp, host: !!(S.host && !S.host.stopped),
     world: { ...meta, mode: c.gm || world.mode }, player: saved,
     players: [...S.clients.values()].filter((p) => p !== c && p.ready).map((p) => ({ id: p.id, name: p.name, pose: p.pose })) });
   net.send(c, permOf(S, c));
@@ -251,10 +265,14 @@ function cleanMob(a) {
 /* one message from a client. size is its length in characters (for the per-type limits). Anything malformed is ignored. */
 export function handleMessage(S, net, c, m, size) {
   if (!m || typeof m.t !== 'string') return;
-  if (!c.ready) { if (m.t === 'hello' && !c.id) hello(S, net, c, m); return; }
+  if (c.host) { if (!HOST_SENDS.has(m.t)) return; }
+  else {
+    if (!c.ready) { if (m.t === 'hello' && !c.id) hello(S, net, c, m); return; }
+    if (HOST_ONLY.has(m.t)) return;
+  }
   const { o, world } = S;
   const now = Date.now();
-  if (RATE[m.t] && !allow(c, m.t, RATE[m.t], now)) return;
+  if (!c.host && RATE[m.t] && !allow(c, m.t, RATE[m.t], now)) return;
   switch (m.t) {
     case 'ping': {                     // the game times the answer; what it measured last time rides along for the player list
       c.ms = Math.round(num(m.ms, 0, 9999, c.ms));
@@ -284,10 +302,10 @@ export function handleMessage(S, net, c, m, size) {
     }
     case 'edits': {                    // block changes: the last writer of a cell wins
       if (!Array.isArray(m.e) || m.e.length > LIMITS.editsPerMsg) return;
-      { const r = c.rate.cells || (c.rate.cells = { t: 0, n: 0 });
+      if (!c.host) { const r = c.rate.cells || (c.rate.cells = { t: 0, n: 0 });
         if (now - r.t >= 1000) { r.t = now; r.n = 0; }
         if ((r.n += m.e.length) > LIMITS.cellsPerSec) return; }
-      const out = [], prot = isOp(S, c) ? 0 : protRadius(S), sp = world.spawn;
+      const out = [], prot = c.host || isOp(S, c) ? 0 : protRadius(S), sp = world.spawn;
       for (const e of m.e) {
         if (!Array.isArray(e) || typeof e[0] !== 'string' || typeof e[1] !== 'string' || !CK_RE.test(e[0]) || !LK_RE.test(e[1])) continue;
         const id = e[2];
@@ -306,6 +324,7 @@ export function handleMessage(S, net, c, m, size) {
         const mine = p.sent ? out.filter((e) => p.sent.has(e[0])) : out;
         if (mine.length) net.send(p, { t: 'edits', e: mine });
       }
+      if (!c.host && S.host && !S.host.stopped) net.send(S.host.c, { t: 'edits', e: out });   // the server's game has every chunk it has built
       return;
     }
     case 'open': {                     // a player wants to use a chest or furnace: one at a time
@@ -409,14 +428,14 @@ export function handleMessage(S, net, c, m, size) {
       const d = typeof m.id === 'string' && Object.hasOwn(world.drops, m.id) ? world.drops[m.id] : null;
       if (!d) return;
       const at = { dim: d.dim, x: num(m.x, -3e7, 3e7, d.x), z: num(m.z, -3e7, 3e7, d.z) };
-      if (!near(c.pose, at, LIMITS.goneReach)) return;
+      if (!c.host && !near(c.pose, at, LIMITS.goneReach)) return;
       d.x = at.x; d.y = num(m.y, -256, 1024, d.y); d.z = at.z; S.dirty = true;
       return;
     }
     case 'take': {                     // first come, first served: one player gets it, everyone else sees it vanish
       if (typeof m.id !== 'string') return;
       if (!Object.hasOwn(world.drops, m.id)) { if (!m.gone) net.send(c, { t: 'undrop', id: m.id }); return; }
-      if (!near(c.pose, world.drops[m.id], m.gone ? LIMITS.goneReach : LIMITS.takeReach)) return;   // not standing by it: ask again when you are
+      if (c.host ? !m.gone : !near(c.pose, world.drops[m.id], m.gone ? LIMITS.goneReach : LIMITS.takeReach)) return;   // not standing by it: ask again when you are
       delete world.drops[m.id]; S.dirty = true;
       if (!m.gone) net.send(c, { t: 'took', id: m.id });   // gone: the item was destroyed in that player's game, nobody gets it
       net.broadcast({ t: 'undrop', id: m.id }, c);
@@ -429,36 +448,67 @@ export function handleMessage(S, net, c, m, size) {
       return;
     }
     case 'mobs': {                     // the mobs this player's game is running, for the players around them
+      if (c.host) {                    // the server's own game: each player gets the ones within range of them
+        if (!Array.isArray(m.m)) return;
+        const list = m.m.map(cleanMob).filter(Boolean);
+        for (const p of S.clients.values()) {
+          if (!p.ready || !p.pose || p.pose.dim !== 'over') continue;
+          const mine = list.filter((a) => Math.hypot(a[2] - p.pose.x, a[4] - p.pose.z) <= LIMITS.mobRange);
+          if (mine.length) net.send(p, { t: 'mobs', from: 0, m: mine });
+        }
+        return;
+      }
       if (!c.pose || !Array.isArray(m.m) || m.m.length > LIMITS.mobsPerMsg || size > LIMITS.mobBlob || !allow(c, 'mobs', 14, now)) return;
       const list = m.m.map(cleanMob).filter(Boolean);
       if (list.length) net.broadcast({ t: 'mobs', from: c.id, m: list }, c, (p) => near(p.pose, c.pose, LIMITS.mobRange));
       return;
     }
     case 'mgone': {                    // some of them are gone (dead: with a death, not just out of sight)
+      if (c.host) {
+        const ids = Array.isArray(m.ids) ? m.ids.filter((v) => typeof v === 'string' && v.length <= 24) : [];
+        if (ids.length) net.broadcast({ t: 'mgone', from: 0, ids, dead: m.dead ? 1 : 0 }, null, (p) => !!p.pose && p.pose.dim === 'over');
+        return;
+      }
       if (!c.pose || !Array.isArray(m.ids) || m.ids.length > LIMITS.mobsPerMsg || size > LIMITS.mobBlob) return;
       const ids = m.ids.filter((v) => typeof v === 'string' && v.length <= 24);
       if (ids.length) net.broadcast({ t: 'mgone', from: c.id, ids, dead: m.dead ? 1 : 0 }, c, (p) => near(p.pose, c.pose, LIMITS.mobRange));
       return;
     }
     case 'mgive': {                    // "you are nearer to this mob than I am: your game runs it from now on"
-      const to = S.clients.get(m.to), mob = cleanMob(m.m);
-      if (!to || to === c || !to.ready || !mob || !near(c.pose, to.pose, LIMITS.mobRange)) return;
+      const to = peerOf(S, m.to), mob = cleanMob(m.m);
+      if (!to || to === c || !to.ready || !mob || (to.host ? !c.pose || c.pose.dim !== 'over' : !near(c.pose, to.pose, LIMITS.mobRange))) return;
       net.send(to, { t: 'mgive', from: c.id, m: mob });
       return;
     }
     case 'mhit': {                     // a player hit a mob that another player's game is running
-      const to = S.clients.get(m.to);
-      if (!to || to === c || !to.ready || typeof m.id !== 'string' || m.id.length > 24 || !near(c.pose, to.pose, LIMITS.mobRange) || !allow(c, 'mhit', 12, now)) return;
+      const to = peerOf(S, m.to);
+      if (!to || to === c || !to.ready || typeof m.id !== 'string' || m.id.length > 24 || (to.host ? !c.pose || c.pose.dim !== 'over' : !near(c.pose, to.pose, LIMITS.mobRange)) || !allow(c, 'mhit', 12, now)) return;
       net.send(to, { t: 'mhit', from: c.id, name: c.name, id: m.id, dmg: num(m.dmg, 0, 1e6, 1), kx: num(m.kx, -1e3, 1e3, 0), kz: num(m.kz, -1e3, 1e3, 0) });
       return;
     }
     case 'boom': {                     // an explosion in this player's game: the others nearby feel it (the holes travel as edits)
-      if (!c.pose || !allow(c, 'boom', 20, now)) return;
-      const at = { dim: c.pose.dim, x: num(m.x, -3e7, 3e7, c.pose.x), z: num(m.z, -3e7, 3e7, c.pose.z) };
-      if (!near(c.pose, at, LIMITS.mobRange)) return;
+      if (!c.host && (!c.pose || !allow(c, 'boom', 20, now))) return;
+      const at = c.host ? { dim: 'over', x: num(m.x, -3e7, 3e7, 0), z: num(m.z, -3e7, 3e7, 0) } : { dim: c.pose.dim, x: num(m.x, -3e7, 3e7, c.pose.x), z: num(m.z, -3e7, 3e7, c.pose.z) };
+      if (!c.host && !near(c.pose, at, LIMITS.mobRange)) return;
       const mob = !!m.mob;
-      net.broadcast({ t: 'boom', from: c.id, name: c.name, x: at.x, y: num(m.y, -256, 1024, c.pose.y), z: at.z, r: num(m.r, 0, 64, 3), mob: mob ? 1 : 0, hurt: mob || o.pvp ? 1 : 0 },
+      net.broadcast({ t: 'boom', from: c.id, name: c.host ? '' : c.name, x: at.x, y: num(m.y, -256, 1024, c.host ? 40 : c.pose.y), z: at.z, r: num(m.r, 0, 64, 3), mob: mob ? 1 : 0, hurt: mob || o.pvp ? 1 : 0 },
         c, (p) => near(p.pose, at, LIMITS.mobRange));
+      return;
+    }
+    case 'hurt': {                     // (the server's game) a mob it runs hit a player: that player's own game applies it
+      const to = S.clients.get(m.to);
+      if (!to || !to.ready) return;
+      net.send(to, { t: 'hurt', dmg: num(m.dmg, 0, 40, 1), kx: num(m.kx, -1e3, 1e3, 0), kz: num(m.kz, -1e3, 1e3, 0),
+        by: typeof m.by === 'string' && /^[A-Za-z][A-Za-z '-]{0,23}$/.test(m.by) ? m.by : '', how: typeof m.how === 'string' && /^[a-z]{1,8}$/.test(m.how) ? m.how : 'mob' });
+      return;
+    }
+    case 'xp': {                       // (the server's game) a player picked up XP
+      const to = S.clients.get(m.to);
+      if (to && to.ready) net.send(to, { t: 'xp', n: Math.round(num(m.n, 1, 10000, 1)) });
+      return;
+    }
+    case 'hsnap': {                    // (the server's game) every mob it has, for the next save
+      world.mobs = cleanMobs(m.mobs); S.dirty = true;
       return;
     }
     default:

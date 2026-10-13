@@ -37,6 +37,7 @@ function printWelcome(S) {
     console.log(`    this computer   ${S.secure ? 'wss://' : ''}localhost:${S.port}`);
     for (const a of lan) console.log(`    your network    ${S.secure ? 'wss://' : ''}${a}:${S.port}`);
   }
+  if (S.host()) console.log('  The server runs the Overworld\'s mobs itself ("simulate": false in server.json turns that off and saves the memory).');
   if (S.secure) console.log('  Encrypted (TLS): the certificate must be for the address players type, or their browser will refuse it.');
   console.log('  Friends outside your network need your public address and this port forwarded on your router (TCP).');
   console.log('  Commands: list, say <text>, kick <name>, op <name>, ban <name>, whitelist, time <day|night|0..1>, save, stop, help');

@@ -15,7 +15,7 @@ export const PROTO = 3;
 /* seconds per in-game day */
 export const DAY_LEN = 600;
 /* the oldest game build that can talk to this server */
-export const MIN_GAME = '6.11';
+export const MIN_GAME = '6.13';
 /* the folder the server lives in (one up from lib/): data/ and a dropped-in game html are looked for here */
 export const SERVER_DIR = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 
@@ -47,6 +47,7 @@ export const LIMITS = {
   quietPing: 5000,               // milliseconds of silence before the server pings a player
   quietDrop: 20000,              // ... and before it gives up on them
   sentSlack: 8,                  // chunks beyond a player's view the server still counts as "they have it"
+  mobs: 4000,                    // mobs the world file holds at once
 };
 
 /* messages from one player per second, by type (pose, chat, cmd, hit, mobs, mhit and boom keep their own counters in
@@ -78,7 +79,7 @@ export function cleanRules(r) {
 
 /* a fresh data/server.json (rules is filled in from the world on the first run: lib/cli.mjs) */
 export const DEFAULTS = { port: 40162, name: 'A DINGLECRAFT Server', motd: '', password: '', maxPlayers: 8, seed: '', mode: 's', pvp: true, world: 'world', game: '', rules: null,
-  ops: [], whitelist: false, allow: [], bans: [], spawnProtection: 16, sleepPercent: 100, viewChunks: 12, cert: '', key: '', origins: [] };
+  ops: [], whitelist: false, allow: [], bans: [], spawnProtection: 16, sleepPercent: 100, viewChunks: 12, cert: '', key: '', origins: [], simulate: true };
 
 /* a list of player names (or addresses) from the settings: lower case, no blanks, no repeats */
 export function cleanList(v) {

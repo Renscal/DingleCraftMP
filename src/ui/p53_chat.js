@@ -32,8 +32,8 @@ function mobNameOf(mt){return MOB_NAME[mt]||(mt?mt[0].toUpperCase()+mt.slice(1):
 
 /* ----- where the mob spawner measures from: this player ----- */
 function mobAnchor(){return P;}
-function mobFarFromAll(e){return Math.hypot(e.x-P.x,e.z-P.z)>64;}
-function mobClearOfPlayers(x,z){return Math.hypot(x-P.x,z-P.z)>12;}
+function mobFarFromAll(e){if(NET.host)return ntHostFar(e);return Math.hypot(e.x-P.x,e.z-P.z)>64;}   /* PART 58: the server's game has several players */
+function mobClearOfPlayers(x,z){if(NET.host)return ntHostClear(x,z);return Math.hypot(x-P.x,z-P.z)>12;}
 
 /* ----- flowers (each biome grows its own) ----- */
 B.TULIP_R=140;B.TULIP_O=141;B.CORNFLOWER=142;B.ALLIUM=143;B.LILY=144;B.SNOWDROP=145;B.MARIGOLD=146;B.EDELWEISS=147;B.SEALAV=148;

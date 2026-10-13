@@ -87,7 +87,7 @@ function ntRetryStop(){
 function ntLeave(){
   if(!NET.on&&NET.st==='off'&&!NET.ws)return;
   const ws=NET.ws;NET.ws=null;
-  NET.on=false;NET.st='off';NET.pend=null;NET.q.length=0;NET.beS.clear();NET.drops.clear();
+  NET.on=false;NET.st='off';NET.pend=null;NET.q.length=0;NET.beS.clear();NET.drops.clear();NET.hosted=false;
   NET.mobs.clear();NET.lockK=null;NET.lockWant=null;NET.saveT=-1;NET.op=false;NET.prot=0;NET.spawn=null;
   ntClearPeers();
   if(ws){try{ws.onclose=null;ws.close();}catch(e){}}
@@ -100,6 +100,7 @@ function ntMsg(m){
   switch(m.t){
     case 'welcome':
       NET.id=m.id|0;NET.name=''+(m.name||PNAME);NET.server=''+(m.server||'server');NET.pvp=m.pvp!==false;NET.motd=''+(m.motd||'');
+      NET.hosted=m.host===true;                             /* the server runs the Overworld's mobs itself (n8_host.js) */
       NET.pend={world:m.world||{},player:m.player||null,edits:{},be:{},n:0};
       ntClearPeers();
       for(const p of (m.players||[]))ntPeerAdd(p.id,p.name,p.pose);
@@ -115,6 +116,12 @@ function ntMsg(m){
       if(m.n===NET.pingN&&NET.pingAt){NET.ms=Math.max(0,Math.min(9999,Math.round(Date.now()-NET.pingAt)));NET.pingAt=0;}
       return;
     case 'mheir':if(NET.on)ntMobAdopt(m.from|0);return;
+    case 'hurt':                                          /* a mob the server runs hit this player */
+      if(NET.on&&!NET.host&&playing&&P&&!P.dead){LASTDMG={by:m.by?''+m.by:null,how:''+(m.how||'mob')};damagePlayer(+m.dmg||1,+m.kx||0,+m.kz||0);}
+      return;
+    case 'xp':                                            /* ...or this player picked up XP it dropped */
+      if(NET.on&&!NET.host&&playing&&P&&m.n>0){P.xp=(P.xp||0)+(m.n|0);playS('xp');ntSaveSoon();}
+      return;
     case 'perm':
       NET.op=!!m.op;NET.prot=+m.prot||0;NET.spawn=m.spawn&&typeof m.spawn.x==='number'&&typeof m.spawn.y==='number'&&typeof m.spawn.z==='number'?m.spawn:null;
       return;

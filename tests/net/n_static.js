@@ -1,5 +1,5 @@
 /* n_static.js (v6.10, lane NET, gate x1): the multiplayer statics. No sockets, no clock.
-   1 PART 58 placement (right before PART 57), its eight files in order with their markers, its size guard; every file and
+   1 PART 58 placement (right before PART 57), its nine files in order with their markers, its size guard; every file and
      every function carries a comment
    2 names: every top-level declaration in src/net/ starts nt / NET / NT_ / NTEX and collides with nothing else in the game
    3 load-time purity: no WebSocket, THREE constructor, clock or random number outside a function body
@@ -7,7 +7,7 @@
      e.pup, which only PART 58 sets)
    5 the title markup: the Multiplayer button and the #tmp view, every id the code uses there once
    6 version, patch notes, the export seam
-   7 the server: its front door and eight lib/ modules (each commented, layered), no dependencies (node: built-ins only), the protocol number matches, the Windows launcher is CRLF and names the server
+   7 the server: its front door and nine lib/ modules plus the two files of its own game's thread (each commented, layered), no dependencies (node: built-ins only), the protocol number matches, the Windows launcher is CRLF and names the server
    8 server/data/ is ignored by git */
 'use strict';
 const boot=require('../lib/c_boot.js'),{ok}=boot;
@@ -16,7 +16,7 @@ const {REPO,readSrc}=require('../lib/paths.js');
 const V=boot({});
 boot.run(async()=>{
   const G=fs.readFileSync(boot.BUILD+'game.js','utf8'),HH=fs.readFileSync(boot.BUILD+'head.html','utf8');
-  const NFILES=['n0_contract.js','n1_link.js','n2_world.js','n3_drops.js','n4_self.js','n5_players.js','n6_menu.js','n7_mobs.js'];   /* src/net/, in load order */
+  const NFILES=['n0_contract.js','n1_link.js','n2_world.js','n3_drops.js','n4_self.js','n5_players.js','n6_menu.js','n7_mobs.js','n8_host.js'];   /* src/net/, in load order */
   const N=NFILES.map(f=>readSrc('net/'+f)).join(''),ORDER=fs.readFileSync(path.join(REPO,'src','ORDER.txt'),'utf8');
   const count=(t,s)=>t.split(s).length-1;
 
@@ -71,10 +71,18 @@ boot.run(async()=>{
     ['entities/p05b_falling_arrows_tnt.js',"if(NET.on&&e.owner==='p'&&ntShot(nx,ny,nz,e.dmg,e.vx,e.vz)){removeEnt(e);return;}"],
     ['features/p08_torches_weapons_vehicles_music.js','    if(NET.on&&ntShot(nx,ny,nz,e.dmg,e.vx,e.vz)){removeEnt(e);return;}'],
     ['features/p18_armor_boats_water_qol.js','if(NET.on&&!ntSimHere(x,z))continue;'],
+    /* 6.13, the server's own game (behind NET.host), and the one that keeps a player's game from spawning where it does */
+    ['core/p04c_player.js','if(NET.host){ntHostHurt(n,kx,kz);return;}'],
+    ['ui/p53_chat.js','function mobFarFromAll(e){if(NET.host)return ntHostFar(e);return Math.hypot(e.x-P.x,e.z-P.z)>64;}'],
+    ['ui/p53_chat.js','function mobClearOfPlayers(x,z){if(NET.host)return ntHostClear(x,z);return Math.hypot(x-P.x,z-P.z)>12;}'],
+    ['entities/p05e_spawning_tick.js','&&(!NET.host||ntHostNear(e))){if(e.hostile)h++;else p++;}'],
+    ['entities/p05e_spawning_tick.js','if(!GR.mobSpawn||(NET.on&&ntHosted()))return;'],
+    ['entities/p05e_spawning_tick.js','if(NET.host&&ntHostAim(e))continue;'],
   ];
   for(const [f,h] of hooks)ok('hook in '+f+': '+h.slice(0,34)+'… once, and once in the build',count(readSrc(f),h)===1&&count(G,h)===1);
   {const outside=G.slice(0,i58)+G.slice(i57);const calls=outside.match(/\bnt[A-Z]\w*\(/g)||[];
-    ok('the core calls into PART 58 exactly 21 times ('+calls.length+')',calls.length===21);
+    ok('the core calls into PART 58 exactly 27 times: 21 behind NET.on or e.pup, 6 for the server\'s own game ('+calls.length+')',calls.length===27);
+    ok('single player never reaches the server-game hooks: each is behind NET.host or NET.on, which only PART 58 sets',!/NET\.(host|hosted|on)\s*=[^=]/.test(outside));
     ok('the two drop guards: networked drops stay out of the dimension stash, and drops do not merge online',
       count(readSrc('world/p37_dimensions.js'),"e.t==='drop'&&e.st&&!e.nid){out.push(")===1&&count(readSrc('entities/p05a_entities_drops.js'),'&&e.st.dur==null&&!NET.on){')===1);
     ok('e.nid is only ever set by PART 58',!/\.nid\s*=[^=]/.test(outside));
@@ -101,10 +109,13 @@ boot.run(async()=>{
 
   /* ---- 7. the server ---- */
   /* the server: the front door plus its modules in server/lib/ */
-  const SMODS=['cli.mjs','commands.mjs','config.mjs','http.mjs','protocol.mjs','server.mjs','websocket.mjs','world.mjs'];
+  const SMODS=['cli.mjs','commands.mjs','config.mjs','host.mjs','http.mjs','protocol.mjs','server.mjs','websocket.mjs','world.mjs'];
+  const SHOST=['headless.cjs','host_worker.cjs'];   /* the server's own game runs in a thread: the hollow browser, and the thread's program */
   const SFILES=['dinglecraft-server.mjs',...SMODS.map(f=>'lib/'+f)],STXT=Object.fromEntries(SFILES.map(f=>[f,fs.readFileSync(path.join(REPO,'server',f),'utf8')]));
   const SV=SFILES.map(f=>STXT[f]).join('\n');
-  ok('server/lib/ holds exactly the eight modules',JSON.stringify(fs.readdirSync(path.join(REPO,'server','lib')).sort())===JSON.stringify(SMODS));
+  ok('server/lib/ holds exactly the nine modules and the two files of the game thread',JSON.stringify(fs.readdirSync(path.join(REPO,'server','lib')).sort())===JSON.stringify([...SMODS,...SHOST].sort()));
+  ok('the game thread\'s files open with a comment, load nothing but node: built-ins, each other and the game script, and never touch the network',SHOST.every(f=>{const t=fs.readFileSync(path.join(REPO,'server','lib',f),'utf8');
+    return t.startsWith('/* '+f+':')&&[...t.matchAll(/require\((['"])([^'"]+)\1\)/g)].every(m=>m[2].startsWith('node:')||m[2]==='./headless.cjs')&&!/node:(http|https|net|dgram|child_process)/.test(t);}));
   ok('every server file opens with a comment saying what it is for, and the front door lists every module',SFILES.every(f=>/^(#![^\n]*\n)?\/\/ /.test(STXT[f]))&&SMODS.every(f=>STXT['dinglecraft-server.mjs'].includes('lib/'+f)));
   {const bare=[];for(const f of SFILES){const L=STXT[f].split('\n');L.forEach((l,i)=>{const m=/^(?:export )?(?:async )?function (\w+)\(/.exec(l);if(m&&!/^\s*(\/\/|\/\*|\*)|\*\/\s*$/.test(L[i-1]||''))bare.push(f+':'+m[1]);});}
     ok('every top-level server function has a comment above it'+(bare.length?' (bare: '+bare.join(', ')+')':''),bare.length===0);}

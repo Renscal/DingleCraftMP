@@ -21,6 +21,18 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — The server runs the mobs
+
+*Game version 6.13, released 2026-10-13.*
+
+- THE SERVER RUNS THE MOBS. Until now a mob on a server lived in whichever player's game happened to be closest. Now the server plays the game too, without a screen, and every zombie, pig, villager, Nuke Keg and boss in the Overworld is its own.
+- What you notice: mobs keep moving while you sit in a menu. They no longer hiccup when you and a friend swap places. A village has one set of villagers no matter how many of you walk in.
+- Mobs are saved with the world. Stop the server, start it again, and the villager called Zorp is standing where you left him. Server owners can read the whole census in the entities folder.
+- Spawn eggs, critter jars, spawners and the pig cannon all hand their mob to the server the instant it appears. The pig keeps its speed.
+- A mob hits you through your own game, so your armour still counts and the death message still knows who did it.
+- Server owners: this costs about 110 MB of memory. Set simulate to false in server.json to go back to the old way.
+- Only the Overworld for now. The Nether, the Aether and Purgatory still work the old way, and so do arrows, vehicles and water. Those are next.
+
 ## Release 1.1 — The world is a folder
 
 *Game version 6.12, released 2026-10-13.*

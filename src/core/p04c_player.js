@@ -27,6 +27,7 @@ function damageHeld(n){
   redrawHotbar();
 }
 function damagePlayer(n,kx,kz){
+  if(NET.host){ntHostHurt(n,kx,kz);return;}   /* PART 58: on the server's game "the player" is a stand-in: the hit goes to the real one */
   if(P.dead||P.mode==='c'||P.hurtT>0||GR.god||(CUT.on&&CUT.script))return;
   n=armorAbsorb(n);
   P.hp-=n;P.hurtT=0.6;hurtFlash=0.35;playS('hurt');

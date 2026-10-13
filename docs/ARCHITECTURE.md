@@ -409,6 +409,19 @@ player's saved place to their last pose (same dimension only) and names the near
 | each player's own state | `saveToStorage` is redirected to `ntSave` (the `player` part of a snapshot, the dimension, the purgatory state): the autosave, Save World and quitting all go to the server, and a server world never touches local storage |
 | chat, PvP | `chatSubmit` to `ntChat`; `doMine` asks `ntMelee` whether another player is the nearest thing on the look ray |
 
+**The server's own game (6.13).** `server/lib/host.mjs` cuts the game script out of the html it serves, loads it in a
+worker thread behind a hollow browser (`headless.cjs`, the same stand-ins the suites boot with) and calls
+`ntHostStart` (`src/net/n8_host.js`). That game is "the host": a player with id 0 whose socket is a function call. It
+owns every shared mob in the Overworld, never hands one over, and is sent `join`, `leave`, `pose`, `edits`, `be`,
+`drop`, `undrop`, `time`, `gr` and the `mgive` / `mhit` addressed to player 0. Each tick (20 a second, `ntHostTick`):
+chunks are built 5 around every player (blocks only, no meshes), `mobsTick` runs for one player in turn with `P`
+pointed at them, `updateEntities` runs with `P` pointed at the nearest player per entity (`ntHostAim`; nobody within
+72 blocks or no chunk: the entity waits), and mobs go out as `mobs` from 0, which the server passes to each player
+with only the ones in range. Damage a brain does to `P` is forwarded as `hurt`, collected XP as `xp`. Every 5 s the
+host reports all its mobs (`hsnap`), which is what `entities/` saves and `ntHostRestore` puts back. A player's game
+on a hosted server hands every shared mob it spawns to the host (`ntMobFull` carries name, spawn spot and velocity) and
+skips natural spawning. Not hosted yet: other dimensions, projectiles, vehicles, water, fire, falling blocks.
+
 **Shared since 6.11:** villagers, Nuke Kegs and the bosses that are plain mobs (`boss`, `titan`, `infernis`,
 `valkyra`), through the same owner/puppet path. A boss is not handed over while its owner is within 40 blocks. The kinds a
 structure spawns (`NT_UNIQ`) carry their spawn spot, and two of a kind from one spot are one mob (`ntMobTwin`), so a

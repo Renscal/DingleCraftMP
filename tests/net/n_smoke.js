@@ -92,7 +92,7 @@ boot.run(async()=>{
   {const r=raw(port,{pw:'nope'});await r.open;await until(()=>r.closed);
     ok('a wrong password is refused with a reason',r.closed&&/password/i.test((r.last('kick')||{}).why||'')&&S.players().length===0);}
   {const r=raw(port,{pw:'pw',v:'6.9'});await r.open;await until(()=>r.closed);
-    ok('a game older than 6.11 is refused with a reason',r.closed&&/6\.11/.test((r.last('kick')||{}).why||''));}
+    ok('a game older than this server needs is refused with a reason',r.closed&&/needs DINGLECRAFT 6\.\d+ or newer/.test((r.last('kick')||{}).why||''));}
   {const r=raw(port,{pw:'pw',proto:99});await r.open;await until(()=>r.closed);ok('another protocol version is refused',r.closed&&!!r.last('kick'));}
   {V.ntConnect('127.0.0.1:'+port,'wrong');await until(()=>NET.st==='off');
     ok('the game: a wrong password leaves you on the title with the reason',NET.on===false&&V.playing===false&&/password/i.test(NET.msg||''));}

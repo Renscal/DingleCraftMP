@@ -2,7 +2,7 @@
 let spawnT=0;
 function countMobs(){
   let h=0,p=0;
-  for(const e of entities)if(e.t==='mob'&&!e.dead&&!MOBT[e.mt].pnc){if(e.hostile)h++;else p++;}
+  for(const e of entities)if(e.t==='mob'&&!e.dead&&!MOBT[e.mt].pnc&&(!NET.host||ntHostNear(e))){if(e.hostile)h++;else p++;}   /* PART 58: per player on the server's game */
   return [h,p];
 }
 function torchNear(x,y,z){
@@ -21,7 +21,7 @@ function mobsTick(dt){
   const [h,p]=countMobs();
   /* despawn far */
   for(const e of entities)if(e.t==='mob'&&!e.dead&&!MOBT[e.mt].boss&&!MOBT[e.mt].pnc&&!e.pkeep&&mobFarFromAll(e))removeEnt(e);
-  if(!GR.mobSpawn)return;
+  if(!GR.mobSpawn||(NET.on&&ntHosted()))return;   /* PART 58: on a server that runs the mobs, the server spawns them */
   const _an=mobAnchor();
   const ang=Math.random()*6.28,dist=14+Math.random()*22;
   const x=Math.floor(_an.x+Math.sin(ang)*dist),z=Math.floor(_an.z+Math.cos(ang)*dist);
@@ -71,6 +71,7 @@ function updateEntities(dt){
   if(TP.hr)hrEntFrame(dt);
   for(const e of entities){
     if(e.dead)continue;
+    if(NET.host&&ntHostAim(e))continue;   /* PART 58: the server's game points P at the nearest player, or lets the entity wait */
     /* the aether has no floor: things that tumble into the void are lost to it,
        not left standing on the invisible bottom of the world */
     if(DIM==='aether'&&e.y<2&&AETHER_VOID_DESPAWN[e.t]&&!(P&&P.ride===e)){

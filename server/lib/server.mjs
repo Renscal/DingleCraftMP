@@ -14,6 +14,8 @@
 //   onSettings called when a command changed the ops, the bans, the whitelist or the default game mode
 //   cert, key a TLS certificate and its private key (PEM files, inside the data folder unless a full path): with both, the
 //             server speaks https:// and wss:// instead of http:// and ws://
+//   simulate  false = the server does not run the Overworld's mobs itself (lib/host.mjs); the players' games do, as before 6.13
+//   hostGame  the game script for that, when it is not to be taken from the game html (the suites pass build/game.js)
 //   origins   web addresses whose pages may connect, besides the server's own page and a game opened from a file
 //             ([] = any page may, which is what "open your own copy of the game" needs)
 import fs from 'node:fs';
@@ -26,6 +28,10 @@ import { acceptUpgrade, newConn, textFrame, readFrames, PING, CLOSE } from './we
 import { handleMessage, worldTick, forget, playerKey } from './protocol.mjs';
 import { runCommand } from './commands.mjs';
 import { pageHandler, statusOf } from './http.mjs';
+import { startHost, gameScript } from './host.mjs';
+
+/* what the server's own game is told along with the players (the rest is not its business, or goes to it by name) */
+const HOST_WANTS = new Set(['join', 'leave', 'pose', 'be', 'drop', 'undrop', 'time', 'gr']);
 
 /* make one server (not yet listening). Throws if the world file exists but cannot be read. */
 export function createServer(opts = {}) {
@@ -51,6 +57,7 @@ export function createServer(opts = {}) {
     dirty: true,                        // the world differs from the file (true at start: the settings were just applied)
     clients: new Map(),                 // id -> a player who has said hello
     locks: new Map(),                   // block key -> the id of the player using that chest or furnace
+    host: null,                         // the server's own game (lib/host.mjs), once it has been started
     nextId: 1,
     editCount: 0,
     gameFile: game ? game.file : null,
@@ -79,7 +86,7 @@ export function createServer(opts = {}) {
     if (c.sock.writableLength > LIMITS.backlog) return drop(c, 'too far behind');
     c.sock.write(buf);
   }
-  const send = (c, m) => sendRaw(c, textFrame(JSON.stringify(m), c.deflate));
+  const send = (c, m) => (c.host ? (S.host && S.host.c === c ? S.host.post(m) : undefined) : sendRaw(c, textFrame(JSON.stringify(m), c.deflate)));
   /* to every player who has finished joining, except one (usually the sender); onlyIf(client) narrows it further */
   function broadcast(m, except, onlyIf) {
     const bufs = [null, null];                          // encoded once per kind of connection (plain, compressed), and only if someone gets it
@@ -88,10 +95,11 @@ export function createServer(opts = {}) {
       const i = c.deflate ? 1 : 0;
       sendRaw(c, bufs[i] || (bufs[i] = textFrame(json || (json = JSON.stringify(m)), c.deflate)));
     }
+    if (S.host && except !== S.host.c && HOST_WANTS.has(m.t)) S.host.post(m);
   }
   /* end a connection. tell = send the reason first (a refusal or a kick), so the player's game can show it. */
   function drop(c, why, tell) {
-    if (c.closed) return;
+    if (c.closed || c.host) return;
     if (tell) { try { c.sock.write(textFrame(JSON.stringify({ t: 'kick', why }))); } catch { /* gone */ } }
     c.closed = true;
     try { c.sock.write(CLOSE); c.sock.end(); } catch { /* gone */ }
@@ -123,6 +131,15 @@ export function createServer(opts = {}) {
     let m;
     try { m = JSON.parse(text); } catch { return drop(c, 'bad message'); }
     try { handleMessage(S, net, c, m, text.length); } catch (e) { log('error handling a message from ' + (c.name || c.addr) + ': ' + e.message); }
+  }
+
+  /* ---- the server's own game ---- */
+  if (o.simulate !== false && (o.hostGame || game)) {
+    try {
+      const script = o.hostGame || gameScript(game.file, path.join(dataDir, '.cache'));
+      if (script) S.host = startHost(S, script, (c, m, size) => handleMessage(S, net, c, m, size), log);
+      else log('the game html holds no script the server can run: the players\' games will run the mobs between them');
+    } catch (e) { log('the server game could not be started (' + e.message + '): the players\' games will run the mobs between them'); }
   }
 
   const srv = tls ? https.createServer(tls, pageHandler(S)) : http.createServer(pageHandler(S));
@@ -161,7 +178,7 @@ export function createServer(opts = {}) {
 
   /* ---- what the caller gets ---- */
   const api = {
-    opts: o, secure: !!tls, world: () => world, rules: () => cleanRules(world.gr), status: () => statusOf(S), gameFile: S.gameFile, worldDir, saveWorld, exportWorld: S.exportWorld, log,
+    opts: o, secure: !!tls, host: () => S.host, world: () => world, rules: () => cleanRules(world.gr), status: () => statusOf(S), gameFile: S.gameFile, worldDir, saveWorld, exportWorld: S.exportWorld, log,
     get port() { const a = srv.address(); return a && typeof a === 'object' ? a.port : o.port; },
     players: () => [...S.clients.values()],
     say(txt) { broadcast({ t: 'sys', txt: '[Server] ' + txt }); log('[Server] ' + txt); },
@@ -178,8 +195,9 @@ export function createServer(opts = {}) {
     close() {                           // tell everyone, save, stop
       clearInterval(tick); clearInterval(autosave);
       for (const c of [...pending]) drop(c, 'The server is shutting down.', true);
+      const h = S.host; S.host = null;
       saveWorld('shutdown');
-      return new Promise((resolve) => { srv.close(() => resolve()); srv.closeAllConnections?.(); });
+      return Promise.all([h ? h.stop() : null, new Promise((resolve) => { srv.close(() => resolve()); srv.closeAllConnections?.(); })]).then(() => {});
     },
   };
   return api;
