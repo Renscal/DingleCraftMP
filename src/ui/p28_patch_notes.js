@@ -3,7 +3,13 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'The long day',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Teleport anywhere',lines:[
+    '<b>TELEPORT ANYWHERE.</b> /tp to a friend used to answer &quot;is in another dimension&quot; and leave it at that, as if dimensions were a legal problem. Now /tp Ann takes you to Ann. If Ann is in the Nether, you are in the Nether. There is nothing to type about dimensions: the server knows where she is.',
+    '<b>Soft landings.</b> Arriving in another dimension works like a portal trip without the portal: the ground is built before you get there, whatever you were falling from is forgotten, and you step off anything you were riding.',
+    '<b>Coordinates stay put.</b> /tp 10 64 10 moves you inside the dimension you are already in, as before.',
+    '<b>Not Puppet Purgatory.</b> Nobody can be teleported into Purgatory, and nobody in it can be pulled out to another dimension. That place has its own way in and its own way out, and it does not take requests.',
+  ]},
+ {v:'6.31',label:'Release 1.1',title:'The long day',lines:[
     '<b>THE LONG DAY.</b> A day used to last ten minutes and exactly half of it was dark, which is a fine schedule for a bat. A day is now twenty minutes: ten of full daylight, a minute and a half of sunset, seven of night, a minute and a half of sunrise.',
     '<b>More day, less night.</b> You get ten whole minutes to build before anything with too many legs turns up, and the night is over in seven instead of dragging on for half your evening.',
     '<b>Proper sunsets.</b> The sky takes its time going orange and coming back. The sun and moon cross the sky at the same steady pace as ever; it is the light that learned some manners.',

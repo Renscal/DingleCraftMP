@@ -85,12 +85,17 @@ const COMMANDS = {
     if (at.length === 1) {
       const to = findPlayer(S, at[0]);
       if (!to || !to.pose) return 'No player called ' + at[0] + ' is online.';
-      if (to.pose.dim !== dim) return to.name + ' is in another dimension.';
+      if (to.pose.dim !== dim) {   // 6.32: to a player means to where they are, whatever the dimension; never into or out of Puppet Purgatory
+        if (to.pose.dim === 'puppet') return to.name + ' is in Puppet Purgatory. Nobody can be sent there.';
+        if (dim === 'puppet') return who.name + ' is in Puppet Purgatory and has to find their own way out.';
+        dim = to.pose.dim;
+        if (S.startHost) S.startHost(dim);   // wake the game that runs that dimension, as walking through a portal would
+      }
       ({ x, y, z } = to.pose); label = to.name;
     } else if (at.length === 3 && at.every((v) => Number.isFinite(Number(v)))) {
       x = num(Number(at[0]), -3e7, 3e7, 0); y = num(Number(at[1]), 0, 1024, 0); z = num(Number(at[2]), -3e7, 3e7, 0); label = `${x} ${y} ${z}`;
     } else return 'Usage: /tp [who] <player | x y z>';
-    net.send(who, { t: 'tp', x, y, z });
+    net.send(who, { t: 'tp', x, y, z, dim });
     S.log(`${who.name} was teleported to ${label}`);
     return `Teleported ${who.name} to ${label}.`;
   } },

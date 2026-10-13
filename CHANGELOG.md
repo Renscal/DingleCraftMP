@@ -21,6 +21,15 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — Teleport anywhere
+
+*Game version 6.32, released 2026-10-13.*
+
+- **TELEPORT ANYWHERE.** /tp to a friend used to answer "is in another dimension" and leave it at that, as if dimensions were a legal problem. Now /tp Ann takes you to Ann. If Ann is in the Nether, you are in the Nether. There is nothing to type about dimensions: the server knows where she is.
+- **Soft landings.** Arriving in another dimension works like a portal trip without the portal: the ground is built before you get there, whatever you were falling from is forgotten, and you step off anything you were riding.
+- **Coordinates stay put.** /tp 10 64 10 moves you inside the dimension you are already in, as before.
+- **Not Puppet Purgatory.** Nobody can be teleported into Purgatory, and nobody in it can be pulled out to another dimension. That place has its own way in and its own way out, and it does not take requests.
+
 ## Release 1.1 — The long day
 
 *Game version 6.31, released 2026-10-13.*

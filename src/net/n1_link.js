@@ -140,7 +140,14 @@ function ntMsg(m){
       return;
     case 'lock':if(NET.on)ntLockMsg(m);return;
     case 'tp':
-      if(NET.on&&playing&&P&&typeof m.x==='number'&&typeof m.y==='number'&&typeof m.z==='number'){P.x=m.x;P.y=m.y;P.z=m.z;P.vx=P.vy=P.vz=0;P.fallD=0;}
+      if(NET.on&&playing&&P&&typeof m.x==='number'&&typeof m.y==='number'&&typeof m.z==='number'){
+        /* 6.32: another dimension goes the way a portal trip goes (setDim: the ride, the portal timer and the fall are cleared,
+           the chunks are thrown away), then the chunks at the far end are built before the next frame. Never Purgatory. */
+        if((m.dim==='over'||m.dim==='nether'||m.dim==='aether')&&m.dim!==DIM&&DIM!=='puppet'&&!P.dead){
+          if(modalOpen())closeModal();
+          setDim(m.dim,m.x,m.y,m.z);forceChunksNear(Math.floor(m.x),Math.floor(m.z));
+        }else{P.x=m.x;P.y=m.y;P.z=m.z;P.vx=P.vy=P.vz=0;P.fallD=0;}
+      }
       return;
     case 'give':
       if(NET.on&&playing&&P&&m.st&&DEFS[m.st.id]&&m.st.count>0){const st=ntDropStack(m.st);invAddTo(P.inv,st);redrawHotbar();

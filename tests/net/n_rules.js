@@ -90,7 +90,16 @@ boot.run(async()=>{
   {b.clear();const out=await a.cmd('/tp Bob 10 50 -4');await until(()=>!!b.last('tp'),1500);
     ok('/tp <who> <x y z> tells that player\'s game',/Teleported Bob/.test(out)&&b.last('tp').x===10&&b.last('tp').y===50&&b.last('tp').z===-4);
     a.clear();await a.cmd('/tp Bob');ok('/tp <player> takes the operator to them',!!a.last('tp')&&a.last('tp').x===3);
-    ok('/tp refuses nonsense and other dimensions',/Usage/.test(await a.cmd('/tp 1 2 3 4 5'))&&/No player/.test(await a.cmd('/tp Zed'))&&(await cy.pose(500,40,0,{dim:'nether'}),/another dimension/.test(await a.cmd('/tp Cy'))));
+    ok('/tp refuses nonsense',/Usage/.test(await a.cmd('/tp 1 2 3 4 5'))&&/No player/.test(await a.cmd('/tp Zed')));
+    /* 6.32: across dimensions */
+    {await cy.pose(500,40,0,{dim:'nether'});a.clear();
+      const out=await a.cmd('/tp Cy');await until(()=>!!a.last('tp'),1500);
+      ok('/tp <player> in another dimension sends that dimension with the place (its game is already awake: the player in it woke it)',/Teleported Ann to Cy/.test(out)&&a.last('tp').dim==='nether'&&a.last('tp').x===500);
+      b.clear();await a.cmd('/tp Bob 1 50 1');await until(()=>!!b.last('tp'),1500);
+      ok('/tp <who> <x y z> stays in the dimension that player is in',b.last('tp').dim==='over');
+      await cy.pose(500,40,0,{dim:'puppet'});a.clear();const no=await a.cmd('/tp Cy');
+            ok('nobody is sent into Puppet Purgatory, and a player in it is not pulled out to another dimension',/Purgatory/.test(no)&&!a.last('tp')&&(await cy.pose(1,40,1,{dim:'puppet'}),/Purgatory/.test(await a.cmd('/tp Cy Bob'))));
+      await cy.pose(500,40,0,{dim:'nether'});}
     await cy.pose(500,40,0);}
   {b.clear();const out=await a.cmd('/give Bob 5 12');await until(()=>!!b.last('give'),1500);
     ok('/give sends a clean stack',/Gave 12/.test(out)&&b.last('give').st.id===5&&b.last('give').st.count===12&&/Usage/.test(await a.cmd('/give Bob stone'))&&/Usage/.test(await a.cmd('/give Bob 5 100000')));}
