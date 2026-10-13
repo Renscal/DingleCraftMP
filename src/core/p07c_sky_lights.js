@@ -132,6 +132,9 @@ function setupTorchLights(){
 function updateTorchLights(){
   if(TP.hr&&HRL.on){hrTorches();return;}
   if(frameCount%15!==0)return;
+  /* 6.26: torches light the world through its block light now, every one of them. The pool of six point lights stays for
+     Puppet Purgatory, which has lights of its own that are not blocks. */
+  if(DIM!=='puppet'){for(let i=0;i<TLIGHTS.length;i++)TLIGHTS[i].intensity=0;return;}
   const near=[];
   for(const k of torches){
     const p=dimP(k);

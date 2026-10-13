@@ -21,6 +21,17 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — Every torch counts
+
+*Game version 6.26, released 2026-10-13.*
+
+- EVERY TORCH COUNTS. Only the six torches nearest to you ever gave any light. Walk down a long tunnel and it went dark behind you, one torch at a time. Thirty torches in a room lit six torches' worth of room.
+- Light now belongs to the world. A torch lights the blocks around it, a little less with every block, round corners and through doorways, and it stays lit whether you are next to it or a mile away.
+- Lava glows. Glowstone glows. Alien lamps, burners and eyeball lamps glow. Put a block in a corridor and the light stops at it. Take the torch away and the dark comes back.
+- There is no limit on torches any more. Light your whole base. Light your friend's base. Light a cave you never intend to visit again.
+- The glow is warm, strongest at night and underground, and stands back in daylight. Mobs standing in torchlight are lit by it.
+- Hyperreal uses the same light, and keeps its own few point lights for shine and shadows.
+
 ## Release 1.1 — Water finds its level
 
 *Game version 6.25, released 2026-10-13.*

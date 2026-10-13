@@ -25,6 +25,7 @@ function createChunk(cx,cz){
   const ch={bl,mt,cx,cz,dirty:true,meshes:null,edits:ed};
   chunks.set(k,ch);
   liqResume(ch);
+  lightChunk(ch);                                          /* 6.26: block light (world/p03e_light.js) */
   markDirty(cx-1,cz);markDirty(cx+1,cz);markDirty(cx,cz-1);markDirty(cx,cz+1);
   return ch;
 }
@@ -70,6 +71,7 @@ function setBlock(x,y,z,id,meta){
   }
   ch.dirty=true;
   liqWake(x,y,z);
+  if(old!==id)lightEdit(x,y,z);                            /* 6.26: block light follows every change */
   if(id===B.TCORE)TITQ.push({x,y,z,t:2.2,pT:0});
   if(lx===0)markDirty(cx-1,cz);
   if(lx===CH-1)markDirty(cx+1,cz);

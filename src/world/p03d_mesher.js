@@ -169,6 +169,15 @@ function meshChunk(ch){
       if(d.bucket==='wat'&&d.solid===false)addQuadBack(bufs.wat,lx,y,lz,F,tileUV(ti),br,lower);   /* liquids only: ice is in this bucket too, and nobody is ever inside ice */
     }
   }
+  /* 6.26: the block light at every vertex (world/p03e_light.js) */
+  const lt=ch.lt;
+  if(lt){
+    const gl=(x,y,z)=>(y<0||y>=WH)?0:((x>=0&&x<CH&&z>=0&&z<CH)?lt[bidx(x,y,z)]:getLight(x0+x,y,z0+z));
+    let top=ch.ltTop;
+    for(const o of [[1,0],[-1,0],[0,1],[0,-1]]){const nb=chunks.get(ckey(ch.cx+o[0],ch.cz+o[1]));if(nb&&nb.lt&&nb.ltTop>top)top=nb.ltTop;}
+    const lc=new Int8Array((CH+2)*(CH+2)*(WH+2)).fill(-2);
+    bufLight(bufs.op,gl,gb,top,lc);bufLight(bufs.cut,gl,gb,top,lc);bufLight(bufs.wat,gl,gb,top,lc);
+  }
   return bufs;
 }
 function disposeChunkMeshes(ch){
@@ -187,6 +196,7 @@ function applyMesh(ch,bufs){
     g.setAttribute('normal',new THREE.Float32BufferAttribute(b.n,3));
     g.setAttribute('uv',new THREE.Float32BufferAttribute(b.u,2));
     g.setAttribute('color',new THREE.Float32BufferAttribute(b.c,3));
+    if(b.l)g.setAttribute('blight',new THREE.Float32BufferAttribute(b.l,1));
     g.setIndex(b.ix);
     const m=new THREE.Mesh(g,mats[k]);
     if(shadowsOn()&&k!=='wat'){m.castShadow=true;m.receiveShadow=true;}
@@ -203,12 +213,13 @@ function applyMesh(ch,bufs){
 }
 let RD=8;
 function updateChunks(){
+  lightTick();                                             /* 6.26: block light, once a frame */
   const t0=performance.now();
   const pcx=Math.floor(P.x/CH),pcz=Math.floor(P.z/CH);
   const need=[];
   for(let dx=-RD;dx<=RD;dx++)for(let dz=-RD;dz<=RD;dz++){
     const ch=chunks.get(ckey(pcx+dx,pcz+dz));
-    if(!ch||ch.dirty)need.push([dx*dx+dz*dz,pcx+dx,pcz+dz]);
+    if(!ch||ch.dirty)need.push([dx*dx+dz*dz+(ch&&ch.dirty===2?1e6:0),pcx+dx,pcz+dz]);   /* 6.26: a chunk that only needs its light redrawn waits for the ones that need building */
   }
   need.sort((a,b)=>a[0]-b[0]);
   for(const nd of need){

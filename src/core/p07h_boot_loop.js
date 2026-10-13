@@ -12,6 +12,7 @@ function boot(){
   matOp=new THREE.MeshLambertMaterial({map:atlasTex,vertexColors:true});
   matCut=new THREE.MeshLambertMaterial({map:atlasTex,vertexColors:true,alphaTest:0.5,side:THREE.DoubleSide});
   matWat=new THREE.MeshLambertMaterial({map:atlasTex,vertexColors:true,transparent:true,opacity:0.78,depthWrite:false});
+  blightPatch(matOp);blightPatch(matCut);blightPatch(matWat);   /* 6.26: the world's materials show block light (world/p03e_light.js) */
   TP.og={op:matOp,cut:matCut,wat:matWat};
   setupSky();setupTorchLights();
   buildHotbar();setupInput();wireMenus();

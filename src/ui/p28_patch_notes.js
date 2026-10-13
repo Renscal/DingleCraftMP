@@ -3,7 +3,15 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Water finds its level',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Every torch counts',lines:[
+    'EVERY TORCH COUNTS. Only the six torches nearest to you ever gave any light. Walk down a long tunnel and it went dark behind you, one torch at a time. Thirty torches in a room lit six torches&#x27; worth of room.',
+    'Light now belongs to the world. A torch lights the blocks around it, a little less with every block, round corners and through doorways, and it stays lit whether you are next to it or a mile away.',
+    'Lava glows. Glowstone glows. Alien lamps, burners and eyeball lamps glow. Put a block in a corridor and the light stops at it. Take the torch away and the dark comes back.',
+    'There is no limit on torches any more. Light your whole base. Light your friend&#x27;s base. Light a cave you never intend to visit again.',
+    'The glow is warm, strongest at night and underground, and stands back in daylight. Mobs standing in torchlight are lit by it.',
+    'Hyperreal uses the same light, and keeps its own few point lights for shine and shadows.',
+  ]},
+ {v:'6.25',label:'Release 1.1',title:'Water finds its level',lines:[
     'WATER FINDS ITS LEVEL. Until today every drop of water was a whole block of it. Pour a bucket on a hill and you got a staircase of full blocks that never went away.',
     'Now liquids flow properly. A source spreads seven blocks, thinner as it goes, and the surface slopes. It runs toward the nearest drop, falls as a column, and spreads again where it lands.',
     'Take the source away and the stream runs dry, block by block.',

@@ -131,14 +131,15 @@ function hrWPerturbSrc(fresh){if(HRW.perturb&&!fresh)return HRW.perturb;
   f=f.replace(/vUv\.st/g,'hrStArg');
   return HRW.perturb='\n'+f+'\n';}
 function hrWPatch(sh){Object.assign(sh.uniforms,HRW.U);let v=sh.vertexShader,f=sh.fragmentShader;
-  v=hrRep(v,'#include <common>','#include <common>\n'+HRW_VP,'A.v.common');
-  v=hrRep(v,'#include <color_vertex>','#include <color_vertex>\n'+HRW_VM,'A.v.color');
-  f=hrRep(f,'#include <common>','#include <common>\n'+HRW_FP+hrWPerturbSrc(),'A.f.common');
+  if(HRW.U&&typeof LGT!=='undefined'&&LGT.U)sh.uniforms.uBlCol=LGT.U;   /* 6.26: block light, the same attribute the OG materials read */
+  v=hrRep(v,'#include <common>','#include <common>\n'+BLIGHT_VP+HRW_VP,'A.v.common');
+  v=hrRep(v,'#include <color_vertex>','#include <color_vertex>\n'+BLIGHT_VM+HRW_VM,'A.v.color');
+  f=hrRep(f,'#include <common>','#include <common>\n'+BLIGHT_FP+HRW_FP+hrWPerturbSrc(),'A.f.common');
   f=hrRep(f,'#include <map_fragment>',HRW_MAP,'A.f.map');
   f=hrRep(f,'#include <color_fragment>','','A.f.color');
   f=hrRep(f,'#include <roughnessmap_fragment>','float roughnessFactor=roughness*hrN.b;\n#ifdef HR_AO\nroughnessFactor=mix(hrRoughLo,1.,roughnessFactor);\n#endif','A.f.rough');
   f=hrRep(f,'#include <normal_fragment_maps>',HRW_NRM,'A.f.nrm');
-  f=hrRep(f,'#include <emissivemap_fragment>','totalEmissiveRadiance+=hrA.rgb*hrN.a*vHrLut.b*8.;','A.f.emi');
+  f=hrRep(f,'#include <emissivemap_fragment>','totalEmissiveRadiance+=hrA.rgb*hrN.a*vHrLut.b*8.;\n'+BLIGHT_FE,'A.f.emi');
   f=hrRep(f,'#include <aomap_fragment>','#include <aomap_fragment>\n'+HRW_AO,'A.f.ao');
   sh.vertexShader=v;sh.fragmentShader=f;}
 /* cutout shadow depth, High/Ultra: the Hyperreal alpha (rotated like the colour); layer 255 -> the OG atlas alpha */

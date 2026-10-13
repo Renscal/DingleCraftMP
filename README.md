@@ -12,7 +12,7 @@ photoreal texture pack, a trip to Puppet Purgatory, an easel and a record player
 taken a bite out of the world.
 
 It runs on [three.js](https://threejs.org) r128 and nothing else: no framework, no bundler, no npm packages in the game.
-The whole game is about 41,000 lines of plain JavaScript, built here from per-system source files into a single
+The whole game is about 38,000 lines of plain JavaScript, built here from per-system source files into a single
 `dinglecraft_v<version>.html` you can double-click. three.js is bundled inside that file, so it plays offline.
 
 > DINGLECRAFT is an independent fan-made game. NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG
@@ -23,9 +23,13 @@ The whole game is about 41,000 lines of plain JavaScript, built here from per-sy
 
 ## Play it
 
-**Just want to play?** Download [`DINGLECRAFT.html`](DINGLECRAFT.html) (the newest release, about 42.5 MB: open it on
+**Just want to play?** Download [`DINGLECRAFT.html`](DINGLECRAFT.html) (the newest release, about 42 MB: open it on
 GitHub and press the download button) and double-click it. That is the whole game, on Windows, macOS or Linux. It is
 developed and tested in Chrome, so an up-to-date Chrome or Edge is the safest bet.
+
+Every version also has a page under **Releases** with two downloads: `DINGLECRAFT-Server-v<version>.zip` (the multiplayer
+server with the game inside) and `DINGLECRAFT-Client-v<version>.zip` (the game as a desktop app, optional). The ones cut
+from the `Experimental` branch are betas: they are published for testing, without the full test run.
 
 You need a desktop browser with WebGL (WebGL2 for the Hyperreal texture pack). No internet connection: three.js is
 bundled into the file. To build the file yourself you need [Node.js](https://nodejs.org) 20 or newer (22 is what we use; see
@@ -35,8 +39,9 @@ bundled into the file. To build the file yourself you need [Node.js](https://nod
 npm run build
 ```
 
-That writes `dist/dinglecraft_v<game version>.html` (Release 1.0 builds `dinglecraft_v6.9.html`; about 42.5 MB, every
-texture is inside it). Then either:
+That writes `dist/dinglecraft_v<game version>.html` (about 42 MB, every texture is inside it). "Release 1.0" and
+"Release 1.1" are public labels, not game versions: Release 1.0 was game versions 6.4 to 6.9, Release 1.1 starts at 6.10.
+Then either:
 
 - **double-click it** (it works straight from disk), or
 - **serve it:** `npm run serve`, then open the `dist/` link it prints (`http://127.0.0.1:8643/...`).
@@ -47,25 +52,42 @@ World (pause menu) to keep a copy.
 
 **Controls** (the full list is in Help & Controls on the title screen): WASD to move, Space to jump, Shift to sneak,
 double-tap W or hold Ctrl to sprint, hold left mouse to mine or attack, right mouse to place, use or eat, 1-9 or the
-scroll wheel for the hotbar, E for the inventory, Q to drop, F to change camera, T or Enter for chat, Esc to pause,
-F3 for the debug overlay. Settings → Texture pack switches between **OG** (16 px, the classic look) and **Hyperreal**;
+scroll wheel for the hotbar, E for the inventory, Q to drop, F to change camera, T or Enter for chat, Tab for the player
+list, Esc to pause, F3 for the debug screen (F3 + B shows hitboxes, F3 + G chunk borders). In an inventory window: drag
+left to share a stack out, drag right to place one each, double-click to gather, the wheel moves one item, 1-9 swaps with
+the hotbar. Settings → Your skin takes a 64 x 64 PNG. Settings → Texture pack switches between **OG** (16 px, the classic look) and **Hyperreal**;
 Settings → UI Scale makes the whole interface bigger or smaller (Auto picks a size for your screen); the sliders set the
 field of view, mouse sensitivity and the sound and music volume.
 
 ## Multiplayer (game 6.10 and up)
 
-Host a world for your friends with the server in [`server/`](server/README.md). It has no dependencies and needs only Node.js 20+:
+Host a world for your friends with the server in [`server/`](server/README.md). It has no dependencies and needs only
+Node.js 20+. The easy way is the server zip from a release: unpack it and start it (`Start Server.bat` on Windows,
+`./start-server.sh` elsewhere). From a checkout:
 
 ```sh
 npm run build                         # makes dist/dinglecraft_v<version>.html, which the server hands out
 node server/dinglecraft-server.mjs    # on Windows: double-click server/Start Server.bat
 ```
 
-Players open the address the server prints (`http://<your address>:40162/`), or open their own copy of the game and
-choose **Multiplayer**. Blocks, chests, dropped items, chat, the time of day and the players are shared and kept by the server,
-ordinary mobs are shared between the players near them, and operators have slash commands (`/tp`, `/give`, `/gamemode`,
-`/ban`...); vehicles and bosses are still each player's own. The details, the settings and the limits are in
+Players open the address the server prints (`http://<your address>:40162/`) in a browser: nothing to install. They can
+also open their own copy of the game, or the desktop client, and choose **Multiplayer**. The game a server hands out is
+that server's game: it has no local worlds. The stand-alone html and the desktop client keep single player.
+
+**The server runs the world.** It loads the game itself, without a screen, once per dimension (Overworld, Nether,
+Aether), and that copy runs the mobs, water and lava, fire, falling blocks and furnaces, so the world goes on the same for
+everyone. The server keeps blocks, chests (one player at a time), dropped items, mobs, vehicles, the time of day, the
+market, structures and each player's inventory, position and skin. Operators have slash commands (`/tp`, `/give`,
+`/gamemode`, `/ban`, `/export`...). Puppet Purgatory, dragons and the Malgorath cast are still each player's own, and
+there are no accounts yet: a player is whoever types that name (a server password and a whitelist are the protection for
+now).
+
+The world on disk is a folder you can read: `level.json`, `region/` (block changes, a file per 512 x 512 area and
+dimension), `entities/`, `playerdata/<name>.json` and `data/`. The details, the settings and the limits are in
 [server/README.md](server/README.md).
+
+The desktop client in [`client/`](client/README.md) is an Electron window around the same html (`npm install`, then
+`npm start`). Nobody needs it to play; it is there so a desktop version has somewhere to grow.
 
 ## Build
 
@@ -93,7 +115,7 @@ rebuilds that release's file byte for byte (`git checkout <tag> && npm run build
 
 | command | what | time |
 |---|---|---|
-| `npm run test:quick` | build + the repo checks + every static suite + the core logic suite + the UI suites + one og_trace session | about 45 s |
+| `npm run test:quick` | build + the repo checks + every static suite + the core logic suite + the UI suites + one og_trace session | a few minutes |
 | `npm test` | build + every suite once | about 11 min |
 | `npm run gate` | the release gate: every suite, smokes repeated to catch flakes | about 20 min |
 
@@ -107,19 +129,22 @@ no test frameworks and no network calls. How to write one: [docs/TESTING.md](doc
 
 ```
 src/                 the game's JavaScript, one file per system (about 190 files), joined in src/ORDER.txt order
-  core/ world/ entities/ ui/ features/     the original sandbox, PARTs 1-52
+  core/ world/ entities/ ui/ features/     the original sandbox, PARTs 1-52, and PART 53 (chat, the player list)
   texpacks/          PART 54, OG | Hyperreal texture packs (models/ = the Hyperreal cast)
   purgatory/         PART 55, Puppet Purgatory
   creativity/        PART 56, easels, record players, jukeboxes
   malgorath/         PART 57, the Malgorath Update (hr/ = his Hyperreal block)
+  net/               PART 58, multiplayer: the client side, and the parts the server's own copy of the game runs
   boot/              the node test export and the browser boot
 html/                the page shell: CSS per system, DOM by region, the 26-byte tail
 assets/              the title logo, title/ (the menu panorama), vendor/ (three.js r128, bundled), the packed Hyperreal
                      art (429 WebP files), packer inputs
-scripts/             build, serve, bump, release, gate, changelog (Node, no dependencies)
+scripts/             build, serve, bump, release, package, gate, changelog (Node, no dependencies)
 tests/               every test suite, fixtures, and the repo's own checks
 tools/               art packers and art tools, muted browser QA rigs, the secrets scan
-server/              the multiplayer server (game 6.10+): dinglecraft-server.mjs + lib/, Start Server.bat for Windows, its own README
+server/              the multiplayer server (game 6.10+): dinglecraft-server.mjs + lib/, Start Server.bat and
+                     start-server.sh, its own README
+client/              the desktop client: an Electron wrapper around the same html, its own README
 docs/                how everything works (start with ARCHITECTURE.md)
 ```
 
@@ -136,10 +161,13 @@ ghosts and "the others" (a few rare, unsettling events). They are ordinary sourc
 | [docs/TESTING.md](docs/TESTING.md) | the suites, the gate, how to write a test, the rig field manual |
 | [docs/QA.md](docs/QA.md) | muted browser QA |
 | [docs/ASSETS.md](docs/ASSETS.md) | the packed art, where the source art lives, how to repack |
-| [docs/RELEASING.md](docs/RELEASING.md) | version bumps, patch notes, releases |
+| [docs/RELEASING.md](docs/RELEASING.md) | version bumps, patch notes, releases, the server and client downloads |
+| [server/README.md](server/README.md) | running a server: settings, commands, the world folder, limits |
+| [client/README.md](client/README.md) | the desktop client |
+| [CHANGELOG.md](CHANGELOG.md) | what every version changed |
 | [docs/LANDMINES.md](docs/LANDMINES.md) | things that have bitten before |
 | [docs/PARITY.md](docs/PARITY.md) | the byte-for-byte proof of the move into this repo (historical), and the check you can run today |
-| [docs/ROADMAP.md](docs/ROADMAP.md) | what comes next: lazy textures, ES modules, a newer three.js |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | what comes next: lazy textures, ES modules, a newer three.js, accounts and a server-decided inventory |
 | [docs/LEGACY.md](docs/LEGACY.md) | where every old file went |
 | [CLAUDE.md](CLAUDE.md) | the guide for AI coding sessions working in this repo |
 | [THIRD_PARTY.md](THIRD_PARTY.md) | third-party code and models, with their licences |

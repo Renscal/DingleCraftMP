@@ -473,6 +473,20 @@ down first, sideways toward the nearest drop (`liqDirs`), hardening lava where i
 `addLiquid`: corner heights averaged over the four cells sharing the corner. `liqTop` and `liqFlow` feed the swim checks
 and the push on the player, mobs and drops. On a hosted dimension only the host runs it (`ntSimHere`, unchanged).
 
+**Block light (6.26, `src/world/p03e_light.js`).** Each chunk has a light map `ch.lt` (0 to 15 a cell): emitters from
+`lightEmit` (torches and `light:true` blocks 14, lava and glowstone 15), spreading through non-opaque cells losing 1 a
+block. `lightChunk` (from `createChunk`) floods a new chunk from its own emitters and its neighbours' edges;
+`lightEdit` (from `setBlock`) un-floods what a changed cell gave and re-floods from what is left (`LGT.rq`, `LGT.q`), at
+most `LGT.cap` cells a call, the rest in `lightTick` (from `updateChunks`). `bufLight` runs over a finished mesh
+buffer and writes `b.l`: for each vertex, the average light of the non-opaque cells meeting at it on the face's open
+side, skipping everything above `ch.ltTop`. `applyMesh` uploads it as `blight`; `blightObc` patches the three OG
+materials to add `diffuseColor * blight^1.6 * uBlCol` before fog, and `hrWPatch` adds the same to the Hyperreal
+emissive term. `uBlCol` is the warm colour times `1 - 0.75 * daylight`, set every frame, so the hour changes nothing
+in the meshes. The OG pool of six point lights (`TLIGHTS`) stays allocated but is lit only in Puppet Purgatory. Mobs get
+an emissive tint from the cell they stand in. Not on the host; not in saves; not on the wire. A chunk whose light changed
+because a neighbour was built is marked `dirty=2`, not `true`: `updateChunks` builds every missing chunk before it redraws
+those (without that, lava country loads a fifth slower and the frozen Nether smoke fails).
+
 **Shared since 6.11:** villagers, Nuke Kegs and the bosses that are plain mobs (`boss`, `titan`, `infernis`,
 `valkyra`), through the same owner/puppet path. A boss is not handed over while its owner is within 40 blocks. The kinds a
 structure spawns (`NT_UNIQ`) carry their spawn spot, and two of a kind from one spot are one mob (`ntMobTwin`), so a
