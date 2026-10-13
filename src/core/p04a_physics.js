@@ -4,7 +4,7 @@
 const KEY={};                      /* e.code -> held (bound in part 6) */
 const MB={l:false,r:false};        /* mouse buttons */
 let hurtFlash=0;
-const MINE={x:0,y:0,z:0,prog:0,need:0,active:false};
+const MINE={x:0,y:0,z:0,prog:0,need:0,active:false,slot:0,itemId:0};   /* slot, itemId: what is doing the mining (6.19: a swap starts the block over) */
 
 function solidAt(x,y,z){return DEFS[getBlock(x,y,z)].solid!==false;}
 function boxCollides(px,py,pz,hw,h){

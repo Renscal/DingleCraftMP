@@ -32,7 +32,7 @@ const names = [...E, ...S].map((e) => e.name);
 ok('gate entry names are unique', new Set(names).size === names.length);
 const missing = E.filter((e) => !exists(e.suite)).map((e) => e.suite);
 ok('every listed suite exists' + (missing.length ? ' (missing: ' + missing.join(', ') + ')' : ''), missing.length === 0);
-const SUITE_DIRS = ['tests/core', 'tests/texpacks', 'tests/purgatory', 'tests/pilot', 'tests/creativity', 'tests/malgorath', 'tests/repo', 'tests/ui', 'tests/net'];
+const SUITE_DIRS = ['tests/core', 'tests/core2', 'tests/texpacks', 'tests/purgatory', 'tests/pilot', 'tests/creativity', 'tests/malgorath', 'tests/repo', 'tests/ui', 'tests/net'];
 const listed = new Set([...E.map((e) => e.suite), ...(G.helpers || [])]);
 const unlisted = SUITE_DIRS.flatMap((d) => walk(d)).filter((f) => f.endsWith('.js') && !listed.has(f));
 ok('every .js under the suite dirs is a gate entry or a listed helper' + (unlisted.length ? ' (unlisted: ' + unlisted.join(', ') + ')' : ''), unlisted.length === 0);

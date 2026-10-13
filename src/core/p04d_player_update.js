@@ -229,10 +229,15 @@ function doMine(dt){
     if(P.atkT<=0){P.atkT=0.22;breakBlock(hit.x,hit.y,hit.z,false);}
     MINE.active=false;return;
   }
+  const mst=heldStack(),mid=mst?mst.id:0;
   if(!MINE.active||MINE.x!==hit.x||MINE.y!==hit.y||MINE.z!==hit.z){
     if(DIM!=='puppet'&&blockComesAlive(hit.x,hit.y,hit.z,hit.id)){MINE.active=false;MINE.prog=0;return;}
     MINE.active=true;MINE.x=hit.x;MINE.y=hit.y;MINE.z=hit.z;
-    MINE.prog=0;MINE.need=breakTime(hit.id,heldStack());
+    MINE.prog=0;MINE.need=breakTime(hit.id,mst);MINE.slot=P.sel;MINE.itemId=mid;
+  }else if(MINE.slot!==P.sel||MINE.itemId!==mid){
+    /* another slot, or another item in the hand (a tool that wore out counts): the block is started over with what is
+       held now, so the tool that breaks it is the tool that did all of the work, and pays for it */
+    MINE.prog=0;MINE.need=breakTime(hit.id,mst);MINE.slot=P.sel;MINE.itemId=mid;
   }
   MINE.prog+=dt;
   if(frameCount%9===0)burstParticles(hit.x+0.5+hit.nx*0.45,hit.y+0.5+hit.ny*0.45,hit.z+0.5+hit.nz*0.45,hit.id,2);

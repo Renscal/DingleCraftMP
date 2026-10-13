@@ -21,6 +21,14 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — No more tool swapping
+
+*Game version 6.19, released 2026-10-13.*
+
+- NO MORE TOOL SWAPPING. You could start a block with your good pickaxe, flick to an empty hand just before it broke, and let your bare knuckles take the wear. Or do it the other way round and borrow a diamond pick for the last tenth of a second.
+- Not any more. Change the slot, or what is in your hand, and the block starts over with whatever you are holding now. The tool that breaks a block is the tool that did the whole job, and it pays for it.
+- Mining without swapping costs exactly the time and the wear it always did.
+
 ## Release 1.1 — A server is a server
 
 *Game version 6.18, released 2026-10-13.*
