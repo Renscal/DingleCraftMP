@@ -21,6 +21,14 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — A server is a server
+
+*Game version 6.18, released 2026-10-13.*
+
+- A SERVER IS A SERVER. Open a server's address and the game you get is that server's game: Multiplayer, and nothing else to click by mistake. Create New World, Load World, Continue and Import World are gone from it.
+- Single player has not gone anywhere. It lives in the game itself: the html opened from a file, or the desktop client. Same game, same worlds, same everything.
+- One catch, and it is a real one: a browser keeps worlds per address. If you made single-player worlds at a server's address before, they are still in your browser, untouched, but that page no longer opens them. The server owner can switch the old page back on (singlePlayer in server.json) long enough for you to Export World.
+
 ## Release 1.1 — Every dimension
 
 *Game version 6.17, released 2026-10-13.*

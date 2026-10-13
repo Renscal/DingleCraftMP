@@ -265,6 +265,7 @@ async function listWorlds(){
   }catch(e){return [];}
 }
 async function loadWorldByName(name){
+  if(NET.served)return false;   /* PART 58: nor does it load one */
   try{
     const r=await window.storage.get('vxw:'+name);
     if(!r)throw 0;
@@ -284,6 +285,7 @@ function exportWorld(){
   showToast('World exported');
 }
 function importWorldFile(file){
+  if(NET.served)return;   /* PART 58: ...or import one */
   const fr=new FileReader();
   fr.onload=()=>{
     try{

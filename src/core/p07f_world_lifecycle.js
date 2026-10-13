@@ -19,6 +19,7 @@ function findSpawn(){
   return [0.5,Math.max(colInfo(0,0).h,SEA)+2,0.5];
 }
 function startNewWorld(name,seedStr,mode){
+  if(NET.served)return;   /* PART 58: the game a server hands out has no worlds of its own (the stand-alone game does) */
   resetWorld();
   SEED=hashSeed(seedStr);
   timeOfDay=0.3;

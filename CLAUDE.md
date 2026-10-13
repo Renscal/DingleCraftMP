@@ -152,6 +152,9 @@ Full map: `docs/ARCHITECTURE.md` (PART-to-file table, systems index, how each up
   Since 6.17 there is one host per dimension (`S.hosts`: Overworld from the start and the only one that cooks furnaces and
   runs the market, `NET.hprim`; Nether and Aether on first entry; never Purgatory), and "player 0" is the host of the
   sender's dimension, so nothing in host code may assume the Overworld (`ntHosted()` and `c.hdim`, never `'over'`).
+  The page a server serves has one line added (`window.DC_SERVER=1`, `server/lib/http.mjs`), which sets `NET.served`: that
+  game has no local worlds (`startNewWorld`, `loadWorldByName`, `importWorldFile` return at once, their buttons are
+  hidden). The stand-alone html and the desktop client never have it set.
   World-level save fields are the server's since 6.16: a new one that should be shared goes in `NT_WD` (and
   `WORLD_LISTS` and `DATA_FILES` in the server) if it is a list, and a new per-player one in the four keys `ntSave` adds. The server owns blocks, block entities (one player in a chest at a
   time), dropped items, time, rules, rights (ops, bans, the whitelist, spawn protection, slash commands in

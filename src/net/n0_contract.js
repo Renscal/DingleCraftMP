@@ -64,6 +64,10 @@
 /*   checkFalling -> ntHosted      igniteAt -> ntIgnite                  */
 /*   updateFires -> ntHosted       furnaceTick -> ntNoTick               */
 /*   tickSpawners -> ntHosted      updateStocks -> NET.hosted (6.16)     */
+/* And three that call nothing, behind NET.served (6.18): startNewWorld, */
+/*   loadWorldByName and importWorldFile do nothing in the game a server */
+/*   hands out. The stand-alone game (a file, the desktop client) is     */
+/*   untouched: only a server's page sets window.DC_SERVER.              */
 /*                                                                       */
 /* Protocol: JSON text frames over one WebSocket, {t:'<type>', ...}.     */
 /*   client -> server: hello pose rd edits open close be drop dropAt     */
@@ -116,7 +120,8 @@ const NET={on:false,st:'off',ws:null,id:0,name:'',server:'',pvp:true,ap:false,pe
   pw:'',retryN:0,retryH:0,pingT:0,pingN:0,pingAt:0,ms:0,rxAt:0,act:false,
   hosted:false,host:false,hp0:null,hpl:[],hrr:0,hsnT:0,hchT:0,
   fx:new Map(),fseq:0,vehs:new Map(),vseq:0,vehT:0,ignQ:[],fbT:0,apd:false,
-  wd:{},wdT:0,mktT:0,hdims:[],hprim:false};   /* hdims: the dimensions the server runs a game for; hprim: this host also cooks the furnaces and runs the market */   /* na_data.js: each world list as last agreed with the server, the timers for them and for the market */   /* ignQ: cells to light (to the server's game) or lit (to the players); fbT: the host's furnace report timer */   /* n9_ents.js: flying things and vehicles by id, their counters, the vehicle timer */
+  wd:{},wdT:0,mktT:0,hdims:[],hprim:false,
+  served:typeof window!=='undefined'&&window.DC_SERVER===1};   /* this page was handed out by a server (it sets window.DC_SERVER before the game loads): no worlds of its own */   /* hdims: the dimensions the server runs a game for; hprim: this host also cooks the furnaces and runs the market */   /* na_data.js: each world list as last agreed with the server, the timers for them and for the market */   /* ignQ: cells to light (to the server's game) or lit (to the players); fbT: the host's furnace report timer */   /* n9_ents.js: flying things and vehicles by id, their counters, the vehicle timer */
 
 /* everything the suites reach, spread into window.__vox by src/boot/export_boot.js */
 
@@ -127,4 +132,4 @@ const NTEX={NET,NT_PROTO,NT_PORT,ntUrl,ntConnect,ntLeave,ntDown,ntMsg,ntSend,ntE
   ntHosted,ntHostStart,ntHostTick,ntHostSnap,ntHostPlayers,ntHostAim,ntHostHurt,ntMobFull,
   ntFxTick,ntFxIn,ntFxGone,ntFxPup,ntVehTick,ntVehsIn,ntVehsGone,ntVehHit,ntVehPup,ntEntPup,ntHostVehSnap,
   spawnArrow,spawnBoat,hitCar,ntIgnite,ntFireIn,ntNoTick,ntHostBeScan,checkFalling,igniteAt,updateFires,furnaceTick,tickFlow,getFires:()=>fires,
-  ntWdGet,ntWdTick,ntWdIn,ntWdReset,ntMktIn,ntHostMkt,tickSpawners,updateStocks,getMKT:()=>MKT,getSPW:()=>SPW,getNUKES:()=>NUKES,getVSEEN:()=>VSEEN,getINFKILL:()=>INFKILL};   /* three core names the suites need to shoot, launch and hit with */
+  ntWdGet,ntWdTick,ntWdIn,ntWdReset,ntMktIn,ntHostMkt,tickSpawners,updateStocks,ntServedMenu,loadWorldByName,importWorldFile,getMKT:()=>MKT,getSPW:()=>SPW,getNUKES:()=>NUKES,getVSEEN:()=>VSEEN,getINFKILL:()=>INFKILL};   /* three core names the suites need to shoot, launch and hit with */

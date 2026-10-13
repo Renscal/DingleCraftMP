@@ -3,7 +3,12 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Every dimension',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'A server is a server',lines:[
+    'A SERVER IS A SERVER. Open a server&#x27;s address and the game you get is that server&#x27;s game: Multiplayer, and nothing else to click by mistake. Create New World, Load World, Continue and Import World are gone from it.',
+    'Single player has not gone anywhere. It lives in the game itself: the html opened from a file, or the desktop client. Same game, same worlds, same everything.',
+    'One catch, and it is a real one: a browser keeps worlds per address. If you made single-player worlds at a server&#x27;s address before, they are still in your browser, untouched, but that page no longer opens them. The server owner can switch the old page back on (singlePlayer in server.json) long enough for you to Export World.',
+  ]},
+ {v:'6.17',label:'Release 1.1',title:'Every dimension',lines:[
     'EVERY DIMENSION. The server now runs the Nether and the Aether the way it runs the Overworld: its own mobs, water, fire, falling blocks, spawners and vehicles, saved with the world.',
     'Each dimension gets its own copy of the game on the server, woken the moment the first of you steps through a portal. Imps no longer depend on whose computer is nearest.',
     'Mobs stay in their dimension, and so do their save files: server owners will find entities/nether next to entities/over.',

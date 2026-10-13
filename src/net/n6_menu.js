@@ -24,8 +24,17 @@ function ntMenuGo(){
   const a=$('t_mp_addr'),p=$('t_mp_pw');
   ntConnect(a?a.value:'',p?p.value:'');
 }
+/* The game a server hands out is that server's game: Create New World, Load World and Continue are taken off its menu
+   (the functions behind them do nothing there either), which leaves Multiplayer as the one way to play. A copy of the
+   game opened from a file, or in the desktop client, keeps them. */
+function ntServedMenu(){
+  if(!NET.served)return false;
+  for(const id of ['t_continue','t_go_new','t_go_load','t_import']){const b=$(id);if(b){b.hidden=true;b.disabled=true;if(b.setAttribute)b.setAttribute('aria-hidden','true');}}
+  return true;
+}
 {
   const on=(id,f)=>{const b=$(id);if(b)b.onclick=f;};
+  ntServedMenu();
   on('t_go_mp',()=>{ntOpenMenu();playS('click');});
   on('t_back_mp',()=>{ntRetryStop();if(NET.st==='connecting'){const ws=NET.ws;NET.ws=null;NET.st='off';NET.pend=null;if(ws){try{ws.onclose=null;ws.close();}catch(e){}}ntStatus('');}
     tmShow('main','t_go_mp');playS('click');});

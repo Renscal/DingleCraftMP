@@ -1,6 +1,6 @@
 # The DINGLECRAFT multiplayer server
 
-No dependencies and nothing to install: `dinglecraft-server.mjs` plus the `lib/` folder beside it. It needs [Node.js](https://nodejs.org) 20 or newer and a game build of 6.17 or newer.
+No dependencies and nothing to install: `dinglecraft-server.mjs` plus the `lib/` folder beside it. It needs [Node.js](https://nodejs.org) 20 or newer and a game build of 6.18 or newer.
 
 ## Start it
 
@@ -19,6 +19,12 @@ The window prints the addresses to hand out. Stop it with `stop` or Ctrl+C; the 
 
 - If the server found a game file, players just open `http://<your address>:40162/` in a browser. The server hands them
   the game, the Multiplayer screen already has the address filled in, and everyone is guaranteed to run the same version.
+  The game a server hands out is that server's game (6.18): it has no Create New World, Load World, Continue or Import
+  World, only Multiplayer. Single player is in the stand-alone game: the same html opened from a file, or the desktop
+  client. (The server adds one line to the page it serves to say so; the file itself is not changed.)
+  A browser keeps its worlds per address, so single-player worlds a player made earlier at this server's address are
+  still in their browser but can no longer be opened from it. To get them out, set `"singlePlayer": true` in
+  `server.json`, restart, and have the player use Export World in the pause menu; then set it back.
 - Otherwise each player opens their own copy of the game, chooses **Multiplayer** on the main menu and types
   `<your address>:40162`.
 
@@ -65,6 +71,7 @@ The first run writes `data/server.json`. Edit it and restart, or pass the same t
 | `viewChunks` | | 12 | how far around a player the server sends block changes, chests and dropped items, for a game that does not say (the game asks for its own draw distance + 3) |
 | `cert`, `key` | `--cert`, `--key` | | a TLS certificate and its private key (PEM files, looked for in the data folder unless a full path). With both, the server is `https://` and `wss://` |
 | `simulate` | | `true` | the server runs the Overworld's mobs itself (see "The server runs the mobs"). `false`: the players' games do |
+| `singlePlayer` | | `false` | `true`: the page the server hands out is the whole game, with Create New World and Load World (as before 6.18). Worlds made there live in the player's browser, under this server's address |
 | `origins` | | `[]` | web addresses whose pages may connect, e.g. `["https://play.example"]`. Empty: any page may (needed for "open your own copy of the game"). The server's own page, a game opened from a file and the desktop client are always let in |
 
 `data/` is ignored by git: the world, the settings and the password stay on your machine.
