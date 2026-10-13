@@ -85,7 +85,8 @@ build/ dist/ out/   gitignored outputs
    **Every update is pushed**: work on the `Experimental` branch, and after each finished update (tests green) commit and
    push it to the DingleCraftMP repository on GitHub (`git push mp Experimental`). `main` moves only when the owner says so.
    **Every version gets a GitHub release**, cut from `Experimental`, with two downloads, a server zip and a client zip
-   (`npm run package`, then the `gh release create` line it prints; `docs/RELEASING.md` step 6). The access token lives in the machine's git credentials, never in this file or any other repo file (hard
+   (`npm run package`, then the `gh release create` line it prints; `docs/RELEASING.md` step 6). These are betas for
+   players to test: the owner releases them without the gate (`npm run release -- --no-gate`). The access token lives in the machine's git credentials, never in this file or any other repo file (hard
    rule 2: a token in a tracked file is published with the next push, and GitHub revokes it on sight).
 10. **Announce** with playful per-feature patch notes, plus the test counts `npm run release` prints (the in-game
     patch-notes screen is retired; `PATCH_LOG` is the data behind `CHANGELOG.md`).

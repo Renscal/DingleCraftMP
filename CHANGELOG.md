@@ -21,6 +21,29 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — Multiplayer
+
+*Game version 6.10, released 2026-10-13.*
+
+- MULTIPLAYER. Other people. In your world. On purpose.
+- Main menu: Multiplayer. Type a server address, press Join Server, and you are standing next to your friends, who each get their own shirt colour and their name floating over their head.
+- Shared with everyone: every block placed or broken (in every dimension), chests and furnaces, dropped items, chat, the player list (hold TAB), the time of day, sleeping through the night and the game rules.
+- The server remembers you by name: your inventory, armour, XP, Dingle Bucks and where you were standing are all waiting when you come back.
+- You can punch each other. Swords count, and so do arrows, bullets and TNT. The server checks you were actually close enough, and the server owner can switch the whole thing off, and probably will.
+- Dropped items are real for everyone: throw your friend a sword, loot the pile where they died, and when two of you dive for the same diamond the server picks exactly one winner.
+- MOBS ARE SHARED. The zombie chasing your friend is the same zombie you can see, hit and loot. Each ordinary mob (zombies, skeletons, boomers, spiders, pigs, cows, sheep and the Nether and Aether locals) is run by the game of whoever is nearest and goes after them, and quietly changes hands when someone else gets closer.
+- Sleeping is a vote now: the night is skipped when everyone is in bed (the server owner picks the percentage). One person in pyjamas no longer decides for the group.
+- Chests and furnaces are one player at a time. If your friend is in it, you are told so, and nobody's diamonds get eaten by a race.
+- OPERATORS AND COMMANDS: the server owner can make players operators. Type / in chat: /tp, /give, /gamemode (per player), /time, /gamerule, /kick, /ban, /whitelist, /setworldspawn, plus /msg, /me, /list and /help for everyone.
+- New players start at one world spawn, and on a server with operators the blocks around it are protected from everyone else.
+- Death messages are written by the server and say what happened. You fell from a high place. You tried to swim in lava. You were slain by your so-called friend.
+- Reconnecting after your wifi hiccups gives you your own name and inventory back instead of a stranger called You_2.
+- Quietly better: big worlds join faster (the server sends the chunks around you and the rest as you travel), water is flowed by one game instead of all of them, and dropped items no longer age while the server is empty.
+- Still your own: vehicles, bosses, dragons, villagers, the Purgatory and Malgorath casts and the AI players are played by each player's own game and are not shared yet.
+- Hosting: the new server/ folder has the server (nothing to install, it needs only Node.js). On Windows, double-click Start Server.bat. It keeps the world, saves it every 30 seconds, hands the game to anyone who opens its address in a browser, and can host a world you exported from single player.
+- THE AI PLAYERS HAVE LOGGED OFF. BunkerBrad, xx_lilcreepah_xx and honeybee_mc have left the building, taking their brain server, their grudges and their bunker with them. You have real friends now. Old worlds still load; the three of them are simply not in them. The chat box, the player list and the Player Compass stay, and the compass now points at actual people.
+- Single player is otherwise exactly as it was. Server worlds never touch your saved worlds.
+
 ## Release 1.0 — Replays
 
 *Game version 6.9, released 2026-10-09.*

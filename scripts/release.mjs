@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 // Record a release: npm run release   (after a green `npm run gate`)
+//   --no-gate   a beta: skip the gate check below (nothing was tested; the release notes of a beta say so)
 // Refuses unless:
 //   - GAME_VERSION is above every version in tests/fixtures/shipped.json (a shipped version is frozen);
 //   - RELEASE_LABEL is new, or is the label of the newest shipped version (a later cut of that release; labelProblem);
@@ -16,6 +17,8 @@ import { REPO, FIX, rel } from './lib/paths.mjs';
 import { readVersion, readLabel, cmpVersion, readPatchLog, checkSites, labelProblem } from './lib/version.mjs';
 
 const die = (m) => { console.error('release: ' + m); process.exit(1); };
+for (const a of process.argv.slice(2)) if (a !== '--no-gate') die('unknown option ' + a);
+const NOGATE = process.argv.includes('--no-gate');
 const md5 = (b) => crypto.createHash('md5').update(b).digest('hex');
 const VER = readVersion(REPO);
 const LABEL = readLabel(REPO);
@@ -36,8 +39,8 @@ if (/TODO/.test(top.title) || top.lines.some((l) => /TODO/.test(l))) die('the to
 
 const OUTDIR = path.resolve(process.env.DC_OUT_DIR || path.join(REPO, 'out'));
 const gateFile = path.join(OUTDIR, 'gate_last.json');
-if (!fs.existsSync(gateFile)) die(`${rel(gateFile)} missing: run a green npm run gate first`);
-const gate = JSON.parse(fs.readFileSync(gateFile, 'utf8'));
+if (!NOGATE && !fs.existsSync(gateFile)) die(`${rel(gateFile)} missing: run a green npm run gate first`);
+const gate = NOGATE ? {} : JSON.parse(fs.readFileSync(gateFile, 'utf8'));
 
 // Fresh build of the current sources into a private dir (never touches dist/ until the checks pass).
 const tmp = path.join(OUTDIR, 'release_build');
@@ -46,7 +49,7 @@ const r = spawnSync(process.execPath, [path.join(REPO, 'scripts', 'build.mjs'), 
 if (r.status !== 0) die('the build failed');
 const info = JSON.parse(fs.readFileSync(path.join(tmp, 'build.json'), 'utf8'));
 if (info.version !== VER) die('build version mismatch');
-if (gate.html_md5 !== info.html.md5) die(`out/gate_last.json was for html md5 ${gate.html_md5}, the current build is ${info.html.md5}: run npm run gate again`);
+if (!NOGATE && gate.html_md5 !== info.html.md5) die(`out/gate_last.json was for html md5 ${gate.html_md5}, the current build is ${info.html.md5}: run npm run gate again`);
 if (gate.version && gate.version !== VER) die(`out/gate_last.json was for v${gate.version}`);
 
 const distDir = path.resolve(process.env.DC_DIST || path.join(REPO, 'dist'));
@@ -78,6 +81,7 @@ if (gate.counts) {
   for (const [k, v] of Object.entries(gate.counts)) console.log(`  ${k}: ${typeof v === 'object' ? JSON.stringify(v) : v}`);
 }
 if (gate.total !== undefined) console.log('  total: ' + gate.total);
+if (NOGATE) console.log('\n(--no-gate: a beta, released without running the gate)');
 const relTag = LABEL.toLowerCase().replace(/[^a-z0-9.]+/g, '-');
 console.log(`\nplay: ${rel(distFile)}\nnext: git add -A && TZ=UTC0 git commit -m "release: ${LABEL} (v${VER}) ${top.title}" && git tag v${VER} && git tag ${LABEL_REUSED ? '-f ' : ''}${relTag}` +
   (LABEL_REUSED ? `\n(${LABEL} is a later cut of the newest release: -f moves the ${relTag} tag onto it)` : ''));

@@ -149,6 +149,11 @@ const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
   // ---- 5. git: identity and history (only once a repository exists) ----------------------------------------------------
   const OKMAIL = /(?:^|@)(?:dinglecraft\.invalid|users\.noreply\.github\.com|noreply\.github\.com)$|^noreply@github\.com$/i;
+  /* addresses already published in this repository's history that the owner chose to leave there (6.10) rather than rewrite
+     every commit. Kept as SHA-256 of the lower-cased address, so the address itself is in no tracked file. Not a way in for
+     new ones: the repo-local identity below must still be a noreply address. */
+  const PUBLIC_MAIL = new Set(['8a8f1f470a8181fe7a96f00dc01e0a807ca4561f49418bd7eb56d98518fbd666', '262d00286798eff8425c4aef789c8f0a8c5df4084a8b835651d73933b1704988']);
+  const mailHash = (e) => require('crypto').createHash('sha256').update(e.toLowerCase()).digest('hex');
   if (!fs.existsSync(P.REPO + '.git')) skip('git identity and history', 'no repository yet');
   else {
     const git = (...a) => { try { return execFileSync('git', a, { cwd: P.REPO, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch (e) { return null; } };
@@ -156,7 +161,7 @@ const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     ok('git: the repo-local identity, if set, is the placeholder (never a personal address)', em === null || em === '' || (OKMAIL.test(em) && !!nm));
     const log = git('log', '--all', '--format=%ae%n%ce');
     if (log === null || log === '') skip('git history authors', 'no commits yet');
-    else { const bad = [...new Set(log.split('\n').filter((e) => e && !OKMAIL.test(e)))];
+    else { const bad = [...new Set(log.split('\n').filter((e) => e && !OKMAIL.test(e) && !PUBLIC_MAIL.has(mailHash(e))))];
       ok('git: every commit author and committer uses a placeholder or noreply address (' + bad.length + ' other address' + (bad.length === 1 ? '' : 'es') + ')', bad.length === 0); }
     const msgs = git('log', '--all', '--format=%B');
     if (msgs) { const bad = msgs.split('\n').filter((l) => hitsOf(l).length).length;
