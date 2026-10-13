@@ -198,8 +198,12 @@ boot.run(async()=>{
   /* ===== 9. time ===== */
   S.setTime(0.2);await until(()=>Math.abs((V.getTime()%1)-0.2)<0.01,2000);
   ok('the server clock moves Dan\'s clock',Math.abs((((V.getTime()%1)+1)%1)-0.2)<0.01);
-  await pump(3);bea.clear();V.setTime(V.getTime()+0.3);await until(()=>Math.abs((((V.getTime()%1)+1)%1)-0.2)<0.02,2000);await pump(3);
-  ok('a local jump in time without the right to (not an operator, Cheats off) is put back; nobody else hears of it',Math.abs(W.time-0.2)<0.02&&Math.abs((((V.getTime()%1)+1)%1)-0.2)<0.02&&bea.by('time').length===0);
+  /* (frames are stepped while waiting: the jump only goes out from a frame. The server's own 5-second clock message may
+     land on Bea meanwhile; what must not reach her is the jumped time, 0.5.) */
+  await pump(3);bea.clear();V.setTime(V.getTime()+0.3);
+  {const t0=Date.now();while(Date.now()-t0<4000&&!(Math.abs((((V.getTime()%1)+1)%1)-0.2)<0.02)){step(2);await sleep(8);}}
+  await pump(3);
+  ok('a local jump in time without the right to (not an operator, Cheats off) is put back; nobody else hears of it',Math.abs(W.time-0.2)<0.02&&Math.abs((((V.getTime()%1)+1)%1)-0.2)<0.02&&!bea.by('time').some(m=>Math.abs(m.v-0.5)<0.1));
   S.command('op '+V.getPName());await until(()=>NET.op===true,2000);
   ok('/op from the console reaches the game (NET.op)',NET.op===true&&S.opts.ops.includes(V.getPName().toLowerCase()));
   await pump(3);bea.clear();V.setTime(V.getTime()+0.3);await pump(4);

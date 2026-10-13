@@ -3,7 +3,13 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Looking up from underwater',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Throw it and wait',lines:[
+    'THROW IT AND WAIT. Press Q and the item used to bounce off the ground and straight back into your pocket, which made giving anybody anything a small comedy.',
+    'Now the thrower waits 2 seconds before they can pick their own throw back up. Everybody else can grab it as fast as ever.',
+    'Only throws count. What a broken block drops, what a mob leaves and what you spill when you die behave as before.',
+    'On a server the server keeps the same clock, so nobody argues their way round it.',
+  ]},
+ {v:'6.20',label:'Release 1.1',title:'Looking up from underwater',lines:[
     'LOOKING UP FROM UNDERWATER. Dive in, look up, and there used to be nothing: the surface of the water was only painted on its top side, so from below the lake had no lid.',
     'Water now has both sides. The surface is there from underneath, and the wall of a waterfall is there when you look out of it.',
   ]},

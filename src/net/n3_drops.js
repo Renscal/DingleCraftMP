@@ -19,6 +19,7 @@ function ntDropStack(st){return {id:st.id,count:st.count,...(st.dur!=null?{dur:s
 function ntDropKnow(m){
   if(!m||typeof m.id!=='string'||!m.st||!DEFS[m.st.id]||!(m.st.count>0)||typeof m.x!=='number'||typeof m.y!=='number'||typeof m.z!=='number')return null;
   const d={id:m.id,dim:''+(m.dim||'over'),x:m.x,y:m.y,z:m.z,st:ntDropStack(m.st),e:null,mine:false,fix:true,sx:m.x,sy:m.y,sz:m.z};
+  if(typeof m.by==='string'&&m.by)d.by=m.by;             /* who threw it (6.21): they wait 2 seconds before picking it up again */
   NET.drops.set(d.id,d);return d;
 }
 /* the tail of spawnDrop: a drop this game just made */
@@ -32,7 +33,7 @@ function ntDropSpawned(){
   d.sx=d.x;d.sy=d.y;d.sz=d.z;
   NET.drops.set(id,d);
   ntSaveSoon();   /* if it came out of the inventory, the server should hear that the inventory no longer has it */
-  ntSend({t:'drop',id,dim:d.dim,x:d.x,y:d.y,z:d.z,vx:+e.vx.toFixed(2),vy:+e.vy.toFixed(2),vz:+e.vz.toFixed(2),st:d.st});
+  ntSend({t:'drop',id,dim:d.dim,x:d.x,y:d.y,z:d.z,vx:+e.vx.toFixed(2),vy:+e.vy.toFixed(2),vz:+e.vz.toFixed(2),st:d.st,...(e.by?{by:1}:{})});   /* by: thrown on purpose (the server knows by whom) */
 }
 /* give a known drop its body: an ordinary drop entity, tagged with its id */
 function ntDropShow(d,vx,vy,vz){
@@ -40,7 +41,7 @@ function ntDropShow(d,vx,vy,vz){
   NET.dropIn=true;
   try{spawnDrop(d.x,d.y,d.z,d.st,vx||0,vy||0,vz||0);}finally{NET.dropIn=false;}
   const e=entities[entities.length-1];
-  if(entities.length>n&&e&&e.t==='drop'){e.nid=d.id;d.e=e;}
+  if(entities.length>n&&e&&e.t==='drop'){e.nid=d.id;d.e=e;if(d.by){e.by=d.by;e.byT=DROP_WAIT;}}
 }
 /* is this drop in a loaded chunk of the dimension the player is in? */
 function ntDropHere(d){return d.dim===DIM&&!!chunkAt(Math.floor(d.x),Math.floor(d.z));}

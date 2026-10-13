@@ -21,6 +21,15 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — Throw it and wait
+
+*Game version 6.21, released 2026-10-13.*
+
+- THROW IT AND WAIT. Press Q and the item used to bounce off the ground and straight back into your pocket, which made giving anybody anything a small comedy.
+- Now the thrower waits 2 seconds before they can pick their own throw back up. Everybody else can grab it as fast as ever.
+- Only throws count. What a broken block drops, what a mob leaves and what you spill when you die behave as before.
+- On a server the server keeps the same clock, so nobody argues their way round it.
+
 ## Release 1.1 — Looking up from underwater
 
 *Game version 6.20, released 2026-10-13.*

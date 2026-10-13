@@ -15,7 +15,8 @@
 //   open {k}                                      be, lock {k, ok, by}   (a chest is used by one player at a time)
 //   close {k}                                     -
 //   be {k, v|null}                                be        (or be back to the sender if someone else holds the lock)
-//   drop {id dim x y z vx vy vz st}               drop      (or undrop back to the sender if it was refused)
+//   drop {id dim x y z vx vy vz st by?}           drop      (or undrop back to the sender if it was refused; by: thrown on
+//                                                 purpose, so the thrower cannot take it back for 2 seconds)
 //   dropAt {id x y z}                             -         (only remembered: where it came to rest)
 //   take {id, gone?}                              took (to the taker), undrop (to everyone else); the taker must be near
 //   chat {txt}                                    chat
@@ -471,8 +472,10 @@ export function handleMessage(S, net, c, m, size) {
       const st = cleanStack(m.st);
       if (!st || Object.keys(world.drops).length >= LIMITS.drops) return net.send(c, { t: 'undrop', id: m.id });
       const d = { dim: DIMS.has(m.dim) ? m.dim : 'over', x: num(m.x, -3e7, 3e7, 0), y: num(m.y, -256, 1024, 0), z: num(m.z, -3e7, 3e7, 0), st, age: 0 };
+      /* thrown on purpose: the thrower waits before picking it up again (kept in memory only: it is over long before a save matters) */
+      if (m.by && !c.host) { Object.defineProperty(d, 'by', { value: playerKey(c.name), enumerable: false, writable: true }); Object.defineProperty(d, 'byAt', { value: now, enumerable: false, writable: true }); }
       world.drops[m.id] = d; S.dirty = true;
-      net.broadcast({ t: 'drop', id: m.id, dim: d.dim, x: d.x, y: d.y, z: d.z, vx: num(m.vx, -60, 60, 0), vy: num(m.vy, -60, 60, 0), vz: num(m.vz, -60, 60, 0), st }, c);
+      net.broadcast({ t: 'drop', id: m.id, dim: d.dim, x: d.x, y: d.y, z: d.z, vx: num(m.vx, -60, 60, 0), vy: num(m.vy, -60, 60, 0), vz: num(m.vz, -60, 60, 0), st, ...(d.by ? { by: c.name } : {}) }, c);
       return;
     }
     case 'dropAt': {                   // where it came to rest, as seen by a player standing near it
@@ -487,6 +490,7 @@ export function handleMessage(S, net, c, m, size) {
       if (typeof m.id !== 'string') return;
       if (!Object.hasOwn(world.drops, m.id)) { if (!m.gone) net.send(c, { t: 'undrop', id: m.id }); return; }
       if (c.host ? !m.gone : !near(c.pose, world.drops[m.id], m.gone ? LIMITS.goneReach : LIMITS.takeReach)) return;   // not standing by it: ask again when you are
+      { const d = world.drops[m.id]; if (!m.gone && d.by === playerKey(c.name) && now - d.byAt < LIMITS.throwWait) return; }   // their own throw, too soon: like a lost race, they ask again
       delete world.drops[m.id]; S.dirty = true;
       if (!m.gone) net.send(c, { t: 'took', id: m.id });   // gone: the item was destroyed in that player's game, nobody gets it
       net.broadcast({ t: 'undrop', id: m.id }, c);

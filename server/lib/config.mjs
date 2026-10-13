@@ -34,6 +34,7 @@ export const LIMITS = {
   shotReach: 96,                 // ... and for an arrow or a bullet
   hitGap: 250,                   // milliseconds between two hits from one player
   takeReach: 10,                 // blocks between a player and a dropped item they pick up
+  throwWait: 2000,               // milliseconds before a player may pick up what they threw themselves
   goneReach: 256,                // ... and one their game says was destroyed
   lockReach: 12,                 // a chest stays locked to a player only while they stand this close
   poseNear: 128,                 // players this close (same dimension) see each other at full rate; the rest once a second

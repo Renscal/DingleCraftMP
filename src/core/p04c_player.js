@@ -67,7 +67,8 @@ function dropSel(all){
   const n=all?st.count:1;
   const d=lookDir();
   const e=eyePos();
-  spawnDrop(e[0]+d[0]*0.5,e[1]-0.3,e[2]+d[2]*0.5,{id:st.id,count:n,dur:st.dur,...(st.ench?{ench:st.ench}:{})},d[0]*6,d[1]*6+2,d[2]*6);
+  DROP_BY=dropMe();   /* thrown on purpose: this player cannot pick it straight back up (p05a) */
+  try{spawnDrop(e[0]+d[0]*0.5,e[1]-0.3,e[2]+d[2]*0.5,{id:st.id,count:n,dur:st.dur,...(st.ench?{ench:st.ench}:{})},d[0]*6,d[1]*6+2,d[2]*6);}finally{DROP_BY=null;}
   st.count-=n;
   if(st.count<=0)P.inv[P.sel]=null;
   redrawHotbar();playS('pop');

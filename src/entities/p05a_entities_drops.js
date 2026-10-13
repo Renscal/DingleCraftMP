@@ -51,6 +51,13 @@ function iconTex(id){
   const m=new THREE.SpriteMaterial({map:tx,transparent:true});
   ICONTEX[id]=m;return m;
 }
+/* Who is throwing, while a player throws something on purpose (dropSel sets it around its spawnDrop; everything else that
+   drops an item leaves it null). A thrown item cannot be picked up again by its thrower for DROP_WAIT seconds (6.21), so
+   Q no longer hands the item straight back. Block drops, mob drops and what a death spills are not thrown. */
+var DROP_BY=null;
+const DROP_WAIT=2;
+/* this player, as a thrower: their name on a server, 'me' alone */
+function dropMe(){return NET.on?NET.name:'me';}
 function spawnDrop(x,y,z,st,vx,vy,vz){
   if(!st||st.count<=0)return;
   const tp3=toolIdParts(st.id);
@@ -64,6 +71,7 @@ function spawnDrop(x,y,z,st,vx,vy,vz){
   scene.add(sp);
   entities.push({t:'drop',x,y,z,vx:vx||0,vy:vy||0,vz:vz||0,hw:0.12,h:0.24,
     onGround:false,st:{id:st.id,count:st.count,dur:st.dur,...(st.mob?{mob:st.mob}:{}),...(st.ench?{ench:st.ench}:{})},age:0,mesh:sp,m3d:(tp3||wp3||sp._hrCube)?1:0,bob:Math.random()*6});
+  if(DROP_BY){const te=entities[entities.length-1];te.by=DROP_BY;te.byT=DROP_WAIT;}
   if(NET.on)ntDropSpawned();   /* PART 58: every drop on a server is the server's */
 }
 function updateDrop(e,dt){
@@ -76,7 +84,7 @@ function updateDrop(e,dt){
   e.vx*=fr;e.vz*=fr;
   moveBody(e,e.vx*dt,e.vy*dt,e.vz*dt,false);
   /* magnet + pickup */
-  if(!P.dead&&e.age>0.55){
+  if(!P.dead&&e.age>0.55&&!(e.by&&e.age<e.byT&&e.by===dropMe())){   /* 6.21: what this player threw waits out its 2 seconds */
     const dx=P.x-e.x,dy=(P.y+0.6)-e.y,dz=P.z-e.z;
     const ds=Math.hypot(dx,dy,dz);
     if(ds<(GDG.mag?7.5:2.0)){
