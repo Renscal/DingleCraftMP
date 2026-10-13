@@ -54,6 +54,7 @@ function setupInput(){
       camMode=(camMode+1)%3;
     }
     if(!playing)return;
+    if(MODAL.kind&&imKey(e)){e.preventDefault();redrawModal();return;}   /* 6.23: 1-9 and Q over a slot in an open window */
     if(e.code.startsWith('Digit')){
       const n=+e.code.slice(5);
       if(n>=1&&n<=9&&!modalOpen()){P.sel=n-1;redrawHotbar();}

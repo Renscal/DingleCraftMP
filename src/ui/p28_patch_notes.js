@@ -3,7 +3,18 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'The debug screen',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Hands on the inventory',lines:[
+    'HANDS ON THE INVENTORY. One click per slot was honest work. Now the mouse does what your hands expect.',
+    'Hold a stack and drag left across empty slots: it is shared out evenly, and you watch the numbers as you go. Drag right: one item in each slot you cross, and another every time you cross it again.',
+    'Double-click while holding a stack and every matching item in the window jumps onto it, part stacks first.',
+    'Start a left drag on a slot that holds the same item and it gathers instead of sharing: every such slot you cross is pulled onto your cursor. With Shift, each is sent to the other side.',
+    'Shift and drag with an empty hand: every slot you cross is quick-moved. Emptying a chest is now one sweep.',
+    'The wheel: scroll down over a stack to send items out one at a time, scroll up to bring matching ones in.',
+    'Over any slot: 1 to 9 swaps it with that hotbar slot, Q throws one, Ctrl+Q throws the stack. Click outside the window with a stack in hand to throw it (right click throws one).',
+    'Creative: middle click gives a full stack of whatever you point at.',
+    'Fixed along the way: right-clicking an enchanted item out of a slot used to quietly wipe the enchantment.',
+  ]},
+ {v:'6.22',label:'Release 1.1',title:'The debug screen',lines:[
     'THE DEBUG SCREEN. F3 used to say five things. It now says where you are to three decimals, which block that is, which way you face, your chunk, your section and your spot inside it, the biome, how much memory the game is using, and the local difficulty.',
     'Local difficulty is counted the usual way: the longer a world has been played and the longer anyone has stood in a chunk, the higher it climbs. It is only a number for now. Nothing spawns by it.',
     'F3 + B draws a box round everything that has one: mobs, dropped items, vehicles, other players. Mobs and players get a little line showing which way they face.',

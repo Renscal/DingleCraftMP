@@ -14,9 +14,12 @@ function mkSlot(parent,getf,setf,kind){
   const s={get:getf,set:setf,kind:kind||'n',el:d,cv:d.firstChild};
   d.addEventListener('pointerdown',ev=>{
     ev.preventDefault();ev.stopPropagation();
-    slotClick(s,ev.button===2,ev.shiftKey);
+    if(ev.pointerType==='touch')slotClick(s,ev.button===2,ev.shiftKey);   /* a finger is one tap, as ever */
+    else imDown(s,ev.button,ev.shiftKey,(ev.timeStamp||0)/1000);            /* 6.23: the mouse has drags, the wheel and more (p06g_invmouse.js) */
     redrawModal();
   });
+  d.addEventListener('pointerenter',ev=>{if(ev.pointerType==='touch')return;imOver(s);if(IM.btn>=0)redrawModal();});
+  imWire();
   d.addEventListener('contextmenu',ev=>ev.preventDefault());
   parent.appendChild(d);
   MODAL.slots.push(s);
@@ -125,11 +128,11 @@ function slotClick(s,right,shift){
   }else{
     if(!cursorStack&&st){
       const take=Math.ceil(st.count/2);
-      cursorStack={id:st.id,count:take,dur:st.dur};
+      cursorStack=stackPart(st,take);   /* 6.23: the half keeps its enchantments (it used to keep only its wear) */
       st.count-=take;
       s.set(st.count>0?st:null);
     }else if(cursorStack){
-      if(!st){s.set({id:cursorStack.id,count:1,dur:cursorStack.dur});cursorStack.count--;}
+      if(!st){s.set(stackPart(cursorStack,1));cursorStack.count--;}
       else if(sameStack(cursorStack,st)&&st.count<stackMax(st.id)){st.count++;cursorStack.count--;s.set(st);}
       if(cursorStack&&cursorStack.count<=0)cursorStack=null;
     }
@@ -282,6 +285,7 @@ function closeModal(skipLock){
   }
   if(DIM==='puppet'||(MODAL.be&&MODAL.be.t==='stash'))mpOnModalClose(MODAL.kind,MODAL.be,MODAL.bek);
   MODAL.kind=null;MODAL.slots=[];MODAL.grid=null;MODAL.be=null;
+  imReset();IM.hover=null;
   $('modal').style.display='none';
   redrawHotbar();
   if(!skipLock)tryLock();

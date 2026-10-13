@@ -355,6 +355,13 @@ boot.run(async()=>{
     ok('while she holds it Dan\'s window stays shut',V.modalOpen()===false&&NET.lockK===null&&NET.lockWant===null);
     await beaPose(V.P.x+60,V.P.y,V.P.z);V.openModal('chest',k);
     ok('a holder who walked away has let go',await pumpUntil(()=>V.modalOpen(),2000)&&NET.lockK===k);
+    /* 6.23: a wheel move and a drag in the open chest reach the server exactly as clicks do (the same slots, the same sync) */
+    {const be=V.blockEnts.get(k),slots=V.getMODAL().slots.filter(s=>s.home==='be');
+      for(let i=0;i<36;i++)V.P.inv[i]=null;be.inv[0]={id:B.STONE,count:3};be.inv[1]=null;be.inv[2]=null;be.inv[3]=null;
+      V.imWheel(slots[0],100);
+      V.setCursor({id:B.GLASS,count:4});V.imDown(slots[2],0,false,50);V.imOver(slots[3]);V.imUp();
+      ok('the wheel sent one stone to the inventory and the drag shared four glass over two slots, here',be.inv[0].count===2&&V.P.inv.some(s=>s&&s.id===B.STONE&&s.count===1)&&be.inv[2].count===2&&be.inv[3].count===2&&!V.getCursor());
+      ok('...and the server has the chest that way within a second, while the window is still open',await pumpUntil(()=>W.be[k].inv[0]&&W.be[k].inv[0].count===2&&W.be[k].inv[2]&&W.be[k].inv[2].count===2&&W.be[k].inv[3]&&W.be[k].inv[3].count===2,4000)&&NET.lockK===k);}
     V.closeModal();step(2);await sleep(30);await beaPose(V.P.x+3,V.P.y,V.P.z);
     ok('a private block entity is never asked for (ntBeAsk says open it)',V.ntBeAsk('chest','no such key')===false);void toasts;}
 

@@ -21,6 +21,20 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — Hands on the inventory
+
+*Game version 6.23, released 2026-10-13.*
+
+- HANDS ON THE INVENTORY. One click per slot was honest work. Now the mouse does what your hands expect.
+- Hold a stack and drag left across empty slots: it is shared out evenly, and you watch the numbers as you go. Drag right: one item in each slot you cross, and another every time you cross it again.
+- Double-click while holding a stack and every matching item in the window jumps onto it, part stacks first.
+- Start a left drag on a slot that holds the same item and it gathers instead of sharing: every such slot you cross is pulled onto your cursor. With Shift, each is sent to the other side.
+- Shift and drag with an empty hand: every slot you cross is quick-moved. Emptying a chest is now one sweep.
+- The wheel: scroll down over a stack to send items out one at a time, scroll up to bring matching ones in.
+- Over any slot: 1 to 9 swaps it with that hotbar slot, Q throws one, Ctrl+Q throws the stack. Click outside the window with a stack in hand to throw it (right click throws one).
+- Creative: middle click gives a full stack of whatever you point at.
+- Fixed along the way: right-clicking an enchanted item out of a slot used to quietly wipe the enchantment.
+
 ## Release 1.1 — The debug screen
 
 *Game version 6.22, released 2026-10-13.*
