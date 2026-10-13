@@ -21,6 +21,16 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — Two buttons at once
+
+*Game version 6.27, released 2026-10-13.*
+
+- **TWO BUTTONS AT ONCE.** Your mouse has two buttons and the game could only count to one. Hold right to look down the rifle scope, press left to fire: nothing. The browser only announces the FIRST button you press; the second one arrives disguised as a mouse movement, and nobody was reading those. Somebody reads them now.
+- **Scope and shoot.** Hold right, squeeze left, and the rifle fires with the scope still up. Let go of either button first; the other one stays held, the way a held button should.
+- **Mine and use.** Keep the left button down on a rock face and tap right to open a door, place a block or eat a sandwich. The mining does not drop the beat.
+- **A button held through a window stays quiet.** If a click opens a chest or a shop, that click is spent: closing the window with the button still down does not start digging a hole in the floor.
+- **About doors and walking.** We also went looking for the door that would not close while you walk. The buttons were innocent: an open door refuses to shut while you are still standing in its doorway, because a shut door is a solid block and you would be inside it. Step clear and it closes. Whether that should change is the owner's call.
+
 ## Release 1.1 — Every torch counts
 
 *Game version 6.26, released 2026-10-13.*

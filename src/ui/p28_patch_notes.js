@@ -3,7 +3,14 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Every torch counts',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Two buttons at once',lines:[
+    '<b>TWO BUTTONS AT ONCE.</b> Your mouse has two buttons and the game could only count to one. Hold right to look down the rifle scope, press left to fire: nothing. The browser only announces the FIRST button you press; the second one arrives disguised as a mouse movement, and nobody was reading those. Somebody reads them now.',
+    '<b>Scope and shoot.</b> Hold right, squeeze left, and the rifle fires with the scope still up. Let go of either button first; the other one stays held, the way a held button should.',
+    '<b>Mine and use.</b> Keep the left button down on a rock face and tap right to open a door, place a block or eat a sandwich. The mining does not drop the beat.',
+    '<b>A button held through a window stays quiet.</b> If a click opens a chest or a shop, that click is spent: closing the window with the button still down does not start digging a hole in the floor.',
+    '<b>About doors and walking.</b> We also went looking for the door that would not close while you walk. The buttons were innocent: an open door refuses to shut while you are still standing in its doorway, because a shut door is a solid block and you would be inside it. Step clear and it closes. Whether that should change is the owner&#x27;s call.',
+  ]},
+ {v:'6.26',label:'Release 1.1',title:'Every torch counts',lines:[
     'EVERY TORCH COUNTS. Only the six torches nearest to you ever gave any light. Walk down a long tunnel and it went dark behind you, one torch at a time. Thirty torches in a room lit six torches&#x27; worth of room.',
     'Light now belongs to the world. A torch lights the blocks around it, a little less with every block, round corners and through doorways, and it stays lit whether you are next to it or a mile away.',
     'Lava glows. Glowstone glows. Alien lamps, burners and eyeball lamps glow. Put a block in a corridor and the light stops at it. Take the torch away and the dark comes back.',
