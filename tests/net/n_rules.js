@@ -155,6 +155,8 @@ boot.run(async()=>{
     (await until(()=>bob.by('crit').length===1&&dee.by('crit').length===1,1500))&&bob.last('crit').x===1&&bob.last('crit').y===41&&a.by('crit').length===0);
   bob.clear();a.send({t:'crit',x:300,y:41,z:1});a.send({t:'crit',x:'here'});await sleep(80);
   ok('  ... but not one claimed far from where the attacker stands; junk becomes the attacker\'s own place',bob.by('crit').length===1&&bob.last('crit').x===0);
+  await sleep(LIMITS.hitGap+20);
+  ok('a hit from a poisoned blade carries its mark to the victim (6.40); a plain hit and a bullet carry none',(await hits(a,bob,{psn:1}))===1&&bob.last('hit').psn===1&&(await sleep(LIMITS.hitGap+20),await hits(a,bob))===1&&!('psn' in bob.last('hit'))&&(await sleep(LIMITS.hitGap+20),await hits(a,bob,{psn:1,shot:1}))===1&&!('psn' in bob.last('hit')));
   await dee.quit();
 
   /* 6.38: difficulty, DingleCore, spectators */

@@ -50,7 +50,7 @@ function snapshot(name,lite){   /* lite (6.34): leave the blocks, chests and ent
     }
     else if(e.t==='drop'||e.t==='ball')ents.push({t:'drop',x:+e.x.toFixed(2),y:+e.y.toFixed(2),z:+e.z.toFixed(2),
       id:e.st.id,count:e.st.count||1,dur:e.st.dur,
-      ...(e.st.mob?{mob:e.st.mob}:{}),...(e.st.ench?{ench:e.st.ench}:{})});
+      ...(e.st.mob?{mob:e.st.mob}:{}),...(e.st.ench?{ench:e.st.ench}:{}),...(e.st.psn>0?{psn:e.st.psn}:{}),...(e.st.pz?{pz:e.st.pz}:{})});
     else if(e.t==='car'||e.t==='skate'||e.t==='cart'||e.t==='boat'||e.t==='plane')ents.push({t:e.t,x:+e.x.toFixed(2),y:+e.y.toFixed(2),z:+e.z.toFixed(2),
       hp:e.hp,yaw:+e.yaw.toFixed(2)});
   }
@@ -62,7 +62,8 @@ function snapshot(name,lite){   /* lite (6.34): leave the blocks, chests and ent
     player:{x:+P.x.toFixed(2),y:+P.y.toFixed(2),z:+P.z.toFixed(2),
       yaw:+P.yaw.toFixed(3),pitch:+P.pitch.toFixed(3),hp:P.hp,hunger:P.hunger,sel:P.sel,
       spawn:P.spawn.map(v=>+v.toFixed(1)),
-      inv:P.inv.map(s=>s?{id:s.id,count:s.count,...(s.dur!=null?{dur:s.dur}:{}),...(s.mob?{mob:s.mob}:{}),...(s.ench?{ench:s.ench}:{})}:0),
+      inv:P.inv.map(s=>s?{id:s.id,count:s.count,...(s.dur!=null?{dur:s.dur}:{}),...(s.mob?{mob:s.mob}:{}),...(s.ench?{ench:s.ench}:{}),...(s.psn>0?{psn:s.psn}:{}),...(s.pz?{pz:s.pz}:{})}:0),
+      ...(P.fx&&P.fx.poison?{fx:{poison:{t:+P.fx.poison.t.toFixed(2)}}}:{}),
       stox:{bal:+(P.stox?P.stox.bal:0).toFixed(4),
         sh:Object.fromEntries(Object.entries(P.stox?P.stox.sh:{}).filter(e=>e[1]>1e-9).map(e=>[e[0],+e[1].toFixed(6)])),
         cb:Object.fromEntries(Object.entries((P.stox&&P.stox.cb)||{}).filter(e=>e[1]>1e-9).map(e=>[e[0],+e[1].toFixed(4)]))},
@@ -166,7 +167,8 @@ function applySave(d){
   P.hp=pl.hp!=null?pl.hp:20;P.hunger=pl.hunger!=null?pl.hunger:20;P.sel=pl.sel|0;
   P.mode=d.mode==='c'?'c':'s';
   if(pl.spec||d.mode==='spectator'){P.spec=true;P.mode='c';P.flying=true;}   /* 6.38: a life that ended in a DingleCore world (or a server says so) */
-  P.inv=(pl.inv||[]).slice(0,36).map(s=>s?{id:s.id,count:s.count,...(s.dur!=null?{dur:s.dur}:{}),...(s.mob?{mob:s.mob}:{}),...(s.ench?{ench:{...s.ench}}:{})}:null);
+  P.inv=(pl.inv||[]).slice(0,36).map(s=>s?{id:s.id,count:s.count,...(s.dur!=null?{dur:s.dur}:{}),...(s.mob?{mob:s.mob}:{}),...(s.ench?{ench:{...s.ench}}:{}),...(s.psn>0?{psn:Math.min(s.psn|0,s.count)}:{}),...(s.pz>0?{pz:s.pz|0}:{})}:null);
+  P.fx=pl.fx&&pl.fx.poison&&pl.fx.poison.t>0?{poison:{t:+pl.fx.poison.t,acc:0}}:{};   /* 6.40: effects */
   P.stox={bal:(pl.stox&&+pl.stox.bal)||0,sh:stoxMigrate((pl.stox&&pl.stox.sh)?{...pl.stox.sh}:{}),
     cb:stoxMigrate((pl.stox&&pl.stox.cb)?{...pl.stox.cb}:{})};
   P.xp=Math.max(0,Math.round(+pl.xp||0));
@@ -207,7 +209,7 @@ function applySave(d){
   }
   while(P.inv.length<36)P.inv.push(null);
   for(const e of (d.ents||[])){
-    if(e.t==='drop')spawnDrop(e.x,e.y,e.z,{id:e.id,count:e.count,dur:e.dur,...(e.mob?{mob:e.mob}:{})},0,0,0);
+    if(e.t==='drop')spawnDrop(e.x,e.y,e.z,{id:e.id,count:e.count,dur:e.dur,...(e.mob?{mob:e.mob}:{}),...(e.psn>0?{psn:e.psn}:{}),...(e.pz?{pz:e.pz}:{})},0,0,0);
     else if(e.t==='car'){
       spawnCar(e.x,e.y,e.z,e.yaw||0);
       const c=entities[entities.length-1];

@@ -21,6 +21,19 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — Something in the stew
+
+*Game version 6.40, released 2026-10-13.*
+
+- **SOMETHING IN THE STEW.** The Hemlock Root from last update now does what hemlock does. Eat one and you are poisoned: your hearts turn a sick green and you lose half a heart every second or so until it wears off. It will take you down to your last half heart and stop there. It is poison, not an execution. A full stomach does not heal you while it lasts, and nothing cures it but time.
+- **Glass Bottle.** Three glass in a V make three bottles.
+- **Jar of Poison.** One Hemlock Root and one Glass Bottle. This is where it gets interesting.
+- **On a blade.** Put a Jar of Poison and a sword in the crafting grid and you get the same sword back, wear and enchantments and all, coated for ten hits. Its name says so. Everything it hits is poisoned for six seconds, monsters and players alike, and each hit uses one up. Poison will not finish a monster off either: it softens them up, you do the rest.
+- **In the food.** Put a Jar of Poison and any food in the crafting grid and you get one piece of that food, poisoned. It looks like the food. It is called the food. It stacks with the food. Nothing on the screen will ever tell you, or anyone else, which piece it is.
+- **The odds.** Slip one poisoned steak into a stack of nineteen good ones and whoever eats from that stack has one chance in twenty of getting it, then one in nineteen, and so on down. Split the stack, throw half of it, drag it across a chest: the bad piece goes one way or the other by chance and tells nobody. Poison two pieces and there are two in there. Dinner parties will never be the same.
+- **Honest admissions.** Cooking does not carry poison through a furnace, and using a poisoned piece as an ingredient gives a clean result. The jar is not given back.
+- **Fixed from 6.39.** A newly made watering can came out full. It is made empty now, as it was meant to be.
+
 ## Release 1.1 — Sow, water, wait
 
 *Game version 6.39, released 2026-10-13.*

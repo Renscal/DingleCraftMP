@@ -82,10 +82,10 @@ function quickMove(s){
 }
 function beAdd(be,f,st){
   const cur=be[f];
-  if(!cur){be[f]={id:st.id,count:st.count,dur:st.dur};st.count=0;return 0;}
+  if(!cur){be[f]={id:st.id,count:st.count,dur:st.dur,...(st.psn>0?{psn:st.psn}:{}),...(st.pz?{pz:st.pz}:{})};st.count=0;return 0;}
   if(sameStack(cur,st)){
     const mv=Math.min(stackMax(st.id)-cur.count,st.count);
-    cur.count+=mv;st.count-=mv;
+    cur.count+=mv;st.count-=mv;psnMoved(st,cur,mv);
   }
   return st.count;
 }
@@ -118,7 +118,7 @@ function slotClick(s,right,shift){
   if(!right){
     if(cursorStack&&st&&sameStack(cursorStack,st)){
       const mv=Math.min(stackMax(st.id)-st.count,cursorStack.count);
-      st.count+=mv;cursorStack.count-=mv;
+      st.count+=mv;cursorStack.count-=mv;psnMoved(cursorStack,st,mv);
       if(cursorStack.count<=0)cursorStack=null;
       s.set(st);
     }else{
@@ -129,11 +129,12 @@ function slotClick(s,right,shift){
     if(!cursorStack&&st){
       const take=Math.ceil(st.count/2);
       cursorStack=stackPart(st,take);   /* 6.23: the half keeps its enchantments (it used to keep only its wear) */
+      if(take<st.count)psnSplit(st,cursorStack,take);
       st.count-=take;
       s.set(st.count>0?st:null);
     }else if(cursorStack){
-      if(!st){s.set(stackPart(cursorStack,1));cursorStack.count--;}
-      else if(sameStack(cursorStack,st)&&st.count<stackMax(st.id)){st.count++;cursorStack.count--;s.set(st);}
+      if(!st){const one=stackPart(cursorStack,1);if(cursorStack.count>1)psnSplit(cursorStack,one,1);s.set(one);cursorStack.count--;}
+      else if(sameStack(cursorStack,st)&&st.count<stackMax(st.id)){st.count++;cursorStack.count--;psnMoved(cursorStack,st,1);s.set(st);}
       if(cursorStack&&cursorStack.count<=0)cursorStack=null;
     }
   }

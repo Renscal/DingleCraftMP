@@ -39,6 +39,7 @@ function ingMatch(req,id){
 /* grid: array of stacks (len w*w), w = 2 or 3. Returns {id,count,dur?} or null */
 function calcCraft(grid,w,list){
   const RL=list||RECIPES;
+  if(RL===RECIPES){const pz=psnCraft(grid);if(pz)return pz;}   /* 6.40: a Jar of Poison with a sword or a food */
   const ids=grid.map(s=>s?s.id:0);
   // shapeless
   const present=ids.filter(i=>i!==0);
@@ -78,7 +79,7 @@ function calcCraft(grid,w,list){
 }
 function mkResult(r){
   const d=DEFS[r.o],res={id:r.o,count:r.n};
-  if(d.tool)res.dur=d.tool.dur; else if(d.dur)res.dur=d.dur;
+  if(d.tool)res.dur=d.tool.dur; else if(d.wcan)res.dur=0; else if(d.dur)res.dur=d.dur;   /* 6.40: a watering can is made empty (6.39 made it full) */
   return res;
 }
 function takeCraft(grid){
@@ -97,14 +98,14 @@ function invAddTo(arr,st){
     for(let i=0;i<arr.length&&st.count>0;i++){
       const s=arr[i];
       if(s&&s.id===st.id&&s.dur==null&&s.count<max){
-        const mv=Math.min(max-s.count,st.count);s.count+=mv;st.count-=mv;
+        const mv=Math.min(max-s.count,st.count);s.count+=mv;st.count-=mv;psnMoved(st,s,mv);
       }
     }
   }
   for(let i=0;i<arr.length&&st.count>0;i++){
     if(!arr[i]){const mv=Math.min(max,st.count);
       arr[i]={id:st.id,count:mv};if(st.dur!=null)arr[i].dur=st.dur;if(st.ench)arr[i].ench={...st.ench};
-      if(st.mob)arr[i].mob=st.mob;st.count-=mv;}
+      if(st.mob)arr[i].mob=st.mob;if(st.pz)arr[i].pz=st.pz;st.count-=mv;psnMoved(st,arr[i],mv);}
   }
   return st.count;
 }

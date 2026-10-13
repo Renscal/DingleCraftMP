@@ -25,7 +25,7 @@ function redrawHotbar(){
     HOTCV[i].parentNode.className='hslot'+(i===P.sel?' hsel':'');
   }
   const st=P.inv[P.sel];
-  setHandName(st?(stackName(st)+(st.ench?'  \u2726 '+enchName(st):'')):'');
+  setHandName(st?(stackName(st)+(st.ench?'  \u2726 '+enchName(st):'')+psnName(st)):'');
   if(typeof refreshHand==='function')refreshHand();
 }
 let handT=null;
@@ -86,11 +86,12 @@ function drawStats(){
   const q=Math.max(1,Math.round(2*k)),pitch=Math.round(8.5*q),m=Math.round(k),y=H-6*q-m;
   for(let i=0;i<10;i++){
     const x=m+i*pitch,v=P.hp-i*2;
-    const hp=diffCore()?PIX.core:PIX.heart,hc=diffCore()?'#b3122b':'#e23b3b';
+    const hp=diffCore()?PIX.core:PIX.heart,hc=fxPoisoned()?'#9bbf2a':(diffCore()?'#b3122b':'#e23b3b');   /* 6.40: poisoned hearts are a sick green */
     drawPat(g,PIX.heart,x,y,'#3a0d0d',null,q);
     if(v>=2)drawPat(g,hp,x,y,hc,'#2a0508',q);
     else if(v===1)drawPat(g,hp,x,y,hc,'#2a0508',q,0,4);
   }
+  if(fxPoisoned())drawPat(g,PIX.bub,m+10*pitch,y,'#9bbf2a',null,q);   /* 6.40: the mark of an effect, after the last heart */
   /* 6.35: the armour bar, one row above the hearts and in line with them; not drawn with no armour on */
   const ap=armorPts();
   if(ap>0){

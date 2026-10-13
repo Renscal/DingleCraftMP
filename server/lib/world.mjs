@@ -60,6 +60,7 @@ export function cleanStack(st) {
   if (!st || typeof st !== 'object' || !Number.isInteger(st.id) || st.id < 1 || st.id > 19999 || !Number.isInteger(st.count) || st.count < 1 || st.count > 999) return null;
   const out = { id: st.id, count: st.count };
   if (typeof st.dur === 'number' && Number.isFinite(st.dur)) out.dur = st.dur;
+  for (const k of ['psn', 'pz']) if (Number.isInteger(st[k]) && st[k] > 0 && st[k] <= 999) out[k] = st[k];   // 6.40: poisoned pieces in a food stack, poisoned hits left on a blade
   for (const k of ['ench', 'mob']) {
     const v = st[k];
     if (v == null) continue;

@@ -225,7 +225,9 @@ function ntMelee(e,d,lim){
     const crit=critNow();
     if(crit)dmg*=CRIT_MUL;
     if(E&&E.sharp)dmg+=E.sharp*1.2;
-    ntSend({t:'hit',to:best.id,dmg,kx:d[0],kz:d[2],crit:crit?1:0});   /* the server shows the burst to everyone else nearby */
+    const pz=psnHit(st,null);                              /* 6.40: a coated blade poisons the player it hits */
+    ntSend({t:'hit',to:best.id,dmg,kx:d[0],kz:d[2],crit:crit?1:0,...(pz?{psn:1}:{})});   /* the server shows the burst to everyone else nearby */
+    if(pz)redrawHotbar();
     if(crit)critFx(best.x,best.y+1.1,best.z);
     best.sw=0;playS('hit');
     if(tl)damageHeld(tl.type==='sword'?1:2);

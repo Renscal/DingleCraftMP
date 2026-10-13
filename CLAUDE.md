@@ -173,7 +173,7 @@ Full map: `docs/ARCHITECTURE.md` (PART-to-file table, systems index, how each up
   and anything that hurts a mob through `hurtMob`, or it will not reach other players.
 
 **ID ledger** (`docs/ARCHITECTURE.md` section 7): grep before allocating. Next free at v6.39: block id 249 only
-(212 stays undefined on purpose; farming took 217-219 and 248); item ids 309, 339, then 377+. Purgatory ids are assigned only in
+(212 stays undefined on purpose; farming took 217-219 and 248); item ids 309, 339, then 379+. Purgatory ids are assigned only in
 `purgatory/p0_contract.js`, creativity's only in `c0_contract.js`, Malgorath's only in `m0_contract.js`.
 
 **Persistence triple:** player fields need a default in `newPlayer`, a line in `snapshot()` and a restore with a default

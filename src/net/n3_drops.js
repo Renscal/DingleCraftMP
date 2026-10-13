@@ -14,7 +14,7 @@
 
 /* ----- dropped items ----- */
 /* a clean copy of an item stack, as it goes on the wire */
-function ntDropStack(st){return {id:st.id,count:st.count,...(st.dur!=null?{dur:st.dur}:{}),...(st.mob?{mob:st.mob}:{}),...(st.ench?{ench:st.ench}:{})};}
+function ntDropStack(st){return {id:st.id,count:st.count,...(st.dur!=null?{dur:st.dur}:{}),...(st.mob?{mob:st.mob}:{}),...(st.ench?{ench:st.ench}:{}),...(st.psn>0?{psn:st.psn|0}:{}),...(st.pz>0?{pz:st.pz|0}:{})};}
 /* put a drop from the server into NET.drops (no body yet); null if the message makes no sense */
 function ntDropKnow(m){
   if(!m||typeof m.id!=='string'||!m.st||!DEFS[m.st.id]||!(m.st.count>0)||typeof m.x!=='number'||typeof m.y!=='number'||typeof m.z!=='number')return null;

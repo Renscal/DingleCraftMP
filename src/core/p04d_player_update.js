@@ -175,7 +175,7 @@ function updatePlayer(dt){
   /* -- hunger / regen -- */
   if(P.mode==='s'){
     while(P.exh>=4){P.exh-=4;if(P.hunger>0)P.hunger--;drawStats();}
-    if(P.hunger>=16&&P.hp<20){
+    if(P.hunger>=16&&P.hp<20&&!fxPoisoned()){               /* 6.40: a full stomach does not heal through poison */
       P.regenT+=dt;
       if(P.regenT>=1.2){P.regenT=0;P.hp=Math.min(20,P.hp+1);P.exh+=1.0;drawStats();}
     }else P.regenT=0;
@@ -184,6 +184,7 @@ function updatePlayer(dt){
       if(P.starveT>=4){P.starveT=0;if(P.hp>diffStarveFloor()){P.hurtT=0;LASTDMG={by:null,how:'starve'};damagePlayer(1);}}   /* 6.38: where it stops depends on the difficulty */
     }else P.starveT=0;
   }
+  fxTick(dt);                                              /* 6.40: effects (features/p53f_poison.js) */
   /* -- timers -- */
   P.hurtT=Math.max(0,P.hurtT-dt);
   P.atkT=Math.max(0,P.atkT-dt);
@@ -220,6 +221,7 @@ function doMine(dt){
       else{
         const kb=1+(E&&E.knock?E.knock*0.8:0);
         HIT_BY='Dan';HIT_HOW='melee';hurtMob(tgt.e,dmg,(tgt.e.x-P.x)*kb,(tgt.e.z-P.z)*kb);HIT_BY=null;HIT_HOW=null;
+        if(psnHit(st,tgt.e))redrawHotbar();                  /* 6.40: a coated blade */
         if(E&&E.steal&&P.hp<20){P.hp=Math.min(20,P.hp+mgSteal(tgt.e,E.steal*0.5));drawStats();}
       }
       if(tl)damageHeld(tl.type==='sword'?1:2);
@@ -561,6 +563,7 @@ function doUse(dt){
     if(frameCount%8===0)playS('eat');
     if(P.eatT>=1.6){
       P.eatT=0;
+      psnBite(st,d);                                       /* 6.40: was that piece poisoned? (before the count goes down) */
       P.hunger=Math.min(20,P.hunger+d.food);
       if(st.id===IT.APPLE){P.bigT=25;showToast('You feel... larger. (25s)');}
       if(d.raw)piRawSpray(d);

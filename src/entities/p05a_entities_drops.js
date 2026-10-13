@@ -70,7 +70,7 @@ function spawnDrop(x,y,z,st,vx,vy,vz){
   else{sp=new THREE.Sprite(iconTex(st.id));sp.scale.set(0.42,0.42,0.42);}
   scene.add(sp);
   entities.push({t:'drop',x,y,z,vx:vx||0,vy:vy||0,vz:vz||0,hw:0.12,h:0.24,
-    onGround:false,st:{id:st.id,count:st.count,dur:st.dur,...(st.mob?{mob:st.mob}:{}),...(st.ench?{ench:st.ench}:{})},age:0,mesh:sp,m3d:(tp3||wp3||sp._hrCube)?1:0,bob:Math.random()*6});
+    onGround:false,st:{id:st.id,count:st.count,dur:st.dur,...(st.mob?{mob:st.mob}:{}),...(st.ench?{ench:st.ench}:{}),...(st.psn>0?{psn:st.psn}:{}),...(st.pz?{pz:st.pz}:{})},age:0,mesh:sp,m3d:(tp3||wp3||sp._hrCube)?1:0,bob:Math.random()*6});
   if(DROP_BY){const te=entities[entities.length-1];te.by=DROP_BY;te.byT=DROP_WAIT;}
   if(NET.on)ntDropSpawned();   /* PART 58: every drop on a server is the server's */
 }
@@ -104,7 +104,7 @@ function updateDrop(e,dt){
       if(o!==e&&!o.dead&&o.t==='drop'&&o.st.id===e.st.id&&o.st.dur==null&&
          Math.abs(o.x-e.x)<1&&Math.abs(o.y-e.y)<1&&Math.abs(o.z-e.z)<1){
         const mv=Math.min(stackMax(e.st.id)-e.st.count,o.st.count);
-        e.st.count+=mv;o.st.count-=mv;
+        e.st.count+=mv;o.st.count-=mv;psnMoved(o.st,e.st,mv);
         if(o.st.count<=0)removeEnt(o);
       }
     }

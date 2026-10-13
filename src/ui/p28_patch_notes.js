@@ -3,7 +3,17 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Sow, water, wait',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Something in the stew',lines:[
+    '<b>SOMETHING IN THE STEW.</b> The Hemlock Root from last update now does what hemlock does. Eat one and you are poisoned: your hearts turn a sick green and you lose half a heart every second or so until it wears off. It will take you down to your last half heart and stop there. It is poison, not an execution. A full stomach does not heal you while it lasts, and nothing cures it but time.',
+    '<b>Glass Bottle.</b> Three glass in a V make three bottles.',
+    '<b>Jar of Poison.</b> One Hemlock Root and one Glass Bottle. This is where it gets interesting.',
+    '<b>On a blade.</b> Put a Jar of Poison and a sword in the crafting grid and you get the same sword back, wear and enchantments and all, coated for ten hits. Its name says so. Everything it hits is poisoned for six seconds, monsters and players alike, and each hit uses one up. Poison will not finish a monster off either: it softens them up, you do the rest.',
+    '<b>In the food.</b> Put a Jar of Poison and any food in the crafting grid and you get one piece of that food, poisoned. It looks like the food. It is called the food. It stacks with the food. Nothing on the screen will ever tell you, or anyone else, which piece it is.',
+    '<b>The odds.</b> Slip one poisoned steak into a stack of nineteen good ones and whoever eats from that stack has one chance in twenty of getting it, then one in nineteen, and so on down. Split the stack, throw half of it, drag it across a chest: the bad piece goes one way or the other by chance and tells nobody. Poison two pieces and there are two in there. Dinner parties will never be the same.',
+    '<b>Honest admissions.</b> Cooking does not carry poison through a furnace, and using a poisoned piece as an ingredient gives a clean result. The jar is not given back.',
+    '<b>Fixed from 6.39.</b> A newly made watering can came out full. It is made empty now, as it was meant to be.',
+  ]},
+ {v:'6.39',label:'Release 1.1',title:'Sow, water, wait',lines:[
     '<b>SOW, WATER, WAIT.</b> Farming is in. There is a hoe, a watering can, three crops, and bread at the end of it. The game finally has something to do that is not a fight, a casino or a sixteen-metre demon.',
     '<b>The hoe.</b> Two of a material over two sticks, in all five materials. Right-click grass or dirt that has air above it and it becomes farmland. The hoe wears like any tool.',
     '<b>The watering can.</b> Four iron round a bucket. Fill it by right-clicking still water (the water stays where it is), and it holds eight waterings. Right-click dry farmland and it turns dark and watered.',

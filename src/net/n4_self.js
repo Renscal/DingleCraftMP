@@ -21,9 +21,9 @@ function ntSave(quiet){
    changes is one save. Where they stand goes with any save, and by itself every ten seconds while they move. The last
    word is sent as the page goes away (ntBye) and by Disconnect (quitToTitle saves before it leaves). */
 function ntSaveSig(){
-  const st=s=>s?[s.id,s.count,s.dur,s.ench,s.mob,s.psn]:0;
+  const st=s=>s?[s.id,s.count,s.dur,s.ench,s.mob,s.psn,s.pz]:0;
   return JSON.stringify([Math.round(P.hp),Math.round(P.hunger),P.sel,Math.round(P.xp||0),P.mode,P.dead?1:0,DIM,P.spawn,P.inv.map(st),(P.armor||[]).map(st),
-    Math.round(P.db||0),(P.own||[]).length,P.stox?+P.stox.bal.toFixed(2):0,P.bp?1:0,P.bpLvl|0,P.cos,P.fx||0]);
+    Math.round(P.db||0),(P.own||[]).length,P.stox?+P.stox.bal.toFixed(2):0,P.bp?1:0,P.bpLvl|0,P.cos,P.fx&&P.fx.poison?1:0]);
 }
 /* where they stand, to the block */
 function ntSavePos(){return Math.round(P.x)+','+Math.round(P.y)+','+Math.round(P.z);}

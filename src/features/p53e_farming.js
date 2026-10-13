@@ -57,12 +57,13 @@ const farmRootIcon=(name,body,dark,leaf)=>tile(name,c=>{c.clearRect(0,0,16,16);
   c.fillStyle=leaf;c.fillRect(10,2,1,3);c.fillRect(12,3,1,2);c.fillRect(11,4,2,1);c.fillRect(13,2,1,1);});
 farmRootIcon('i_carrot','#e8842a','#b8601a','#3f9a3a');
 farmRootIcon('i_hroot','#e9dfc4','#bdb08f','#7fb9a0');
+psnTiles();                                              /* 6.40: poison's two pictures and two recipes (features/p53f_poison.js) */
 FARM.tileN=_tn-FARM.tile0;
 for(let m=0;m<5;m++)R(['MM',' S',' S'],{M:TOOL_MATS[m],S:IT.STICK},IT.HOE+m,1);
 R(['WWW'],{W:IT.WHEAT},IT.BREAD,1);
 R(['I I','IBI',' I '],{I:IT.IRON,B:IT.BUCKET},IT.WCAN,1);
 }
-const FARM_RECIPE_N=7;
+const FARM_RECIPE_N=9;                                    /* 7 of farming's, 2 of poison's */
 /* ---- blocks and items ---- */
 const CROPS={
   [B.WHEAT]:  {name:'wheat',  seed:IT.SEEDS, pic:'wheat'},

@@ -9,7 +9,7 @@ function newPlayer(spawn){
     regenT:0,starveT:0,cactusT:0,voidT:0,airT:0,_sp:false,_tap:0,
     stox:{bal:0,sh:{},cb:{}},xp:0,armor:[null,null,null,null],
     db:0,own:[],cos:{hat:null,trail:null},bp:false,bpLvl:0,bpT:0,cmpT:null,pcmpT:null,
-    pow:{u:{},a:{}},aimT:0,spec:false};
+    pow:{u:{},a:{}},aimT:0,spec:false,fx:{}};
 }
 function lookDir(){
   const cp=Math.cos(P.pitch);
@@ -71,7 +71,9 @@ function dropSel(all){
   const d=lookDir();
   const e=eyePos();
   DROP_BY=dropMe();   /* thrown on purpose: this player cannot pick it straight back up (p05a) */
-  try{spawnDrop(e[0]+d[0]*0.5,e[1]-0.3,e[2]+d[2]*0.5,{id:st.id,count:n,dur:st.dur,...(st.ench?{ench:st.ench}:{})},d[0]*6,d[1]*6+2,d[2]*6);}finally{DROP_BY=null;}
+  const out={id:st.id,count:n,dur:st.dur,...(st.ench?{ench:st.ench}:{}),...(st.pz?{pz:st.pz}:{})};
+  if(n<st.count)psnSplit(st,out,n);else if(st.psn>0)out.psn=st.psn;   /* 6.40: the poisoned pieces go one way or the other */
+  try{spawnDrop(e[0]+d[0]*0.5,e[1]-0.3,e[2]+d[2]*0.5,out,d[0]*6,d[1]*6+2,d[2]*6);}finally{DROP_BY=null;}
   st.count-=n;
   if(st.count<=0)P.inv[P.sel]=null;
   redrawHotbar();playS('pop');

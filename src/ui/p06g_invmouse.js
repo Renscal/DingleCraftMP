@@ -22,7 +22,9 @@ const IM={wired:false,btn:-1,mode:null,start:null,hover:null,slots:[],snap:null,
 
 /* n of a stack as a stack of its own, with everything that makes it what it is (wear, enchantments, the mob in a jar) */
 function stackPart(st,n){
-  return {id:st.id,count:n,...(st.dur!=null?{dur:st.dur}:{}),...(st.ench?{ench:st.ench}:{}),...(st.mob?{mob:st.mob}:{})};
+  /* 6.40: a weapon's coat goes with it; the poisoned pieces of a food go along only with a copy of the whole stack (a
+     part is a split: its caller says which way they went, psnSplit) */
+  return {id:st.id,count:n,...(st.dur!=null?{dur:st.dur}:{}),...(st.ench?{ench:st.ench}:{}),...(st.mob?{mob:st.mob}:{}),...(st.pz?{pz:st.pz}:{}),...(st.psn>0&&n>=st.count?{psn:st.psn}:{})};
 }
 /* an ordinary slot: one that holds what is put in it (not a result, a palette entry, the trash or an armour slot) */
 function imPlain(s){return !!s&&(s.kind==='n'||!s.kind);}
@@ -36,7 +38,7 @@ function imPull(s){
   if(!cursorStack||!st||!sameStack(cursorStack,st))return;
   const mv=Math.min(stackMax(st.id)-cursorStack.count,st.count);
   if(mv<=0)return;
-  cursorStack.count+=mv;st.count-=mv;s.set(st.count>0?st:null);
+  cursorStack.count+=mv;st.count-=mv;psnMoved(st,cursorStack,mv);s.set(st.count>0?st:null);
 }
 /* double-click: every matching item in the window, part stacks before full ones */
 function imCollectAll(){
@@ -59,24 +61,29 @@ function imFits(s){
 function imShare(){
   const S=IM.slots,proto=IM.proto;
   for(let i=0;i<S.length;i++)S[i].set(IM.snap[i]?stackPart(IM.snap[i],IM.snap[i].count):null);
-  let left=IM.base;
+  let left=IM.base,bad=IM.psn|0;                           /* bad: the poisoned pieces still on the cursor (6.40) */
   const each=Math.floor(IM.base/S.length),mx=stackMax(proto.id);
   if(each>0)for(let i=0;i<S.length;i++){
     const was=IM.snap[i],put=Math.min(each,mx-(was?was.count:0));
     if(put<=0)continue;
-    S[i].set(stackPart(was||proto,(was?was.count:0)+put));left-=put;
+    const into=stackPart(was||proto,(was?was.count:0)+put),k=psnDraw(left,bad,put);
+    if(was&&was.psn>0)into.psn=was.psn;
+    psnAdd(into,k);bad-=k;
+    S[i].set(into);left-=put;
   }
   cursorStack=left>0?stackPart(proto,left):null;
+  if(cursorStack&&bad>0)cursorStack.psn=bad;
 }
 /* one item of a slot to the other section (the wheel, down); the same place a Shift+click would send it */
 function imMoveOne(s){
   const st=imPlain(s)?s.get():null;
   if(!st)return false;
-  const one=stackPart(st,1);
+  const one=stackPart(st,1),pk=st.count>1?psnDraw(st.count,st.psn|0,1):0;   /* a single piece is a whole copy: it has its poison already */
+  if(pk)one.psn=1;
   let left=one;
   quickMove({get:()=>one,set:v=>{left=v;},home:s.home,idx:s.idx,kind:'n'});
   if(left)return false;
-  st.count--;s.set(st.count>0?st:null);
+  st.count--;if(pk)psnAdd(st,-pk);s.set(st.count>0?st:null);
   return true;
 }
 /* is slot o in "the other section" from slot s? The open container against the player's inventory; with no container, the
@@ -95,8 +102,8 @@ function imPullOne(s){
   for(let i=MODAL.slots.length-1;i>=0;i--){
     const o=MODAL.slots[i],ot=imOther(s,o)?o.get():null;
     if(!ot||!sameStack(st,ot))continue;
-    ot.count--;o.set(ot.count>0?ot:null);
-    st.count++;s.set(st);
+    ot.count--;st.count++;psnMoved(ot,st,1);              /* 6.40: the piece may be a poisoned one */
+    o.set(ot.count>0?ot:null);s.set(st);
     return true;
   }
   return false;
@@ -105,7 +112,9 @@ function imPullOne(s){
 function imThrow(st,n){
   const d=lookDir(),e=eyePos();
   DROP_BY=dropMe();
-  try{spawnDrop(e[0]+d[0]*0.5,e[1]-0.3,e[2]+d[2]*0.5,stackPart(st,n),d[0]*6,d[1]*6+2,d[2]*6);}finally{DROP_BY=null;}
+  const out=stackPart(st,n);
+  if(n<st.count)psnSplit(st,out,n);
+  try{spawnDrop(e[0]+d[0]*0.5,e[1]-0.3,e[2]+d[2]*0.5,out,d[0]*6,d[1]*6+2,d[2]*6);}finally{DROP_BY=null;}
 }
 
 /* ----- the mouse ----- */
@@ -151,7 +160,7 @@ function imOver(s){
   if(IM.mode==='pend-gather'){IM.mode='gather';imPull(IM.start);}
   else if(IM.mode==='pend-shift'){IM.mode='shiftgather';quickMove(IM.start);}
   else if(IM.mode==='pend-share'){
-    IM.mode='share';IM.proto=stackPart(cursorStack,1);IM.base=cursorStack.count;IM.slots=[IM.start];IM.snap=[null];
+    IM.mode='share';IM.proto=stackPart(cursorStack,1);delete IM.proto.psn;IM.psn=cursorStack.psn|0;IM.base=cursorStack.count;IM.slots=[IM.start];IM.snap=[null];
   }
   if(IM.mode==='gather'){imPull(s);return;}
   if(IM.mode==='shiftgather'){const st=imPlain(s)?s.get():null;if(st&&st.id===IM.item&&st.dur==null)quickMove(s);return;}

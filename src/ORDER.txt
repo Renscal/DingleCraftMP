@@ -91,6 +91,7 @@ features/p53b_skin.js
 features/p53c_armor_layer.js
 features/p53d_difficulty.js
 features/p53e_farming.js
+features/p53f_poison.js
 world/p03e_light.js
 
 # PART 58: multiplayer (the client for server/dinglecraft-server.mjs)

@@ -442,7 +442,7 @@ export function handleMessage(S, net, c, m, size) {
       if (now - c.hitT < (shot ? 50 : LIMITS.hitGap)) return;   // a gun fires faster than a fist
       c.hitT = now;
       to.lastHit = { name: c.name, t: now, shot };
-      net.send(to, { t: 'hit', from: c.id, name: c.name, dmg: num(m.dmg, 0, 40, 1), kx: num(m.kx, -1, 1, 0), kz: num(m.kz, -1, 1, 0), crit: m.crit ? 1 : 0 });
+      net.send(to, { t: 'hit', from: c.id, name: c.name, dmg: num(m.dmg, 0, 40, 1), kx: num(m.kx, -1, 1, 0), kz: num(m.kz, -1, 1, 0), crit: m.crit ? 1 : 0, ...(m.psn && !shot ? { psn: 1 } : {}) });
       if (m.crit && !shot)   // a critical hit (6.30): the victim's game shows its own, everyone else nearby is shown where
         net.broadcast({ t: 'crit', x: to.pose.x, y: to.pose.y + 1.1, z: to.pose.z }, c, (p) => p !== to && near(p.pose, to.pose, LIMITS.mobRange));
       return;
