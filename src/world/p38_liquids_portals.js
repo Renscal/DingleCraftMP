@@ -34,7 +34,24 @@ function frameOK(ox,oy,oz,ax,frameId){
   }
   return true;
 }
+/* ----- dimensions that are switched off (6.33) -----
+   Three game rules, nether, aether and puppet, all on unless a world turns one off. With one off nothing leads there:
+   its frames do not light, its portals do not carry, the Stage Door does not come (purgatory/p0_entry.js), and a player
+   found inside it (a save from before, a rule turned off mid-visit) is put back at their Overworld spawn. */
+function dimOn(d){return d==='over'||GR[d]!==false;}
+/* once a frame: is the player somewhere that has been switched off? */
+function dimEvict(){
+  if(DIM==='over'||dimOn(DIM)||!playing||!P||NET.host)return false;
+  const was=DIM;
+  if(DIM==='puppet'&&typeof mpExit==='function'&&mpExit({abandon:true}))return true;
+  const s=P.spawn||[8.5,WH-10,8.5];
+  if(modalOpen())closeModal();
+  setDim('over',s[0],s[1],s[2]);forceChunksNear(Math.floor(s[0]),Math.floor(s[2]));
+  showToast((was==='nether'?'The Nether':was==='aether'?'The Aether':'That place')+' is closed in this world. You are back at your spawn.');
+  return true;
+}
 function tryIgnitePortal(x,y,z,frameId,portalId){
+  if(!dimOn(portalId===B.PORTAL_A?'aether':'nether'))return false;
   if(MGP_ON&&mgNoPortal(x,y,z))return false;
   for(const ax of ['x','z']){
     const dx=ax==='x'?1:0,dz=ax==='x'?0:1;
@@ -122,7 +139,8 @@ function tickPortal(dt){
     P.portalT+=dt;
     if(P.portalT>1.1){
       P.portalT=-2;
-      if(fb===B.PORTAL_N)travelNether();else travelAether();
+      if(!dimOn(fb===B.PORTAL_N?'nether':'aether'))showToast('This portal leads nowhere. '+(fb===B.PORTAL_N?'The Nether':'The Aether')+' is closed in this world.');
+      else if(fb===B.PORTAL_N)travelNether();else travelAether();
     }
   }else if(P.portalT>0)P.portalT=0;
 }

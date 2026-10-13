@@ -99,7 +99,10 @@ world each time the server starts. Stop the server, edit the file, start it agai
   "fbOK": true,
   "store": true,
   "powers": true,
-  "cheats": false
+  "cheats": false,
+  "nether": true,
+  "aether": true,
+  "puppet": true
 }
 ```
 
@@ -120,6 +123,9 @@ world each time the server starts. Stop the server, edit the file, start it agai
 | `fbOK` | players may use the Fullbright setting |
 | `store` | the Dingle Store in the pause menu |
 | `powers` | superpowers (the P menu) |
+| `nether` | `false` switches the Nether off: its frames do not light, its portals lead nowhere, `/tp` will not go there, the server starts no game for it, and a player found inside is put back at their Overworld spawn |
+| `aether` | the same for the Aether |
+| `puppet` | `false`: the Stage Door to Puppet Purgatory never arrives, and one already standing stays shut |
 | `cheats` | the debug menu, for every player. Off by default on a server: with it on, anyone can change the rules and give themselves things |
 
 - The server writes this block itself: on the first run, and into an older `server.json` that does not have it yet.

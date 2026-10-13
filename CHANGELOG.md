@@ -21,6 +21,17 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — Closed for the season
+
+*Game version 6.33, released 2026-10-13.*
+
+- **CLOSED FOR THE SEASON.** Three new game rules: The Nether, The Aether and Puppet Purgatory. All on, as always, unless you turn one off. Turn one off and that place is shut: nothing in the world leads to it any more. The Overworld is not on the list. You have to live somewhere.
+- **The Nether, off.** Obsidian frames will not light, however much you click at them. A portal that already stands hums at you and goes nowhere, and says so.
+- **The Aether, off.** The glowstone frame keeps its thirst to itself. You keep your water.
+- **Puppet Purgatory, off.** The Stage Door does not arrive after its ten minutes, and if one is already standing in your world, it stays shut. Everything Purgatory remembers about you is kept in the save, so turning the rule back on puts it all back where it was. The frog can wait. The frog is good at waiting.
+- **Caught inside.** If a place is switched off while you are in it, or you load a save that was made there, you are put back at your Overworld spawn without a scratch.
+- **Where to set them.** Create New World, the rules editor, /gamerule, and the rules in server.json. On a server a closed dimension gets no game of its own, and /tp will not send anyone there.
+
 ## Release 1.1 — Teleport anywhere
 
 *Game version 6.32, released 2026-10-13.*

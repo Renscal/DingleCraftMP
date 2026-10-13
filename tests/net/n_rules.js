@@ -99,7 +99,11 @@ boot.run(async()=>{
       ok('/tp <who> <x y z> stays in the dimension that player is in',b.last('tp').dim==='over');
       await cy.pose(500,40,0,{dim:'puppet'});a.clear();const no=await a.cmd('/tp Cy');
             ok('nobody is sent into Puppet Purgatory, and a player in it is not pulled out to another dimension',/Purgatory/.test(no)&&!a.last('tp')&&(await cy.pose(1,40,1,{dim:'puppet'}),/Purgatory/.test(await a.cmd('/tp Cy Bob'))));
-      await cy.pose(500,40,0,{dim:'nether'});}
+      /* 6.33: a dimension the rules switch off */
+      await cy.pose(500,40,0,{dim:'nether'});await a.cmd('/gamerule nether false');a.clear();const shut=await a.cmd('/tp Cy');await sleep(40);
+      ok('/gamerule knows the new rules, and /tp will not go to a dimension that is switched off',W.gr.nether===false&&/switched off/.test(shut)&&!a.last('tp')&&/Unknown|rule/i.test(await a.cmd('/gamerule moon false')));
+      await a.cmd('/gamerule nether true');
+      ok('  ... and goes again when it is back on',W.gr.nether===true&&(a.clear(),/Teleported/.test(await a.cmd('/tp Cy'))));}
     await cy.pose(500,40,0);}
   {b.clear();const out=await a.cmd('/give Bob 5 12');await until(()=>!!b.last('give'),1500);
     ok('/give sends a clean stack',/Gave 12/.test(out)&&b.last('give').st.id===5&&b.last('give').st.count===12&&/Usage/.test(await a.cmd('/give Bob stone'))&&/Usage/.test(await a.cmd('/give Bob 5 100000')));}

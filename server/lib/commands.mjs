@@ -88,6 +88,7 @@ const COMMANDS = {
       if (to.pose.dim !== dim) {   // 6.32: to a player means to where they are, whatever the dimension; never into or out of Puppet Purgatory
         if (to.pose.dim === 'puppet') return to.name + ' is in Puppet Purgatory. Nobody can be sent there.';
         if (dim === 'puppet') return who.name + ' is in Puppet Purgatory and has to find their own way out.';
+        if (S.world.gr[to.pose.dim] === false) return 'That dimension is switched off in this world.';
         dim = to.pose.dim;
         if (S.startHost) S.startHost(dim);   // wake the game that runs that dimension, as walking through a portal would
       }

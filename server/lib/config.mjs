@@ -73,7 +73,7 @@ export const DIM_PFX = { over: '', nether: 'n;', aether: 'a;', puppet: 'm;' };
    src/ui/p27_debug_gamerules_settings.js) with one difference: Cheats (the debug menu) is off unless the host turns it on.
    tests/net/n_static.js keeps this in step. */
 export const RULES = { keepInv: false, god: false, mobGrief: true, mobSpawn: true, dayCycle: true, fireTick: true, fallDmg: true, snail: true, jsc: 0,
-  instaKill: false, freezeMobs: false, ghosts: true, fbOK: true, store: true, powers: true, cheats: false };
+  instaKill: false, freezeMobs: false, ghosts: true, fbOK: true, store: true, powers: true, cheats: false, nether: true, aether: true, puppet: true };
 
 /* only rules the game knows, each with the right type (numbers 0..100) */
 export function cleanRules(r) {

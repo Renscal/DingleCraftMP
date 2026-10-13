@@ -2,7 +2,7 @@
 /* PART 27 — DEBUG MENU, GAMERULES & SETTINGS MEMORY  (2.3.1)            */
 /* ===================================================================== */
 function GR_DEF(){return {keepInv:false,god:false,mobGrief:true,mobSpawn:true,
-  dayCycle:true,fireTick:true,fallDmg:true,snail:true,jsc:0,instaKill:false,freezeMobs:false,ghosts:true,fbOK:true,store:true,powers:true,cheats:true};}
+  dayCycle:true,fireTick:true,fallDmg:true,snail:true,jsc:0,instaKill:false,freezeMobs:false,ghosts:true,fbOK:true,store:true,powers:true,cheats:true,nether:true,aether:true,puppet:true};}
 const GR=GR_DEF();
 let dbgmOpen=false;
 const GR_LABELS=[
@@ -20,6 +20,9 @@ const GR_LABELS=[
   ['fbOK',    'Fullbright Toggle',         'Off removes the Fullbright button from Settings and turns it off.'],
   ['store',   'Dingle Store',              'Off closes the shop and removes it from the pause menu.'],
   ['powers',  'Superpowers',               'Off disables the P menu and its button.'],
+  ['nether',  'The Nether',                'Off: obsidian frames will not light and Nether portals lead nowhere.'],
+  ['aether',  'The Aether',                'Off: glowstone frames stay dry and Aether portals lead nowhere.'],
+  ['puppet',  'Puppet Purgatory',          'Off: the Stage Door never arrives, and one already standing stays shut.'],
   ['cheats',  'Cheats',                    'Off removes this debug menu. Right-click the world in Load World to bring it back.'],
 ];
 /* Release 1.0: game rules that shape the menus (set on Create New World, saved with the world) */

@@ -144,7 +144,7 @@ export function createServer(opts = {}) {
            Nether's and the Aether's start when the first player goes there. Puppet Purgatory stays each player's own. */
         S.hdims = ['over', 'nether', 'aether'];
         S.startHost = (dim) => {
-          if (!S.hdims.includes(dim) || S.hosts.has(dim)) return;
+          if (!S.hdims.includes(dim) || S.hosts.has(dim) || world.gr[dim] === false) return;   // 6.33: a dimension the rules switch off has no game
           const h = startHost(S, script, (c, m, size) => handleMessage(S, net, c, m, size), log, dim);
           S.hosts.set(dim, h);
           /* a game started late missed the players who are already here: tell it who they are and where (it waits until it is ready) */

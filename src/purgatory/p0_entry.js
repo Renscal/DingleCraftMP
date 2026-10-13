@@ -10,7 +10,7 @@
 function mpDoorTimer(dt){
   if(!P||P.dead||MP.door)return;
   if(P.mode==='s'&&document.pointerLockElement)MP.playT+=dt;
-  if(MP.playT>=600&&DIM==='over')mpStampDoor();}
+  if(MP.playT>=600&&DIM==='over'&&GR.puppet!==false)mpStampDoor();}   /* 6.33: not in a world that has switched Purgatory off (the timer keeps counting) */
 function mpSetPlayT(t){MP.playT=Math.max(0,+t||0);return MP.playT;}
 function mpDoorHere(){return mpStampDoor({here:1});}
 
@@ -36,7 +36,7 @@ function mpFindDoorSite(){const fw=[-Math.sin(P.yaw),-Math.cos(P.yaw)];
   return {x,y:surfaceTop(x,z)+1,z,f:mpSnapF(P.x-x,P.z-z),last:1};}
 function mpDoorWall(fn){const d=MP.door;if(!d)return;const r=[d.f[1],-d.f[0]];
   for(let i=-3;i<=3;i++)for(let j=-6;j<7;j++)fn(d.x+r[0]*i,d.y+j,d.z+r[1]*i,i,j);}
-function mpStampDoor(o){o=o||{};if(!P||DIM!=='over')return MP.door;
+function mpStampDoor(o){o=o||{};if(!P||DIM!=='over'||GR.puppet===false)return MP.door;
   if(MP.door&&!o.here)return MP.door;                                        /* once per world (the Debug button moves it) */
   if(MP.door&&o.here)mpDoorWall((x,y,z,i,j)=>{const id=getBlock(x,y,z);if(id===B.PG_DOOR||id===B.PG_MBLACK)setBlock(x,y,z,B.AIR);});
   let s;
@@ -227,7 +227,7 @@ function mpStrip(){const loot=[],take=st=>{if(st&&st.count>0)loot.push(st);};
 
 /* ---- entry (bible 2.3-2.4). mpEnter() is the ritual's bite; mpEnterNow() (tests, debug) skips the cutscene. ---- */
 function mpEnter(o){o=o||{};
-  if(DIM!=='over'||!P||P.dead||MP.inside)return false;
+  if(DIM!=='over'||!P||P.dead||MP.inside||GR.puppet===false)return false;   /* 6.33: a door already standing stays shut */
   if(CUT.on){if(!o.now)return false;endCut();}
   if(!MP.door){if(!o.now)return false;mpStampDoor({here:1,quiet:1});}
   if(MP.clock>0||MP.stats.t0>0)mpWipe();                                  /* the show reopens: a fresh purgatory */

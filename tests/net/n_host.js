@@ -239,6 +239,10 @@ boot.run(async()=>{
     /* ===== 13. every dimension ===== */
     {ok('players are told which dimensions the server runs: the Overworld, the Nether and the Aether (not Puppet Purgatory)',JSON.stringify(NET.hdims)==='["over","nether","aether"]'&&NET.hosted===true&&!NET.hdims.includes('puppet'));
       ok('only the Overworld\'s game is running while everyone is there',!!S.host('over')&&S.host('nether')===null&&S.host('aether')===null);
+      /* 6.33: a dimension the rules switch off gets no game */
+      {const back=bea.pose?[W.gr.nether]:[];W.gr.nether=false;await bea.pose(8.5,40,8.5,{dim:'nether'});await new Promise(r=>setTimeout(r,400));
+        ok('with the nether rule off, a player turning up there starts no game for it',S.host('nether')===null);
+        W.gr.nether=back[0]===undefined?true:back[0];if(W.gr.nether===false)W.gr.nether=true;await bea.pose(8.5,40,8.5,{dim:'over'});await new Promise(r=>setTimeout(r,150));}
       bea.clear();await bea.pose(8.5,40,8.5,{dim:'nether'});
       ok('the first player into the Nether wakes a game for it (and none for the Aether)',!!S.host('nether')&&await until(()=>S.host('nether')&&S.host('nether').ready,25000)&&S.host('aether')===null);
       await sleep(900);bea.send({t:'mgive',to:0,m:['z.n1','imp',10.5,60,8.5,0,8,0,'',10.5,8.5,'0,0,0']});

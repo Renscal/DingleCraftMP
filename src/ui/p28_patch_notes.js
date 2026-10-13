@@ -3,7 +3,15 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Teleport anywhere',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Closed for the season',lines:[
+    '<b>CLOSED FOR THE SEASON.</b> Three new game rules: The Nether, The Aether and Puppet Purgatory. All on, as always, unless you turn one off. Turn one off and that place is shut: nothing in the world leads to it any more. The Overworld is not on the list. You have to live somewhere.',
+    '<b>The Nether, off.</b> Obsidian frames will not light, however much you click at them. A portal that already stands hums at you and goes nowhere, and says so.',
+    '<b>The Aether, off.</b> The glowstone frame keeps its thirst to itself. You keep your water.',
+    '<b>Puppet Purgatory, off.</b> The Stage Door does not arrive after its ten minutes, and if one is already standing in your world, it stays shut. Everything Purgatory remembers about you is kept in the save, so turning the rule back on puts it all back where it was. The frog can wait. The frog is good at waiting.',
+    '<b>Caught inside.</b> If a place is switched off while you are in it, or you load a save that was made there, you are put back at your Overworld spawn without a scratch.',
+    '<b>Where to set them.</b> Create New World, the rules editor, /gamerule, and the rules in server.json. On a server a closed dimension gets no game of its own, and /tp will not send anyone there.',
+  ]},
+ {v:'6.32',label:'Release 1.1',title:'Teleport anywhere',lines:[
     '<b>TELEPORT ANYWHERE.</b> /tp to a friend used to answer &quot;is in another dimension&quot; and leave it at that, as if dimensions were a legal problem. Now /tp Ann takes you to Ann. If Ann is in the Nether, you are in the Nether. There is nothing to type about dimensions: the server knows where she is.',
     '<b>Soft landings.</b> Arriving in another dimension works like a portal trip without the portal: the ground is built before you get there, whatever you were falling from is forgotten, and you step off anything you were riding.',
     '<b>Coordinates stay put.</b> /tp 10 64 10 moves you inside the dimension you are already in, as before.',

@@ -36,6 +36,7 @@ function frame(t){
   if(playing&&P){
     if(!paused){
       if(GR.dayCycle)timeOfDay+=dt/DAY_LEN;
+      dimEvict();                                          /* 6.33: a dimension the world has switched off (world/p38) */
       drainLook();
       updatePlayer(dt);
       updateEntities(dt);
