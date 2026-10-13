@@ -51,27 +51,6 @@ F3 for the debug overlay. Settings → Texture pack switches between **OG** (16 
 Settings → UI Scale makes the whole interface bigger or smaller (Auto picks a size for your screen); the sliders set the
 field of view, mouse sensitivity and the sound and music volume.
 
-## AI players (bring your own Anthropic key)
-
-Three AI players can share your world: **BunkerBrad**, **xx_lilcreepah_xx** and **honeybee_mc**. They survive by your
-rules, hold grudges and chat. Their minds run on Claude through a small local server in `brain/`, using **your own**
-Anthropic API key. Without the brain they still play, on a simple autopilot, and cannot chat.
-
-0. Invite them: tick **AI Players** on Create New World (it is off by default), or right-click a saved world in Load
-   World and turn the rule on. In a world, `/bots join` and `/bots leave` do the same.
-1. Copy `.env.example` to `.env` (in the repo root) and put your key after `ANTHROPIC_API_KEY=`.
-   `.env` is gitignored: never commit it, never paste it anywhere else.
-2. Start the brain:
-   - **macOS:** double-click `Start AI Brain.command`.
-   - **Any system:** `node brain/launch.mjs` (or `npm run brain:launch`).
-
-   Either one installs the brain's one dependency on first run, builds the game if `dist/` is empty, starts the brain
-   and opens the game at `http://127.0.0.1:8644/`. Keep that window open while you play.
-
-**It costs real money while it runs**: every bot decision is an API call (in our own sessions, roughly a few dollars an
-hour with all three bots). The brain prints a running total, logs spend locally in `brain/data/` (never committed), and
-stops spending the moment a file named `STOP` exists in `brain/`. Details: [docs/BRAIN.md](docs/BRAIN.md) and
-[brain/README.md](brain/README.md).
 
 ## Multiplayer (game 6.10 and up)
 
