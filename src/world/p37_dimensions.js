@@ -170,7 +170,7 @@ function stashEnts(){
     if(e.dead)continue;
     if(e.t==='mob'&&MOBT[e.mt].pmob){mpSnapMob(e,null);removeEnt(e);continue;}
     if(e.t==='mob'&&MOBT[e.mt].mg){mgStashed(e);continue;}
-    if(e.t==='mob'&&e.pup){removeEnt(e);continue;}   /* PART 58: another player's mob is never ours to keep */
+    if(e.pup||e.vid){removeEnt(e);continue;}   /* PART 58: another game's mob, vehicle or flying thing is never ours to keep */
     if(e.t==='mob'){
       const o={t:e.mt,x:e.x,y:e.y,z:e.z,hp:e.hp};
       if(e.cellId)o.ci=e.cellId;

@@ -1,6 +1,6 @@
 # The DINGLECRAFT multiplayer server
 
-No dependencies and nothing to install: `dinglecraft-server.mjs` plus the `lib/` folder beside it. It needs [Node.js](https://nodejs.org) 20 or newer and a game build of 6.13 or newer.
+No dependencies and nothing to install: `dinglecraft-server.mjs` plus the `lib/` folder beside it. It needs [Node.js](https://nodejs.org) 20 or newer and a game build of 6.14 or newer.
 
 ## Start it
 
@@ -138,7 +138,7 @@ data/
       over/r.-1.0.json
       nether/r.0.0.json             one folder per dimension: over, nether, aether, puppet
     entities/
-      over/r.0.0.json               what lies or walks in that region: the dropped items and the mobs
+      over/r.0.0.json               what lies, walks or is parked in that region: dropped items, mobs, vehicles
     playerdata/
       dan.json                      one file per player who has ever joined
 ```
@@ -148,8 +148,8 @@ data/
   each chunk lists its changed `blocks` (`"x,y,z in the chunk": block id`; the untouched terrain is not stored, it comes
   from the seed) and its `blockEntities` (chests, furnaces, terrariums, display stands) by their place in the world.
 - **`entities`** follows the same regions: each dropped item with its position, the item itself and its age in seconds,
-  and each of the Overworld's mobs with its type, position, health, a villager's name and the spot a structure spawned
-  it at (`origin`).
+  each of the Overworld's mobs with its type, position, health, a villager's name and the spot a structure spawned
+  it at (`origin`), and each vehicle with its type, position and health.
 - **`playerdata`** holds each player's position, dimension, health, hunger, spawn point, XP, Dingle Bucks, game mode,
   `armor` and `inv` (one slot per line; `0` is an empty slot). The file is named after the player in lower case, with
   unusual characters spelled as `%xx`.
@@ -210,7 +210,12 @@ mob, villager, Nuke Keg and plain boss in the Overworld. The players' games only
 - It costs about 110 MB of memory with nobody on, and a few MB more for the land around each player.
 - `"simulate": false` in `server.json` turns it off (so does having no game file). Then the players' games run the
   mobs between them, as before 6.13.
-- Only the Overworld so far. In the Nether, the Aether and Puppet Purgatory the players' games still run the mobs.
+- **Vehicles** (6.14) are the server's too: a car, boat, plane, cart or skateboard placed in the Overworld is kept, moved
+  and saved by the server's game, and everyone sees it where it stands. Getting on makes it yours for the ride (your game
+  drives it; a second player is told someone else is driving); getting off gives it back. Breaking one breaks it for
+  everyone and drops one item.
+- Only the Overworld so far. In the Nether, the Aether and Puppet Purgatory the players' games still run the mobs, and
+  vehicles are each player's own.
 
 ## What is shared, and what is not
 
@@ -234,14 +239,16 @@ Shared by everyone, kept by the server and saved every 30 seconds:
 - chat, the player list (with each player's ping), players' positions, what they hold, the armour they wear and the car,
   boat, plane, cart or skateboard they are riding, punches and sword hits between players
 - the sound and the dust of a block another player places or breaks nearby
+- what flies (6.14): arrows, bullets, grenades, lit TNT, a boss's rocks and fireballs, XP orbs. Each still belongs to one
+  game, which decides what it hits; everyone nearby sees a copy that looks the same and touches nothing. That includes
+  the arrows of skeletons the server runs
 
 Not shared yet: each player's own game still plays these by itself, so two players standing together do not see the same ones.
 
 - dragons (tamed and ridden by one player), snakes, blocklings and the Puppet Purgatory and Malgorath casts.
   What a mob drops when you kill it is shared like any other dropped item; the XP goes to the player whose game ran it
-- what a boss throws: its fireballs and rocks are only in the game that runs it (the explosions they cause are shared)
-- parked vehicles (you see a vehicle under the player riding it; an empty one is only in the game that placed it), and
-  arrows as things you can see (the hit arrives, the arrow in the air is only in the archer's game)
+- vehicles outside the Overworld, or on a server with `simulate` off: you see one under the player riding it; an empty
+  one is only in the game that placed it
 - which bosses are already dead: a boss comes back for a player who was not there when it died
 - paintings and records from the Creativity Update (the works are stored per player)
 - the stock market

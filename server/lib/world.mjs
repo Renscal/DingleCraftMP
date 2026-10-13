@@ -5,6 +5,7 @@
 //   { f, v, name, seed, mode, time, gr (game rules), edits {chunkKey: {localKey: blockId}}, be {blockKey: blockEntity},
 //     players {lowercase name: saved player (+ gm, that player's own game mode)}, drops {id: {dim, x, y, z, st, age}},
 //     mobs [{t, x, y, z, yaw, hp, name?, ox?, oz?}] (the Overworld's mobs as the server's own game last reported them),
+//     vehicles [{t, x, y, z, yaw, hp}] (its cars, boats, planes, carts and skateboards, likewise),
 //     spawn {x, y, z} (where new players start), ...whatever else the save carried }
 //
 // On disk it is a folder, laid out like a Minecraft world and written as JSON a person can read and edit (6.12):
@@ -79,7 +80,7 @@ export function cleanMobs(list) {
 
 /* an empty world from the settings (seed, mode, name) */
 export function newWorld(o) {
-  return { f: 1, v: null, name: o.name, seed: hashSeed(o.seed), mode: o.mode === 'c' ? 'c' : 's', time: 0.3, gr: {}, edits: {}, be: {}, players: {}, drops: {}, mobs: [], spawn: null };
+  return { f: 1, v: null, name: o.name, seed: hashSeed(o.seed), mode: o.mode === 'c' ? 'c' : 's', time: 0.3, gr: {}, edits: {}, be: {}, players: {}, drops: {}, mobs: [], vehicles: [], spawn: null };
 }
 
 /* a save from the game (or our own file) -> the server's world. Per-client things are dropped: the exporter's own player
@@ -97,6 +98,7 @@ export function adoptWorld(d, o) {
   w.players = d.players && typeof d.players === 'object' ? d.players : {};
   w.drops = d.drops && typeof d.drops === 'object' && !Array.isArray(d.drops) ? d.drops : {};
   w.mobs = cleanMobs(d.mobs);
+  w.vehicles = cleanMobs(d.vehicles);
   /* a dropped item's age is counted in seconds played, not by the wall clock (a file from before that starts again at 0) */
   for (const id of Object.keys(w.drops)) { const dr = w.drops[id]; if (dr && typeof dr === 'object') { if (!Number.isFinite(dr.age)) dr.age = 0; delete dr.born; } }
   const sp = d.spawn;
@@ -146,7 +148,7 @@ function lines(obj, indent) {
 /* The world as files: a Map of path (relative to the world folder, forward slashes) -> text. */
 export function worldFiles(world) {
   const out = new Map();
-  const { edits, be, players, drops, mobs, ...level } = world;
+  const { edits, be, players, drops, mobs, vehicles, ...level } = world;
   out.set('level.json', JSON.stringify({ layout: LAYOUT, regionSize: REGION, chunkSize: CHUNK, ...level }, null, 2) + '\n');
 
   /* region/<dim>/r.<rx>.<rz>.json: chunk by chunk, the changed blocks ("lx,y,lz": block id) and the block entities */
@@ -178,7 +180,7 @@ export function worldFiles(world) {
 
   /* entities/<dim>/r.<rx>.<rz>.json: what lies in that region */
   const ents = new Map();            // 'over/0.-1' -> { items: {id: ...}, mobs: [...] }
-  const entsIn = (folder, x, z) => { const rk = folder + '/' + blockRegion(x, z); let r = ents.get(rk); if (!r) ents.set(rk, r = { items: {}, mobs: [] }); return r; };
+  const entsIn = (folder, x, z) => { const rk = folder + '/' + blockRegion(x, z); let r = ents.get(rk); if (!r) ents.set(rk, r = { items: {}, mobs: [], vehicles: [] }); return r; };
   for (const id of Object.keys(drops)) {
     const d = drops[id];
     entsIn(DIM_PFX[d.dim] === undefined ? 'over' : d.dim, d.x, d.z).items[id] = { x: d.x, y: d.y, z: d.z, item: d.st, ageSeconds: Math.round(d.age || 0) };
@@ -191,10 +193,11 @@ export function worldFiles(world) {
     if (m.ox !== undefined) o.origin = [m.ox, m.oz];
     entsIn('over', m.x, m.z).mobs.push(o);
   }
+  for (const v of vehicles || []) entsIn('over', v.x, v.z).vehicles.push({ type: v.t, x: v.x, y: v.y, z: v.z, yaw: v.yaw, health: v.hp });
   for (const [rk, e] of ents) {
     const [folder, r] = rk.split('/'), [rx, rz] = r.split('.').map(Number);
-    const mobText = e.mobs.length ? '[\n' + e.mobs.map((m) => '    ' + line(m)).join(',\n') + '\n  ]' : '[]';
-    out.set(`entities/${folder}/r.${r}.json`, `{\n  "dimension": ${line(folder)},\n  "region": [${rx}, ${rz}],\n  "items": ${lines(e.items, '  ')},\n  "mobs": ${mobText}\n}\n`);
+    const listText = (arr) => (arr.length ? '[\n' + arr.map((m) => '    ' + line(m)).join(',\n') + '\n  ]' : '[]');
+    out.set(`entities/${folder}/r.${r}.json`, `{\n  "dimension": ${line(folder)},\n  "region": [${rx}, ${rz}],\n  "items": ${lines(e.items, '  ')},\n  "mobs": ${listText(e.mobs)},\n  "vehicles": ${listText(e.vehicles)}\n}\n`);
   }
 
   /* playerdata/<name>.json */
@@ -236,7 +239,7 @@ export function readWorldDir(dir) {
   };
   const { layout, regionSize, chunkSize, ...level } = read('level.json');
   if (regionSize && regionSize !== REGION) throw new Error(`${path.join(dir, 'level.json')} says regions are ${regionSize} chunks wide; this server reads ${REGION}`);
-  const world = { ...level, edits: {}, be: {}, players: {}, drops: {}, mobs: [] };
+  const world = { ...level, edits: {}, be: {}, players: {}, drops: {}, mobs: [], vehicles: [] };
   for (const rel of listJson(dir, 'region')) {
     const pfx = dimPrefix(rel.split('/')[1]);
     if (pfx === null) continue;
@@ -253,6 +256,9 @@ export function readWorldDir(dir) {
     const file = read(rel), items = file.items || {};
     if (folder === 'over') for (const m of Array.isArray(file.mobs) ? file.mobs : []) {
       if (m && typeof m === 'object') world.mobs.push({ t: m.type, x: m.x, y: m.y, z: m.z, yaw: m.yaw, hp: m.health, name: m.name, ...(Array.isArray(m.origin) ? { ox: m.origin[0], oz: m.origin[1] } : {}) });
+    }
+    if (folder === 'over') for (const v of Array.isArray(file.vehicles) ? file.vehicles : []) {
+      if (v && typeof v === 'object') world.vehicles.push({ t: v.type, x: v.x, y: v.y, z: v.z, yaw: v.yaw, hp: v.health });
     }
     for (const id of Object.keys(items)) { const it = items[id]; if (it && typeof it === 'object') world.drops[id] = { dim: folder, x: it.x, y: it.y, z: it.z, st: it.item, age: +it.ageSeconds || 0 }; }
   }

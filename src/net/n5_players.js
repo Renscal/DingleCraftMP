@@ -119,7 +119,7 @@ function ntPeerArmor(p){
 /* the vehicle under a riding player: the core's own model for that kind, built when they get on and dropped when they
    get off. It hangs off the body (so it shows, hides and leaves with it) and is turned to the vehicle's own heading. */
 function ntPeerRide(p){
-  const M=p.M,kind=(p.fl&8)?p.rv:'';
+  const M=p.M,kind=(p.fl&8)&&!ntHosted()?p.rv:'';   /* where the server keeps the vehicles, the real one is there to see */
   if(M._veh!==kind){
     M._veh=kind;
     if(M.veh){M.G.remove(M.veh);if(typeof M.veh.traverse==='function')M.veh.traverse(o=>{if(o.geometry)o.geometry.dispose();

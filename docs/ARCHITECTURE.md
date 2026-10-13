@@ -422,6 +422,17 @@ host reports all its mobs (`hsnap`), which is what `entities/` saves and `ntHost
 on a hosted server hands every shared mob it spawns to the host (`ntMobFull` carries name, spawn spot and velocity) and
 skips natural spawning. Not hosted yet: other dimensions, projectiles, vehicles, water, fire, falling blocks.
 
+**What flies and what you ride (6.14, `src/net/n9_ents.js`).** A projectile (`NT_FX`: arrow, bullet, grenade, lit TNT,
+boss rock and fireball, plane bomb, XP orb) stays in the game that made it. `ntFxTick` scans the entity list every
+frame, gives each new one an id and announces it (`fx`: kind, position, velocity, gravity, lifetime), and reports it
+gone (`fxgone`). Receivers build a copy flagged `e.pup` (the real constructor for arrows, bullets and TNT, a plain box
+for the rest) that `ntFxPup` flies with the same gravity and that touches nothing. Vehicles (`NT_VEH`), only where
+`ntHosted()`: the host owns every vehicle nobody rides and streams the parked ones (`vehs` from 0); a player's game
+hands over a vehicle it creates (`vgive`), claims the one its player mounts (`vtake`, optimistic; the server keeps
+`S.vown` id -> rider and answers `vno` to a second claimant), reports it while riding (`vehs`) and gives it back on
+dismount. `hitCar` on a puppet forwards the hit (`vhit`) to whoever runs it. One hook serves both kinds: in
+`updateEntities`, `e.pup && e.t !== 'mob'` goes to `ntEntPup`. The dimension stash skips anything with `e.pup` or `e.vid`.
+
 **Shared since 6.11:** villagers, Nuke Kegs and the bosses that are plain mobs (`boss`, `titan`, `infernis`,
 `valkyra`), through the same owner/puppet path. A boss is not handed over while its owner is within 40 blocks. The kinds a
 structure spawns (`NT_UNIQ`) carry their spawn spot, and two of a kind from one spot are one mob (`ntMobTwin`), so a

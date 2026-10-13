@@ -28,7 +28,7 @@ function ntHosted(){return NET.hosted===true&&!NET.host&&DIM==='over';}
 /* ----- on the server's game ----- */
 /* Become the host: load the server's world like a save (blocks and chests; no player, no entities), then put back the
    mobs the server had saved. w is the world as the server keeps it, mobs the list ntHostSnap made last time. */
-function ntHostStart(w,mobs){
+function ntHostStart(w,mobs,vehs){
   const sp=w.spawn&&typeof w.spawn.x==='number'?[w.spawn.x,w.spawn.y,w.spawn.z]:[0.5,WH-8,0.5];
   const d={...w,f:w.f||SAVE_FORMAT,edits:w.edits||{},be:w.be||{},mode:'s',dim:'over',ents:[],player:{x:sp[0],y:sp[1],z:sp[2],spawn:sp}};
   delete d.mp;delete d.stash;delete d.players;delete d.drops;delete d.mobs;
@@ -37,9 +37,11 @@ function ntHostStart(w,mobs){
   NET.mobs.clear();NET.mseq=0;NET.mobT=0;NET.drops.clear();NET.dim=DIM;NET.dseq=0;NET.dropIn=false;NET.scanT=0;
   NET.beS.clear();NET.grS=JSON.stringify(GR);NET.tPrev=timeOfDay;
   NET.hp0=P;NET.hpl=[];NET.hrr=0;NET.hsnT=0;NET.hchT=0;
+  NET.fx.clear();NET.fseq=0;NET.vehs.clear();NET.vseq=0;NET.vehT=0;
   WORLD.name='';enterGame();
   let n=0;
   for(const o of (Array.isArray(mobs)?mobs:[]))if(ntHostRestore(o))n++;
+  for(const o of (Array.isArray(vehs)?vehs:[]))if(o&&ntVehMake(['0v'+(++NET.vseq).toString(36),o.t,o.x,o.y,o.z,o.yaw,o.hp]))n++;
   return n;
 }
 /* one saved mob back into the world; false if this game does not know its kind */
@@ -184,7 +186,9 @@ function ntHostTick(dt){
     for(const q of pl)if(q.xp>0){ntSend({t:'xp',to:q.nid,n:Math.round(q.xp)});q.xp=0;}
   }
   ntHostMobsOut();
+  ntHostVehsOut();
+  ntFxTick();
   ntFlush();
   if(NET.acc-NET.scanT>=1){NET.scanT=NET.acc;ntDropsScan();}
-  if(NET.acc-NET.hsnT>=5){NET.hsnT=NET.acc;ntSend({t:'hsnap',mobs:ntHostSnap()});}
+  if(NET.acc-NET.hsnT>=5){NET.hsnT=NET.acc;ntSend({t:'hsnap',mobs:ntHostSnap(),vehs:ntHostVehSnap()});}
 }

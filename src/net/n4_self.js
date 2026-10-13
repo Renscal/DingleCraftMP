@@ -59,7 +59,7 @@ function ntFrame(dt){
   NET.act=false;                     /* a hand that changed nothing this frame marks nothing */
   ntPing();
   if(!NET.on)return;                 /* the line was dead: ntDown has taken the game back to the title */
-  if(NET.dim!==DIM)ntDropsScan();   /* a dimension change: before anything else looks at the drops */
+  if(NET.dim!==DIM){ntEntsDim();ntDropsScan();}   /* a dimension change: before anything else looks at the drops */
   if(P.hurtT<=0)NET.dmgRef=LASTDMG;
   ntLockTick();
   if(NET.saveT>=0&&NET.acc>=NET.saveT){NET.saveT=-1;ntSave(true);}
@@ -79,6 +79,6 @@ function ntFrame(dt){
   /* a jump in the clock that the server did not send (a bed, the debug menu) is this player's doing: tell everyone */
   if(Math.abs(timeOfDay-NET.tPrev)>0.01)ntSend({t:'time',v:((timeOfDay%1)+1)%1});
   NET.tPrev=timeOfDay;
-  if(!NET.host)ntMobsTick(dt);
+  if(!NET.host){ntMobsTick(dt);ntFxTick();ntVehTick();}
   ntPeersTick(dt);
 }

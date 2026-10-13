@@ -1,5 +1,5 @@
 /* n_static.js (v6.10, lane NET, gate x1): the multiplayer statics. No sockets, no clock.
-   1 PART 58 placement (right before PART 57), its nine files in order with their markers, its size guard; every file and
+   1 PART 58 placement (right before PART 57), its ten files in order with their markers, its size guard; every file and
      every function carries a comment
    2 names: every top-level declaration in src/net/ starts nt / NET / NT_ / NTEX and collides with nothing else in the game
    3 load-time purity: no WebSocket, THREE constructor, clock or random number outside a function body
@@ -16,7 +16,7 @@ const {REPO,readSrc}=require('../lib/paths.js');
 const V=boot({});
 boot.run(async()=>{
   const G=fs.readFileSync(boot.BUILD+'game.js','utf8'),HH=fs.readFileSync(boot.BUILD+'head.html','utf8');
-  const NFILES=['n0_contract.js','n1_link.js','n2_world.js','n3_drops.js','n4_self.js','n5_players.js','n6_menu.js','n7_mobs.js','n8_host.js'];   /* src/net/, in load order */
+  const NFILES=['n0_contract.js','n1_link.js','n2_world.js','n3_drops.js','n4_self.js','n5_players.js','n6_menu.js','n7_mobs.js','n8_host.js','n9_ents.js'];   /* src/net/, in load order */
   const N=NFILES.map(f=>readSrc('net/'+f)).join(''),ORDER=fs.readFileSync(path.join(REPO,'src','ORDER.txt'),'utf8');
   const count=(t,s)=>t.split(s).length-1;
 
@@ -78,15 +78,18 @@ boot.run(async()=>{
     ['entities/p05e_spawning_tick.js','&&(!NET.host||ntHostNear(e))){if(e.hostile)h++;else p++;}'],
     ['entities/p05e_spawning_tick.js','if(!GR.mobSpawn||(NET.on&&ntHosted()))return;'],
     ['entities/p05e_spawning_tick.js','if(NET.host&&ntHostAim(e))continue;'],
+    /* 6.14: another game's vehicle or flying thing (behind e.pup, which only PART 58 sets) */
+    ['entities/p05e_spawning_tick.js',"if(e.pup&&e.t!=='mob'){ntEntPup(e,dt);continue;}"],
+    ['features/p08_torches_weapons_vehicles_music.js','if(e.pup){ntVehHit(e,dmg);return;}'],
   ];
   for(const [f,h] of hooks)ok('hook in '+f+': '+h.slice(0,34)+'… once, and once in the build',count(readSrc(f),h)===1&&count(G,h)===1);
   {const outside=G.slice(0,i58)+G.slice(i57);const calls=outside.match(/\bnt[A-Z]\w*\(/g)||[];
-    ok('the core calls into PART 58 exactly 27 times: 21 behind NET.on or e.pup, 6 for the server\'s own game ('+calls.length+')',calls.length===27);
+    ok('the core calls into PART 58 exactly 29 times: 23 behind NET.on or e.pup, 6 for the server\'s own game ('+calls.length+')',calls.length===29);
     ok('single player never reaches the server-game hooks: each is behind NET.host or NET.on, which only PART 58 sets',!/NET\.(host|hosted|on)\s*=[^=]/.test(outside));
     ok('the two drop guards: networked drops stay out of the dimension stash, and drops do not merge online',
       count(readSrc('world/p37_dimensions.js'),"e.t==='drop'&&e.st&&!e.nid){out.push(")===1&&count(readSrc('entities/p05a_entities_drops.js'),'&&e.st.dur==null&&!NET.on){')===1);
     ok('e.nid is only ever set by PART 58',!/\.nid\s*=[^=]/.test(outside));
-    ok('e.pup and e.rid are only ever set by PART 58, and another player\'s mob never goes into the dimension stash',!/\.(pup|rid)\s*=[^=]/.test(outside)&&count(readSrc('world/p37_dimensions.js'),"if(e.t==='mob'&&e.pup){removeEnt(e);continue;}")===1);
+    ok('e.pup and e.rid are only ever set by PART 58, and another player\'s mob never goes into the dimension stash',!/\.(pup|rid|vid|fxid)\s*=[^=]/.test(outside)&&count(readSrc('world/p37_dimensions.js'),"if(e.pup||e.vid){removeEnt(e);continue;}")===1);
     {const shared=Object.keys(V.MOBT).filter(mt=>V.ntMobShared({t:'mob',mt}));
       ok('what is shared (6.11): the ordinary mobs, villagers, Nuke Kegs and the plain bosses; never a Purgatory or Malgorath cast, a prop, a dragon, a snake or a blockling',
         shared.every(mt=>{const T=V.MOBT[mt];return !T.pmob&&!T.mg&&!T.pnc&&mt!=='dragon'&&mt!=='dking'&&mt!=='snake'&&mt!=='blockling';})&&

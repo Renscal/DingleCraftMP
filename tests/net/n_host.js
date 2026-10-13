@@ -12,7 +12,11 @@
    6 this process's game as a player: it knows the server runs the mobs, spawns nothing natural, draws the host's mobs as
       puppets, and a mob it spawns (an egg, a jar) is handed over at once; a hit on a puppet goes to the host
    7 saved with the world: entities/ in the world folder lists the mobs, and a restarted server puts them back
-   8 "simulate": false, or a game file with no script in it: no host, and players are told so (the old way) */
+   8 "simulate": false, or a game file with no script in it: no host, and players are told so (the old way)
+   9 (6.14) what flies is seen: a skeleton's arrow on the server's game, a player's own arrow, lit TNT; the copy flies, hurts
+     nothing and goes when the real one does
+   10 (6.14) vehicles are the server's: a placed car is handed over and everyone gets it, getting on makes it the rider's
+      (a second rider is refused), getting off gives it back, a hit on a parked one breaks it once, and they are saved */
 'use strict';
 const boot=require('../lib/c_boot.js'),{ok}=boot;
 const path=require('path'),fs=require('fs'),{pathToFileURL}=require('url');
@@ -56,12 +60,13 @@ boot.run(async()=>{
   {bea.send({t:'mgive',to:0,m:['z.2','pig',sx-6,sy+14,sz-3,0,10,0,'',sx-6,sz-3,'0,0,-8']});await until(()=>bea.mobs().has('z.2'),4000);
     const z0=bea.mobs().get('z.2')[4];await sleep(400);
     ok('...keeping the speed it was handed over with (a pig out of the cannon flies on)',z0<sz-3-0.1||bea.mobs().get('z.2')[4]<z0-0.8);}
-  {await sleep(700);const y1=bea.mobs().get('z.1')[3];await sleep(400);
-    ok('the server\'s game has the terrain: the pig stands on the ground, it does not fall through the world',Math.abs(bea.mobs().get('z.1')[3]-y1)<1.6&&y1>sy-6&&y1<sy+8);}
+  {await sleep(1500);const y1=bea.mobs().get('z.1')[3];await sleep(800);const y2=bea.mobs().get('z.1')[3];
+    ok('the server\'s game has the terrain: seconds later the pig is still on the ground near where it was put, not falling through the world',y1>sy-10&&y1<sy+12&&y2>sy-10&&y2<sy+12);}
   {bea.clear();const d0=Object.keys(W.drops).length;bea.send({t:'mhit',to:0,id:'z.1',dmg:999,kx:1,kz:0});
     ok('a hit sent to player 0 lands on the mob: its death is announced to the players',await until(()=>bea.by('mgone').some(m=>m.dead===1&&m.ids.includes('z.1')&&m.from===0),4000));
     ok('...and what it drops is a dropped item of the world, like any other',await until(()=>bea.by('drop').length>0&&Object.keys(W.drops).length>d0,3000));
-    ok('...and the XP it leaves goes to the player who walks into it',await until(()=>!!bea.last('xp'),8000)&&bea.last('xp').n>0);}
+    {const at=bea.last('drop')||{x:sx+3,y:sy,z:sz};await bea.pose(at.x,at.y,at.z);
+      ok('...and the XP it leaves goes to the player who walks into it',await until(()=>!!bea.last('xp'),8000)&&bea.last('xp').n>0);await bea.pose(sx,sy,sz);}}
 
   /* ===== 3. a mob hurts a player through that player's game ===== */
   S.setTime(0.8);await sleep(100);
@@ -114,6 +119,55 @@ boot.run(async()=>{
     {V.P.hp=20;V.P.hurtT=0;V.ntMsg({t:'hurt',dmg:3,kx:1,kz:0,by:'Zombie',how:'mob'});
       ok('a hurt from the server is applied by the player\'s own game, and remembered for the death message',V.P.hp<20&&V.getLastDmg?V.getLastDmg().by==='Zombie':V.P.hp<20);
       const x0=V.P.xp||0;V.ntMsg({t:'xp',n:5});ok('XP from the server is added',(V.P.xp||0)===x0+5);V.P.hp=20;}
+    /* ===== 9. what flies ===== */
+    {const fxs=()=>[...NET.fx.values()].filter(e=>e.pup&&!e.dead);
+      bea.clear();V.spawnArrow(P.x+1,P.y+1.5,P.z,6,3,0,'p',4);const arr=V.entities[V.entities.length-1];await pump(3);
+      ok('an arrow this player shoots is announced to the players nearby: its kind, where and how fast',await until(()=>!!bea.last('fx'),3000)&&bea.last('fx').f[0][1]==='arrow'&&bea.last('fx').f[0][5]===6&&bea.last('fx').from===NET.id&&!!arr.fxid);
+      ok('...and again when it has landed',await pumpUntil(()=>bea.by('fxgone').some(m=>m.ids.includes(arr.fxid)),8000));
+      const hp0=V.P.hp;bea.send({t:'fx',f:[['9f1','arrow',P.x+3,P.y+7,P.z,-8,2,0,14,8],['9f2','tnt',P.x+4,P.y+1,P.z+2,0,0,0,24,1.5],['9f3','xp',P.x+2,P.y+1,P.z-2,0,0,0,14,60],['9f4','warp',P.x,P.y,P.z,0,0,0,0,5],['9f5','arrow',P.x+900,P.y,P.z,0,0,0,14,8]]});
+      ok('something another player shoots appears here as a copy: an arrow, lit TNT and an XP orb (an unknown kind and a far one do not)',await pumpUntil(()=>fxs().length===3,3000)&&NET.fx.has('9f1')&&NET.fx.get('9f1').t==='arrow'&&NET.fx.get('9f2').t==='tnt'&&NET.fx.get('9f3').t==='nfx'&&!NET.fx.has('9f4')&&!NET.fx.has('9f5'));
+      {const a=NET.fx.get('9f1');step(6);await pump(2);
+        ok('the copy flies the way the real one does',a.x<P.x+3-0.5&&a.pup===true);
+        const b0=V.getBlock(Math.floor(P.x+4),Math.floor(P.y),Math.floor(P.z+2));step(80);await pump(4);
+        ok('...and touches nothing: the arrow flew through where Dan stands and the TNT ran out its fuse, and neither he nor a block is the worse for it',V.P.hp===hp0&&!NET.fx.has('9f2')&&V.getBlock(Math.floor(P.x+4),Math.floor(P.y),Math.floor(P.z+2))===b0);}
+      bea.send({t:'fxgone',ids:['9f3']});
+      ok('told it is gone: gone',await pumpUntil(()=>!NET.fx.has('9f3'),3000));
+      /* the server's own game: a skeleton shoots at Bea, who is closer */
+      /* (on a stone ledge built high above the trees, with her hovering level with it: a skeleton only shoots at what it can see) */
+      {const hx=Math.floor(P.x)+20,hy=Math.min(70,Math.floor(P.y)+26),hz=Math.floor(P.z),ed=[];
+        for(let dx=-2;dx<=2;dx++)for(let dz=-2;dz<=2;dz++){const x=hx+dx,z=hz+dz;ed.push([Math.floor(x/16)+','+Math.floor(z/16),(x-Math.floor(x/16)*16)+','+hy+','+(z-Math.floor(z/16)*16),B.STONE]);}
+        bea.send({t:'edits',e:ed});
+        S.setTime(0.8);await sleep(150);await bea.pose(hx-8+0.5,hy+1,hz+0.5);bea.clear();
+        bea.send({t:'mgive',to:0,m:['z.7','skel',hx+0.5,hy+1.1,hz+0.5,0,20,0,'',hx+0.5,hz+0.5,'0,0,0']});}
+      {const seen=await pumpUntil(()=>bea.by('fx').some(m=>m.from===0&&m.f.some(a=>a[1]==='arrow')),25000);
+        ok('a skeleton the server runs shoots: its arrow is announced by the server, so the players see it coming'+(seen?'':' [skeleton '+JSON.stringify(bea.mobs().get('z.7'))+', hurt '+bea.by('hurt').length+', fx '+bea.by('fx').length+']'),seen);
+        ok('...and this player\'s game, standing further off, flies a copy of it too',await pumpUntil(()=>[...NET.fx.keys()].some(k=>/^0f/.test(k)),8000));}
+      bea.send({t:'mhit',to:0,id:'z.7',dmg:999,kx:1,kz:0});S.setTime(0.3);await pump(20);await bea.pose(sx,sy,sz);}
+
+    /* ===== 10. vehicles are the server's ===== */
+    {const veh=id=>V.entities.find(e=>e.vid===id&&!e.dead),bveh=()=>{const m=new Map();for(const g of bea.by('vehs'))for(const a of g.v)m.set(a[0],[g.from,a]);return m;};
+      bea.clear();await bea.pose(P.x+4,P.y,P.z);
+      V.spawnCar(P.x+3,P.y+1,P.z,0);const car=V.entities[V.entities.length-1];
+      ok('a car this player places is handed to the server at once: a puppet here, with an id',await pumpUntil(()=>car.pup===true&&!!car.vid,3000));
+      ok('...and the server\'s game keeps it: Bea is sent it as one of the server\'s',await until(()=>bveh().has(car.vid)&&bveh().get(car.vid)[0]===0,4000)&&bveh().get(car.vid)[1][1]==='car');
+      ok('the server knows who is riding what: nobody yet',!S.riders().has(car.vid));
+      /* getting on */
+      V.P.ride=car;bea.clear();
+      ok('getting on makes it this player\'s for the ride: their game drives it again and reports it',await pumpUntil(()=>car.pup===false&&car.mine===true&&S.riders().get(car.vid)===NET.id,3000)&&await until(()=>bea.by('vehs').some(m=>m.from===NET.id&&m.v[0][0]===car.vid),3000));
+      bea.clear();bea.send({t:'vtake',id:car.vid,v:[car.vid,'car',1,1,1,0,30]});
+      ok('a second player trying to get on the same car is refused',await until(()=>!!bea.last('vno'),3000)&&bea.last('vno').id===car.vid&&S.riders().get(car.vid)===NET.id);
+      bea.send({t:'vehs',v:[[car.vid,'car',500,50,500,0,30,0]]});await sleep(80);await pump(4);
+      ok('...and cannot move it either',Math.abs(car.x-(P.x))<40);
+      {const hp0=car.hp;bea.send({t:'vhit',id:car.vid,dmg:5});
+        ok('a hit on a ridden car goes to its rider\'s game',await pumpUntil(()=>car.hp===hp0-5,3000));}
+      /* getting off */
+      V.P.ride=null;bea.clear();
+      ok('getting off gives it back to the server',await pumpUntil(()=>car.pup===true&&car.mine===false&&!S.riders().has(car.vid),3000)&&await until(()=>bveh().has(car.vid)&&bveh().get(car.vid)[0]===0,4000));
+      ok('the server reports its vehicles for saving',await until(()=>W.vehicles.some(v=>v.t==='car'),8000)&&W.vehicles.every(v=>typeof v.x==='number'&&typeof v.hp==='number'));
+      /* a parked car is broken once, by the server's game */
+      {const d0=Object.keys(W.drops).length;bea.clear();car.hurtT=0;V.hitCar(car,9999);
+        ok('breaking a parked car: the hit goes to the server, which breaks it for everyone and drops the one item',await pumpUntil(()=>!veh(car.vid),4000)&&await until(()=>bea.by('vgone').some(m=>m.ids.includes(car.vid))&&Object.keys(W.drops).length===d0+1,4000));}
+      V.spawnBoat(P.x+3,P.y+1,P.z+2,0);const boat=V.entities[V.entities.length-1];await pumpUntil(()=>!!boat.vid&&boat.pup,3000);await until(()=>W.vehicles.some(v=>v.t==='boat'),8000);}
     await V.quitToTitle();}
 
   /* ===== 7. saved with the world ===== */
@@ -124,9 +178,12 @@ boot.run(async()=>{
     const all=files.flatMap(f=>JSON.parse(fs.readFileSync(path.join(dir,f),'utf8')).mobs||[]);
     ok('the world folder lists the mobs under entities/, by region: type, place, health, a villager\'s name and spot ('+all.length+' mobs)',nSaved>0&&all.length===nSaved&&all.some(m=>m.type==='alien'&&m.name==='Zorp'&&Array.isArray(m.origin))&&all.every(m=>typeof m.type==='string'&&typeof m.health==='number'));
     const S2=createServer({port:0,data:OUT,world:'world',noGame:true,hostGame:GAME,quiet:true});await S2.listen();
+    {const vs=files.flatMap(f=>JSON.parse(fs.readFileSync(path.join(dir,f),'utf8')).vehicles||[]);
+      ok('...and the vehicles beside them',vs.some(v=>v.type==='boat'&&typeof v.health==='number')&&S2.world().vehicles.some(v=>v.t==='boat'));}
     ok('a restarted server reads them back',S2.world().mobs.length===nSaved&&await until(()=>S2.host()&&S2.host().ready,20000));
     const b2=raw(S2.port,'Bea');await b2.open;await until(()=>!!b2.last('ready'));await b2.pose(sx,sy,sz);
     ok('...and its game puts them back in the world: the villager is there again, by name, for the next player',await until(()=>[...b2.mobs().values()].some(a=>a[1]==='alien'&&a[8]==='Zorp'),8000));
+    ok('...and the boat is back on the water, the server\'s to keep',await until(()=>b2.by('vehs').some(m=>m.from===0&&m.v.some(a=>a[1]==='boat')),8000));
     await S2.close();}
 
   /* ===== 8. no host ===== */

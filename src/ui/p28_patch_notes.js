@@ -3,7 +3,16 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'The server runs the mobs',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Everyone sees it fly',lines:[
+    'EVERYONE SEES IT FLY. Arrows, bullets, grenades, lit TNT, a boss&#x27;s rocks and fireballs, XP orbs: other players now see them in the air. Until now your friend&#x27;s arrow was a rumour and a skeleton&#x27;s was an injury with no warning.',
+    'What you see is a copy. The real one still lives in the game that shot it, which alone decides what it hits. The copy looks the same and touches nothing.',
+    'VEHICLES BELONG TO THE WORLD. On a server that runs its own game, a car, boat, plane, cart or skateboard you put down in the Overworld stays there for everyone, and is still there after a restart.',
+    'Get on and it is yours for the ride, driven by your own game so it feels as it always did. If someone is already driving it you are told so. Get off and the server has it back.',
+    'Break a parked car and it breaks for everybody, once, and drops one car. No more private parking.',
+    'Server owners: the entities folder now lists vehicles next to the mobs and the dropped items.',
+    'Still each player&#x27;s own: vehicles outside the Overworld, and everything in Purgatory and at Malgorath&#x27;s.',
+  ]},
+ {v:'6.13',label:'Release 1.1',title:'The server runs the mobs',lines:[
     'THE SERVER RUNS THE MOBS. Until now a mob on a server lived in whichever player&#x27;s game happened to be closest. Now the server plays the game too, without a screen, and every zombie, pig, villager, Nuke Keg and boss in the Overworld is its own.',
     'What you notice: mobs keep moving while you sit in a menu. They no longer hiccup when you and a friend swap places. A village has one set of villagers no matter how many of you walk in.',
     'Mobs are saved with the world. Stop the server, start it again, and the villager called Zorp is standing where you left him. Server owners can read the whole census in the entities folder.',

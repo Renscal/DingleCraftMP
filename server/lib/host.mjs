@@ -36,13 +36,13 @@ export function gameScript(gameFile, cacheDir) {
 /* Start the host for server S. handle(c, message, size) is the protocol's handler; log prints a line.
    Returns the host object at once; it takes a second or two to be ready, and what is sent to it meanwhile waits. */
 export function startHost(S, script, handle, log) {
-  const { edits, be, players, drops, mobs, ...level } = S.world;
+  const { edits, be, players, drops, mobs, vehicles, ...level } = S.world;
   const c = { id: 0, name: '#server', host: true, ready: true, closed: false, addr: 'host', pose: null, sent: null, rate: {},
     seen: Date.now(), poseT: 0, chatT: 0, chatN: 0, hitT: 0, lastHit: null, sleepT: 0, sleepAt: null, gm: null, ms: 0, rd: 0 };
   const waiting = [];
   const H = { c, ready: false, stopped: false, post(m) { if (H.stopped) return; if (H.ready) worker.postMessage(m); else waiting.push(m); },
     stop() { H.stopped = true; return worker.terminate().catch(() => {}); } };
-  const worker = new Worker(path.join(HERE, 'host_worker.cjs'), { workerData: { game: script, world: { ...level, edits, be }, mobs: mobs || [] } });
+  const worker = new Worker(path.join(HERE, 'host_worker.cjs'), { workerData: { game: script, world: { ...level, edits, be }, mobs: mobs || [], vehs: vehicles || [] } });
   const gone = (why) => {
     if (H.stopped) return;
     H.stopped = true; H.ready = false; c.closed = true;
@@ -51,7 +51,7 @@ export function startHost(S, script, handle, log) {
   };
   worker.on('message', (m) => {
     if (typeof m === 'string') { let o; try { o = JSON.parse(m); } catch { return; } try { handle(c, o, m.length); } catch (e) { log('error handling a message from the server game: ' + e.message); } return; }
-    if (m && m.ready) { H.ready = true; log(`the server game is running (v${m.version}; ${m.mobs} saved mob${m.mobs === 1 ? '' : 's'} put back)`); for (const w of waiting.splice(0)) worker.postMessage(w); }
+    if (m && m.ready) { H.ready = true; log(`the server game is running (v${m.version}; ${m.mobs} saved mob${m.mobs === 1 ? '' : 's'} and vehicle${m.mobs === 1 ? '' : 's'} put back)`); for (const w of waiting.splice(0)) worker.postMessage(w); }
     else if (m && m.log) log(m.log);
     else if (m && m.error) gone(m.error);
   });

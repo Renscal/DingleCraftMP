@@ -322,6 +322,7 @@ function spawnCar(x,y,z,yaw){
     yaw:yaw||0,onGround:false,hurtT:0,mesh:G,wheels,mats});
 }
 function hitCar(e,dmg){
+  if(e.pup){ntVehHit(e,dmg);return;}   /* PART 58: its owner's game takes the hit */
   e.hp-=dmg;e.hurtT=0.4;
   for(const m of e.mats)m.emissive&&m.emissive.setRGB(0.45,0.05,0);
   playS('thud');

@@ -43,6 +43,18 @@
 //     hsnap {mobs}                      -         (every mob it has, kept for the next save: entities/ in the world folder)
 //   its mobs go to each player with only the ones within range of that player; no limits apply to it;
 //   it is sent join, leave, pose, edits, be, drop, undrop, time, gr, and the mgive and mhit addressed to player 0.
+//
+// What flies and what you ride (6.14):
+//   fx {f: [[id, kind, x, y, z, vx, vy, vz, gravity, life]...]}   fx (+from)   (to players nearby: a copy to look at)
+//   fxgone {ids}                                  fxgone
+//   and, only on a server that runs its own game, in the Overworld (S.vown: vehicle id -> the player riding it):
+//   vgive {v: [id, kind, x, y, z, yaw, hp]}       -> the server's game (a new vehicle, or one just got off)
+//   vtake {id, v}                                 -> the server's game; or vno {id} back if someone else is riding it
+//   vfree {id}                                    -> the server's game (the rider left the dimension)
+//   vehs {v: [...]}                               vehs (+from)  (a rider's own vehicle to players nearby and the server's
+//                                                 game; the server's game: the parked ones, to each player in range)
+//   vgone {ids}                                   vgone
+//   vhit {id, dmg}                                vhit      (to whoever runs that vehicle: its rider, else the server's game)
 import crypto from 'node:crypto';
 import { PROTO, DAY_LEN, MIN_GAME, LIMITS, RATE, RULES, CK_RE, LK_RE, BK_RE, DROP_ID_RE, DIMS, DIM_PFX, cleanRules, cmpVer } from './config.mjs';
 import { num, cleanName, cleanText, cleanStack, cleanMobs, playerKey } from './world.mjs';
@@ -71,7 +83,24 @@ function near(a, b, dist) {
 }
 
 /* what the server's own game may send, and what only it may send */
-const HOST_SENDS = new Set(['edits', 'drop', 'dropAt', 'take', 'mobs', 'mgone', 'boom', 'hurt', 'xp', 'hsnap']);
+const HOST_SENDS = new Set(['edits', 'drop', 'dropAt', 'take', 'mobs', 'mgone', 'boom', 'hurt', 'xp', 'hsnap', 'fx', 'fxgone', 'vehs', 'vgone']);
+/* the kinds of thing that fly, and a vehicle's id */
+const FX_KINDS = new Set(['arrow', 'blt', 'nade', 'tnt', 'fireb', 'lavab', 'rock', 'abomb', 'xp']);
+const VEH_ID_RE = /^[a-z0-9]{1,8}v[a-z0-9]{1,8}$/;
+/* one flying thing as a game announces it, or null */
+function cleanFx(a) {
+  if (!Array.isArray(a) || a.length !== 10 || typeof a[0] !== 'string' || !/^[a-z0-9]{1,8}f[a-z0-9]{1,8}$/.test(a[0]) || !FX_KINDS.has(a[1])) return null;
+  for (let i = 2; i < 10; i++) if (!Number.isFinite(a[i])) return null;
+  return a;
+}
+/* one vehicle as a game describes it: [id, kind, x, y, z, yaw, hp, speed?], or null */
+function cleanVeh(a) {
+  if (!Array.isArray(a) || a.length < 7 || a.length > 8 || typeof a[0] !== 'string' || !VEH_ID_RE.test(a[0]) || !RIDES.has(a[1])) return null;
+  for (let i = 2; i < a.length; i++) if (!Number.isFinite(a[i])) return null;
+  return a;
+}
+/* the server's own game, if it is running */
+const hostOf = (S) => (S.host && !S.host.stopped ? S.host.c : null);
 const HOST_ONLY = new Set(['hurt', 'xp', 'hsnap']);
 /* the player a message is addressed to: a real one, or the server's own game (id 0) */
 const peerOf = (S, id) => (id === 0 ? (S.host && !S.host.stopped ? S.host.c : null) : S.clients.get(id));
@@ -193,6 +222,7 @@ function hello(S, net, c, m) {
    - the mobs their game was running go to the nearest player who can see them (mheir). */
 export function forget(S, net, c) {
   for (const [k, id] of S.locks) if (id === c.id) S.locks.delete(k);
+  for (const [vid, id] of S.vown) if (id === c.id) { S.vown.delete(vid); const h = hostOf(S); if (h) net.send(h, { t: 'vfree', id: vid }); }   // the vehicle they sat on is the server's again
   const p = c.pose, sv = S.world.players[playerKey(c.name)];
   if (!p) return;
   if (sv && typeof sv === 'object' && !(p.fl & 4) && (sv.dim || 'over') === p.dim) { sv.x = p.x; sv.y = p.y; sv.z = p.z; sv.yaw = p.yaw; sv.pitch = p.pitch; S.dirty = true; }
@@ -507,8 +537,72 @@ export function handleMessage(S, net, c, m, size) {
       if (to && to.ready) net.send(to, { t: 'xp', n: Math.round(num(m.n, 1, 10000, 1)) });
       return;
     }
-    case 'hsnap': {                    // (the server's game) every mob it has, for the next save
-      world.mobs = cleanMobs(m.mobs); S.dirty = true;
+    case 'hsnap': {                    // (the server's game) every mob and vehicle it has, for the next save
+      world.mobs = cleanMobs(m.mobs); world.vehicles = cleanMobs(m.vehs).filter((v) => RIDES.has(v.t)); S.dirty = true;
+      return;
+    }
+    case 'fx': {                       // something started flying in this game: the players nearby get a copy to look at
+      if (!Array.isArray(m.f) || m.f.length > 40 || (!c.host && !c.pose)) return;
+      const list = m.f.map(cleanFx).filter(Boolean);
+      if (!list.length) return;
+      const dim = c.host ? 'over' : c.pose.dim;
+      for (const p of S.clients.values()) {
+        if (p === c || !p.ready || !p.pose || p.pose.dim !== dim) continue;
+        const mine = list.filter((a) => Math.hypot(a[2] - p.pose.x, a[4] - p.pose.z) <= LIMITS.fxRange);
+        if (mine.length) net.send(p, { t: 'fx', from: c.id, f: mine });
+      }
+      return;
+    }
+    case 'fxgone': {
+      if (!Array.isArray(m.ids) || m.ids.length > 60 || (!c.host && !c.pose)) return;
+      const ids = m.ids.filter((v) => typeof v === 'string' && v.length <= 17), dim = c.host ? 'over' : c.pose.dim;
+      if (ids.length) net.broadcast({ t: 'fxgone', ids }, c, (p) => !!p.pose && p.pose.dim === dim && (c.host || near(p.pose, c.pose, LIMITS.fxRange * 2)));
+      return;
+    }
+    case 'vehs': {                     // where vehicles are: the parked ones from the server's game, a ridden one from its rider
+      if (!Array.isArray(m.v) || m.v.length > 60) return;
+      let list = m.v.map(cleanVeh).filter(Boolean);
+      if (c.host) {
+        for (const p of S.clients.values()) {
+          if (!p.ready || !p.pose || p.pose.dim !== 'over') continue;
+          const mine = list.filter((a) => !S.vown.has(a[0]) && Math.hypot(a[2] - p.pose.x, a[4] - p.pose.z) <= LIMITS.vehRange);
+          if (mine.length) net.send(p, { t: 'vehs', from: 0, v: mine });
+        }
+        return;
+      }
+      const h = hostOf(S);
+      if (!h || !c.pose || c.pose.dim !== 'over') return;
+      list = list.filter((a) => S.vown.get(a[0]) === c.id);
+      if (!list.length) return;
+      net.broadcast({ t: 'vehs', from: c.id, v: list }, c, (p) => near(p.pose, c.pose, LIMITS.vehRange));
+      net.send(h, { t: 'vehs', from: c.id, v: list });
+      return;
+    }
+    case 'vgive': case 'vtake': case 'vfree': {   // a vehicle changes hands between a player and the server's game
+      const h = hostOf(S), v = m.t === 'vfree' ? null : cleanVeh(m.v), id = v ? v[0] : m.id;
+      if (!h || !c.pose || c.pose.dim !== 'over' || typeof id !== 'string' || !VEH_ID_RE.test(id) || (m.t !== 'vfree' && !v)) return;
+      const rider = S.clients.get(S.vown.get(id));
+      if (rider && rider !== c && rider.ready) { if (m.t === 'vtake') net.send(c, { t: 'vno', id }); return; }   // someone else is on it: theirs stands
+      if (m.t === 'vtake') S.vown.set(id, c.id); else S.vown.delete(id);
+      net.send(h, m.t === 'vfree' ? { t: 'vfree', id, from: c.id } : { t: m.t, id, v, from: c.id });
+      return;
+    }
+    case 'vgone': {                    // broken, or lost to the void
+      if (!Array.isArray(m.ids) || m.ids.length > 60) return;
+      const h = hostOf(S);
+      if (!h) return;
+      const ids = m.ids.filter((v) => typeof v === 'string' && VEH_ID_RE.test(v) && (c.host || S.vown.get(v) === c.id));
+      if (!ids.length) return;
+      for (const id of ids) S.vown.delete(id);
+      net.broadcast({ t: 'vgone', ids }, c, (p) => !!p.pose && p.pose.dim === 'over');
+      if (!c.host) net.send(h, { t: 'vgone', ids });
+      return;
+    }
+    case 'vhit': {                     // a hit on a vehicle goes to whoever runs it
+      const h = hostOf(S);
+      if (!h || !c.pose || c.pose.dim !== 'over' || typeof m.id !== 'string' || !VEH_ID_RE.test(m.id)) return;
+      const rider = S.clients.get(S.vown.get(m.id)), to = rider && rider.ready ? rider : h;
+      if (to !== c) net.send(to, { t: 'vhit', from: c.id, id: m.id, dmg: num(m.dmg, 0, 1e5, 1) });
       return;
     }
     default:

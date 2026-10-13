@@ -21,6 +21,18 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — Everyone sees it fly
+
+*Game version 6.14, released 2026-10-13.*
+
+- EVERYONE SEES IT FLY. Arrows, bullets, grenades, lit TNT, a boss's rocks and fireballs, XP orbs: other players now see them in the air. Until now your friend's arrow was a rumour and a skeleton's was an injury with no warning.
+- What you see is a copy. The real one still lives in the game that shot it, which alone decides what it hits. The copy looks the same and touches nothing.
+- VEHICLES BELONG TO THE WORLD. On a server that runs its own game, a car, boat, plane, cart or skateboard you put down in the Overworld stays there for everyone, and is still there after a restart.
+- Get on and it is yours for the ride, driven by your own game so it feels as it always did. If someone is already driving it you are told so. Get off and the server has it back.
+- Break a parked car and it breaks for everybody, once, and drops one car. No more private parking.
+- Server owners: the entities folder now lists vehicles next to the mobs and the dropped items.
+- Still each player's own: vehicles outside the Overworld, and everything in Purgatory and at Malgorath's.
+
 ## Release 1.1 — The server runs the mobs
 
 *Game version 6.13, released 2026-10-13.*

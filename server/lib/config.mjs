@@ -48,12 +48,14 @@ export const LIMITS = {
   quietDrop: 20000,              // ... and before it gives up on them
   sentSlack: 8,                  // chunks beyond a player's view the server still counts as "they have it"
   mobs: 4000,                    // mobs the world file holds at once
+  fxRange: 96,                   // how far something that flies is announced
+  vehRange: 128,                 // ... and how far a vehicle is
 };
 
 /* messages from one player per second, by type (pose, chat, cmd, hit, mobs, mhit and boom keep their own counters in
    lib/protocol.mjs). Over the limit, a message is dropped without a word: a real game never gets near these. */
 export const RATE = { edits: 40, be: 60, open: 20, close: 20, drop: 80, dropAt: 80, take: 80, save: 4, rd: 4, time: 10, gr: 4, sleep: 6, death: 20,
-  spawn: 2, mgone: 20, mgive: 200, ping: 4 };
+  spawn: 2, mgone: 20, mgive: 200, ping: 4, fx: 70, fxgone: 70, vehs: 30, vgive: 20, vtake: 20, vfree: 20, vgone: 20, vhit: 20 };
 
 /* the save format's own keys, checked before anything is stored under them */
 export const CK_RE = /^(?:[a-z];)?-?\d{1,7},-?\d{1,7}$/;            // chunk key: optional dimension prefix + cx,cz

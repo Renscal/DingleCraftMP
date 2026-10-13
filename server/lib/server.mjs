@@ -58,6 +58,7 @@ export function createServer(opts = {}) {
     clients: new Map(),                 // id -> a player who has said hello
     locks: new Map(),                   // block key -> the id of the player using that chest or furnace
     host: null,                         // the server's own game (lib/host.mjs), once it has been started
+    vown: new Map(),                    // vehicle id -> the id of the player riding it (the rest are the server's game's)
     nextId: 1,
     editCount: 0,
     gameFile: game ? game.file : null,
@@ -178,7 +179,7 @@ export function createServer(opts = {}) {
 
   /* ---- what the caller gets ---- */
   const api = {
-    opts: o, secure: !!tls, host: () => S.host, world: () => world, rules: () => cleanRules(world.gr), status: () => statusOf(S), gameFile: S.gameFile, worldDir, saveWorld, exportWorld: S.exportWorld, log,
+    opts: o, secure: !!tls, host: () => S.host, riders: () => S.vown, world: () => world, rules: () => cleanRules(world.gr), status: () => statusOf(S), gameFile: S.gameFile, worldDir, saveWorld, exportWorld: S.exportWorld, log,
     get port() { const a = srv.address(); return a && typeof a === 'object' ? a.port : o.port; },
     players: () => [...S.clients.values()],
     say(txt) { broadcast({ t: 'sys', txt: '[Server] ' + txt }); log('[Server] ' + txt); },

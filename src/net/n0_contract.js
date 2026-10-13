@@ -29,6 +29,8 @@
 /*   n7_mobs.js      shared mobs, and explosions that reach other players*/
 /*   n8_host.js      the server's own game (6.13): it runs the Overworld */
 /*                   mobs; the players' games only draw them             */
+/*   n9_ents.js      what flies (seen by everyone, 6.14) and what you    */
+/*                   ride (kept by the server's game, 6.14)              */
 /*                                                                       */
 /* Load rules: PART 58 loads before PARTs 57-54, so their names are      */
 /* runtime-only here (typeof-guarded). No THREE constructor, clock,      */
@@ -54,16 +56,20 @@
 /*   mobFarFromAll -> ntHostFar    mobClearOfPlayers -> ntHostClear      */
 /*   countMobs -> ntHostNear       mobsTick -> ntHosted (a player's game */
 /*   spawns nothing natural where the server does)                       */
+/* And two for n9_ents.js: updateEntities -> ntEntPup (behind e.pup),    */
+/*   hitCar -> ntVehHit (behind e.pup)                                   */
 /*                                                                       */
 /* Protocol: JSON text frames over one WebSocket, {t:'<type>', ...}.     */
 /*   client -> server: hello pose rd edits open close be drop dropAt     */
 /*                     take chat cmd hit save spawn time gr sleep death  */
-/*                     mobs mgone mgive mhit boom ping                   */
+/*                     mobs mgone mgive mhit boom ping fx fxgone vehs    */
+/*                     vgive vtake vfree vgone vhit                      */
 /*   the server's game -> server, also: hurt xp hsnap                    */
 /*   server -> client: welcome perm edits bes drops ready (the join),    */
 /*                     then join leave pose edits be lock drop undrop    */
 /*                     took chat sys hit time gr kick tp give mode perm  */
 /*                     mobs mgone mgive mhit boom pong mheir hurt xp     */
+/*                     fx fxgone vehs vgone vno vhit                     */
 /* Messages are compressed by the browser and the server between them    */
 /* (permessage-deflate); nothing here knows about it.                    */
 /* NT_PROTO must equal PROTO in the server (tests/net/n_static.js).      */
@@ -100,7 +106,8 @@ const NET={on:false,st:'off',ws:null,id:0,name:'',server:'',pvp:true,ap:false,pe
   peers:new Map(),drops:new Map(),dropIn:false,dseq:0,dim:'over',q:[],acc:0,poseT:0,poseS:'',scanT:0,beS:new Map(),grS:'',tPrev:0,tSet:false,stats:{in:0,out:0,edIn:0,edOut:0},
   op:false,prot:0,spawn:null,lockK:null,lockWant:null,saveT:-1,rdS:0,mobs:new Map(),mseq:0,mobT:0,ownT:0,dmgRef:null,guardT:-9,
   pw:'',retryN:0,retryH:0,pingT:0,pingN:0,pingAt:0,ms:0,rxAt:0,act:false,
-  hosted:false,host:false,hp0:null,hpl:[],hrr:0,hsnT:0,hchT:0};
+  hosted:false,host:false,hp0:null,hpl:[],hrr:0,hsnT:0,hchT:0,
+  fx:new Map(),fseq:0,vehs:new Map(),vseq:0,vehT:0};   /* n9_ents.js: flying things and vehicles by id, their counters, the vehicle timer */
 
 /* everything the suites reach, spread into window.__vox by src/boot/export_boot.js */
 
@@ -108,4 +115,6 @@ const NTEX={NET,NT_PROTO,NT_PORT,ntUrl,ntConnect,ntLeave,ntDown,ntMsg,ntSend,ntE
   ntSave,ntPoseNow,ntFrame,ntPeerAdd,ntPeerDel,ntPeersTick,ntMelee,ntTabRows,ntOpenMenu,ntHash,ntHostHere,ntDropSpawned,ntDropTake,ntDropsScan,ntDropIn,ntDropGone,ntDropTook,
   ntCmd,ntSleep,ntBeAsk,ntLockMsg,ntLockTick,ntGuard,ntSaveSoon,ntSimHere,ntShot,ntMobShared,ntMobsTick,ntMobsIn,ntMobsGone,ntMobTaken,ntMobHurt,ntMobHit,ntMobPup,ntBoom,ntBoomIn,
   ntRetry,ntRetryStop,ntPing,ntMobAdopt,ntPeerArmor,ntPeerRide,ntMobState,ntMobTwin,
-  ntHosted,ntHostStart,ntHostTick,ntHostSnap,ntHostPlayers,ntHostAim,ntHostHurt,ntMobFull};
+  ntHosted,ntHostStart,ntHostTick,ntHostSnap,ntHostPlayers,ntHostAim,ntHostHurt,ntMobFull,
+  ntFxTick,ntFxIn,ntFxGone,ntFxPup,ntVehTick,ntVehsIn,ntVehsGone,ntVehHit,ntVehPup,ntEntPup,ntHostVehSnap,
+  spawnArrow,spawnBoat,hitCar};   /* three core names the suites need to shoot, launch and hit with */

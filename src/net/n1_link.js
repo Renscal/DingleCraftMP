@@ -87,7 +87,7 @@ function ntRetryStop(){
 function ntLeave(){
   if(!NET.on&&NET.st==='off'&&!NET.ws)return;
   const ws=NET.ws;NET.ws=null;
-  NET.on=false;NET.st='off';NET.pend=null;NET.q.length=0;NET.beS.clear();NET.drops.clear();NET.hosted=false;
+  NET.on=false;NET.st='off';NET.pend=null;NET.q.length=0;NET.beS.clear();NET.drops.clear();NET.hosted=false;NET.fx.clear();NET.vehs.clear();
   NET.mobs.clear();NET.lockK=null;NET.lockWant=null;NET.saveT=-1;NET.op=false;NET.prot=0;NET.spawn=null;
   ntClearPeers();
   if(ws){try{ws.onclose=null;ws.close();}catch(e){}}
@@ -116,6 +116,13 @@ function ntMsg(m){
       if(m.n===NET.pingN&&NET.pingAt){NET.ms=Math.max(0,Math.min(9999,Math.round(Date.now()-NET.pingAt)));NET.pingAt=0;}
       return;
     case 'mheir':if(NET.on)ntMobAdopt(m.from|0);return;
+    case 'fx':if(NET.on)ntFxIn(m);return;
+    case 'fxgone':if(NET.on)ntFxGone(m);return;
+    case 'vehs':if(NET.on)ntVehsIn(m);return;
+    case 'vgone':if(NET.on)ntVehsGone(m);return;
+    case 'vno':if(NET.on&&!NET.host)ntVehNo(m);return;
+    case 'vhit':if(NET.on)ntVehHurt(m);return;
+    case 'vgive':case 'vtake':case 'vfree':if(NET.host)ntHostVeh(m);return;   /* only the server's game is sent these */
     case 'hurt':                                          /* a mob the server runs hit this player */
       if(NET.on&&!NET.host&&playing&&P&&!P.dead){LASTDMG={by:m.by?''+m.by:null,how:''+(m.how||'mob')};damagePlayer(+m.dmg||1,+m.kx||0,+m.kz||0);}
       return;
@@ -211,6 +218,7 @@ function ntEnter(){
   NET.beS.clear();for(const [k,b] of blockEnts)NET.beS.set(k,ntBeSig(b));
   NET.drops.clear();NET.dim=DIM;NET.dseq=0;NET.dropIn=false;
   NET.mobs.clear();NET.mseq=0;NET.mobT=0;NET.ownT=0;NET.lockK=null;NET.lockWant=null;NET.saveT=-1;NET.rdS=RD;NET.dmgRef=LASTDMG;NET.guardT=-9;
+  NET.fx.clear();NET.fseq=0;NET.vehs.clear();NET.vseq=0;NET.vehT=0;
   ntRetryStop();NET.pingT=0;NET.pingN=0;NET.pingAt=0;NET.ms=0;NET.rxAt=Date.now();NET.act=false;
   if(found)ntSend({t:'spawn',x:found[0],y:found[1],z:found[2]});
   for(const d of (W.drops||[]))ntDropKnow(d);   /* they appear as their chunks load (ntDropsScan) */

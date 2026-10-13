@@ -72,6 +72,7 @@ function updateEntities(dt){
   for(const e of entities){
     if(e.dead)continue;
     if(NET.host&&ntHostAim(e))continue;   /* PART 58: the server's game points P at the nearest player, or lets the entity wait */
+    if(e.pup&&e.t!=='mob'){ntEntPup(e,dt);continue;}   /* PART 58: another game's vehicle, or the copy of something flying */
     /* the aether has no floor: things that tumble into the void are lost to it,
        not left standing on the invisible bottom of the world */
     if(DIM==='aether'&&e.y<2&&AETHER_VOID_DESPAWN[e.t]&&!(P&&P.ride===e)){
