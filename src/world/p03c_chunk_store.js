@@ -27,6 +27,7 @@ function createChunk(cx,cz){
   liqResume(ch);
   lightChunk(ch);                                          /* 6.26: block light (world/p03e_light.js) */
   farmResume(ch);                                          /* 6.39: the crops still growing in it */
+  treeResume(ch);                                          /* 6.43: and the saplings */
   markDirty(cx-1,cz);markDirty(cx+1,cz);markDirty(cx,cz-1);markDirty(cx,cz+1);
   return ch;
 }
@@ -74,6 +75,7 @@ function setBlock(x,y,z,id,meta){
   liqWake(x,y,z);
   if(old!==id)lightEdit(x,y,z);                            /* 6.26: block light follows every change */
   farmNote(x,y,z,old,om,id,meta);                          /* 6.39: crops and farmland (features/p53e_farming.js) */
+  treeNote(x,y,z,old,om,id,meta);                          /* 6.43: saplings, and leaves when a log goes (features/p53g_trees.js) */
   if(id===B.TCORE)TITQ.push({x,y,z,t:2.2,pT:0});
   if(lx===0)markDirty(cx-1,cz);
   if(lx===CH-1)markDirty(cx+1,cz);

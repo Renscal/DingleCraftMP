@@ -24,9 +24,9 @@ boot.run(async()=>{
 
   /* ---- ids, tiles, names (plan 2.1) ---- */
   const free=[];for(let i=1;i<256;i++)if(!D[i])free.push(i);
-  ok('no new block id from PART 57: the free ids below 256 are 212 and 249 (farming took 217-219 and 248 in 6.39)',free.join()==='212,249');
+  ok('no new block id from PART 57: the free ids below 256 are 212 and 249 (farming took 217-219 and 248 in 6.39)',free.join()==='212');   /* 6.43: saplings took 249, the last one */
   const st=Object.keys(D).map(Number).filter(i=>i>=256&&i<10000);
-  ok('PART 57 added one static item, 365; farming\'s (366-376, 6.39) and poison\'s (377, 378, 6.40) are the only ones above it; 309 and 339 stay unused',st.includes(365)&&Math.max(...st)===378&&!D[309]&&!D[339]);
+  ok('PART 57 added one static item, 365; farming\'s (366-376, 6.39) and poison\'s (377, 378, 6.40) are the only ones above it; 309 and 339 stay unused',st.includes(365)&&Math.max(...st)===381&&!D[309]&&!D[339]);
   const J=D[365];
   ok("item 365 is Malgorath's Jaw: a sword (dmg 10, dur 900), stack 1, hidden from the palette, off-atlas icon painter",!!J&&J.item&&J.name==="Malgorath's Jaw"&&J.tool&&J.tool.type==='sword'&&
     J.tool.dmg===10&&J.tool.dur===900&&J.stack===1&&J.hide===true&&typeof J.ipaint==='function'&&V.IT.MG_JAW===365&&V.MGC.JAW===365);

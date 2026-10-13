@@ -123,7 +123,9 @@ async function runSchedules() {
 }
 
 /* ---- the window and the tray ---- */
-function iconFile() { return [path.join(__dirname, 'icon.png'), path.join(__dirname, '..', 'assets', 'logo.png')].find((f) => fs.existsSync(f)) || null; }
+/* the picture for the window and the tray. It is called tray.png, not icon.png, on purpose: electron-builder takes any
+   icon.png in this folder as the program's icon and refuses one smaller than 256 x 256, which the logo is. */
+function iconFile() { return [path.join(__dirname, 'tray.png'), path.join(__dirname, '..', 'assets', 'logo.png')].find((f) => fs.existsSync(f)) || null; }
 const anyRunning = () => [...G.run.values()].some((r) => r.child);
 function openWindow() {
   const icon = iconFile();

@@ -63,7 +63,7 @@ const gui = tree(path.join(REPO, 'server-gui'), 'DINGLECRAFT-ServerGUI').filter(
 }
 gui.push(...tree(path.join(REPO, 'server'), 'DINGLECRAFT-ServerGUI/server'));
 gui.push({ name: 'DINGLECRAFT-ServerGUI/server/' + HTML_NAME, data: html, mode: 0o644 });
-gui.push({ name: 'DINGLECRAFT-ServerGUI/icon.png', data: fs.readFileSync(path.join(REPO, 'assets', 'logo.png')), mode: 0o644 });
+gui.push({ name: 'DINGLECRAFT-ServerGUI/tray.png', data: fs.readFileSync(path.join(REPO, 'assets', 'logo.png')), mode: 0o644 });
 for (const need of ['DINGLECRAFT-ServerGUI/main.js', 'DINGLECRAFT-ServerGUI/preload.js', 'DINGLECRAFT-ServerGUI/index.html', 'DINGLECRAFT-ServerGUI/renderer.js', 'DINGLECRAFT-ServerGUI/lib/store.cjs',
   'DINGLECRAFT-ServerGUI/server/dinglecraft-server.mjs', 'DINGLECRAFT-ServerGUI/server/lib/admin.mjs'])
   if (!gui.some((e) => e.name === need)) die('the server window package would miss ' + need);

@@ -219,6 +219,7 @@ function liqResume(ch){
 }
 let flowT=0;
 function tickFlow(dt){
+  treeTick(dt);                                            /* 6.43: saplings grow and orphaned leaves wither */
   farmTick(dt);                                            /* 6.39: crops grow on the same tick, in the same game, as the water runs */
   LIQ.wT-=dt;
   if(LIQ.wT<=0){LIQ.wT=liqRule(B.WATER,DIM).every;liqStep(B.WATER,LIQ.w);}

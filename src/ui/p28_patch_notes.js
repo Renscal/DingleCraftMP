@@ -3,7 +3,17 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Two loose ends',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Plant a tree',lines:[
+    '<b>PLANT A TREE.</b> You could cut every tree in the world down and never grow one back. Forests were a thing you used up. Now there are saplings: oak, birch and spruce.',
+    '<b>Where they come from.</b> Break leaves and about one in twenty drops a sapling of that tree. Oak leaves, very rarely, also drop an apple, which is how apples were always supposed to work.',
+    '<b>Planting.</b> Right-click grass or dirt with a sapling. Give it sky or a decent light and it grows through four stages into a full tree of its own kind, the same shape as the wild ones, in about ten minutes. It needs room for its trunk: put a roof one block over it and it waits, politely, for as long as it takes.',
+    '<b>Leaves let go.</b> Cut a trunk and the leaves no longer hang in the air forever like a guilty thought. Over the next few seconds every leaf that is not within four blocks of a log withers away, dropping saplings as it goes. A tree standing next to the one you cut keeps its own.',
+    '<b>Hedges are safe.</b> Leaves you place yourself are yours and never wither.',
+    '<b>On a server.</b> Saplings grow and leaves wither once, in the game that runs the land, and everybody sees the same forest.',
+    '<b>For modders.</b> That was the last free block id. Saplings share one block and keep their kind in the block&#x27;s spare byte, and anything new will have to do the same.',
+    '<b>Server window.</b> Building the Windows program stopped with a complaint about the icon: the builder took the logo for the program&#x27;s icon and found it too small. The picture is now called tray.png, which the builder leaves alone, so npm run dist goes through. The exe wears the default icon until somebody draws a square one.',
+  ]},
+ {v:'6.42',label:'Release 1.1',title:'Two loose ends',lines:[
     '<b>TWO LOOSE ENDS.</b> The full test run after the last batch of updates found two things the quick runs had missed. Both are fixed here.',
     '<b>Water against lava makes obsidian again.</b> Since lava stopped being a wall (6.28), pouring a water bucket at a lava pool put the water INTO the lava and simply replaced it. A poured bucket now lands against the lava, as it used to, and the lava turns to obsidian. Looking through lava and building into it are unchanged.',
     '<b>The Stiletto is itself again.</b> Puppet Purgatory&#x27;s dagger has always had its own bonus for a falling strike. When critical hits arrived (6.30) it got that bonus AND the new one. Purgatory&#x27;s weapons keep their own rules and are left out of the general critical hit.',

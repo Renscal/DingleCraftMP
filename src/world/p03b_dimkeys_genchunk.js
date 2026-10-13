@@ -11,9 +11,6 @@ function ckey(cx,cz){return dimPfx()+cx+','+cz;}
 function bkey(x,y,z){return dimPfx()+x+','+y+','+z;}
 
 function stampTree(blocks,x0,z0,x,z,t){
-  const logId=[B.LOG_O,B.LOG_B,B.LOG_S][t.type];
-  const leafId=[B.LEAF_O,B.LEAF_B,B.LEAF_S][t.type];
-  const baseY=t.h+1,topY=t.h+t.th;
   function put(wx,wy,wz,id,keep){
     const lx=wx-x0,lz=wz-z0;
     if(lx<0||lx>=CH||lz<0||lz>=CH||wy<1||wy>=WH)return;
@@ -21,33 +18,7 @@ function stampTree(blocks,x0,z0,x,z,t){
     if(keep&&blocks[i]!==B.AIR)return;
     blocks[i]=id;
   }
-  if(t.type===2){ /* spruce cone */
-    for(let y=baseY;y<=topY;y++)put(x,y,z,logId);
-    for(let y=baseY+1;y<=topY-1;y++){
-      const rr=((topY-1-y)%2===0)?1:2;
-      for(let dx=-rr;dx<=rr;dx++)for(let dz=-rr;dz<=rr;dz++){
-        if(dx===0&&dz===0)continue;
-        if(rr===2&&Math.abs(dx)===2&&Math.abs(dz)===2)continue;
-        put(x+dx,y,z+dz,leafId,true);
-      }
-    }
-    put(x,topY+1,z,leafId,true);
-    put(x+1,topY,z,leafId,true);put(x-1,topY,z,leafId,true);
-    put(x,topY,z+1,leafId,true);put(x,topY,z-1,leafId,true);
-  }else{
-    for(let y=baseY;y<topY;y++)put(x,y,z,logId);
-    for(let y=topY-2;y<=topY-1;y++)
-      for(let dx=-2;dx<=2;dx++)for(let dz=-2;dz<=2;dz++){
-        if(dx===0&&dz===0)continue;
-        if(Math.abs(dx)===2&&Math.abs(dz)===2&&h2(x+dx+y*7,z+dz,SEED+71)<.5)continue;
-        put(x+dx,y,z+dz,leafId,true);
-      }
-    for(let y=topY;y<=topY+1;y++)
-      for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++){
-        if(y===topY+1&&Math.abs(dx)+Math.abs(dz)>1)continue;
-        put(x+dx,y,z+dz,leafId,true);
-      }
-  }
+  treeShape(x,z,t,put);                                    /* 6.43: the shape itself is shared with a grown sapling (features/p53g_trees.js) */
 }
 
 function genChunk(cx,cz){

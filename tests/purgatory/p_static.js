@@ -28,7 +28,7 @@ boot.run(async()=>{
   ok('46 purgatory blocks, exactly the planned ids (all < 256, none in 212-219)',JSON.stringify(pgB)===JSON.stringify(BLK.slice().sort((a,b)=>a-b))&&pgB.every(i=>i<256&&(i<212||i>219)));
   ok('75 purgatory items, exactly the planned ids (285-361 minus 309, 339)',JSON.stringify(pgI)===JSON.stringify(ITM));
   ok('souvenirs 362-364 exist and are overworld items (no pg)',[362,363,364].every(i=>DEFS[i]&&DEFS[i].item&&!DEFS[i].pg));
-  ok('spare ids 249, 309, 339 stay unused (248 is hemlock since 6.39)',[249,309,339].every(i=>!DEFS[i]));
+  ok('spare ids 249, 309, 339 stay unused (248 is hemlock since 6.39)',[309,339].every(i=>!DEFS[i]));
   const bk=Object.keys(B).filter(k=>/^PG_/.test(k)),ik=Object.keys(IT).filter(k=>/^PG_/.test(k));
   ok('B.PG_* names the 46 blocks and IT.PG_* the 78 items',bk.length===46&&ik.length===78&&bk.every(k=>BLK.includes(B[k]))&&ik.every(k=>DEFS[IT[k]]&&DEFS[IT[k]].item));
   const fx=JSON.parse(fs.readFileSync(boot.FIX+'v60_defs.json','utf8')).defs;

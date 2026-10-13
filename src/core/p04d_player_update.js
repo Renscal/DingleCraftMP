@@ -557,6 +557,7 @@ function doUse(dt){
   }
   /* 6.39: a hoe, a watering can, something to plant (above the food branch: a carrot aimed at farmland is planted) */
   if(st&&(d.hoe||d.wcan||d.plant)&&rEdge&&farmUse(st,d,hit)){rEdge=false;return;}
+  if(st&&d.sap!==undefined&&rEdge&&treeUse(st,d,hit)){rEdge=false;return;}   /* 6.43: a sapling */
   /* food */
   if(st&&d.food&&P.hunger<20&&P.mode==='s'){
     P.eatT+=dt;P.swing=Math.max(P.swing,0.4);
@@ -703,7 +704,7 @@ function doUse(dt){
       if(!blocked&&MGP_ON&&!mgPlaceOK(tx,ty,tz,pid))blocked=true;
       if(!blocked&&NET.on&&ntGuard(tx,tz))blocked=true;   /* PART 58: spawn protection */
       if(!blocked&&ty>=0&&ty<WH){
-        setBlock(tx,ty,tz,pid);
+        setBlock(tx,ty,tz,pid,isLeafId(pid)?1:0);            /* 6.43: a leaf put there by hand is marked, and never withers */
         lawnCheck(tx,ty,tz);
         if(DEFS[pid].cr)crOnPlace(tx,ty,tz,pid);
         if(DIM==='puppet')mpOnPlace(tx,ty,tz,pid,'Dan');

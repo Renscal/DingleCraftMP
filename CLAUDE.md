@@ -144,8 +144,8 @@ Full map: `docs/ARCHITECTURE.md` (PART-to-file table, systems index, how each up
   one saved object each (`MP`, `save.cr`, `save.mg`), written only when it differs from the default.
 - **Multiplayer** (PART 58, `src/net/`: `n0_contract` state and the map, `n1_link` connection and messages, `n2_world`
   blocks, chests and their locks, `n3_drops`, `n4_self` this player and the frame tick, `n5_players`, `n6_menu`,
-  `n7_mobs` shared mobs and explosions, `n8_host` the server's own game, `n9_ents` what flies and what you ride, `na_data` what the world remembers): 38 core
-  hooks, 32 behind `NET.on` (or `e.pup`) and 6 behind `NET.host`, all of which only PART 58 sets, so single player is byte-for-byte the old behaviour.
+  `n7_mobs` shared mobs and explosions, `n8_host` the server's own game, `n9_ents` what flies and what you ride, `na_data` what the world remembers): 40 core
+  hooks, 34 behind `NET.on` (or `e.pup`) and 6 behind `NET.host`, all of which only PART 58 sets, so single player is byte-for-byte the old behaviour.
   **The server runs the game** (6.13, first step): `server/lib/host.mjs` loads the html's own script headless in a worker
   thread and that game ("the host", player id 0) spawns, runs and saves the Overworld's shared mobs. The game knows one
   player, so the host points `P` at the nearest real player before each entity update (`ntHostAim`); anything a brain
@@ -174,8 +174,8 @@ Full map: `docs/ARCHITECTURE.md` (PART-to-file table, systems index, how each up
   pings every 2 s and reconnects by itself after a lost connection, and chests and drops are sent by range like edits. Anything that writes blocks must go through `setBlock`, anything that drops an item through `spawnDrop`,
   and anything that hurts a mob through `hurtMob`, or it will not reach other players.
 
-**ID ledger** (`docs/ARCHITECTURE.md` section 7): grep before allocating. Next free at v6.39: block id 249 only
-(212 stays undefined on purpose; farming took 217-219 and 248); item ids 309, 339, then 379+. Purgatory ids are assigned only in
+**ID ledger** (`docs/ARCHITECTURE.md` section 7): grep before allocating. Next free at v6.43: **no block id is left**
+(212 stays undefined on purpose; farming took 217-219 and 248, saplings 249: new blocks must share an id and use meta); item ids 309, 339, then 382+. Purgatory ids are assigned only in
 `purgatory/p0_contract.js`, creativity's only in `c0_contract.js`, Malgorath's only in `m0_contract.js`.
 
 **Persistence triple:** player fields need a default in `newPlayer`, a line in `snapshot()` and a restore with a default

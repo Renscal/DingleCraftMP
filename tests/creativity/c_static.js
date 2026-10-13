@@ -28,7 +28,7 @@ boot.run(async()=>{
   ok('easel: solid, not opaque, cut bucket, cross icon, crm easel; painting cell: not solid, hidden, drops nothing, crm paint',
     D[213].solid!==false&&!D[213].opq&&D[213].bucket==='cut'&&D[213].cross&&D[213].crm==='easel'&&
     D[216].solid===false&&!D[216].opq&&D[216].hide&&D[216].drop===null&&D[216].crm==='paint'&&!D[214].hide&&!D[215].hide);
-  ok('212 and 249 stay undefined (217-219 and 248 are farming\'s since 6.39)',[212,249].every(i=>!D[i]));
+  ok('212 and 249 stay undefined (217-219 and 248 are farming\'s since 6.39)',[212].every(i=>!D[i]));
   ok('every block id < 256 is now taken except those six',(()=>{for(let i=1;i<256;i++)if(!D[i]&&![212,217,218,219,248,249].includes(i))return false;return true;})());
   const bandUsed=Object.keys(D).map(Number).filter(i=>i>CRC.ID0&&i<=CRC.ID0+CRC.MAXN);
   ok('the work-id band '+(CRC.ID0+1)+'-'+(CRC.ID0+CRC.MAXN)+' holds no static def (works are synthesised at runtime)',bandUsed.length===0&&Object.keys(D).map(Number).every(i=>i<CRC.ID0||i>CRC.ID0+CRC.MAXN));

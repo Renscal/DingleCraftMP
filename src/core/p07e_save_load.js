@@ -97,7 +97,7 @@ function resetWorld(){
   DIM='over';
   SNL=null;SNL_ON=false;
   dbgLoad(null);
-  lightReset();farmReset();
+  lightReset();farmReset();treeReset();
   NUKES.length=0;NARM.e=null;NARM.t=0;nukeHud(-1);
   for(const k2 in ENT_STASH)delete ENT_STASH[k2];
   NCOLM.clear();ACOLM.clear();mpReset();

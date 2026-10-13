@@ -21,6 +21,19 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — Plant a tree
+
+*Game version 6.43, released 2026-10-13.*
+
+- **PLANT A TREE.** You could cut every tree in the world down and never grow one back. Forests were a thing you used up. Now there are saplings: oak, birch and spruce.
+- **Where they come from.** Break leaves and about one in twenty drops a sapling of that tree. Oak leaves, very rarely, also drop an apple, which is how apples were always supposed to work.
+- **Planting.** Right-click grass or dirt with a sapling. Give it sky or a decent light and it grows through four stages into a full tree of its own kind, the same shape as the wild ones, in about ten minutes. It needs room for its trunk: put a roof one block over it and it waits, politely, for as long as it takes.
+- **Leaves let go.** Cut a trunk and the leaves no longer hang in the air forever like a guilty thought. Over the next few seconds every leaf that is not within four blocks of a log withers away, dropping saplings as it goes. A tree standing next to the one you cut keeps its own.
+- **Hedges are safe.** Leaves you place yourself are yours and never wither.
+- **On a server.** Saplings grow and leaves wither once, in the game that runs the land, and everybody sees the same forest.
+- **For modders.** That was the last free block id. Saplings share one block and keep their kind in the block's spare byte, and anything new will have to do the same.
+- **Server window.** Building the Windows program stopped with a complaint about the icon: the builder took the logo for the program's icon and found it too small. The picture is now called tray.png, which the builder leaves alone, so npm run dist goes through. The exe wears the default icon until somebody draws a square one.
+
 ## Release 1.1 — Two loose ends
 
 *Game version 6.42, released 2026-10-13.*

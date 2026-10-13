@@ -128,7 +128,7 @@ boot.run(async()=>{
     let names=[];if(fs.existsSync(zf)){const Z=await import(pathToFileURL(path.join(REPO,'scripts','lib','zip.mjs')).href);names=Z.readZip(fs.readFileSync(zf)).map(e=>e.name);}
     const has=n=>names.includes('DINGLECRAFT-ServerGUI/'+n);
     ok('npm run package makes a third download, the server window ('+names.length+' files): its own files, the server inside it with its admin module, the game beside the server, an icon; no node_modules',
-      r.status===0&&has('main.js')&&has('preload.js')&&has('index.html')&&has('renderer.js')&&has('style.css')&&has('lib/store.cjs')&&has('package.json')&&has('README.md')&&has('icon.png')&&
+      r.status===0&&has('main.js')&&has('preload.js')&&has('index.html')&&has('renderer.js')&&has('style.css')&&has('lib/store.cjs')&&has('package.json')&&has('README.md')&&has('tray.png')&&!has('icon.png')&&
       has('server/dinglecraft-server.mjs')&&has('server/lib/admin.mjs')&&has('server/lib/host_worker.cjs')&&has('server/dinglecraft_v'+V.GAME_VERSION+'.html')&&!names.some(n=>/node_modules|\/data\//.test(n))&&
       /ServerGUI/.test(fs.readFileSync(path.join(PK,'release','notes.md'),'utf8'))&&/DINGLECRAFT-ServerGUI-v/.test(r.stdout));
     for(const f of ['main.js','preload.js','renderer.js','lib/store.cjs']){const c=cp.spawnSync(process.execPath,['--check',path.join(REPO,'server-gui',f)],{encoding:'utf8'});if(c.status!==0)ok('server-gui/'+f+' parses',false);}

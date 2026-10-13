@@ -44,5 +44,6 @@ scheduled tasks), kept apart from Electron so the test suites can run it.
 
 `npm run dist` builds a Windows installer and a portable exe with electron-builder (the settings are in `package.json`).
 That has to be run on Windows (or under Wine), with the server and a game html copied into `server/` here first, as
-`npm run package` lays them out in the release zip. It has not been built or run yet: the exe would be unsigned, so
-Windows SmartScreen will warn the first time it is started.
+`npm run package` lays them out in the release zip. The exe is unsigned, so Windows SmartScreen will warn the
+first time it is started. It has the default Electron icon: the picture in this folder is called `tray.png` because the
+builder takes any `icon.png` here as the program's icon and refuses one smaller than 256 x 256.
