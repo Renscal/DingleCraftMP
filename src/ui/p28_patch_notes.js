@@ -3,7 +3,14 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Sit down and fly',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Two point oh',lines:[
+    '<b>DINGLECRAFT MULTIPLAYER 2.0.</b> Same game, bigger number. Everything since the first multiplayer server (game 6.10) has been living under the name Release 1.1 for forty-eight versions, which is a lot of point-ones. It has earned a proper name.',
+    '<b>What 2.0 is.</b> A real server that runs the world itself: mobs, water, fire, crops, furnaces and the market, the same for everyone, in every dimension. Accounts, operators and slash commands. Farming, saplings, flowing water and lava, real light, monsters by the book, difficulty and DingleCore, your own skin, rebindable keys, and a plane you actually fly.',
+    '<b>And the tools around it.</b> A desktop client, and a server window that runs any number of servers on any version, downloading new ones from GitHub by itself.',
+    '<b>What changed in this version.</b> The name. That is all. The game plays exactly like 6.57 "Sit down and fly": the title screen and the ending now say DingleCraft Multiplayer 2.0.',
+    '<b>Where it lives.</b> This is the first release on the main branch: the one to download if you just want to play.',
+  ]},
+ {v:'6.57',label:'Release 1.1',title:'Sit down and fly',lines:[
     '<b>SIT DOWN AND FLY.</b> The Prop Plane used to fly wherever you looked, which meant admiring the view was a good way to fly into it. It is now a plane.',
     '<b>The controls.</b> Space is the throttle. W pushes the nose down, S pulls it up, A and D turn and bank. Alt is the brake, and on the ground, stopped, it backs you up slowly. Let go of W and S and the nose comes back to level by itself. Look wherever you like: the plane does not care.',
     '<b>Real flying, roughly.</b> Too slow and the nose drops: that is a stall, and the ground is where it ends. Climbing costs speed and diving pays it back, so a long climb wants a full throttle. On the ground you roll on the throttle and lift off with S once you are fast enough.',

@@ -21,6 +21,16 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## DingleCraft Multiplayer 2.0 — Two point oh
+
+*Game version 6.58, released 2026-10-14.*
+
+- **DINGLECRAFT MULTIPLAYER 2.0.** Same game, bigger number. Everything since the first multiplayer server (game 6.10) has been living under the name Release 1.1 for forty-eight versions, which is a lot of point-ones. It has earned a proper name.
+- **What 2.0 is.** A real server that runs the world itself: mobs, water, fire, crops, furnaces and the market, the same for everyone, in every dimension. Accounts, operators and slash commands. Farming, saplings, flowing water and lava, real light, monsters by the book, difficulty and DingleCore, your own skin, rebindable keys, and a plane you actually fly.
+- **And the tools around it.** A desktop client, and a server window that runs any number of servers on any version, downloading new ones from GitHub by itself.
+- **What changed in this version.** The name. That is all. The game plays exactly like 6.57 "Sit down and fly": the title screen and the ending now say DingleCraft Multiplayer 2.0.
+- **Where it lives.** This is the first release on the main branch: the one to download if you just want to play.
+
 ## Release 1.1 — Sit down and fly
 
 *Game version 6.57, released 2026-10-14.*
