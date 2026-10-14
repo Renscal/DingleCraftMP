@@ -152,14 +152,23 @@ Smaller, independent, any order.
 
 ### Verification debt
 
-None of 6.10 to 6.17 has been through the full gate or a browser. Before calling any of it stable:
+Checked on 2026-10-14 (game 6.53):
 
-- run `npm run gate` (about 20 minutes) and fix what it finds;
-- a muted two-browser session per `docs/QA.md`: join, mobs, a vehicle ride, a portal trip, a disconnect and reconnect;
-- the Aether's server game has never been exercised (same code path as the Nether's, which is tested);
-- `n_host.js` failed two checks once in four parallel runs and passed the other three: find the timing-sensitive check;
-- TLS (`cert` / `key`) has never been run with a real certificate;
-- the Electron client (`client/`) has never been started;
+- **Every suite**: done. Each of 6.46 to 6.53 ran the whole suite list (`gate.mjs --once --keep-going`); 6.52 and 6.53
+  were fully green. The one recurring failure is p1_smoke's chunk-meshing time limit on a loaded machine (the 6.49
+  build failed it the same way at that moment).
+- **The `n_host.js` flake**: found and fixed. Parallel copies shared `out/net/host_data` and wiped each other's
+  world; each run now has its own folder (4 of 4 pass, twice).
+- **TLS**: works with a self-signed certificate: https and wss on one port, plain http refused, an account login
+  over wss. Not yet tried with a certificate from a real authority.
+- **The Aether's server game**: starts with the first player there and spawns its own cherubs. A cherub handed
+  over at a made-up spot did not come back: unconfirmed (probably the spot), worth a look.
+
+Still to do:
+
+- a muted two-browser session per `docs/QA.md` (join, log in, mobs, a vehicle, a portal trip, reconnect). The QA
+  rigs need Chrome or Chromium, which the owner's Linux machine does not have;
+- the Electron client (`client/`) has never been started (it opens a window: with the owner's say-so, and muted);
 - 14 textures of the removed AI-player models are still packed into the html (about 2 MB): needs a repack from the art
   sources;
 - Purgatory and Malgorath still carry unreachable "is this target an AI player" branches.
