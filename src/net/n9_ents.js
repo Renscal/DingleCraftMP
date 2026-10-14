@@ -17,14 +17,14 @@
    Elsewhere (other dimensions, a server without its own game) vehicles are each player's own, as before. */
 
 /* the kinds that are announced, and the vehicles */
-const NT_FX={arrow:1,blt:1,nade:1,tnt:1,fireb:1,lavab:1,rock:1,abomb:1,xp:1,fall:1};   /* fall: a falling block, announced only by the server's game */
+const NT_FX={arrow:1,blt:1,nade:1,tnt:1,fireb:1,lavab:1,rock:1,abomb:1,xp:1,fall:1,beam:1};   /* beam: laser eyes (6.52): x y z its start, vx vy vz the beam itself */   /* fall: a falling block, announced only by the server's game */
 const NT_VEH={car:1,skate:1,cart:1,boat:1,plane:1};
 
 /* ----- what flies ----- */
 /* one of this game's flying things as it is announced: [id, kind, x, y, z, vx, vy, vz, gravity, seconds it may last] */
 function ntFxState(e){
-  const k=e.t,g=k==='arrow'?14:k==='blt'?(+e.grav||0):k==='fireb'?0:GRAV*(k==='xp'?0.6:k==='nade'?0.85:1);
-  const life=k==='blt'?1.8:k==='arrow'?8:(k==='tnt'||k==='nade')?Math.max(0.2,+e.fuse||2):k==='xp'?60:k==='fall'?12:6;
+  const k=e.t,g=k==='arrow'?14:k==='blt'?(+e.grav||0):k==='fireb'||k==='beam'?0:GRAV*(k==='xp'?0.6:k==='nade'?0.85:1);
+  const life=k==='beam'?0.3:k==='blt'?1.8:k==='arrow'?8:(k==='tnt'||k==='nade')?Math.max(0.2,+e.fuse||2):k==='xp'?60:k==='fall'?12:6;
   const r=v=>+(+v||0).toFixed(2);
   const a=[e.fxid,k,r(e.x),r(e.y),r(e.z),r(e.vx),r(e.vy),r(e.vz),r(g),r(life)];
   if(k==='fall')a.push(e.id|0);                            /* which block it is */
@@ -58,6 +58,7 @@ function ntFxIn(m){
     if(k==='arrow')spawnArrow(a[2],a[3],a[4],a[5],a[6],a[7],'n',0);
     else if(k==='blt')spawnBullet(a[2],a[3],a[4],a[5],a[6],a[7],0,a[8]);
     else if(k==='tnt')primeTNT(a[2]-0.5,a[3],a[4]-0.5,a[9]);
+    else if(k==='beam')laserBeam(a[2],a[3],a[4],a[2]+a[5],a[3]+a[6],a[4]+a[7]);   /* 6.52: another player's laser eyes: it melts nothing here */
     else if(k==='fall'){
       if(!DEFS[a[10]|0]||!(a[10]>0))continue;
       const me=new THREE.Mesh(mkCubeGeo(a[10]|0,0.98),matOp);
@@ -83,6 +84,7 @@ function ntFxGone(m){
 }
 /* a copy's whole life: it flies the way the real one does and touches nothing. An arrow sticks where it lands. */
 function ntFxPup(e,dt){
+  if(e.fxk==='beam'){updateBeam(e,dt);return;}       /* 6.52: a beam stays where it was fired and fades */
   e.fxl-=dt;
   if(e.fxl<=0){NET.fx.delete(e.fxid);removeEnt(e);return;}
   const k=e.fxk;

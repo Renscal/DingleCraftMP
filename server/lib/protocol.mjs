@@ -114,7 +114,7 @@ export const WORLD_LISTS = ['vseen', 'nseen', 'aseen', 'pseen', 'wdseen', 'lssee
 /* entries for one of them from a game: short strings or whole numbers, at most 200 */
 const cleanList200 = (list) => (Array.isArray(list) ? list.filter((v) => (typeof v === 'string' && v.length > 0 && v.length <= 40 && !/[\u0000-\u001f]/.test(v)) || Number.isInteger(v)).slice(0, 200).map(String) : []);
 /* the kinds of thing that fly, and a vehicle's id */
-const FX_KINDS = new Set(['arrow', 'blt', 'nade', 'tnt', 'fireb', 'lavab', 'rock', 'abomb', 'xp', 'fall']);
+const FX_KINDS = new Set(['arrow', 'blt', 'nade', 'tnt', 'fireb', 'lavab', 'rock', 'abomb', 'xp', 'fall', 'beam']);   // beam: laser eyes (6.52)
 /* a list of block cells [[x, y, z]...] from a game, at most 64, whole numbers only */
 const cleanCells = (list) => (Array.isArray(list) ? list.filter((c) => Array.isArray(c) && c.length === 3 && c.every(Number.isInteger)).slice(0, 64) : []);
 const VEH_ID_RE = /^[a-z0-9]{1,8}v[a-z0-9]{1,8}$/;

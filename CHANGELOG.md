@@ -21,6 +21,15 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — Eyes front
+
+*Game version 6.52, released 2026-10-14.*
+
+- **EYES FRONT.** Laser Eyes had three problems: nobody else could see them, they came out of your eyes only when you looked straight ahead, and you could not fire them in mid-air. All three are fixed.
+- **Aimed properly.** The beam was being turned the wrong way round once you looked anywhere but straight ahead: in 90 of 112 directions tested it pointed somewhere else, by up to 149 degrees. It now leaves from just in front of your eyes and goes exactly where you look, every way you can turn your head.
+- **A key of its own.** Hold **L** to fire, whatever is in your hand, standing, falling or flying. Sneak + right-click with an empty hand no longer does it, which is why it never worked in the air: nobody sneaks in mid-air. It is in the Controls screen.
+- **Everyone sees it.** On a server, other players now see your beam, from your eyes to wherever it lands. Their copy is a light show only: it melts and hurts nothing on their side, the real one already did.
+
 ## Release 1.1 — Three small mercies
 
 *Game version 6.51, released 2026-10-14.*

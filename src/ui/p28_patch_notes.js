@@ -3,7 +3,13 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Three small mercies',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Eyes front',lines:[
+    '<b>EYES FRONT.</b> Laser Eyes had three problems: nobody else could see them, they came out of your eyes only when you looked straight ahead, and you could not fire them in mid-air. All three are fixed.',
+    '<b>Aimed properly.</b> The beam was being turned the wrong way round once you looked anywhere but straight ahead: in 90 of 112 directions tested it pointed somewhere else, by up to 149 degrees. It now leaves from just in front of your eyes and goes exactly where you look, every way you can turn your head.',
+    '<b>A key of its own.</b> Hold <b>L</b> to fire, whatever is in your hand, standing, falling or flying. Sneak + right-click with an empty hand no longer does it, which is why it never worked in the air: nobody sneaks in mid-air. It is in the Controls screen.',
+    '<b>Everyone sees it.</b> On a server, other players now see your beam, from your eyes to wherever it lands. Their copy is a light show only: it melts and hurts nothing on their side, the real one already did.',
+  ]},
+ {v:'6.51',label:'Release 1.1',title:'Three small mercies',lines:[
     '<b>THREE SMALL MERCIES.</b> Little things that were quietly ruining someone&#x27;s afternoon.',
     '<b>Figurine Drops, a game rule.</b> Slain mobs drop a figurine of themselves one time in twenty. Now you can switch that off: on Create New World, in the debug menu, or on a server with /gamerule figDrops false. Museums everywhere mourn.',
     '<b>Chests no longer get bricked in.</b> On a server, right-clicking a chest or furnace with a block in your hand placed the block against it while the server was still deciding whether you could open it. Now a click that opens something places nothing until you let go of the button.',

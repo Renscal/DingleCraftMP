@@ -12,7 +12,7 @@ const POW=[
   {k:'speed',  cost:3, name:'Swift Feet',   desc:'Run 60% faster, everywhere, always.'},
   {k:'feather',cost:2, name:'Feather Fall', desc:'Fall damage is for other people.'},
   {k:'fire',   cost:3, name:'Fire Heart',   desc:'Lava is now a warm bath.'},
-  {k:'laser',  cost:5, name:'Laser Eyes',   desc:'Sneak + right-click, empty hand. Sustained beam. Melts mobs AND terrain. HR has been notified.'},
+  {k:'laser',  cost:5, name:'Laser Eyes',   desc:'Hold L, any time, any hand, even mid-air. Sustained beam. Melts mobs AND terrain. HR has been notified.'},
   {k:'fly',    cost:8, name:'Sky Walker',   desc:'Double-tap Space. Survival flight.'},
 ];
 function powActive(k){if(DIM==='puppet')return false;return !!(P&&P.pow&&P.pow.u&&P.pow.u[k]&&P.pow.a[k]);}
@@ -66,21 +66,32 @@ function fireLaser(){
     burstParticles(tg.e.x,tg.e.y+tg.e.h*0.5,tg.e.z,B.LAVA,6,0.6);
   }
   const ex=e0[0]+d0[0]*len,ey=e0[1]+d0[1]*len,ez=e0[2]+d0[2]*len;
+  /* 6.52: the beam leaves from the eyes: a little ahead of them, and a little below the middle of the view, whichever way
+     the player looks (the down of the view, not of the world: it turns with the head) */
+  const sp=Math.sin(P.pitch),cp=Math.cos(P.pitch),sy=Math.sin(P.yaw),cy=Math.cos(P.yaw),up=[sp*sy,cp,sp*cy];
+  const sx=e0[0]+d0[0]*0.3-up[0]*0.1,sy2=e0[1]+d0[1]*0.3-up[1]*0.1,sz=e0[2]+d0[2]*0.3-up[2]*0.1;
+  laserBeam(sx,sy2,sz,ex,ey,ez);
+  burstParticles(ex,ey,ez,B.LAVA,6,0.6);
+  playS('laser');
+}
+/* the beam itself, from (sx,sy,sz) to (ex,ey,ez): a white-hot core in a red glow, pointed with lookAt (6.52: a yaw and a
+   pitch set as Euler angles went astray once the player had turned). The entity keeps its start and its length as a
+   vector, which is what other players are told (n9_ents.js: {t:'fx'}, kind beam), so their copy is the same beam. */
+function laserBeam(sx,sy,sz,ex,ey,ez){
+  const len=Math.hypot(ex-sx,ey-sy,ez-sz)||0.01;
   const G=new THREE.Group();
   const core=new THREE.Mesh(new THREE.BoxGeometry(0.16,0.16,1),
     new THREE.MeshBasicMaterial({color:0xfff0e8,transparent:true,opacity:1}));
   const glow=new THREE.Mesh(new THREE.BoxGeometry(0.44,0.44,1),
     new THREE.MeshBasicMaterial({color:0xff2a1a,transparent:true,opacity:0.34,depthWrite:false}));
   G.add(glow);G.add(core);
-  G.position.set((e0[0]+ex)/2,(e0[1]+ey)/2-0.12,(e0[2]+ez)/2);
+  G.position.set((sx+ex)/2,(sy+ey)/2,(sz+ez)/2);
   G.scale.set(1,1,len);
-  const dx=ex-e0[0],dy=ey-e0[1],dz=ez-e0[2];
-  G.rotation.y=Math.atan2(dx,dz);
-  G.rotation.x=-Math.asin(clamp(dy/(len||1),-1,1));
+  G.lookAt(ex,ey,ez);
   scene.add(G);
-  entities.push({t:'beam',x:G.position.x,y:G.position.y,z:G.position.z,age:0,mesh:G,thick:1});
-  burstParticles(ex,ey,ez,B.LAVA,6,0.6);
-  playS('laser');
+  const e={t:'beam',x:sx,y:sy,z:sz,vx:ex-sx,vy:ey-sy,vz:ez-sz,age:0,mesh:G,thick:1};
+  entities.push(e);
+  return e;
 }
 function updateBeam(e,dt){
   e.age+=dt;

@@ -268,6 +268,9 @@ let rEdge=false;
 function doUse(dt){
   if(!MB.r)P.useHold=false;                                /* 6.51: the button is up: a block may be placed again */
   if(modalOpen()||P.spec){rEdge=false;P.bowT=0;P.eatT=0;return;}
+  /* laser eyes (6.52): hold L, whatever is in hand, on the ground or in the air (it used to be sneak + right-click, and
+     nobody sneaks in mid-air) */
+  if(KEY.KeyL&&powActive('laser')){P.lasT=(P.lasT||0)-dt;if(P.lasT<=0){fireLaser();P.lasT=0.09;}}
   const st=heldStack();
   const d=DEFS[st?st.id:0]||{};
   if(!d.gun)P.aimT=Math.max(0,(P.aimT||0)-dt*6);
@@ -353,12 +356,6 @@ function doUse(dt){
     if(P.mode!=='c'){st.count--;if(st.count<=0)P.inv[P.sel]=null;redrawHotbar();}
     P.useT=0.6;P.swing=1;
     startVillageBuild(tx,tz);
-    return;
-  }
-  /* laser eyes: sneak + right-click, empty hand */
-  if(!st&&P.sneak&&MB.r&&P.useT<=0&&powActive('laser')){
-    fireLaser();
-    P.useT=0.09;
     return;
   }
   /* feed or mount a dragon */
