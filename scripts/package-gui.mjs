@@ -44,6 +44,8 @@ const notes = [
   `**DINGLECRAFT Server window ${VER}**`, '',
   'The multiplayer server as a desktop program: your servers down the left, and for the one you pick a dashboard, a console, players and accounts, settings, game rules, worlds, backups and a scheduler.', '',
   '**One window for every server version.** It carries no server of its own. Download a game release\'s `DINGLECRAFT-Server-v<version>.zip` (any version from 6.41 on) and import it under **Server versions**; each server in the list picks the version it runs, and different servers can run different versions at the same time. A new game release needs no new window: import its Server zip and switch.', '',
+  '**Or straight from GitHub.** New server asks for a name and a version: the drop-down lists the versions you have and the ones on the releases page, with a refresh button. Pick one you do not have and it is downloaded, checked against GitHub\'s fingerprint and imported for you.', '',
+  '**Settings that keep up.** From game version 6.58 the server describes its own settings and game rules, so ones added later show in the window with their own names and limits. Older servers use the window\'s own list.', '',
   '**Start it:** unpack, `npm install` (once, downloads Electron; needs Node.js 20 or newer), then `npm start`. `npm run dist` builds a Windows installer and a portable .exe (unsigned, so SmartScreen warns the first time).', '',
 ].join('\n');
 const notesFile = path.join(OUT, 'notes.md');
