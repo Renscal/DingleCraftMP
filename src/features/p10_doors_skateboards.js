@@ -10,7 +10,7 @@ function doorId(open,half,di){return B.DOOR_BASE+(open?8:0)+(half?4:0)+di;}
 function isDoorId(id){const d=DEFS[id];return !!(d&&d.door);}
 for(let open=0;open<2;open++)for(let half=0;half<2;half++)for(let di=0;di<4;di++){
   def(doorId(open,half,di),{name:'Wood Door',tiles:half?'door_u':'door_l',
-    hard:0.55,cls:'axe',solid:!open,opq:false,bucket:'cut',hide:true,
+    hard:0.55,cls:'axe',solid:!open,opq:false,bucket:'cut',hide:true,shotThru:true,
     door:{open:!!open,half:half,d:DOORD[di]},
     drop:half?null:IT.DOOR});
 }

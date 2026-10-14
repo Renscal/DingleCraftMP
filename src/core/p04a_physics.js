@@ -7,6 +7,9 @@ let hurtFlash=0;
 const MINE={x:0,y:0,z:0,prog:0,need:0,active:false,slot:0,itemId:0};   /* slot, itemId: what is doing the mining (6.19: a swap starts the block over) */
 
 function solidAt(x,y,z){return DEFS[getBlock(x,y,z)].solid!==false;}
+/* 6.47: what a bullet flies through: anything a body walks through except lava, plus blocks marked shotThru (leaves,
+   doors open or shut, Puppet Fleece) */
+function bulletPass(id){const d=DEFS[id];if(!d)return false;if(d.shotThru)return true;return id!==B.LAVA&&d.solid===false;}
 function boxCollides(px,py,pz,hw,h){
   const x0=Math.floor(px-hw),x1=Math.floor(px+hw);
   const y0=Math.floor(py),y1=Math.floor(py+h-1e-4);

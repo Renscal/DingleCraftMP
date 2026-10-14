@@ -25,10 +25,10 @@
   D(B.PG_SHAG,{name:'Shag Carpet',tiles:T3('pg_shag_t','pg_shag_s','pg_deck'),hard:0.6,toolClass:'shovel',drop:B.PG_DECK,hint:H.scoop});
   D(B.PG_SLEEVE,{name:'Felt Sleeve',tiles:T3('pg_sleeve_x','pg_sleeve_s'),hard:2.0,toolClass:'axe',ptree:1,hint:H.shears});
   D(B.PG_FOREARM,{name:'Puppeteer Forearm',tiles:T3('pg_forearm_x','pg_forearm_s'),hard:1.5,toolClass:'axe',drop:{id:IT.PG_GREASE,count:2},ptree:1,hint:H.shears});
-  D(B.PG_FLEECE,{name:'Puppet Fleece',tiles:'pg_fleece',hard:0.3,toolClass:'axe',opq:false,bucket:'cut',cullSame:true,drop:IT.PG_STUFF,
+  D(B.PG_FLEECE,{name:'Puppet Fleece',tiles:'pg_fleece',hard:0.3,toolClass:'axe',opq:false,shotThru:true,bucket:'cut',cullSame:true,drop:IT.PG_STUFF,
     pdrop:(st)=>{const t=st&&DEFS[st.id]&&DEFS[st.id].tool;if(t&&t.type==='axe')return {id:IT.PG_FLEECE,count:1};return Math.random()<0.4?{id:IT.PG_STUFF,count:1}:null;},
     hint:'Shears give Fleece; anything else gives Stuffing sometimes'});
-  D(B.PG_EYE,{name:'Canopy Eye',tiles:T3('pg_fleece','pg_eye'),hard:0.3,opq:false,bucket:'cut',drop:IT.PG_PLASTICEYE,hint:H.any});
+  D(B.PG_EYE,{name:'Canopy Eye',tiles:T3('pg_fleece','pg_eye'),hard:0.3,opq:false,shotThru:true,bucket:'cut',drop:IT.PG_PLASTICEYE,hint:H.any});
   D(B.PG_STUFFING,{name:'Stuffing Drift',tiles:'pg_stuffing',hard:0.4,toolClass:'shovel',drop:{id:IT.PG_STUFF,count:2},pblast:1,psoft:1,hint:H.scoop});
   D(B.PG_ARMHOLE,{name:'Arm Hole',tiles:T3('pg_armhole_t','pg_deck'),hard:1.0,toolClass:'pick',drop:{id:IT.PG_ROD,count:2},hint:H.pick0});
   D(B.PG_PSKY,{name:'Painted Sky',tiles:'pg_psky',hard:1.0,toolClass:'axe',drop:IT.PG_CARD,pblast:1,hint:H.shears});

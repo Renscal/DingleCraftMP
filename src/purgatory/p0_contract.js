@@ -225,7 +225,7 @@ function puUpdate(e,dt){const K=PREG.proj[e.kind];if(!K){puRemove(e);return;}
   if(e.straight>0){e.straight-=Math.hypot(e.vx,e.vy,e.vz)*dt;}else e.vy-=GRAV*(e.g!=null?e.g:(K.g!=null?K.g:1))*dt;
   const nx=e.x+e.vx*dt,ny=e.y+e.vy*dt,nz=e.z+e.vz*dt;
   const bid=getBlock(Math.floor(nx),Math.floor(ny),Math.floor(nz));
-  if(bid&&DEFS[bid]&&DEFS[bid].solid!==false){const kill=K.land?K.land(e,Math.floor(nx),Math.floor(ny),Math.floor(nz)):true;
+  if(bid&&DEFS[bid]&&(e.kind==='staple'?!bulletPass(bid):DEFS[bid].solid!==false)){const kill=K.land?K.land(e,Math.floor(nx),Math.floor(ny),Math.floor(nz)):true;
     if(kill!==false){puRemove(e);return;}e.vx*=-0.3;e.vz*=-0.3;e.vy=Math.abs(e.vy)*0.3;}
   else{e.x=nx;e.y=ny;e.z=nz;}
   if(e.mesh){e.mesh.position.set(e.x,e.y,e.z);}

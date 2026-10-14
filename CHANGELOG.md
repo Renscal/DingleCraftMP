@@ -21,6 +21,16 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — Shoot through the hedge
+
+*Game version 6.47, released 2026-10-14.*
+
+- **SHOOT THROUGH THE HEDGE.** Bullets used to treat a single oak leaf like a slab of reinforced concrete. Zombies learned to stand behind bushes. That era is over.
+- **What a bullet goes through now.** Leaves of every kind, doors (shut or open: it is a wooden door, not a bank vault) and water. Puppet Purgatory's fleece canopy too.
+- **What still stops it.** Stone and every other solid block, glass, Bunker Glass (it was always in the name) and lava. Lava used to let bullets through, which was physics nobody had signed off on.
+- **Everyone sees the same thing.** On a server, the copy of your bullet other players see goes through the same hedge, so nobody watches a shot vanish into a leaf and then hit them anyway.
+- **The Staple Gun agrees.** Staples follow the same rule. Arrows are unchanged and still stick in leaves, because an arrow in a tree is a classic look.
+
 ## Release 1.1 — Lights out when nobody is home
 
 *Game version 6.46, released 2026-10-14.*

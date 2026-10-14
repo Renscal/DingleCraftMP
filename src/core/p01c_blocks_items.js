@@ -29,9 +29,9 @@ def(B.GRAVEL,{name:'Gravel',tiles:'gravel',hard:0.6,toolClass:'shovel',gravity:t
 def(B.LOG_O,{name:'Oak Log',tiles:{top:'log_top',side:'log_o',bot:'log_top'},hard:2,toolClass:'axe'});
 def(B.LOG_B,{name:'Birch Log',tiles:{top:'log_top',side:'log_b',bot:'log_top'},hard:2,toolClass:'axe'});
 def(B.LOG_S,{name:'Spruce Log',tiles:{top:'log_top',side:'log_s',bot:'log_top'},hard:2,toolClass:'axe'});
-def(B.LEAF_O,{name:'Oak Leaves',tiles:'leaf_o',hard:0.2,opq:false,bucket:'cut',cullSame:true,drop:null});
-def(B.LEAF_B,{name:'Birch Leaves',tiles:'leaf_b',hard:0.2,opq:false,bucket:'cut',cullSame:true,drop:null});
-def(B.LEAF_S,{name:'Spruce Leaves',tiles:'leaf_s',hard:0.2,opq:false,bucket:'cut',cullSame:true,drop:null});
+def(B.LEAF_O,{name:'Oak Leaves',tiles:'leaf_o',hard:0.2,opq:false,shotThru:true,bucket:'cut',cullSame:true,drop:null});
+def(B.LEAF_B,{name:'Birch Leaves',tiles:'leaf_b',hard:0.2,opq:false,shotThru:true,bucket:'cut',cullSame:true,drop:null});
+def(B.LEAF_S,{name:'Spruce Leaves',tiles:'leaf_s',hard:0.2,opq:false,shotThru:true,bucket:'cut',cullSame:true,drop:null});
 def(B.GLASS,{name:'Glass',tiles:'glass',hard:0.3,opq:false,bucket:'cut',cullSame:true,drop:null});
 def(B.COAL_ORE,{name:'Coal Ore',tiles:'ore_coal',hard:3,toolClass:'pick',req:true,drop:IT.COAL});
 def(B.IRON_ORE,{name:'Iron Ore',tiles:'ore_iron',hard:3,toolClass:'pick',req:true,tier:1});

@@ -220,7 +220,7 @@ function updateBullet(e,dt){
     }
     if(NET.on&&ntShot(nx,ny,nz,e.dmg,e.vx,e.vz)){removeEnt(e);return;}   /* PART 58: another player */
     const bid=getBlock(Math.floor(nx),Math.floor(ny),Math.floor(nz));
-    if(DEFS[bid].solid!==false){
+    if(!bulletPass(bid)){   /* 6.47: through leaves, doors and water; not through lava */
       burstParticles(nx,ny,nz,bid,4,0.3);
       playS('thud');
       removeEnt(e);return;

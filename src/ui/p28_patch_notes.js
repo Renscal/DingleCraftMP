@@ -3,7 +3,14 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Lights out when nobody is home',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Shoot through the hedge',lines:[
+    '<b>SHOOT THROUGH THE HEDGE.</b> Bullets used to treat a single oak leaf like a slab of reinforced concrete. Zombies learned to stand behind bushes. That era is over.',
+    '<b>What a bullet goes through now.</b> Leaves of every kind, doors (shut or open: it is a wooden door, not a bank vault) and water. Puppet Purgatory&#x27;s fleece canopy too.',
+    '<b>What still stops it.</b> Stone and every other solid block, glass, Bunker Glass (it was always in the name) and lava. Lava used to let bullets through, which was physics nobody had signed off on.',
+    '<b>Everyone sees the same thing.</b> On a server, the copy of your bullet other players see goes through the same hedge, so nobody watches a shot vanish into a leaf and then hit them anyway.',
+    '<b>The Staple Gun agrees.</b> Staples follow the same rule. Arrows are unchanged and still stick in leaves, because an arrow in a tree is a classic look.',
+  ]},
+ {v:'6.46',label:'Release 1.1',title:'Lights out when nobody is home',lines:[
     '<b>LIGHTS OUT WHEN NOBODY IS HOME.</b> A server with nobody on it used to keep the whole world running for an audience of zero: the sun crossing an empty sky, zombies shuffling around nobody, furnaces cooking for a player asleep in another time zone. All of that cost CPU the computer could have spent on anything else.',
     '<b>Now the world naps.</b> A minute after the last player leaves a dimension, the server stops running it entirely. Time, mobs, water, fire and furnaces freeze exactly where they were, and the server game for it uses no CPU at all.',
     '<b>And wakes up instantly.</b> The moment a player steps back in, it picks up from that exact moment: no fast-forward, no zombies teleporting to catch up on the minute they missed.',

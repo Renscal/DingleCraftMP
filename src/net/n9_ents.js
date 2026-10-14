@@ -90,7 +90,8 @@ function ntFxPup(e,dt){
     e.vy-=e.fxg*dt;
     if(k==='arrow'||k==='blt'||k==='fireb'){
       const nx=e.x+e.vx*dt,ny=e.y+e.vy*dt,nz=e.z+e.vz*dt;
-      if(solidAt(Math.floor(nx),Math.floor(ny),Math.floor(nz))){if(k==='arrow'){e.fxs=true;e.fxl=Math.min(e.fxl,3);}else{NET.fx.delete(e.fxid);removeEnt(e);return;}}
+      const fb=Math.floor(nx),fy=Math.floor(ny),fz=Math.floor(nz);
+      if(k==='blt'?!bulletPass(getBlock(fb,fy,fz)):solidAt(fb,fy,fz)){if(k==='arrow'){e.fxs=true;e.fxl=Math.min(e.fxl,3);}else{NET.fx.delete(e.fxid);removeEnt(e);return;}}
       else{e.x=nx;e.y=ny;e.z=nz;}
     }else{
       moveBody(e,e.vx*dt,e.vy*dt,e.vz*dt,false);
