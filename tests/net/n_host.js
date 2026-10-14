@@ -54,7 +54,7 @@ boot.run(async()=>{
   V.startNewWorld('nhprobe','4242','s');step(30);
   const sx=Math.floor(V.P.x)+0.5,sz=Math.floor(V.P.z)+0.5,sy=Math.floor(V.P.y);
   await V.quitToTitle();await window.storage.delete('vxw:nhprobe');
-  const OUT=path.join(outDir('net'),'host_data');fs.rmSync(OUT,{recursive:true,force:true});
+  const OUT=path.join(outDir('net'),'host_data_'+process.pid);   /* its own folder: two copies run at once used to wipe each other's world (the "one run in four" flake) */fs.rmSync(OUT,{recursive:true,force:true});
 
   /* ===== 1. the host starts ===== */
   const S=createServer({port:0,data:OUT,world:'world',noGame:true,hostGame:GAME,quiet:true,seed:'4242',maxPlayers:4,rules:{snail:false,mobSpawn:false,dayCycle:false}});
@@ -138,7 +138,7 @@ boot.run(async()=>{
       const hp0=V.P.hp;bea.send({t:'fx',f:[['9f1','arrow',P.x+3,P.y+7,P.z,-8,2,0,14,8],['9f2','tnt',P.x+4,P.y+1,P.z+2,0,0,0,24,1.5],['9f3','xp',P.x+2,P.y+1,P.z-2,0,0,0,14,60],['9f4','warp',P.x,P.y,P.z,0,0,0,0,5],['9f5','arrow',P.x+900,P.y,P.z,0,0,0,14,8]]});
       ok('something another player shoots appears here as a copy: an arrow, lit TNT and an XP orb (an unknown kind and a far one do not)',await pumpUntil(()=>fxs().length===3,3000)&&NET.fx.has('9f1')&&NET.fx.get('9f1').t==='arrow'&&NET.fx.get('9f2').t==='tnt'&&NET.fx.get('9f3').t==='nfx'&&!NET.fx.has('9f4')&&!NET.fx.has('9f5'));
       {const a=NET.fx.get('9f1');step(6);await pump(2);
-        ok('the copy flies the way the real one does',a.x<P.x+3-0.5&&a.pup===true);
+        ok('the copy flies the way the real one does',!!a&&a.x<P.x+3-0.5&&a.pup===true);
         const b0=V.getBlock(Math.floor(P.x+4),Math.floor(P.y),Math.floor(P.z+2));step(80);await pump(4);
         ok('...and touches nothing: the arrow flew through where Dan stands and the TNT ran out its fuse, and neither he nor a block is the worse for it',V.P.hp===hp0&&!NET.fx.has('9f2')&&V.getBlock(Math.floor(P.x+4),Math.floor(P.y),Math.floor(P.z+2))===b0);}
       bea.send({t:'fxgone',ids:['9f3']});
