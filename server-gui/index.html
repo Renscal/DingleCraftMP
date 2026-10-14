@@ -15,8 +15,12 @@
     <button id="b_adopt">Add existing folder</button>
   </div>
   <form id="newserver" hidden>
-    <input id="ns_name" maxlength="60" placeholder="Name of the new server" required>
-    <button>Create</button>
+    <label class="nsl">Name <input id="ns_name" maxlength="60" placeholder="Name of the new server" required></label>
+    <label class="nsl">Version
+      <span class="nsrow"><select id="ns_ver"></select><button type="button" id="ns_refresh" title="Check GitHub for new versions">&#x21bb;</button></span>
+    </label>
+    <div id="ns_msg" class="dim"></div>
+    <button id="ns_go">Create</button>
   </form>
   <h3 class="vh">Server versions</h3>
   <div id="vlist"></div>

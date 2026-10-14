@@ -141,3 +141,41 @@ export function validateSettings(o, running) {
 
 /* every setting and every game rule with its default: what the window's forms start from when server.json is new or old */
 export function formDefaults() { return { ...DEFAULTS, rules: { ...RULES } }; }
+
+/* What every setting and game rule IS, in the order the server window shows them: a label, a kind ('text', 'int' with
+   min and max, 'bool', 'list' of lines, 'select' with options [value, label]) and a group. The window (server-gui 1.1 and
+   newer) builds its Settings and Game rules forms from this, so a setting or rule a later version adds shows up there with
+   its own label and limits, without a new window. A new setting in DEFAULTS or rule in RULES needs a line here
+   (tests/net/n_admin.js refuses one that has none, and checks min and max against validateSettings). */
+const N = (key, label, min, max, group) => ({ key, label, kind: 'int', min, max, group });
+const B = (key, label, group) => ({ key, label, kind: 'bool', group });
+export const SETTINGS_FORM = [
+  { key: 'name', label: 'Server name', kind: 'text', max: 60, group: 'Server' }, { key: 'motd', label: 'Message of the day', kind: 'text', max: 200, group: 'Server' },
+  N('port', 'Port', 1, 65535, 'Server'), N('maxPlayers', 'Most players at once', 1, 100, 'Server'),
+  B('accounts', 'Players need an account to join (make them on the Players tab)', 'Players'),
+  { key: 'mode', label: 'Mode for new players', kind: 'select', options: [['s', 'Survival'], ['c', 'Creative']], group: 'Players' },
+  B('pvp', 'Players can hurt each other (PvP)', 'Players'), N('spawnProtection', 'Spawn protection (blocks; 0 for none)', 0, 256, 'Players'),
+  N('sleepPercent', 'Players asleep to skip the night (%)', 1, 100, 'Players'),
+  B('lockNames', 'Nobody may change their own name', 'Players'), B('lockPasswords', 'Nobody may change their own password', 'Players'), B('lockSkins', 'Nobody may change their own skin', 'Players'),
+  B('whitelist', 'Only listed players may join (whitelist)', 'Players'), { key: 'allow', label: 'Whitelist (one name a line)', kind: 'list', group: 'Players' },
+  { key: 'ops', label: 'Operators (one name a line)', kind: 'list', group: 'Players' }, { key: 'bans', label: 'Banned (one name a line)', kind: 'list', group: 'Players' },
+  N('viewChunks', 'View distance sent to players (chunks)', 4, 32, 'World'), N('simulationDistance', 'How far round each player the server runs the world (chunks)', 4, 12, 'World'),
+  B('simulate', 'The server runs the world itself (mobs, water, crops)', 'World'), N('pauseWhenEmpty', 'Pause a world nobody is in after (seconds; 0 never)', 0, 86400, 'World'),
+  N('stopWhenEmpty', 'Stop a paused Nether or Aether after (minutes; 0 never)', 0, 1440, 'World'), N('catchUpMax', 'Most a crop or furnace catches up at once (minutes; 0 no limit)', 0, 525600, 'World'),
+  N('compressAfter', 'Compress land nobody has visited for (days; 0 never)', 0, 3650, 'World'), N('compressPlayersAfter', 'Compress players who have not joined for (days; 0 never)', 0, 3650, 'World'),
+  B('singlePlayer', 'The served game may also play alone', 'World'),
+  { key: 'cert', label: 'TLS certificate file, PEM (empty: plain http)', kind: 'text', group: 'Security' }, { key: 'key', label: 'TLS private key file, PEM', kind: 'text', group: 'Security' },
+  { key: 'origins', label: 'Web pages allowed to connect (one address a line; empty: any)', kind: 'list', group: 'Security' },
+];
+/* settings the window shows somewhere else, not in the Settings form: the game rules (their own tab, RULES_FORM), the world
+   and a new world's seed (the Worlds tab), the game file */
+export const SETTINGS_ELSEWHERE = ['rules', 'world', 'seed', 'game'];
+export const RULES_FORM = [
+  { key: 'difficulty', label: 'Difficulty', kind: 'select', options: DIFFICULTIES.map((d) => [d, d === 'dinglecore' ? 'DingleCore (one life)' : d[0].toUpperCase() + d.slice(1)]) },
+  B('keepInv', 'Keep inventory on death'), B('mobSpawn', 'Natural mob spawning'), B('mobGrief', 'Mob griefing'), B('dayCycle', 'Daylight cycle'), B('fireTick', 'Fire spreads'),
+  B('fallDmg', 'Fall damage'), B('god', 'God mode'), B('instaKill', 'Instant kill'), B('freezeMobs', 'Freeze all mobs'), B('figDrops', 'Figurine drops'),
+  B('snail', 'The Eternal Snail'), B('ghosts', 'Guilt ghosts'), N('jsc', 'Jumpscare chance (0 to 100)', 0, 100), B('fbOK', 'Fullbright allowed'), B('store', 'Dingle Store'),
+  B('powers', 'Superpowers'), B('cheats', 'Cheats (the debug menu, for everyone)'), B('nether', 'The Nether'), B('aether', 'The Aether'), B('puppet', 'Puppet Purgatory'),
+];
+/* the descriptions as the window asks for them (it reads this version's admin.mjs; a server from before 6.58 has none) */
+export function formSchema() { return { settings: SETTINGS_FORM, rules: RULES_FORM, elsewhere: SETTINGS_ELSEWHERE }; }

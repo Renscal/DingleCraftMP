@@ -4,6 +4,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { readZip } = require('./zip.cjs');
 
 /* server.json as an object ({} when there is none; throws on a file that is not one JSON object) */
@@ -190,6 +191,34 @@ function fillVersions(list, versions) {
   return { list: out, changed };
 }
 
+/* ---- versions on GitHub (1.1): the game's releases, each with its DINGLECRAFT-Server-v<X.Y>.zip ---- */
+/* where the window looks: this repository's releases, or DC_RELEASES_REPO (owner/name) for a fork */
+const RELEASES_REPO = /^[\w.-]+\/[\w.-]+$/.test(process.env.DC_RELEASES_REPO || '') ? process.env.DC_RELEASES_REPO : 'Renscal/DingleCraftMP';
+const releasesUrl = (repo) => 'https://api.github.com/repos/' + (repo || RELEASES_REPO) + '/releases?per_page=100';
+const OLDEST = '6.41';   /* the first version with the --ipc mode the window drives */
+/* GitHub's list of releases (the JSON of releasesUrl) -> the server versions it offers, newest first:
+   [{ version, url, size, digest, prerelease, date }]. Only github.com download links are taken. */
+function releaseVersions(json) {
+  const out = new Map();
+  for (const r of Array.isArray(json) ? json : []) {
+    if (!r || r.draft || !Array.isArray(r.assets)) continue;
+    for (const a of r.assets) {
+      const m = a && typeof a.name === 'string' && /^DINGLECRAFT-Server-v(\d{1,3}\.\d{1,3})\.zip$/.exec(a.name);
+      if (!m || cmpVersion(m[1], OLDEST) < 0 || out.has(m[1])) continue;
+      if (typeof a.browser_download_url !== 'string' || !/^https:\/\/github\.com\//.test(a.browser_download_url)) continue;
+      out.set(m[1], { version: m[1], url: a.browser_download_url, size: Number(a.size) || 0, digest: typeof a.digest === 'string' ? a.digest : '',
+        prerelease: !!r.prerelease, date: typeof r.published_at === 'string' ? r.published_at.slice(0, 10) : '' });
+    }
+  }
+  return [...out.values()].sort((a, b) => cmpVersion(b.version, a.version));
+}
+/* does a download match the fingerprint GitHub published for it ("sha256:<hex>")? No fingerprint: nothing to check. */
+function digestOK(buf, digest) {
+  if (!digest) return true;
+  const m = /^sha256:([0-9a-f]{64})$/i.exec(digest);
+  return !!m && crypto.createHash('sha256').update(buf).digest('hex') === m[1].toLowerCase();
+}
+
 /* ---- the list of servers (servers.json in the program's own folder) ---- */
 /* Each server is a name, a data folder and the version it runs: { id, name, dataDir, version, ran, tasks: [...] } (ran:
    the newest version that has run it, to warn before an older one opens a world a newer one wrote). The file is the window's, not the
@@ -245,5 +274,5 @@ function dueTasks(tasks, last, now, since) {
   return (tasks || []).filter((t) => t.on !== false && now - (last[t.id] === undefined ? since : last[t.id]) >= t.every * 60000);
 }
 
-module.exports = { cmpVersion, versionOfDir, listVersions, importVersion, removeVersion, fillVersions, readSettings, writeSettings, listWorlds, backupWorld, newWorld, goodWorldName, fmtUptime, fmtBytes,
+module.exports = { RELEASES_REPO, releasesUrl, releaseVersions, digestOK, cmpVersion, versionOfDir, listVersions, importVersion, removeVersion, fillVersions, readSettings, writeSettings, listWorlds, backupWorld, newWorld, goodWorldName, fmtUptime, fmtBytes,
   listBackups, restoreBackup, deleteBackup, pruneBackups, readServers, writeServers, addServer, removeServer, portOf, cleanTask, dueTasks };

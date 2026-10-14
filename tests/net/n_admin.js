@@ -13,7 +13,10 @@
      (the window on its own version, with no server in it)
    9 server versions: a Server zip or folder imports into the window's library, the bad ones are refused saying why,
      nothing escapes the zip, a running version is not replaced, servers carry a version (the newest by default), a
-     version in use is not removed, and a server forked from the library runs */
+     version in use is not removed, and a server forked from the library runs; (window 1.1) GitHub's release list read offline
+     into the versions it offers, a download checked against its fingerprint
+   10 the server describes every setting and game rule for the window (formSchema): none left out, the limits it shows are
+     the ones validateSettings enforces */
 'use strict';
 const fs=require('fs'),path=require('path'),cp=require('child_process'),{pathToFileURL}=require('url');
 const boot=require('../lib/c_boot.js'),{ok}=boot;
@@ -131,6 +134,24 @@ boot.run(async()=>{
       const min=60000,d=(now,last)=>store.dueTasks(tasks,last,now,0).map(t=>t.id).join();
       ok('what is due: nothing before its time, a task every 10 minutes from when the server started and then from when it last ran, a task that is switched off never',
         d(9*min,{})===''&&d(10*min,{})==='a'&&d(15*min,{a:10*min})===''&&d(20*min,{a:10*min})==='a'&&d(61*min,{a:60*min})==='b'&&d(999*min,{a:999*min,b:999*min})==='');}
+    /* the server describes its own settings and rules (the window builds its forms from it): none may be left out, and the limits it shows are the ones it checks */
+    {const F=A.formSchema(),sk=F.settings.map(x=>x.key),rk=F.rules.map(x=>x.key);
+     const noSet=Object.keys(C.DEFAULTS).filter(k=>!sk.includes(k)&&!F.elsewhere.includes(k)),noRule=Object.keys(C.RULES).filter(k=>!rk.includes(k));
+     const extra=[...sk.filter(k=>!(k in C.DEFAULTS)),...rk.filter(k=>!(k in C.RULES))];
+     ok('every setting and every game rule is described for the window, with a label (missing: '+[...noSet,...noRule].join(', ')+'; unknown: '+extra.join(', ')+')',
+       !noSet.length&&!noRule.length&&!extra.length&&new Set(sk).size===sk.length&&new Set(rk).size===rk.length&&[...F.settings,...F.rules].every(x=>typeof x.label==='string'&&x.label.length>2));
+     const kindOk=(x,v)=>x.kind==='bool'?typeof v==='boolean':x.kind==='int'?Number.isInteger(v)&&Number.isInteger(x.min)&&Number.isInteger(x.max)&&x.min<=v&&v<=x.max:
+       x.kind==='list'?Array.isArray(v):x.kind==='text'?typeof v==='string':x.kind==='select'?Array.isArray(x.options)&&x.options.some(o=>o[0]===v):false;
+     const wrong=[...F.settings.filter(x=>!kindOk(x,C.DEFAULTS[x.key])).map(x=>x.key),...F.rules.filter(x=>!kindOk(x,C.RULES[x.key])).map(x=>x.key)];
+     ok('each description fits its default (a number within its limits, a choice among its options)'+(wrong.length?' (wrong: '+wrong.join()+')':''),!wrong.length);
+     const edge=[];
+     for(const x of F.settings.filter(x=>x.kind==='int')){const at=v=>A.validateSettings({...C.DEFAULTS,[x.key]:v}).errors.some(e=>e.key===x.key);
+       if(at(x.min)||at(x.max)||!at(x.min-1)||!at(x.max+1))edge.push(x.key);}
+     for(const x of F.rules.filter(x=>x.kind==='int')){const at=v=>A.validateSettings({...C.DEFAULTS,rules:{[x.key]:v}}).errors.some(e=>e.key==='rules.'+x.key);
+       if(at(x.min)||at(x.max)||!at(x.min-1)||!at(x.max+1))edge.push('rules.'+x.key);}
+     for(const x of F.settings.filter(x=>x.kind==='select'))for(const [v] of x.options)if(A.validateSettings({...C.DEFAULTS,[x.key]:v}).errors.some(e=>e.key===x.key))edge.push(x.key+'='+v);
+     for(const x of F.rules.filter(x=>x.kind==='select'))for(const [v] of x.options)if(A.validateSettings({...C.DEFAULTS,rules:{[x.key]:v}}).errors.length)edge.push('rules.'+x.key+'='+v);
+     ok('the limits and choices the window shows are exactly the ones the server accepts'+(edge.length?' (off: '+edge.join()+')':''),!edge.length);}
     const fd=A.formDefaults();
     ok('the forms start from every setting and every game rule (the new ones included)',fd.port===40162&&fd.rules.difficulty==='normal'&&fd.rules.nether===true&&Object.keys(fd.rules).length===Object.keys(C.RULES).length);
     /* the packages: built into out/, read back. The window is no longer in a game release (1.0 of the window): it has its own */
@@ -181,6 +202,26 @@ boot.run(async()=>{
        fill.list.map(e=>e.version).join()===['6.42',V.GAME_VERSION,V.GAME_VERSION].join()&&!store.fillVersions(fill.list,store.listVersions(VR)).changed);
      const rm=err(()=>store.removeVersion(VR,'6.42',fill.list));store.removeVersion(VR,'6.30',fill.list);
      ok('a version a server is set to cannot be removed; one nobody uses can',/Old one/.test(rm)&&store.listVersions(VR).map(v=>v.version).join()===V.GAME_VERSION+',6.42');
+     /* 1.1: versions on GitHub. GitHub's list of releases, read without the network (the shape its API answers with) */
+     const gh=(tag,pre,assets,more)=>({tag_name:tag,prerelease:pre,draft:false,published_at:'2026-10-14T20:00:04Z',assets,...more});
+     const as=(name,url,size,digest)=>({name,size,digest,browser_download_url:url||'https://github.com/Renscal/DingleCraftMP/releases/download/x/'+name});
+     const RV=store.releaseVersions([
+       gh('v6.58',true,[as('DINGLECRAFT-Client-v6.58.zip'),as('DINGLECRAFT-Server-v6.58.zip',null,31438988,'sha256:'+'a'.repeat(64)),as('DINGLECRAFT-ServerGUI-v6.58.zip')]),
+       gh('v6.59',false,[as('DINGLECRAFT-Server-v6.59.zip')],{draft:true}),
+       gh('v6.57',false,[as('DINGLECRAFT-Server-v6.57.zip')]),
+       gh('v6.57b',false,[as('DINGLECRAFT-Server-v6.57.zip','https://github.com/elsewhere/v6.57b.zip')]),
+       gh('v6.10',false,[as('DINGLECRAFT-Server-v6.10.zip')]),
+       gh('v6.41',false,[as('DINGLECRAFT-Server-v6.41.zip')]),
+       gh('evil',false,[as('DINGLECRAFT-Server-v6.60.zip','https://example.com/DINGLECRAFT-Server-v6.60.zip')]),
+       gh('server-gui-v1.0.0',true,[as('DINGLECRAFT-ServerGUI-v1.0.0.zip')])]);
+     ok('the releases on GitHub become the server versions they offer, newest first ('+RV.map(r=>r.version).join()+'): only Server zips, 6.41 and newer, no drafts, only github.com downloads, the first of a version wins',
+       RV.map(r=>r.version).join()==='6.58,6.57,6.41'&&RV[0].size===31438988&&RV[0].prerelease===true&&RV[0].date==='2026-10-14'&&/^sha256:a{64}$/.test(RV[0].digest)&&
+       RV[1].url==='https://github.com/Renscal/DingleCraftMP/releases/download/x/DINGLECRAFT-Server-v6.57.zip'&&store.releaseVersions(null).length===0&&store.releaseVersions({message:'rate limited'}).length===0);
+     {const zb=fs.readFileSync(szf),h='sha256:'+require('crypto').createHash('sha256').update(zb).digest('hex');
+      ok('a download is checked against GitHub\'s fingerprint: the right one passes (any case), a wrong or malformed one fails, none at all has nothing to check',
+        store.digestOK(zb,h)&&store.digestOK(zb,h.toUpperCase().replace('SHA256','sha256'))&&!store.digestOK(Buffer.concat([zb,Buffer.from('x')]),h)&&!store.digestOK(zb,'sha256:'+'0'.repeat(64))&&
+        !store.digestOK(zb,'md5:abc')&&store.digestOK(zb,''));}
+     ok('the window asks this repository\'s releases (or DC_RELEASES_REPO for a fork)',store.releasesUrl()==='https://api.github.com/repos/Renscal/DingleCraftMP/releases?per_page=100'&&store.releasesUrl('a/b').endsWith('/repos/a/b/releases?per_page=100'));
      /* the imported version runs: forked from the library the way the window forks it */
      const D2=path.join(PK,'run_data');fs.mkdirSync(D2,{recursive:true});fs.writeFileSync(path.join(D2,'server.json'),JSON.stringify({name:'From the library',port:0,simulate:false}));
      const kid=cp.fork(path.join(v1.dir,'dinglecraft-server.mjs'),['--ipc','--data',D2],{stdio:['ignore','pipe','pipe','ipc']}),msgs=[];let kx=null;

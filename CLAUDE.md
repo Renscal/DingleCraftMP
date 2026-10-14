@@ -63,7 +63,9 @@ client/         the desktop client: an Electron wrapper (main.js) around the sam
 server-gui/     the server as a window (Electron), one program for every server version (its own version and release:
                 npm run package:gui, tag server-gui-v<ver>): a library of imported Server zips (versions/<X.Y>/), each
                 server in its list runs one as a child in the server's --ipc mode (server/lib/admin.mjs: add messages, never
-                change one); lib/store.cjs is its file handling (servers, versions, backups, tasks), tested by n_admin
+                change one); lib/store.cjs is its file handling (servers, versions, backups, tasks), tested by n_admin.
+                A new server setting (config DEFAULTS) or game rule (RULES) needs a line in SETTINGS_FORM / RULES_FORM in
+                server/lib/admin.mjs (label, kind, limits): the window builds its forms from it, and n_admin enforces it
 docs/           ARCHITECTURE BUILD TESTING QA ASSETS RELEASING PARITY ROADMAP LEGACY LANDMINES
 build/ dist/ out/   gitignored outputs
 ```

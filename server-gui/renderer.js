@@ -3,7 +3,7 @@
 'use strict';
 const $ = (id) => document.getElementById(id);
 const el = (tag, props, kids) => { const e = document.createElement(tag); Object.assign(e, props || {}); for (const k of kids || []) e.append(k); return e; };
-const S = { id: null, servers: [], versions: [], cur: null, settings: null, tab: 'dash', history: [], hpos: 0 };
+const S = { id: null, servers: [], versions: [], remote: [], cur: null, settings: null, tab: 'dash', history: [], hpos: 0 };
 
 const fmtUp = (s) => { s = Math.max(0, s | 0); const h = (s / 3600) | 0, m = ((s % 3600) / 60) | 0; return h ? h + ' h ' + String(m).padStart(2, '0') + ' min' : m ? m + ' min ' + String(s % 60).padStart(2, '0') + ' s' : s + ' s'; };
 const fmtB = (n) => (n >= 1073741824 ? (n / 1073741824).toFixed(1) + ' GB' : n >= 1048576 ? (n / 1048576).toFixed(0) + ' MB' : n > 0 ? Math.max(1, Math.round(n / 1024)) + ' KB' : 'not known');
@@ -58,16 +58,56 @@ async function pick(id) {
   paintList(); paint(); showTab(S.tab);
 }
 function takeServers(o) {
-  S.servers = o.servers; S.versions = o.versions || []; paintVersions();
+  S.servers = o.servers; S.versions = o.versions || []; paintVersions(); if (!$('newserver').hidden) nsOptions();
   if (!S.servers.some((s) => s.id === S.id)) { S.id = null; S.cur = null; if (S.servers[0]) return pick(S.servers[0].id); }
   paintList(); if (!S.id) paint();
 }
-$('b_new').onclick = () => { $('newserver').hidden = !$('newserver').hidden; if (!$('newserver').hidden) $('ns_name').focus(); };
+/* ---- a new server: a name and a version. The versions are the ones here and (1.1) the ones on GitHub; one that is not
+   here yet is downloaded and imported when the server is created. The refresh button asks GitHub again. ---- */
+const vName = (v) => (v === 'checkout' ? 'this checkout' : 'v' + v);
+const mb = (n) => (n > 0 ? Math.round(n / 1048576) + ' MB' : '');
+function nsOptions() {
+  const sel = $('ns_ver'), was = sel.value, have = new Set(S.versions.map((v) => v.version));
+  const all = [...S.versions.map((v) => ({ version: v.version, have: true })), ...S.remote.filter((x) => !have.has(x.version)).map((x) => ({ ...x, have: false }))];
+  const num = (v) => (v === 'checkout' ? [1e9, 0] : v.split('.').map(Number));
+  all.sort((a, b) => { const x = num(a.version), y = num(b.version); return (y[0] - x[0]) || (y[1] - x[1]); });
+  sel.replaceChildren(...all.map((x) => el('option', { value: x.version, textContent: vName(x.version) + (x.have ? '' : '  (download' + (x.size ? ', ' + mb(x.size) : '') + ')') })));
+  if (!all.length) sel.append(el('option', { value: '', textContent: 'no versions: press refresh' }));
+  sel.value = all.some((x) => x.version === was) ? was : (all[0] ? all[0].version : '');
+}
+async function nsRefresh(force) {
+  $('ns_msg').textContent = 'Checking GitHub for versions...';
+  const r = await window.dc.remoteVersions(!!force);
+  S.remote = r.list || [];
+  $('ns_msg').textContent = r.ok ? (force ? 'Up to date: ' + S.remote.length + ' version' + (S.remote.length === 1 ? '' : 's') + ' on GitHub.' : '') : r.why;
+  nsOptions();
+}
+$('b_new').onclick = () => {
+  $('newserver').hidden = !$('newserver').hidden;
+  if (!$('newserver').hidden) { nsOptions(); nsRefresh(false); $('ns_name').focus(); }
+};
+$('ns_refresh').onclick = () => nsRefresh(true);
 $('newserver').onsubmit = async (e) => {
   e.preventDefault();
-  const r = await window.dc.addServer({ name: $('ns_name').value });
-  if (r.ok) { $('ns_name').value = ''; $('newserver').hidden = true; pick(r.id); }
+  const v = $('ns_ver').value, name = $('ns_name').value;
+  if (!v) { $('ns_msg').textContent = 'Pick a version first (refresh checks GitHub).'; return; }
+  $('ns_go').disabled = true;
+  try {
+    if (!S.versions.some((x) => x.version === v)) {
+      $('ns_msg').textContent = 'Downloading ' + vName(v) + '...';
+      const d = await window.dc.downloadVersion(v);
+      if (!d.ok) { $('ns_msg').textContent = d.why; return; }
+    }
+    const r = await window.dc.addServer({ name, version: v });
+    if (!r.ok) { $('ns_msg').textContent = r.why; return; }
+    $('ns_name').value = ''; $('ns_msg').textContent = ''; $('newserver').hidden = true; pick(r.id);
+  } finally { $('ns_go').disabled = false; }
 };
+window.dc.on('dl', (m) => {
+  if (m.got !== undefined) $('ns_msg').textContent = 'Downloading ' + vName(m.version) + ': ' + mb(m.got) + (m.total ? ' of ' + mb(m.total) : '');
+  else if (m.done) $('ns_msg').textContent = 'Downloaded ' + vName(m.version) + '.';
+  else if (m.failed) $('ns_msg').textContent = m.failed;
+});
 $('b_adopt').onclick = async () => { const r = await window.dc.adoptServer(); if (r.ok) pick(r.id); else if (r.why) say(r.why); };
 
 /* ---- tabs ---- */
@@ -194,45 +234,59 @@ const FIELDS = [['name', 'Server name', 'text'], ['motd', 'Message of the day', 
   ['lockNames', 'Nobody may change their own name', 'bool'], ['lockPasswords', 'Nobody may change their own password', 'bool'], ['lockSkins', 'Nobody may change their own skin', 'bool'],
   ['whitelist', 'Only listed players may join (whitelist)', 'bool'], ['allow', 'Whitelist (one name a line)', 'list'], ['ops', 'Operators (one name a line)', 'list'], ['bans', 'Banned (one name a line)', 'list'],
   ['cert', 'TLS certificate file, PEM (empty: plain http)', 'text'], ['key', 'TLS private key file, PEM', 'text'], ['origins', 'Web pages allowed to connect (one address a line; empty: any)', 'list']];
-/* settings the form does not show: the world (Worlds tab), the seed of a new world, the game file */
-const HIDDEN = new Set(['rules', 'world', 'seed', 'game']);
-/* each version shows the settings it has: the ones above it knows, then any newer one by its own name */
-function fieldsFor(settings) {
-  const known = FIELDS.filter(([k]) => k in settings), seen = new Set(FIELDS.map(([k]) => k));
-  const more = Object.keys(settings).filter((k) => !seen.has(k) && !HIDDEN.has(k)).map((k) => {
-    const v = settings[k];
-    return [k, k, typeof v === 'boolean' ? 'bool' : typeof v === 'number' ? 'int' : Array.isArray(v) ? 'list' : 'text'];
-  }).filter(([k]) => { const v = settings[k]; return v === null || ['boolean', 'number', 'string'].includes(typeof v) || (Array.isArray(v) && v.every((x) => typeof x === 'string')); });
-  return [...known, ...more];
-}
+/* the game rules' names, for a server from before 6.58 (a newer one names its own: formSchema) */
 const RULE_NAMES = { keepInv: 'Keep inventory on death', god: 'God mode', mobGrief: 'Mob griefing', mobSpawn: 'Natural mob spawning', dayCycle: 'Daylight cycle', fireTick: 'Fire spreads', fallDmg: 'Fall damage', snail: 'The Eternal Snail',
   jsc: 'Jumpscare chance (0 to 100)', instaKill: 'Instant kill', freezeMobs: 'Freeze all mobs', ghosts: 'Guilt ghosts', figDrops: 'Figurine drops', fbOK: 'Fullbright allowed', store: 'Dingle Store', powers: 'Superpowers', cheats: 'Cheats (the debug menu, for everyone)',
   nether: 'The Nether', aether: 'The Aether', puppet: 'Puppet Purgatory', difficulty: 'Difficulty' };
+/* settings the form does not show: the game rules (their own tab), the world (Worlds tab), the seed of a new world, the game file */
+const HIDDEN = ['rules', 'world', 'seed', 'game'];
+/* A form is built from descriptions: { key, label, kind: text | int | bool | list | select, min, max, options, group }.
+   A server from 6.58 on describes its own settings and rules (formSchema in its lib/admin.mjs): a setting or rule a newer
+   version adds shows with its own label and limits. An older server has none: the window's own list above is used. Either
+   way, anything the server has that no description covers is still shown, under its own name, so nothing is left out. */
+const guess = (k, v) => ({ key: k, label: k, kind: typeof v === 'boolean' ? 'bool' : typeof v === 'number' ? 'int' : Array.isArray(v) ? 'list' : 'text' });
+const plain = (v) => v === null || ['boolean', 'number', 'string'].includes(typeof v) || (Array.isArray(v) && v.every((x) => typeof x === 'string'));
+function describe(values, described, skip) {
+  const known = described.filter((d) => d.key in values), seen = new Set([...described.map((d) => d.key), ...skip]);
+  return [...known, ...Object.keys(values).filter((k) => !seen.has(k) && plain(values[k])).map((k) => guess(k, values[k]))];
+}
+const OLD_SETTINGS = FIELDS.map(([key, label, kind]) => (kind === 'mode' ? { key, label, kind: 'select', options: [['s', 'Survival'], ['c', 'Creative']] } : { key, label, kind }));
+const OLD_RULES = Object.keys(RULE_NAMES).map((key) => (key === 'difficulty' ? { key, label: RULE_NAMES[key], kind: 'select', options: ['easy', 'normal', 'hard', 'dinglecore'].map((d) => [d, d === 'dinglecore' ? 'DingleCore (one life)' : d[0].toUpperCase() + d.slice(1)]) }
+  : { key, label: RULE_NAMES[key], kind: key === 'jsc' ? 'int' : 'bool', ...(key === 'jsc' ? { min: 0, max: 100 } : {}) }));
+/* one form from descriptions and values; a heading wherever the group changes */
+function buildForm(form, list, values) {
+  form.replaceChildren();
+  if (list.some((d) => d.group)) {                         /* each group together, in the order it first appears; the undescribed last, as Other */
+    const order = [...new Set(list.map((d) => d.group || 'Other'))].sort((x, y) => (x === 'Other') - (y === 'Other'));
+    list = order.flatMap((g) => list.filter((d) => (d.group || 'Other') === g).map((d) => ({ ...d, group: g })));
+  }
+  let group = null;
+  for (const d of list) {
+    if (d.group && d.group !== group) { group = d.group; form.append(el('h4', { className: 'fgroup', textContent: d.group })); }
+    const range = d.kind === 'int' && Number.isFinite(d.min) && Number.isFinite(d.max) && !/\d\s*(to|-)\s*\d/.test(d.label) ? d.min + ' to ' + d.max : '';
+    const v = values[d.key], label = !range ? d.label : /\)$/.test(d.label) ? d.label.slice(0, -1) + '; ' + range + ')' : d.label + ' (' + range + ')';
+    let input;
+    if (d.kind === 'bool') { input = el('input', { type: 'checkbox', checked: !!v }); form.append(el('label', { className: 'check' }, [input, label])); }
+    else if (d.kind === 'select') { input = el('select', {}, (d.options || []).map(([val, txt]) => el('option', { value: String(val), textContent: txt }))); input.value = String(v); form.append(el('label', {}, [label, input])); }
+    else if (d.kind === 'list') { input = el('textarea', { rows: 3, value: (v || []).join('\n') }); form.append(el('label', {}, [label, input])); }
+    else {
+      input = el('input', { type: d.kind === 'int' ? 'number' : 'text', value: v === undefined || v === null ? '' : String(v) });
+      if (d.kind === 'int') { if (Number.isFinite(d.min)) input.min = d.min; if (Number.isFinite(d.max)) input.max = d.max; }
+      else if (Number.isFinite(d.max)) input.maxLength = d.max;
+      form.append(el('label', {}, [label, input]));
+    }
+    input.dataset.k = d.key; input.dataset.kind = d.kind === 'select' ? 'text' : d.kind;
+  }
+}
 async function loadSettings() {
   const r = await window.dc.readSettings(S.id);
   if (!r.ok) { $('setmsg').textContent = r.why || 'could not read the settings'; return; }
   S.settings = r.settings;
   $('setmsg').textContent = ''; $('rulemsg').textContent = '';
-  const sf = $('setform'); sf.replaceChildren();
-  for (const [k, label, kind] of fieldsFor(S.settings)) {
-    const v = S.settings[k];
-    let input;
-    if (kind === 'bool') { input = el('input', { type: 'checkbox', checked: !!v }); sf.append(el('label', { className: 'check' }, [input, label])); }
-    else if (kind === 'mode') { input = el('select', {}, [el('option', { value: 's', textContent: 'Survival' }), el('option', { value: 'c', textContent: 'Creative' })]); input.value = v === 'c' ? 'c' : 's'; sf.append(el('label', {}, [label, input])); }
-    else if (kind === 'list') { input = el('textarea', { rows: 3, value: (v || []).join('\n') }); sf.append(el('label', {}, [label, input])); }
-    else { input = el('input', { type: kind === 'int' ? 'number' : 'text', value: v === undefined || v === null ? '' : String(v) }); sf.append(el('label', {}, [label, input])); }
-    input.dataset.k = k; input.dataset.kind = kind;
-  }
-  const rf = $('ruleform'); rf.replaceChildren();
+  const sc = r.schema && Array.isArray(r.schema.settings) && Array.isArray(r.schema.rules) ? r.schema : null;
+  buildForm($('setform'), describe(S.settings, sc ? sc.settings : OLD_SETTINGS, sc && Array.isArray(sc.elsewhere) ? sc.elsewhere : HIDDEN), S.settings);
   const rules = S.settings.rules || {};
-  for (const k of Object.keys(rules)) {
-    const v = rules[k], label = RULE_NAMES[k] || k;
-    let input;
-    if (k === 'difficulty') { input = el('select', {}, ['easy', 'normal', 'hard', 'dinglecore'].map((d) => el('option', { value: d, textContent: d === 'dinglecore' ? 'DingleCore (one life)' : d[0].toUpperCase() + d.slice(1) }))); input.value = v; rf.append(el('label', {}, [label, input])); }
-    else if (typeof v === 'boolean') { input = el('input', { type: 'checkbox', checked: v }); rf.append(el('label', { className: 'check' }, [input, label])); }
-    else { input = el('input', { type: 'number', value: String(v) }); rf.append(el('label', {}, [label, input])); }
-    input.dataset.k = k; input.dataset.kind = typeof v === 'boolean' ? 'bool' : typeof v === 'number' ? 'int' : 'text';
-  }
+  buildForm($('ruleform'), describe(rules, sc ? sc.rules : OLD_RULES, []), rules);
 }
 function readForm(form) {
   const o = {};

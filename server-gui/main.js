@@ -23,7 +23,7 @@ const store = require('./lib/store.cjs');
 const CHECKOUT = [path.join(__dirname, '..', 'server')].find((d) => fs.existsSync(path.join(d, 'dinglecraft-server.mjs')) && fs.existsSync(path.join(d, 'lib', 'admin.mjs'))) || null;
 
 /* G.list: the servers as servers.json has them. G.run: id -> what is known about each while the program is open. */
-const G = { win: null, tray: null, list: [], run: new Map(), quitting: false, admins: new Map(), timer: null };
+const G = { win: null, tray: null, list: [], run: new Map(), quitting: false, admins: new Map(), timer: null, remote: { list: [], at: 0, why: '' }, dl: new Map() };
 const root = () => app.getPath('userData');
 const listFile = () => path.join(root(), 'servers.json');
 const saveList = () => store.writeServers(listFile(), G.list);
@@ -53,6 +53,45 @@ async function admin(e) {
 }
 /* the settings on disk laid over the defaults, rule by rule (an older server.json lists fewer rules) */
 function formMerge(def, cur) { return { ...def, ...cur, rules: { ...def.rules, ...(cur.rules || {}) } }; }
+
+/* ---- versions on GitHub (1.1). The window goes online only when asked: the New server form, its refresh button ---- */
+const UA = { 'User-Agent': 'DINGLECRAFT-Server-window', Accept: 'application/vnd.github+json' };
+async function remoteList(force) {
+  if (!force && G.remote.at && Date.now() - G.remote.at < 10 * 60000) return G.remote;
+  try {
+    const r = await fetch(store.releasesUrl(), { headers: UA });
+    if (!r.ok) throw new Error(r.status === 403 || r.status === 429 ? 'GitHub asks to wait a while (too many checks from this address)' : 'GitHub answered ' + r.status);
+    G.remote = { list: store.releaseVersions(await r.json()), at: Date.now(), why: '' };
+  } catch (e) { G.remote = { ...G.remote, why: 'Could not get the versions from GitHub: ' + e.message + '.' }; }   /* the last list that worked stays */
+  return G.remote;
+}
+/* download a version's DINGLECRAFT-Server-v<X.Y>.zip from its release, check it against GitHub's fingerprint, import it */
+function downloadVersion(v) {
+  if (G.dl.has(v)) return G.dl.get(v);
+  const job = (async () => {
+    let rel = (await remoteList(false)).list.find((x) => x.version === v);
+    if (!rel) rel = (await remoteList(true)).list.find((x) => x.version === v);
+    if (!rel) throw new Error('Version ' + v + ' is not on the releases page.');
+    const res = await fetch(rel.url, { headers: { 'User-Agent': UA['User-Agent'] } });
+    if (!res.ok || !res.body) throw new Error('GitHub answered ' + res.status + ' for the download of v' + v + '.');
+    const total = Number(res.headers.get('content-length')) || rel.size, parts = [];
+    let got = 0, said = 0;
+    for await (const c of res.body) { parts.push(Buffer.from(c)); got += c.length; if (Date.now() - said > 250) { said = Date.now(); tell('dl', { version: v, got, total }); } }
+    const buf = Buffer.concat(parts);
+    if (!store.digestOK(buf, rel.digest)) throw new Error('The download of v' + v + ' does not match its fingerprint on GitHub, so it was not imported. Try again.');
+    const tmp = path.join(root(), 'versions', '.dl-' + v + '-' + process.pid + '.zip');
+    fs.mkdirSync(path.dirname(tmp), { recursive: true }); fs.writeFileSync(tmp, buf);
+    try {
+      const out = store.importVersion(root(), tmp, (ver) => G.list.some((e) => rt(e.id).child && rt(e.id).version === ver));
+      for (const [d] of G.admins) if (path.resolve(d) === path.resolve(out.dir)) G.admins.delete(d);
+      fillAll(); changed();
+      return out;
+    } finally { fs.rmSync(tmp, { force: true }); }
+  })();
+  G.dl.set(v, job);
+  job.then(() => tell('dl', { version: v, done: true }), (e) => tell('dl', { version: v, failed: e.message })).finally(() => G.dl.delete(v));
+  return job;
+}
 
 /* ---- one server, as a child ---- */
 function startServer(id) {
@@ -182,7 +221,16 @@ function makeTray() {
 function wire() {
   const h = (name, fn) => ipcMain.handle(name, async (_e, ...a) => { try { return await fn(...a); } catch (e) { return { ok: false, why: e.message }; } });
   h('servers', () => overview());
-  h('server:add', (o) => { const r = store.addServer(G.list, root(), { ...(o || {}), version: (versions().find((v) => v.version !== 'checkout') || versions()[0] || {}).version }); G.list = r.list; fillAll(); saveList(); changed(); return { ok: true, id: r.entry.id }; });
+  h('server:add', (o) => {
+    const want = o && typeof o.version === 'string' && dirOf(o.version) ? o.version : (versions().find((v) => v.version !== 'checkout') || versions()[0] || {}).version;
+    const r = store.addServer(G.list, root(), { ...(o || {}), version: want }); G.list = r.list; fillAll(); saveList(); changed(); return { ok: true, id: r.entry.id };
+  });
+  /* 1.1: the versions on GitHub, each marked if it is already here; force: ask GitHub again (the refresh button) */
+  h('remote:list', async (force) => {
+    const R = await remoteList(!!force), have = new Set(versions().map((v) => v.version));
+    return { ok: !R.why, why: R.why, list: R.list.map((x) => ({ version: x.version, prerelease: x.prerelease, date: x.date, size: x.size, have: have.has(x.version) })) };
+  });
+  h('version:download', async (v) => { if (typeof v !== 'string' || !/^\d{1,3}\.\d{1,3}$/.test(v)) return { ok: false, why: 'not a version' }; const out = await downloadVersion(v); return { ok: true, version: out.version }; });
   h('server:adopt', async () => {
     const r = await dialog.showOpenDialog(G.win, { title: 'Choose a server\'s data folder (the one with server.json and the world in it)', properties: ['openDirectory'] });
     if (r.canceled || !r.filePaths[0]) return { ok: false, why: '' };
@@ -218,7 +266,8 @@ function wire() {
     if (!force && v !== 'checkout' && e.ran && store.cmpVersion(v, e.ran) < 0) return { ok: false, ask: 'This server\'s world was last run by version ' + e.ran + '. An older version may not read everything a newer one wrote, and what it does not know it can lose. Run it on ' + v + ' anyway? (A backup first is a good idea.)' };
     e.version = v; saveList(); changed(id); return { ok: true };
   });
-  h('settings:read', async (id) => { const e = entry(id); return { ok: true, settings: formMerge((await admin(e)).formDefaults(), store.readSettings(e.dataDir)) }; });
+  /* the settings as that version knows them, and (6.58 and newer) its own description of every setting and rule (formSchema) */
+  h('settings:read', async (id) => { const e = entry(id), A = await admin(e); return { ok: true, settings: formMerge(A.formDefaults(), store.readSettings(e.dataDir)), schema: typeof A.formSchema === 'function' ? A.formSchema() : null }; });
   h('settings:save', async (id, o) => {
     const e = entry(id), v = (await admin(e)).validateSettings(o, store.readSettings(e.dataDir));
     if (!v.ok) return { ok: false, errors: v.errors, restart: [] };

@@ -25,6 +25,10 @@ aside h3.vh{margin:6px 6px 0}
 .vpick{color:var(--dim);font-size:13px;margin-left:10px}
 .vpick select{margin-left:4px}
 #newserver[hidden]{display:none}
+.nsl{display:flex;flex-direction:column;gap:3px;color:var(--dim);font-size:12.5px}
+.nsrow{display:flex;gap:4px}.nsrow select{flex:1;min-width:0}
+#ns_refresh{padding:2px 9px;font-size:15px;line-height:1}
+#ns_msg{font-size:12.5px}
 #right{flex:1;min-width:0;display:flex;flex-direction:column}
 header{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--panel);border-bottom:1px solid var(--line)}
 h1{font-size:17px;margin:0}
@@ -70,6 +74,7 @@ input[type=checkbox]{width:16px;height:16px}
 .form label{display:flex;flex-direction:column;gap:3px;color:var(--dim);font-size:12.5px}
 .form label.check{flex-direction:row;align-items:center;gap:8px;color:var(--text);font-size:14px}
 .form small{color:var(--dim)}
+.form h4.fgroup{grid-column:1/-1;margin:10px 0 0;font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--line);padding-bottom:4px}
 .form .bad input,.form .bad select{border-color:var(--bad)}
 .form .why{color:var(--bad)}
 .tag{font-size:11px;color:var(--warn);margin-left:6px}
