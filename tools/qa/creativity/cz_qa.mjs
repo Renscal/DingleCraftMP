@@ -106,7 +106,7 @@ check('v'+gameVersion()+' loaded with both creativity packages real, PART 55 pre
 /* the patch notes and the help screen (title screen) */
 {/* label-aware (Release 1.0): the newest entry heads the panel with its public label (RELEASE_LABEL) or v<ver>; the v6.2 entry is kept further down */
   const pn=await ev("openPatch();const b=document.getElementById('patchbody'),L=__vox.PATCH_LOG,e=L.find(x=>x.v==='6.2')||{lines:[]},top=L[0];const o={t:b?b.textContent:'',n:e.lines.length,v:e.v,title:e.title,top:(top.label||'v'+top.v)+' \u2014 '+top.title,topV:top.v,ver:__vox.GAME_VERSION,label:__vox.RELEASE_LABEL||null};closePatch();return o;");
-  await ev("openHelp();const h=document.getElementById('help'),row=[...h.querySelectorAll('.krow')].find(k=>/^Creativity/.test(k.textContent));if(row&&row.scrollIntoView)row.scrollIntoView({block:'center'});");
+  await ev("openHelp();if(typeof kbSec==='function')kbSec('fun');const h=document.getElementById('help'),row=[...h.querySelectorAll('.krow')].find(k=>/^Creativity/.test(k.textContent));if(row&&row.scrollIntoView)row.scrollIntoView({block:'center'});");
   await sleep(150);const r2=await send('Page.captureScreenshot',{format:'jpeg',quality:84});fs.writeFileSync(OUT+'/00_help_screen.jpg',Buffer.from(r2.result.data,'base64'));
   const hp=await ev("const h=document.getElementById('help'),row=[...h.querySelectorAll('.krow')].find(k=>/^Creativity/.test(k.textContent));const t=row?row.textContent:'';try{closeHelp();}catch(e){h.style.display='none';}return t;");
   check('the patch notes open on the current release ('+pn.top+'), keep the v6.2 Creativity Update notes ('+pn.n+' lines), and the Creativity help row is on screen',

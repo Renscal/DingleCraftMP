@@ -135,7 +135,7 @@ function tmBoot(){
   on('t_back_load',()=>{tmShow('main');playS('click');});
   on('t_credits',()=>{tmShow('cred');playS('click');});
   on('t_back_cred',()=>{tmShow('main');playS('click');});
-  on('t_reddit',()=>{playS('click');try{window.open('https://www.reddit.com/r/DanDingle/','_blank','noopener');}catch(e){}});
+  on('t_reddit',()=>{playS('click');try{window.open('https://renscal.net/','_blank','noopener');}catch(e){}});
   on('t_mode_s',()=>{tmMode('s');playS('click');});
   on('t_mode_c',()=>{tmMode('c');playS('click');});
   {const ch=$('tr_cheats');if(ch&&ch.addEventListener)ch.addEventListener('change',()=>{if(ch.dataset)ch.dataset.touched='1';});}

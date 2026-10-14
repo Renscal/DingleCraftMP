@@ -21,6 +21,23 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — Your keys, your rules
+
+*Game version 6.56, released 2026-10-14.*
+
+- **YOUR KEYS, YOUR RULES.** Every key the game uses was nailed to the floor: W was forward, E was the inventory, and left-handed players, arrow-key loyalists and people with a sticky Q simply had to live with it. Not any more.
+- **Change keys.** Controls has a new page. Click an action, press the key you want, done. Walking, jumping, sneaking, sprinting, the inventory, dropping, sorting, all nine hotbar slots, the camera, the Powers menu, Laser Eyes, the car horn, chat, the player list, screenshots and replays: 28 actions, any key you like.
+- **The side buttons too.** Mouse buttons 4 and 5, the ones that usually mean back and forward, no longer take you back or forward and away from your world. Give them a job instead: jump, sneak, the camera, anything on the list.
+- **No double-booking.** Pick a key another action already has and the two swap places, so nothing ever ends up with two jobs or none. The key you moved away from goes quiet. Reset all keys puts everything back.
+- **Everything follows.** Cars, boats, skateboards, dragons, the plane and the coaster all steer with your keys, and the Controls screen shows your keys, not ours.
+- **What stays put.** Left, right and middle click, Esc, Enter, F3 (and its F3 + B and F3 + G), the easel and DEEP DIRT 2D keep their own keys. Typing in chat or a text box is never translated: your W still types a w.
+- **Remembered.** Your keys are saved in this browser with the rest of your settings, and only the ones you changed. A world on a server uses them too.
+- **CONTROLS, WITH AN INDEX.** The Controls screen was one long scroll of everything at once. It now has an index down the side: Moving, Mining & using, Inventory, Vehicles & mounts, Special items, Screen & chat, Creativity & mini-games, Touch and Change keys, one page at a time. On a phone the index folds into a row of buttons on top.
+- **Two corrections on the way.** It no longer claims Laser Eyes are sneak + right-click (they have been L since 6.52) or that /think reads minds (that left with the AI players).
+- **Credits.** Now link this game's home, github.com/Renscal/DingleCraftMP, and the original DINGLECRAFT it is built on, github.com/dandingle/dinglecraft.
+- **THE DESKTOP CLIENT KEEPS ITS HANDS OFF.** The desktop app still had a browser hiding inside it: Ctrl+R reloaded the game, Ctrl+W closed it, Ctrl+Q (the game's drop-the-whole-stack) could quit it on Linux, and zoom and the developer tools were a keypress away. All gone. Ctrl+C and Ctrl+V still copy and paste in a text box, and F11 is still full screen. Every other key is the game's.
+- **Renscal.net.** The main menu button and the sharing screen now point at Renscal.net instead of the old subreddit.
+
 ## Release 1.1 — Farms at full range
 
 *Game version 6.55, released 2026-10-14.*

@@ -9,7 +9,7 @@
    F2 saves a PNG screenshot of the world view (any time in a world, replays on or off). */
 const RP={on:true,intro:false,loaded:false,wantIntro:false,ok:null,why:'',busy:false,saving:false,enc:null,w:0,h:0,cv:null,g:null,
   ch:[],desc:null,T:0,last:0,cap:-1,n:0,wp:false,aud:null,pcm:[],sr:0,drop:0,aS:0,aNext:-1,spF:0,shot:false,onShot:null};
-const RP_LEN=30,RP_FPS=30,RP_URL='https://www.reddit.com/r/DanDingle/';
+const RP_LEN=30,RP_FPS=30,RP_URL='https://renscal.net/';
 
 function rpU8(d){return d instanceof ArrayBuffer?new Uint8Array(d.slice(0)):new Uint8Array(d.buffer.slice(d.byteOffset,d.byteOffset+d.byteLength));}
 async function rpProbe(w,h){
@@ -196,7 +196,7 @@ async function rpSave(bytesOnly){
     mp4=rpMux({w:RP.w,h:RP.h,desc:RP.desc,v:ch.map(c=>({b:c.b,key:c.key,t:c.t-t0})),vEnd:t1-t0,a});
     if(!bytesOnly){
       const name='DINGLECRAFT_replay_'+rpStamp()+'.mp4';rpDownload(new Blob([mp4],{type:'video/mp4'}),name);
-      showToast('🎬 Saved the last '+Math.round((t1-t0)/1e6)+' s'+(a?'':' (no sound)')+'. Share it on r/DanDingle!');
+      showToast('🎬 Saved the last '+Math.round((t1-t0)/1e6)+' s'+(a?'':' (no sound)')+'. Share it on Renscal.net!');
     }
   }catch(e){showToast('🎬 Could not save the replay ('+((e&&e.message)||e)+')');mp4=null;}
   RP.saving=false;
@@ -215,7 +215,7 @@ function rpIntro(){
   if(RP.intro)return;
   const el=$('rpintro');if(!el)return;
   RP.intro=true;rpStore();rpSync();
-  if(typeof VideoEncoder==='undefined'){const n=$('rp_note');if(n)n.textContent='Replays need Chrome or Edge. You can still share your best moments on r/DanDingle!';}
+  if(typeof VideoEncoder==='undefined'){const n=$('rp_note');if(n)n.textContent='Replays need Chrome or Edge. You can still share your best moments on Renscal.net!';}
   el.style.display='flex';
   const ok=$('rp_ok');if(ok&&ok.focus)setTimeout(()=>{try{ok.focus();}catch(e){}},0);
 }
@@ -233,6 +233,7 @@ function rpIntroClose(){const el=$('rpintro');if(el)el.style.display='none';}
   if(typeof window!=='undefined'&&window.addEventListener)window.addEventListener('keydown',e=>{
     const el=$('rpintro');
     if(el&&el.style.display==='flex'&&(e.key==='Escape'||e.key==='Enter')){e.preventDefault();e.stopImmediatePropagation();rpIntroClose();return;}
+    e=kbEv(e);if(!e)return;                                /* 6.56: F2 and F8 can move (p06h_keybinds.js) */
     if(e.code==='F8'){e.preventDefault();if(!e.repeat)rpSave();}
     else if(e.code==='F2'){e.preventDefault();if(e.repeat)return;if(!playing)showToast('📸 Screenshots work once you are in a world');else RP.shot=true;}
   },true);

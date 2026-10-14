@@ -87,10 +87,10 @@ boot.run(async()=>{
   ok('the Music switch is labelled World Music (the menu music and records follow the Music volume slider)',/^World Music: (On|Off)$/.test(el('p_music').textContent)&&
     /id="p_music"[^>]*>World Music: Off</.test(HH));
   ok('Controls (the old Help & Controls) is controls only: the F8 replay row, no AI players, Game rules, Export World, Settings or What’s New blurbs',
-    /<h2>Controls<\/h2>/.test(HH)&&/<b>Save a replay<\/b> F8 saves the last 30 seconds/.test(HH)&&!/<b>AI players<\/b>/.test(HH)&&!/<b>Game rules:<\/b>/.test(HH)&&!/<b>Export World<\/b>/.test(HH)&&!/<b>What’s New:<\/b>/.test(HH));
+    /<h2>Controls<\/h2>/.test(HH)&&/<b>Save a replay<\/b> <span><kbd data-k="replay">F8<\/kbd> saves the last 30 seconds/.test(HH)&&!/<b>AI players<\/b>/.test(HH)&&!/<b>Game rules:<\/b>/.test(HH)&&!/<b>Export World<\/b>/.test(HH)&&!/<b>What’s New:<\/b>/.test(HH));
   {const a=HH.indexOf('<section id="tcred"'),cr=a>=0?HH.slice(a,HH.indexOf('</section>',a)):'';
    ok('Credits is its own title view (CC-BY credits, three.js, a Back button) and the help screen has no Credits row',!!cr&&/Roman Miller/.test(cr)&&/three\.js r128 \(MIT\)/.test(cr)&&/id="t_back_cred"/.test(cr)&&!/<b>Credits:<\/b>/.test(HH));}
-  ok('the main menu: Create New World, Load World (no count), Controls, r/DanDingle, Credits, all wired',/id="t_go_load" class="mc-btn">Load World</.test(HH)&&
+  ok('the main menu: Create New World, Load World (no count), Controls, Renscal.net (6.56, was r/DanDingle), Credits, all wired',/id="t_reddit" class="mc-btn">Renscal\.net</.test(HH)&&/id="t_go_load" class="mc-btn">Load World</.test(HH)&&
     HH.indexOf('id="t_go_new"')<HH.indexOf('id="t_go_load"')&&HH.indexOf('id="t_go_load"')<HH.indexOf('id="t_help"')&&HH.indexOf('id="t_help"')<HH.indexOf('id="t_reddit"')&&HH.indexOf('id="t_reddit"')<HH.indexOf('id="t_credits"')&&
     ['t_credits','t_back_cred','t_reddit'].every(id=>typeof el(id).onclick==='function'));
   {const U=P_.readSrc('ui/p06e_ui_scale.js'),a=U.indexOf('function hudLayout('),hl=a>=0?U.slice(a):'';

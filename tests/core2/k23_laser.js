@@ -52,7 +52,7 @@ boot.run(async()=>{
     P.pow.a.laser=0;clear();V.KEY.KeyL=true;step(4);const off=beams().length;V.KEY.KeyL=false;P.pow.a.laser=1;
     ok('...L does ('+held+'), and only while the power is switched on ('+off+')',held>0&&off===0);
     const HH=fs.readFileSync(path.join(REPO,'build','head.html'),'utf8');
-    ok('the Controls screen lists it',/Laser Eyes<\/b> \(superpower\) hold L/.test(HH));}
+    ok('the Controls screen lists it',/Laser Eyes<\/b> <span>\(superpower\) hold <kbd data-k="laser">L<\/kbd>/.test(HH));}
 
   /* ===== 3. other players ===== */
   {clear();const NT=fs.readFileSync(path.join(REPO,'src','net','n9_ents.js'),'utf8'),PR=fs.readFileSync(path.join(REPO,'server','lib','protocol.mjs'),'utf8');

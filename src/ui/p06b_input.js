@@ -37,6 +37,7 @@ function setupInput(){
   document.addEventListener('pointerdown',kickAudio,true);
   document.addEventListener('touchstart',kickAudio,true);
   addEventListener('keydown',e=>{
+    e=kbEv(e);if(!e)return;                                /* 6.56: your own keys (p06h_keybinds.js) */
     if(chatKey(e))return;
     if(crOn&&crKey(e))return;
     if(e.code==='Tab'){tabHeld=true;if(playing&&!paused&&!modalOpen())e.preventDefault();}   /* menus keep Tab for keyboard focus */
@@ -92,7 +93,7 @@ function setupInput(){
     }
     if(['Space','KeyW','KeyA','KeyS','KeyD','ShiftLeft','ControlLeft'].includes(e.code)||(e.code==='Tab'&&!paused&&!modalOpen()))e.preventDefault();
   });
-  addEventListener('keyup',e=>{KEY[e.code]=false;dbgKeyUp(e);if(e.code==='KeyW')DBLW.on=false;if(e.code==='Tab')tabHeld=false;});
+  addEventListener('keyup',e=>{e=kbEv(e,true);if(!e)return;KEY[e.code]=false;dbgKeyUp(e);if(e.code==='KeyW')DBLW.on=false;if(e.code==='Tab')tabHeld=false;});
   addEventListener('blur',()=>{for(const k in KEY)KEY[k]=false;MB.l=MB.r=false;tabHeld=false;});
   const gl=$('gl');
   gl.addEventListener('pointerdown',e=>{

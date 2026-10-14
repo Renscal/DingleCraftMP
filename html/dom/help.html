@@ -1,57 +1,95 @@
 <div id="help" class="ovl">
   <div class="panel">
     <h2>Controls</h2>
-    <div class="krow"><b>Move</b> W A S D</div>
-    <div class="krow"><b>Jump / swim</b> Space</div>
-    <div class="krow"><b>Sneak</b> Shift (won't fall off edges)</div>
-    <div class="krow"><b>Sprint</b> double-tap W, or hold Ctrl</div>
-    <div class="krow"><b>Mine / attack</b> Hold left mouse</div>
-    <div class="krow"><b>Place / use / eat</b> Right mouse</div>
-    <div class="krow"><b>Hotbar</b> 1–9 or scroll wheel</div>
-    <div class="krow"><b>Inventory</b> E &nbsp;·&nbsp; <b>Drop</b> Q (Ctrl+Q = stack)</div>
-    <div class="krow"><b>Sort inventory</b> R (with inventory open)</div>
-    <div class="krow"><b>In menus</b> click = pick up/place stack · right-click = half/one ·
-      shift-click = quick move · shift-click result = craft all · Recipes (Crafting Table) auto-fills a recipe</div>
-    <div class="krow"><b>Fly (creative)</b> double-tap Space</div>
-    <div class="krow"><b>Camera</b> F cycles first person / third person / front view</div>
-    <div class="krow"><b>Laser Eyes</b> (superpower) hold L</div>
-    <div class="krow"><b>Debug</b> F3 &nbsp;·&nbsp; <b>Pause</b> Esc</div>
-    <div class="krow"><b>Hitboxes</b> F3 + B &nbsp;·&nbsp; <b>Chunk borders</b> F3 + G</div>
-    <div class="krow"><b>In a window:</b> drag left to share a stack out &nbsp;·&nbsp; drag right to place one each &nbsp;·&nbsp; double-click to gather</div>
-    <div class="krow"><b>In a window:</b> wheel moves one item &nbsp;·&nbsp; 1-9 swaps with the hotbar &nbsp;·&nbsp; Q throws &nbsp;·&nbsp; click outside to throw</div>
-    <div class="krow"><b>Save a replay</b> F8 saves the last 30 seconds as a video (Replays: turn on/off in Settings)</div>
-    <div class="krow"><b>Screenshot</b> F2 saves a picture (PNG)</div>
-    <div class="krow"><b>Chat</b> T or Enter to talk · / for commands · /msg &lt;player&gt; to whisper · /think &lt;player&gt; reads their mind · /help</div>
-    <div class="krow"><b>Player list</b> hold Tab &nbsp;·&nbsp; <b>Player Compass</b> right-click to cycle players (sneak = back)</div>
-    <div class="krow"><b>Powers menu</b> P &nbsp;·&nbsp; <b>Laser Eyes</b> Sneak + Right-click,
-      empty hand</div>
-    <div class="krow"><b>Guns</b> hold Right-click to aim (Sniper: scope), Left-click to fire (SMG: hold = auto)</div>
-    <div class="krow"><b>Throw grenade</b> Right mouse</div>
-    <div class="krow"><b>Armor</b> Right-click to wear · click the armor slots in your inventory to swap</div>
-    <div class="krow"><b>Bed</b> Right-click to set your respawn point · right-click at night to sleep</div>
-    <div class="krow"><b>Drive car</b> Right-click a car · W/S accelerate · A/D steer ·
-      Shift = get out · H = honk</div>
-    <div class="krow"><b>Boat</b> Right-click water to launch · W/S throttle · A/D steer ·
-      Shift hop out</div>
-    <div class="krow"><b>Skateboard</b> Right-click to ride · W push · A/D carve ·
-      Space ollie · A/D in air spins · land on a block edge to grind · Shift step off</div>
-    <div class="krow"><b>Coaster cart</b> Right-click to hop in · hold W to roll out of the station</div>
-    <div class="krow"><b>Dragons</b> Feed 5 steak to tame ·
-      Right-click bare-handed to ride · fly where you look, Space climbs, Shift dismounts</div>
-    <div class="krow"><b>Critter Jar</b> Right-click to throw — hits capture the mob,
-      throw the filled jar to release it</div>
-    <div class="krow"><b>Door</b> Right-click to place (needs 2 blocks), right-click to
-      open/close</div>
-    <div class="krow"><b>Structure Compass</b> Right-click to tune it to a structure</div>
-    <div class="krow"><b>Gadgets</b> active gadgets fire on Right-click while held</div>
-    <div class="krow"><b>Subscribe Button</b> Right-click to throw</div>
-    <div class="krow"><b>Disaster Sphere</b> Right-click to choose and unleash a disaster nearby (one use)</div>
-    <div class="krow"><b>Aliens</b> Right-click a villager to talk · Esc closes the
-      conversation</div>
-    <div class="krow"><b>Creativity</b> Easel: right-click to paint (B pencil · E eraser · G fill · I picker · right-click erases · Ctrl+Z undo; Esc keeps your work) · Done gives the painting: right-click a wall to hang it · Record player: click squares for notes, Space plays, Done presses the disc · Jukebox: right-click with a disc to play it, again to eject</div>
-    <div class="krow"><b>DEEP DIRT 2D</b> right-click a placed Gaming Rig to play · WASD/Space move · left mouse mine/fight · right mouse build · 1-6 select · C craft · Esc saves and quits</div>
-    <div class="krow"><b>Touch</b> left stick = move · drag right side = look ·
-      quick tap = place/use · press &amp; hold = mine/attack · JUMP double-tap = fly (creative)</div>
+    <div class="hwrap">
+      <nav id="h_idx" class="hidx" aria-label="Controls index">
+        <button class="mc-btn on" data-sec="move">Moving</button>
+        <button class="mc-btn" data-sec="act">Mining &amp; using</button>
+        <button class="mc-btn" data-sec="inv">Inventory</button>
+        <button class="mc-btn" data-sec="ride">Vehicles &amp; mounts</button>
+        <button class="mc-btn" data-sec="items">Special items</button>
+        <button class="mc-btn" data-sec="ui">Screen &amp; chat</button>
+        <button class="mc-btn" data-sec="fun">Creativity &amp; mini-games</button>
+        <button class="mc-btn" data-sec="touch">Touch</button>
+        <button class="mc-btn hkeys" data-sec="keys">Change keys</button>
+      </nav>
+      <div id="h_body" class="hbody">
+        <section class="hsec" data-sec="move">
+          <h3>Moving</h3>
+          <div class="krow"><b>Move</b> <span><kbd data-k="fwd">W</kbd> <kbd data-k="left">A</kbd> <kbd data-k="back">S</kbd> <kbd data-k="right">D</kbd></span></div>
+          <div class="krow"><b>Jump / swim</b> <span><kbd data-k="jump">Space</kbd></span></div>
+          <div class="krow"><b>Sneak</b> <span><kbd data-k="sneak">Shift</kbd> (won't fall off edges)</span></div>
+          <div class="krow"><b>Sprint</b> <span>double-tap <kbd data-k="fwd">W</kbd>, or hold <kbd data-k="sprint">Ctrl</kbd></span></div>
+          <div class="krow"><b>Fly (creative)</b> <span>double-tap <kbd data-k="jump">Space</kbd></span></div>
+          <div class="krow"><b>Camera</b> <span><kbd data-k="cam">F</kbd> cycles first person / third person / front view</span></div>
+        </section>
+        <section class="hsec" data-sec="act" hidden>
+          <h3>Mining &amp; using</h3>
+          <div class="krow"><b>Mine / attack</b> <span>hold left mouse · hit while falling for a critical hit</span></div>
+          <div class="krow"><b>Place / use / eat</b> <span>right mouse</span></div>
+          <div class="krow"><b>Powers menu</b> <span><kbd data-k="powers">P</kbd></span></div>
+          <div class="krow"><b>Laser Eyes</b> <span>(superpower) hold <kbd data-k="laser">L</kbd></span></div>
+          <div class="krow"><b>Guns</b> <span>hold right mouse to aim (Sniper: scope), left mouse to fire (SMG: hold = auto)</span></div>
+          <div class="krow"><b>Throw grenade</b> <span>right mouse</span></div>
+          <div class="krow"><b>Armor</b> <span>right-click to wear · click the armor slots in your inventory to swap</span></div>
+          <div class="krow"><b>Bed</b> <span>right-click to set your respawn point · right-click at night to sleep</span></div>
+          <div class="krow"><b>Door</b> <span>right-click to place (needs 2 blocks), right-click to open/close</span></div>
+        </section>
+        <section class="hsec" data-sec="inv" hidden>
+          <h3>Inventory</h3>
+          <div class="krow"><b>Hotbar</b> <span><kbd data-k="hot1">1</kbd>–<kbd data-k="hot9">9</kbd> or the scroll wheel</span></div>
+          <div class="krow"><b>Inventory</b> <span><kbd data-k="inv">E</kbd></span></div>
+          <div class="krow"><b>Drop</b> <span><kbd data-k="drop">Q</kbd> drops one · with <kbd data-k="sprint">Ctrl</kbd> held, the stack</span></div>
+          <div class="krow"><b>Sort inventory</b> <span><kbd data-k="sort">R</kbd> (with the inventory open)</span></div>
+          <div class="krow"><b>Clicks</b> <span>click = pick up/place a stack · right-click = half/one · shift-click = quick move · shift-click a result = craft all · Recipes (Crafting Table) fills in a recipe</span></div>
+          <div class="krow"><b>Dragging</b> <span>drag left to share a stack out · drag right to place one each · double-click to gather · shift-drag to quick-move</span></div>
+          <div class="krow"><b>Over a slot</b> <span>the wheel moves one item · <kbd data-k="hot1">1</kbd>–<kbd data-k="hot9">9</kbd> swaps with the hotbar · <kbd data-k="drop">Q</kbd> throws · click outside the window to throw</span></div>
+          <div class="krow"><b>Creative</b> <span>middle click gives a full stack</span></div>
+        </section>
+        <section class="hsec" data-sec="ride" hidden>
+          <h3>Vehicles &amp; mounts</h3>
+          <div class="krow"><b>Drive car</b> <span>right-click a car · <kbd data-k="fwd">W</kbd>/<kbd data-k="back">S</kbd> accelerate · <kbd data-k="left">A</kbd>/<kbd data-k="right">D</kbd> steer · <kbd data-k="sneak">Shift</kbd> gets out · <kbd data-k="honk">H</kbd> honks</span></div>
+          <div class="krow"><b>Boat</b> <span>right-click water to launch · <kbd data-k="fwd">W</kbd>/<kbd data-k="back">S</kbd> throttle · <kbd data-k="left">A</kbd>/<kbd data-k="right">D</kbd> steer · <kbd data-k="sneak">Shift</kbd> hops out</span></div>
+          <div class="krow"><b>Skateboard</b> <span>right-click to ride · <kbd data-k="fwd">W</kbd> push · <kbd data-k="left">A</kbd>/<kbd data-k="right">D</kbd> carve · <kbd data-k="jump">Space</kbd> ollie · <kbd data-k="left">A</kbd>/<kbd data-k="right">D</kbd> in the air spins · land on a block edge to grind · <kbd data-k="sneak">Shift</kbd> steps off</span></div>
+          <div class="krow"><b>Coaster cart</b> <span>right-click to hop in · hold <kbd data-k="fwd">W</kbd> to roll out of the station</span></div>
+          <div class="krow"><b>Dragons</b> <span>feed 5 steak to tame · right-click bare-handed to ride · fly where you look, <kbd data-k="jump">Space</kbd> climbs, <kbd data-k="sneak">Shift</kbd> dismounts</span></div>
+        </section>
+        <section class="hsec" data-sec="items" hidden>
+          <h3>Special items</h3>
+          <div class="krow"><b>Player Compass</b> <span>right-click to cycle players (sneak = back)</span></div>
+          <div class="krow"><b>Critter Jar</b> <span>right-click to throw — a hit captures the mob, throw the filled jar to release it</span></div>
+          <div class="krow"><b>Structure Compass</b> <span>right-click to tune it to a structure</span></div>
+          <div class="krow"><b>Gadgets</b> <span>active gadgets fire on right-click while held</span></div>
+          <div class="krow"><b>Subscribe Button</b> <span>right-click to throw</span></div>
+          <div class="krow"><b>Disaster Sphere</b> <span>right-click to choose and unleash a disaster nearby (one use)</span></div>
+          <div class="krow"><b>Aliens</b> <span>right-click a villager to talk · Esc closes the conversation</span></div>
+        </section>
+        <section class="hsec" data-sec="ui" hidden>
+          <h3>Screen &amp; chat</h3>
+          <div class="krow"><b>Chat</b> <span><kbd data-k="chat">T</kbd> or Enter to talk · <kbd data-k="cmd">/</kbd> for commands · /msg &lt;player&gt; to whisper · /help</span></div>
+          <div class="krow"><b>Player list</b> <span>hold <kbd data-k="list">Tab</kbd></span></div>
+          <div class="krow"><b>Screenshot</b> <span><kbd data-k="shot">F2</kbd> saves a picture (PNG)</span></div>
+          <div class="krow"><b>Save a replay</b> <span><kbd data-k="replay">F8</kbd> saves the last 30 seconds as a video (Replays: turn on/off in Settings)</span></div>
+          <div class="krow"><b>Debug</b> <span>F3 · F3 + B hitboxes · F3 + G chunk borders</span></div>
+          <div class="krow"><b>Pause</b> <span>Esc</span></div>
+        </section>
+        <section class="hsec" data-sec="fun" hidden>
+          <h3>Creativity &amp; mini-games</h3>
+          <div class="krow"><b>Creativity</b> <span>Easel: right-click to paint (B pencil · E eraser · G fill · I picker · right-click erases · Ctrl+Z undo; Esc keeps your work) · Done gives the painting: right-click a wall to hang it · Record player: click squares for notes, Space plays, Done presses the disc · Jukebox: right-click with a disc to play it, again to eject</span></div>
+          <div class="krow"><b>DEEP DIRT 2D</b> <span>right-click a placed Gaming Rig to play · WASD/Space move · left mouse mine/fight · right mouse build · 1-6 select · C craft · Esc saves and quits (its own keys: they do not change)</span></div>
+        </section>
+        <section class="hsec" data-sec="touch" hidden>
+          <h3>Touch</h3>
+          <div class="krow"><b>Touch</b> <span>left stick = move · drag the right side = look · quick tap = place/use · press &amp; hold = mine/attack · JUMP double-tap = fly (creative)</span></div>
+        </section>
+        <section class="hsec" data-sec="keys" hidden>
+          <h3>Change keys</h3>
+          <p class="hnote">Click a key, then press the one you want (mouse buttons 4 and 5 work too). Esc cancels. A key already in use swaps places. Left, right and middle click, Esc, Enter and F3 stay as they are. Saved in this browser.</p>
+          <div id="h_binds"></div>
+          <div class="trow"><button id="h_reset" class="mc-btn">Reset all keys</button></div>
+        </section>
+      </div>
+    </div>
     <button id="h_close" class="mc-btn">Close</button>
   </div>
 </div>

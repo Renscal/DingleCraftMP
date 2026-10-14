@@ -84,8 +84,9 @@ build/ dist/ out/   gitignored outputs
    is believed), and repeat the relevant smokes
    4-6 times. Flakes are real and almost always rig bugs (`docs/TESTING.md`, the field manual). A red test stops the
    line.
-7. **HTML.** UI markup and CSS in `html/`; if it adds a key or a mouse action, a row in the Controls screen (`html/dom/help.html`,
-   controls only, no feature blurbs).
+7. **HTML.** UI markup and CSS in `html/`; if it adds a key or a mouse action, a row in the right section of the Controls screen
+   (`html/dom/help.html`, controls only, no feature blurbs), keys as `<kbd data-k="<action>">`; a new key is an entry in `KB_ACTS`
+   (`ui/p06h_keybinds.js`) so players can move it (`docs/LANDMINES.md`, "Keys can be moved").
 8. **Look at it**, muted, in a real browser, in OG and Hyperreal, if it is visual (`docs/QA.md`).
 9. **Ship.** Patch notes, `npm run gate`, `npm run release`, commit with `TZ=UTC0`, tag (`docs/RELEASING.md`).
    **Every update is pushed**: work on the `Experimental` branch, and after each finished update (tests green) commit and

@@ -10,8 +10,8 @@ tile('term_f',c=>{fillF(c,'#3a3a44');
   c.fillStyle='#8a8a96';c.fillRect(4,12,8,2);});
 let terrOpen=false;
 let helpOpen=false;
-function openHelp(){helpOpen=true;const el=$('help');if(el)el.style.display='flex';}
-function closeHelp(){helpOpen=false;const el=$('help');if(el)el.style.display='none';restorePause();}
+function openHelp(){helpOpen=true;const el=$('help');if(el)el.style.display='flex';kbHelp();}
+function closeHelp(){helpOpen=false;KB.cap=null;const el=$('help');if(el)el.style.display='none';restorePause();}
 /* tiles: 0 air 1 dirt 2 grass 3 stone 4 ore 5 bedrock 6 torch 7 wood 8 leaves 9 planks 10 brick 11 flower 12 tuft */
 const TSOLID=[false,true,true,true,true,true,false,true,false,true,true,false,false];
 const TBAR=[1,3,7,9,10,6];

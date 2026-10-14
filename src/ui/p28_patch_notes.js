@@ -3,7 +3,21 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Farms at full range',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Your keys, your rules',lines:[
+    '<b>YOUR KEYS, YOUR RULES.</b> Every key the game uses was nailed to the floor: W was forward, E was the inventory, and left-handed players, arrow-key loyalists and people with a sticky Q simply had to live with it. Not any more.',
+    '<b>Change keys.</b> Controls has a new page. Click an action, press the key you want, done. Walking, jumping, sneaking, sprinting, the inventory, dropping, sorting, all nine hotbar slots, the camera, the Powers menu, Laser Eyes, the car horn, chat, the player list, screenshots and replays: 28 actions, any key you like.',
+    '<b>The side buttons too.</b> Mouse buttons 4 and 5, the ones that usually mean back and forward, no longer take you back or forward and away from your world. Give them a job instead: jump, sneak, the camera, anything on the list.',
+    '<b>No double-booking.</b> Pick a key another action already has and the two swap places, so nothing ever ends up with two jobs or none. The key you moved away from goes quiet. Reset all keys puts everything back.',
+    '<b>Everything follows.</b> Cars, boats, skateboards, dragons, the plane and the coaster all steer with your keys, and the Controls screen shows your keys, not ours.',
+    '<b>What stays put.</b> Left, right and middle click, Esc, Enter, F3 (and its F3 + B and F3 + G), the easel and DEEP DIRT 2D keep their own keys. Typing in chat or a text box is never translated: your W still types a w.',
+    '<b>Remembered.</b> Your keys are saved in this browser with the rest of your settings, and only the ones you changed. A world on a server uses them too.',
+    '<b>CONTROLS, WITH AN INDEX.</b> The Controls screen was one long scroll of everything at once. It now has an index down the side: Moving, Mining &amp; using, Inventory, Vehicles &amp; mounts, Special items, Screen &amp; chat, Creativity &amp; mini-games, Touch and Change keys, one page at a time. On a phone the index folds into a row of buttons on top.',
+    '<b>Two corrections on the way.</b> It no longer claims Laser Eyes are sneak + right-click (they have been L since 6.52) or that /think reads minds (that left with the AI players).',
+    '<b>Credits.</b> Now link this game&#x27;s home, github.com/Renscal/DingleCraftMP, and the original DINGLECRAFT it is built on, github.com/dandingle/dinglecraft.',
+    '<b>THE DESKTOP CLIENT KEEPS ITS HANDS OFF.</b> The desktop app still had a browser hiding inside it: Ctrl+R reloaded the game, Ctrl+W closed it, Ctrl+Q (the game&#x27;s drop-the-whole-stack) could quit it on Linux, and zoom and the developer tools were a keypress away. All gone. Ctrl+C and Ctrl+V still copy and paste in a text box, and F11 is still full screen. Every other key is the game&#x27;s.',
+    '<b>Renscal.net.</b> The main menu button and the sharing screen now point at Renscal.net instead of the old subreddit.',
+  ]},
+ {v:'6.55',label:'Release 1.1',title:'Farms at full range',lines:[
     '<b>FARMS AT FULL RANGE.</b> Since 6.48 monsters spawn by the book, but on a server the world only ran 80 blocks around each player, and a mob further out than 72 blocks froze in mid-air. Farm towers built the classic way, high above the AFK spot, sat partly outside that.',
     '<b>Now 128 blocks.</b> The server runs the world 8 chunks around every player: spawning, falling, walking, the lot, out to the full range the spawning rules use. A pig dropped 110 blocks away now actually falls.',
     '<b>What it costs.</b> Measured with four players spread out: about 15% of one CPU core for the whole world, up from 7%. The setting <b>simulationDistance</b> (4 to 12 chunks) turns it down on a small machine.',

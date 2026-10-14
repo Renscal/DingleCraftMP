@@ -87,6 +87,7 @@ features/p52_big_dingle.js
 ui/p53_chat.js
 ui/p06f_debug.js
 ui/p06g_invmouse.js
+ui/p06h_keybinds.js
 features/p53b_skin.js
 features/p53c_armor_layer.js
 features/p53d_difficulty.js

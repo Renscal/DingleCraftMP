@@ -144,6 +144,7 @@ select.mc-in{appearance:auto}
 #tnew .trow .mc-btn,#tload .trow .mc-btn,#tcred .trow .mc-btn,#tmp .trow .mc-btn{padding:12px 8px;font-size:16px}
 #t_mp_status{min-height:1.3em}#t_mp_status.bad{color:#a3231a}
 #title .panel.tview#tcred{width:min(600px,100%);max-width:min(600px,100%)}
+#tcred a{color:#1d3f8a;word-break:break-word}
 .tseg{display:flex;gap:6px;margin:2px 0 8px}
 .tseg .mc-btn{flex:1;margin:0;padding:10px 6px}
 .ttoggle{display:flex;align-items:center;gap:12px;margin:12px 0 2px;cursor:pointer;color:#3f3f3f;font-weight:bold;font-size:15px}
@@ -222,9 +223,35 @@ select.mc-in{appearance:auto}
 #death{z-index:35;background:rgba(120,0,0,.45)}
 #death h1{color:#fff;font-size:44px;text-shadow:3px 3px 0 #3f0000;margin:0 0 16px}
 #help{z-index:50;background:rgba(0,0,0,.6)}
-#help .panel{font-size:14.5px;line-height:1.6;max-width:min(calc(100% - 16px),760px)}
-.krow{padding:4px 0;border-bottom:1px solid rgba(0,0,0,.08)}
-.krow b{display:inline-block;min-width:150px;color:#202020}
+#help .panel{font-size:14.5px;line-height:1.6;width:min(calc(100% - 16px),860px);max-width:min(calc(100% - 16px),860px);
+  display:flex;flex-direction:column;overflow:hidden}
+#help .panel>.mc-btn{flex:none}
+.hwrap{display:flex;gap:14px;min-height:0;flex:1 1 auto}
+.hidx{display:flex;flex-direction:column;gap:4px;flex:0 0 190px;overflow:auto}
+.hidx .mc-btn{margin:0;padding:8px 10px;font-size:14px;text-align:left}
+.hidx .hkeys{margin-top:8px}
+.hbody{flex:1 1 auto;min-width:0;min-height:0;overflow:auto;padding-right:4px;height:min(62vh,560px)}
+.hsec h3{margin:0 0 6px;font-size:16px;color:#202020}
+.krow{display:grid;grid-template-columns:150px minmax(0,1fr);gap:10px;padding:5px 0;border-bottom:1px solid rgba(0,0,0,.08)}
+.krow b{color:#202020}
+#help kbd{display:inline-block;min-width:1.6em;padding:0 5px;margin:1px 0;text-align:center;font:bold 13px 'Courier New',monospace;
+  line-height:1.5;color:#202020;background:#e4e4e4;border:2px solid;border-color:#fff #6a6a6a #6a6a6a #fff}
+.hnote{margin:0 0 8px;font-size:13.5px}
+.kbrow{display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:10px;align-items:center;padding:3px 0;border-bottom:1px solid rgba(0,0,0,.08)}
+.kbrow .mc-btn{margin:0;padding:5px 8px;font-size:14px}
+.kbrow .mc-btn.kbmod{color:#ffffa8}
+.kbrow .mc-btn.kbcap{background:linear-gradient(#6fae4a,#3f7a2a);color:#fff}
+.kbgrp{margin:10px 0 2px;font-weight:bold;color:#202020}
+@media (max-width:620px){
+  .hwrap{flex-direction:column}
+  .hidx{flex:none;flex-direction:row;flex-wrap:wrap}
+  .hidx .mc-btn{width:auto;flex:1 1 auto;padding:6px 8px;font-size:13px}
+  .hidx .hkeys{margin-top:0}
+  .hbody{height:auto}
+  #help .panel{overflow:auto}
+  .krow{grid-template-columns:minmax(0,1fr)}
+  .kbrow{grid-template-columns:minmax(0,1fr) 120px}
+}
 .range{width:100%;accent-color:#4f9a34;height:22px;margin:2px 0 6px}
 
 /* ---------- touch UI ---------- */
