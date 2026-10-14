@@ -481,7 +481,7 @@ boot.run(async()=>{
       ok('the Tab list shows a ping for this player and for the others',/^\d+ ms$/.test(rows[0][2])&&rows.length===2&&/^\d+ ms$/.test(rows[1][2]));
       ok('another player\'s armour is seen: the helmet and the leggings they wear, in their own metals, and nothing on the bare slots',!!p.M&&p.M.arm[0].parts.every(m=>m.visible)&&p.M.arm[2].parts.every(m=>m.visible)&&
         p.M.arm[1].parts.every(m=>!m.visible)&&p.M.arm[3].parts.every(m=>!m.visible)&&p.M.arm[0].col==='#d8d8d8'&&p.M.arm[2].col==='#46e2cf');
-      ok('...and so is the car they are driving, turned its own way',!!p.M.veh&&p.M._veh==='car'&&Math.abs(p.M.veh.rotation.y-(0.5-p.yaw))<1e-6&&Math.abs(p.M.veh.position.y+0.3)<1e-6);
+      ok('...and so is the car they are driving, turned its own way (6.57: the body faces the car, the car hangs straight under it)',!!p.M.veh&&p.M._veh==='car'&&Math.abs(p.M.G.rotation.y+p.M.veh.rotation.y-0.5)<1e-6&&Math.abs(p.M.G.rotation.y-0.5)<1e-6&&Math.abs(p.M.veh.position.y+0.3)<1e-6);
       await beaPose(P.x+3,P.y,P.z);await pump(6);
       ok('off the car and out of the armour: both gone again',p.M.veh===null&&p.M.arm.every(a=>a.parts.every(m=>!m.visible)));}
     /* a block changed by hand is marked; what the world does on its own is not */

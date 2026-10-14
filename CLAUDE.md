@@ -27,8 +27,9 @@ original: no real characters, brands or trademarks in names, art or text (the IP
    Release 1.0 is game versions 6.4 (the preview) to 6.9. Never set `GAME_VERSION` or `package.json` to a label;
    `GAME_VERSION` only goes up ([CONTRIBUTING.md](CONTRIBUTING.md), "Versions and release labels").
 5. **The core suites are frozen.** Never edit `tests/core/{stubs,test,smoke}.js`. New behaviour, new suites.
-   (Two owner-made exceptions: 6.8 removed `smoke.js`'s Watcher check with the Watcher, and 6.10 deleted `botsmoke.js`
-   with the AI players it tested; `r_gate.js` pins the bytes of what is left.)
+   (Three owner-made exceptions: 6.8 removed `smoke.js`'s Watcher check with the Watcher, 6.10 deleted `botsmoke.js`
+   with the AI players it tested, and 6.57 turned `smoke.js`'s "the plane flies where you look" into a check of the new
+   plane controls; `r_gate.js` pins the bytes of what is left.)
 6. **Never print big generated text**: `build/hrassets.js`, `build/*.gen.js`, `dist/*.html`, `DINGLECRAFT.html`, `assets/packed/**`. Their
    lines run to megabytes. Search with `tools/grep-safe.sh <pattern> [paths]`, which skips build output, generated
    asset scripts and `.env` files, rather than a raw recursive grep over the repo.

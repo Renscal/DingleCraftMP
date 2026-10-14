@@ -44,6 +44,7 @@ function frame(t){
       drainLook();
       updatePlayer(dt);
       updateEntities(dt);
+      if(P.ride&&!P.ride.dead)rideSeat();else P._rideOf=null;   /* 6.57: the rider sits where the vehicle is now, not a frame ago */
       mobsTick(dt);
       furnaceTick(dt);
       updateChunks();

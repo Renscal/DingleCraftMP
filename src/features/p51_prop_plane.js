@@ -1,13 +1,14 @@
 /* PART 51 - THE PROP PLANE (Dingle Airlines: one seat, no refunds) */
 function mkPlaneMesh(){
   const G=new THREE.Group(),mats=[];
+  G.rotation.order='YXZ';   /* 6.57: heading, then pitch, then roll (the default XYZ tilts the wrong way once it turns) */
   const M=(c,o)=>{const m=new THREE.MeshLambertMaterial(Object.assign({color:c},o||{}));mats.push(m);return m;};
   const body=new THREE.Mesh(new THREE.BoxGeometry(0.85,0.85,3.3),M(0xe8e2d0));
   body.position.y=0.95;G.add(body);
   const nose=new THREE.Mesh(new THREE.BoxGeometry(0.72,0.72,0.5),M(0xb8322a));
   nose.position.set(0,0.95,-1.85);G.add(nose);
-  const canopy=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.4,0.85),M(0x9fd4ff,{transparent:true,opacity:0.75}));
-  canopy.position.set(0,1.5,-0.3);G.add(canopy);
+  const canopy=new THREE.Mesh(new THREE.BoxGeometry(0.62,0.55,0.9),M(0x9fd4ff,{transparent:true,opacity:0.6}));
+  canopy.position.set(0,1.55,-0.3);G.add(canopy);   /* 6.57: big enough for a head */
   const wing=new THREE.Mesh(new THREE.BoxGeometry(4.8,0.12,0.95),M(0xb8322a));
   wing.position.set(0,1.3,-0.45);G.add(wing);
   const tail=new THREE.Mesh(new THREE.BoxGeometry(1.7,0.1,0.5),M(0xb8322a));
@@ -29,28 +30,38 @@ function spawnPlane(x,y,z,yaw){
   const {G,prop,mats}=mkPlaneMesh();
   scene.add(G);
   entities.push({t:'plane',x,y,z,vx:0,vy:0,vz:0,hw:0.95,h:1.6,hp:40,spd:0,
-    yaw:yaw||0,onGround:false,hurtT:0,mesh:G,prop,mats,seatY:0.8,eyeH:1.15});
+    yaw:yaw||0,pitch:0,onGround:false,hurtT:0,mesh:G,prop,mats,seatY:-0.15,seatF:0.3,eyeH:1.75});   /* 6.57: in the cockpit */
 }
 function updatePlane(e,dt){
   if(!chunkAt(Math.floor(e.x),Math.floor(e.z)))return;
   e.hurtT=Math.max(0,e.hurtT-dt);
   if(e.hurtT<0.15)for(const m of e.mats)m.emissive&&m.emissive.setRGB(0,0,0);
   const ridden=P&&P.ride===e&&!P.dead;
-  let f=0,s=0;
+  /* 6.57: flown like a plane, not pointed like a camera. W dives and S climbs, A/D turn, Space is the throttle, Alt the
+     brake (each follows its binding: p06h). Where the rider looks changes nothing. */
+  let pin=0,s=0,thr=false,brk=false;
   if(ridden&&!modalOpen()&&!paused){
-    f=clamp((KEY.KeyW?1:0)-(KEY.KeyS?1:0)+TOUCH.f,-1,1);
+    pin=clamp((KEY.KeyS?1:0)-(KEY.KeyW?1:0)-TOUCH.f,-1,1);
     s=clamp((KEY.KeyD?1:0)-(KEY.KeyA?1:0)+TOUCH.s,-1,1);
+    thr=!!KEY.Space;brk=!!KEY.AltLeft;
   }
-  const target=f>0?f*26:(e.onGround?f*4:0);
-  e.spd=lerp(e.spd,ridden?target:(e.onGround?0:Math.max(0,e.spd-dt*3)),1-Math.exp(-dt*(f>0?1.1:0.75)));
+  if(e.pitch==null)e.pitch=0;
+  if(thr)e.spd=Math.min(28,Math.max(0,e.spd)+dt*(e.onGround?7:6));
+  else if(brk)e.spd=e.spd>0.05?Math.max(0,e.spd-dt*(e.onGround?12:6)):(e.onGround?Math.max(-3,e.spd-dt*2):e.spd);
+  else if(e.spd>0)e.spd=Math.max(0,e.spd-dt*(e.onGround?3:0.5+e.spd*0.02));
+  else if(e.spd<0)e.spd=Math.min(0,e.spd+dt*3);
+  if(!e.onGround)e.spd=clamp(e.spd-Math.sin(e.pitch)*dt*5,0,34);   /* climbing costs speed, diving pays it back */
   if(Math.abs(e.spd)>0.5)e.yaw-=s*dt*(e.onGround?1.7:1.05);
   const lift=clamp((e.spd-8)/9,0,1);
-  const fx=-Math.sin(e.yaw),fz=-Math.cos(e.yaw);
+  if(pin)e.pitch+=pin*dt*1.1;
+  else e.pitch-=e.pitch*Math.min(1,dt*0.8);                        /* hands off: the nose comes back to level */
+  if(lift<1&&!e.onGround)e.pitch-=(1-lift)*dt*0.9;                 /* too slow to fly: the nose drops */
+  e.pitch=clamp(e.pitch,e.onGround?0:-0.9,lift>0?0.9:0);
+  const cp=Math.cos(e.pitch),fx=-Math.sin(e.yaw)*cp,fz=-Math.cos(e.yaw)*cp;
   const gl=1-Math.exp(-dt*3.2);
   e.vx=lerp(e.vx,fx*e.spd,gl);
   e.vz=lerp(e.vz,fz*e.spd,gl);
-  let tv=0;
-  if(ridden&&lift>0){const l=lookDir();tv=l[1]*e.spd*0.95*lift;}
+  const tv=Math.sin(e.pitch)*e.spd*lift;
   e.vy=lerp(e.vy,tv,1-Math.exp(-dt*2.6))-GRAV*dt*(1-lift);
   if(e.vy<-38)e.vy=-38;
   const spdWas=Math.abs(e.spd);
@@ -67,9 +78,9 @@ function updatePlane(e,dt){
   e.prop.rotation.z+=dt*(3+Math.abs(e.spd)*1.6);
   e.mesh.position.set(e.x,e.y,e.z);
   e.mesh.rotation.y=e.yaw;
-  const vp=Math.asin(clamp(e.vy/Math.max(9,Math.abs(e.spd)+3),-0.85,0.85));
-  e.mesh.rotation.x=lerp(e.mesh.rotation.x||0,vp*0.8,1-Math.exp(-dt*4));
-  e.mesh.rotation.z=lerp(e.mesh.rotation.z||0,s*-0.4,1-Math.exp(-dt*3));
+  e.mesh.rotation.x=e.pitch;
+  e.roll=lerp(e.roll||0,e.onGround?0:s*-0.4,1-Math.exp(-dt*3));
+  e.mesh.rotation.z=e.roll;
 }
 IT.PLANE=283;
 idef(IT.PLANE,{name:'Prop Plane',icon:'i_plane',stack:1,plane:1});

@@ -63,9 +63,12 @@ ok('the retired legacy checks total 435 (63 splice-era checks + 93 og_trace pari
 
 // ---- the frozen core files (a quartet until 6.10: botsmoke.js went with the AI players it tested, the owner's call)
 const PINS = { 'stubs.js': ['e2be2e4ef146026285c55641a1e007c6', 10664], 'test.js': ['85d8df887b9429546693add63f898876', 12036],
-  'smoke.js': ['9ef6d1bd0d73ec7fd42ec7d14c5e27b3', 62050] };
+  'smoke.js': ['f770bc7aeb8ac88e3cb4b09bb6da7b8a', 62127] };
 /* v6.8 (Release 1.0 final cut): smoke.js re-pinned after the lead removed its one Watcher check (5 lines) with the Watcher
-   (was 81986500187de6aab529a3afea713bdb, 62246 B; the legacy count 221 in tests/gate.json is the v6.3 log and stays) */
+   (was 81986500187de6aab529a3afea713bdb, 62246 B; the legacy count 221 in tests/gate.json is the v6.3 log and stays)
+   v6.57 (2026-10-14): re-pinned after its one plane check, "the plane flies where you look", became "the plane climbs on S
+   with Space for thrust, wherever you look", the owner's call: the plane no longer steers by the view (was
+   9ef6d1bd0d73ec7fd42ec7d14c5e27b3, 62050 B; same numbers asserted, same place, nothing else touched) */
 for (const [f, [m, b]] of Object.entries(PINS)) {
   const buf = exists('tests/core/' + f) ? fs.readFileSync(path.join(REPO, 'tests/core', f)) : Buffer.alloc(0);
   ok('tests/core/' + f + ' is the frozen legacy file (md5 ' + m.slice(0, 8) + ', ' + b + ' B): never edit it', buf.length === b && md5(buf) === m);

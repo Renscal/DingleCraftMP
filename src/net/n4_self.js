@@ -43,13 +43,16 @@ function ntSaveSoon(){if(NET.saveT<0)NET.saveT=NET.acc+1;}
 /* this player as others need to see them. fl bits: 1 swinging, 2 sneaking, 4 dead, 8 riding, 16 creative, 32 paused (this
    game is not running the world right now, so it must not be anyone's simulation owner).
    ar: the four armour slots as item ids (only when something is worn). rv ry rh: the kind of vehicle being ridden, which
-   way it points and how far below the player it sits (only on a vehicle). */
+   way it points and how far below the player it sits (only on a vehicle). 6.57: rid, the shared vehicle's id (others draw the
+   rider on that vehicle's seat, so the two never drift apart), and rp rr, a plane's pitch and roll. */
 function ntPoseNow(){
   const st=heldStack(),r=P.ride;
   const m={t:'pose',x:+P.x.toFixed(2),y:+P.y.toFixed(2),z:+P.z.toFixed(2),yaw:+P.yaw.toFixed(3),pitch:+P.pitch.toFixed(3),
     dim:DIM,held:st?st.id:0,hp:Math.round(P.hp),fl:(P.swing>0.3?1:0)|(P.sneak?2:0)|(P.dead||P.spec?4:0)|(P.ride?8:0)|(P.mode==='c'?16:0)|(paused?32:0)};
   if(P.armor&&P.armor.some(a=>a))m.ar=P.armor.slice(0,4).map(a=>a?a.id:0);
-  if(r&&NT_RIDES[r.t]===1){m.rv=r.t;m.ry=+(r.yaw||0).toFixed(2);m.rh=+(P.y-r.y).toFixed(2);}
+  if(r&&NT_RIDES[r.t]===1){m.rv=r.t;m.ry=+(r.yaw||0).toFixed(2);m.rh=+(P.y-r.y).toFixed(2);
+    if(r.vid)m.rid=r.vid;
+    if(r.t==='plane'){m.rp=+(r.pitch||0).toFixed(2);m.rr=+(r.roll||0).toFixed(2);}}
   return m;
 }
 /* the heartbeat, every 2 seconds: the server answers each ping at once, which times the round trip (shown in the Tab list)

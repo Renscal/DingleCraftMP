@@ -29,8 +29,15 @@ function updatePlayerMesh(dt){
   M.G.position.set(P.x,P.y,P.z);
   const bs2=(P.bigT||0)>0?1.45:1;M.G.scale.set(bs2,bs2,bs2);
   M.G.rotation.y=P.yaw;
+  /* 6.57: in a seat the body faces the way the vehicle does (and tilts with a plane); only the head follows the look */
+  const rs=P.ride&&RIDE_SEATED[P.ride.t]===1?P.ride:null,rp=rs&&rs.t==='plane';
+  M.G.rotation.order='YXZ';
+  if(rs){M.G.rotation.y=rs.yaw||0;M.G.rotation.x=rp?(rs.pitch||0):0;M.G.rotation.z=rp?(rs.roll||0):0;}
+  else if(M.G.rotation.x||M.G.rotation.z){M.G.rotation.x=0;M.G.rotation.z=0;}
   if(M.hr){hrPlayerTick(M,paused?0:dt);return;}
+  M.head.rotation.order='YXZ';
   M.head.rotation.x=P.pitch*0.55;
+  M.head.rotation.y=rs?rideHeadYaw(P.yaw,rs.yaw):0;
   if(M._hat!==(P.cos&&P.cos.hat||null))applyHat(M);
   syncArmTool(M);
   syncArmorModel(M);
@@ -41,6 +48,7 @@ function updatePlayerMesh(dt){
     const ha=_hs.getObjectByName('hathalo');
     if(ha)ha.position.y=0.5+Math.sin(Date.now()*0.003)*0.05;
   }
+  M.lL.visible=M.lR.visible=M.aL.visible=M.aR.visible=!rp;   /* 6.57: in the cockpit only the head shows (arms and legs would poke through the sides) */
   if(P.ride){
     const sit=P.ride.t==='skate'?0.25:1.15;
     M.lL.rotation.x=M.lR.rotation.x=-sit;

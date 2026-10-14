@@ -51,9 +51,12 @@ function hrPlayerTick1(M,dt){
   if(hs){const sp=hs.getObjectByName('hatspin');if(sp)sp.rotation.y+=dt*10;
     const ha=hs.getObjectByName('hathalo');if(ha)ha.position.y=0.5+Math.sin(HRE.t*3)*0.05;}
   const ride=!!P.ride;if(ride)s.speed=0;
+  const seat=ride&&typeof RIDE_SEATED!=='undefined'&&RIDE_SEATED[P.ride.t]===1;   /* 6.57: seated, the head follows the look */
+  if(seat)s.yaw=hrClampE(hrWrap(P.yaw-(P.ride.yaw||0)),-1.1,1.1);
   try{H.hr.update(dt,HRE.t,s);}catch(err){if(!H.err){H.err=1;console.warn('[HR] player',err);}}
   if(ride){const h=H.hr.handles||{},sit=P.ride.t==='skate'?0.25:1.15;   /* model space: negative x swings a limb forward */
-    if(h.lL)h.lL.rotation.x=-sit;if(h.lR)h.lR.rotation.x=-sit;if(h.aL)h.aL.rotation.x=-0.5;if(h.aR)h.aR.rotation.x=-0.5;}}
+    if(h.lL)h.lL.rotation.x=-sit;if(h.lR)h.lR.rotation.x=-sit;if(h.aL)h.aL.rotation.x=-0.5;if(h.aR)h.aR.rotation.x=-0.5;}
+  {const h=H.hr.handles||{},legs=!(ride&&P.ride.t==='plane');for(const j of [h.lL,h.lR,h.aL,h.aR])if(j&&j.visible!==legs)j.visible=legs;}}
 /* hook C18: the empty hand is Dan's swollen fist (shares the third-person model's materials and fist state) */
 function hrFistAttach(){
   if(typeof plModel==='undefined')return;

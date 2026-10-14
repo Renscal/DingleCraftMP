@@ -11,7 +11,7 @@
 //                                                 password are needed: accounts are on, or the name is an account)
 //   login {user, pass}                            the same as hello, or login again (at most 5 tries, one a second)
 //   acct {name} | {pass, old}                     acct {ok, why, locks?} (to them); rename {id, name} (to everyone)
-//   pose {x y z yaw pitch dim held hp fl ar rv}   pose (+id, ms): at once to players nearby, once a second to the rest;
+//   pose {x y z yaw pitch dim held hp fl ar rv ry rh rid rp rr}   pose (+id, ms): at once to players nearby, once a second to the rest;
 //                                                 edits (s:1), bes and drops (add:1) for the chunks that came into range
 //   ping {n, ms}                                  pong {n}  (the game times the round trip and reports it in the next ping)
 //   rd {v}                                        -         (how far that player's game draws, in chunks)
@@ -370,7 +370,12 @@ export function handleMessage(S, net, c, m, size) {
         if (S.startHost) S.startHost(c.pose.dim);
         if (S.wakeHost) S.wakeHost(c.pose.dim);
       }
-      if (typeof m.rv === 'string' && RIDES.has(m.rv)) { c.pose.rv = m.rv; c.pose.ry = num(m.ry, -1e4, 1e4, 0); c.pose.rh = num(m.rh, -8, 8, 0); }
+      if (typeof m.rv === 'string' && RIDES.has(m.rv)) {
+        c.pose.rv = m.rv; c.pose.ry = num(m.ry, -1e4, 1e4, 0); c.pose.rh = num(m.rh, -8, 8, 0);
+        /* 6.57: the shared vehicle's id (others seat the rider on it) and a plane's pitch and roll */
+        if (typeof m.rid === 'string' && VEH_ID_RE.test(m.rid)) c.pose.rid = m.rid;
+        if (m.rv === 'plane') { c.pose.rp = num(m.rp, -3.2, 3.2, 0); c.pose.rr = num(m.rr, -3.2, 3.2, 0); }
+      }
       syncAround(S, net, c, c.pose.dim, c.pose.x, c.pose.z);
       /* players nearby see every pose; everyone else gets one a second (enough for the player list), and a change of
          dimension at once */

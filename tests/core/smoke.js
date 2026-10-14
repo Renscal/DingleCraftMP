@@ -1017,10 +1017,10 @@ const ok=(n,c)=>{if(c)pass++;else{fail++;console.log('FAIL '+n);}};
   V.spawnPlane(V.P.x+2,pgy,V.P.z,0);
   const pln=V.entities.find(e=>e.t==='plane'&&!e.dead);
   ok('a plane exists',!!pln);
-  V.P.ride=pln;V.P.pitch=0.5;V.TOUCH.f=1;
+  V.P.ride=pln;V.P.pitch=-0.5;V.KEY.Space=true;V.KEY.KeyS=true;
   const px0=pln.x,pz0=pln.z;
   for(let i=0;i<160;i++)V.frameStep(276000+i*45);
-  ok('the plane flies where you look',
+  ok('the plane climbs on S with Space for thrust, wherever you look',
     pln.spd>14&&Math.hypot(pln.x-px0,pln.z-pz0)>25&&pln.y>pgy+4);
   /* bombs away */
   V.P.inv[V.P.sel]={id:V.IT.NUKE,count:1};
@@ -1033,7 +1033,7 @@ const ok=(n,c)=>{if(c)pass++;else{fail++;console.log('FAIL '+n);}};
   for(let i=0;i<40;i++)V.frameStep(284000+i*45);
   ok('the countdown counts down',V.getNARM().armed&&V.getNARM().t<19.2);
   /* be somewhere else: eight chunks is the law */
-  V.P.ride=null;V.TOUCH.f=0;V.P.pitch=0;
+  V.P.ride=null;V.KEY.Space=false;V.KEY.KeyS=false;V.P.pitch=0;
   V.GR.god=false;V.P.hp=20;
   V.P.x=Math.floor(bomb.x)+200.5;V.P.z=Math.floor(bomb.z)+0.5;V.P.y=72;V.P.vx=V.P.vy=V.P.vz=0;
   V.setNARM(0.6);

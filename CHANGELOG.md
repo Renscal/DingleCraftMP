@@ -21,6 +21,20 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — Sit down and fly
+
+*Game version 6.57, released 2026-10-14.*
+
+- **SIT DOWN AND FLY.** The Prop Plane used to fly wherever you looked, which meant admiring the view was a good way to fly into it. It is now a plane.
+- **The controls.** Space is the throttle. W pushes the nose down, S pulls it up, A and D turn and bank. Alt is the brake, and on the ground, stopped, it backs you up slowly. Let go of W and S and the nose comes back to level by itself. Look wherever you like: the plane does not care.
+- **Real flying, roughly.** Too slow and the nose drops: that is a stall, and the ground is where it ends. Climbing costs speed and diving pays it back, so a long climb wants a full throttle. On the ground you roll on the throttle and lift off with S once you are fast enough.
+- **The tilt is right.** The plane leaned the wrong way whenever it was not pointing north (three.js turns things in an order that only works facing one way). It now pitches and banks properly in every direction.
+- **A cockpit with someone in it.** You used to stand up through the plane with your legs sticking out of the back. You now sit inside, under the canopy, and only your head shows. The canopy grew to fit it.
+- **Heads turn, bodies do not.** In a plane, car, boat or coaster cart your body faces the way the vehicle goes and only your head follows your look, as far as a neck allows. Your view also turns with the vehicle, so a long bend no longer leaves you staring out of the side window. The skateboard is unchanged: you stand on it.
+- **No more chasing your own car.** Every vehicle used to sit a frame ahead of you: you were put in the seat, THEN it moved, then the camera looked. At speed it slid away and snapped back all the time. You are now seated after it moves, so you and it are one thing.
+- **Same for everyone else.** On a server, other players used to see your body and your vehicle arrive as two separate stories that drifted apart. Your body is now drawn on the seat of the vehicle they see, tilt and all.
+- **New key.** The plane brake is in Controls → Change keys, next to everything else. Space (the throttle) follows your jump key.
+
 ## Release 1.1 — Your keys, your rules
 
 *Game version 6.56, released 2026-10-14.*

@@ -17,6 +17,10 @@ Grep for names with `tools/grep-safe.sh`.
   needs a reset in `resetWorld` ([ARCHITECTURE.md](ARCHITECTURE.md#8-persistence)).
 - **`storage.get` can reject on a missing key** (the test stub does, and so does the hosted storage API the game was
   first written for; the `localStorage` shim returns null). Always try/catch it.
+- **A rider is seated after the vehicle moves (6.57).** `frame()` calls `rideSeat` right after `updateEntities`, so the
+  camera, the rider's model and the pose match the vehicle drawn this frame. A new vehicle needs `seatY` and `eyeH`, and
+  `seatF` if its seat is off-centre (`rideSeatPos`); a kind in `RIDE_SEATED` also turns the view with it and faces
+  the rider's body forward.
 - **Keys can be moved (6.56).** Handlers keep reading the default code (`KEY.KeyW`, `e.code==='KeyE'`): `kbEv`
   (`ui/p06h_keybinds.js`) turns the pressed key into it. A new key listener must pass its event through `kbEv` first, a
   new rebindable key needs a row in `KB_ACTS`, and the Controls screen names keys as `<kbd data-k="<action>">`, never

@@ -62,6 +62,7 @@ function ntPeerPose(p,m){
   p.dim=''+(m.dim||'over');p.held=m.held|0;p.hp=+m.hp||0;p.ms=m.ms|0;
   p.ar=Array.isArray(m.ar)&&m.ar.length===4?m.ar.map(v=>v|0):null;
   p.rv=typeof m.rv==='string'&&NT_RIDES[m.rv]===1?m.rv:'';p.ry=+m.ry||0;p.rh=+m.rh||0;
+  p.rid=p.rv&&typeof m.rid==='string'?m.rid:'';p.rp=p.rv?+m.rp||0:0;p.rr=p.rv?+m.rr||0:0;   /* 6.57 */
   if((m.fl&1)&&!(p.fl&1))p.sw=1;
   p.fl=m.fl|0;
   if(far){p.x=p.tx;p.y=p.ty;p.z=p.tz;p.yaw=p.tyaw;}
@@ -162,7 +163,13 @@ function ntPeerRide(p){
       if(g){g.userData.shared=true;g.traverse&&g.traverse(o=>{o.userData.shared=true;});M.G.add(g);M.veh=g;}   /* shared: ntPeerUnmesh leaves it to the code above */
     }
   }
-  if(M.veh){M.veh.rotation.y=p.ry-p.yaw;M.veh.position.y=-p.rh+((p.fl&2)?0.12:0);}
+  if(M.veh){
+    if(RIDE_SEATED[p.rv]===1){                             /* 6.57: the body already faces (and tilts with) the vehicle */
+      M.veh.rotation.set(0,0,0);
+      if(p.rv==='plane')M.veh.position.set(0,0.15,0.3);    /* the cockpit: seatY -0.15, seatF 0.3 (p51) */
+      else M.veh.position.set(0,-p.rh,0);
+    }else{M.veh.rotation.y=p.ry-p.yaw;M.veh.position.set(0,-p.rh+((p.fl&2)?0.12:0),0);}
+  }
 }
 /* every frame: ease each body toward its last pose and animate it (walk, sit, sneak, swing) */
 function ntPeersTick(dt){
@@ -180,6 +187,18 @@ function ntPeersTick(dt){
     M.G.visible=true;
     M.G.position.set(p.x,p.y-((p.fl&2)?0.12:0),p.z);
     M.G.rotation.y=p.yaw;
+    /* 6.57: seated, the body faces the vehicle and only the head follows the look; on a vehicle this game can see (the
+       server's, ridden by them) the body is put on its seat, so rider and vehicle move as one */
+    const seat=(p.fl&8)&&RIDE_SEATED[p.rv]===1,v=seat&&p.rid?NET.vehs.get(p.rid):null,veh=v&&!v.dead&&v.pup?v:null;
+    M.G.rotation.order='YXZ';M.head.rotation.order='YXZ';
+    if(seat){
+      const ry=veh?(veh.yaw||0):p.ry,pl=p.rv==='plane';
+      if(veh&&pl){veh._rp=+p.rp||0;veh._rr=+p.rr||0;veh._rpT=NET.acc;}
+      if(veh){const s=rideSeatPos(pl?{x:veh.x,y:veh.y,z:veh.z,yaw:ry,pitch:veh.pitch||0,seatY:veh.seatY,seatF:veh.seatF,t:'plane'}:veh);p.x=s[0];p.y=s[1];p.z=s[2];M.G.position.set(p.x,p.y,p.z);}
+      M.G.rotation.set(pl?(veh?veh.pitch||0:+p.rp||0):0,ry,pl?(veh?veh.roll||0:+p.rr||0):0);
+      M.head.rotation.y=rideHeadYaw(p.yaw,ry);
+    }else{M.G.rotation.x=0;M.G.rotation.z=0;M.head.rotation.y=0;}
+    M.lL.visible=M.lR.visible=M.aL.visible=M.aR.visible=!(seat&&p.rv==='plane');
     ntTagTick(p,M);
     M.head.rotation.x=p.pitch*0.55;
     if(M._skin!==(p.skin||'')){M._skin=p.skin||'';skinLoadInto(M.skinCv,M.skinTex,M._skin,ntHood(p));}   /* they changed their skin */

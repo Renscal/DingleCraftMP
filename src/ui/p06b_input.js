@@ -91,7 +91,7 @@ function setupInput(){
       else if(modalOpen())closeModal();
       else if(playing&&!P.dead){if(paused)resumeGame();else pauseGame();}
     }
-    if(['Space','KeyW','KeyA','KeyS','KeyD','ShiftLeft','ControlLeft'].includes(e.code)||(e.code==='Tab'&&!paused&&!modalOpen()))e.preventDefault();
+    if(['Space','KeyW','KeyA','KeyS','KeyD','ShiftLeft','ControlLeft','AltLeft'].includes(e.code)||(e.code==='Tab'&&!paused&&!modalOpen()))e.preventDefault();
   });
   addEventListener('keyup',e=>{e=kbEv(e,true);if(!e)return;KEY[e.code]=false;dbgKeyUp(e);if(e.code==='KeyW')DBLW.on=false;if(e.code==='Tab')tabHeld=false;});
   addEventListener('blur',()=>{for(const k in KEY)KEY[k]=false;MB.l=MB.r=false;tabHeld=false;});

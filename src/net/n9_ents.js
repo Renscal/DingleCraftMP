@@ -225,6 +225,11 @@ function ntVehPup(e,dt){
   let dy=e.tyaw-(e.yaw||0);dy=((dy+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI;e.yaw=(e.yaw||0)+dy*k;
   e.mesh.position.set(e.x,e.y,e.z);
   e.mesh.rotation.y=e.yaw;
+  if(e.t==='plane'){                                       /* 6.57: its rider's pose says how it is tilted (n5) */
+    const live=NET.acc-(e._rpT==null?-9:e._rpT)<0.6;
+    e.pitch=(e.pitch||0)+((live?e._rp:0)-(e.pitch||0))*k;e.roll=(e.roll||0)+((live?e._rr:0)-(e.roll||0))*k;
+    e.mesh.rotation.x=e.pitch;e.mesh.rotation.z=e.roll;
+  }
 }
 /* The updateEntities hook for everything that is another game's and is not a mob: a vehicle puppet, or the copy of a
    flying thing. (A mob puppet has its own, ntMobPup.) */

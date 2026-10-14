@@ -9,14 +9,14 @@
    Mouse5, which any action can take; pressed, they are sent through the window as a keydown and a keyup of that code. */
 const KB_ACTS=[   /* [id, group, label, default code] */
   ['fwd','Moving','Walk forward','KeyW'],['back','Moving','Walk backward','KeyS'],['left','Moving','Strafe left','KeyA'],
-  ['right','Moving','Strafe right','KeyD'],['jump','Moving','Jump / swim / fly up','Space'],['sneak','Moving','Sneak / get off','ShiftLeft'],
+  ['right','Moving','Strafe right','KeyD'],['jump','Moving','Jump / swim / fly up / plane throttle','Space'],['sneak','Moving','Sneak / get off','ShiftLeft'],
   ['sprint','Moving','Sprint (and drop the whole stack)','ControlLeft'],
   ['inv','Inventory','Inventory','KeyE'],['drop','Inventory','Drop item','KeyQ'],['sort','Inventory','Sort inventory','KeyR'],
   ['hot1','Inventory','Hotbar slot 1','Digit1'],['hot2','Inventory','Hotbar slot 2','Digit2'],['hot3','Inventory','Hotbar slot 3','Digit3'],
   ['hot4','Inventory','Hotbar slot 4','Digit4'],['hot5','Inventory','Hotbar slot 5','Digit5'],['hot6','Inventory','Hotbar slot 6','Digit6'],
   ['hot7','Inventory','Hotbar slot 7','Digit7'],['hot8','Inventory','Hotbar slot 8','Digit8'],['hot9','Inventory','Hotbar slot 9','Digit9'],
   ['cam','Actions','Change camera','KeyF'],['powers','Actions','Powers menu','KeyP'],['laser','Actions','Laser Eyes (hold)','KeyL'],
-  ['honk','Actions','Honk (in a car)','KeyH'],
+  ['honk','Actions','Honk (in a car)','KeyH'],['brake','Actions','Plane brake','AltLeft'],
   ['chat','Screen & chat','Chat','KeyT'],['cmd','Screen & chat','Chat with a command','Slash'],['list','Screen & chat','Player list (hold)','Tab'],
   ['shot','Screen & chat','Screenshot','F2'],['replay','Screen & chat','Save a replay','F8']];
 const KB_FIXED=['Escape','F3','Enter','NumpadEnter','MetaLeft','MetaRight','ContextMenu','OSLeft','OSRight'];

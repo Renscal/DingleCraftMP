@@ -24,7 +24,7 @@ const tap=c=>{K.press(c);K.release(c);};
 
 boot.run(async()=>{
   ok('the seams are on __vox',['kbEv','kbSet','kbReset','kbLoad','kbSaveVal','kbName','kbCode','kbRebuild','kbSec','kbRender','kbHelp','getRP'].every(k=>typeof V[k]==='function')&&
-    !!V.KB&&Array.isArray(V.KB_ACTS)&&V.KB_ACTS.length===28);
+    !!V.KB&&Array.isArray(V.KB_ACTS)&&V.KB_ACTS.length===29);
   ok('the game added its key listeners (keydown + keyup in p06b, the replay listener)',K.listeners.filter(l=>l.type==='keydown').length>=2&&K.listeners.some(l=>l.type==='keyup'));
   V.startNewWorld('kb','1337','s');V.GR.mobSpawn=false;V.GR.snail=false;V.GR.jsc=0;step(60);
   const P=V.P,KEY=V.KEY;

@@ -3,7 +3,18 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Your keys, your rules',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Sit down and fly',lines:[
+    '<b>SIT DOWN AND FLY.</b> The Prop Plane used to fly wherever you looked, which meant admiring the view was a good way to fly into it. It is now a plane.',
+    '<b>The controls.</b> Space is the throttle. W pushes the nose down, S pulls it up, A and D turn and bank. Alt is the brake, and on the ground, stopped, it backs you up slowly. Let go of W and S and the nose comes back to level by itself. Look wherever you like: the plane does not care.',
+    '<b>Real flying, roughly.</b> Too slow and the nose drops: that is a stall, and the ground is where it ends. Climbing costs speed and diving pays it back, so a long climb wants a full throttle. On the ground you roll on the throttle and lift off with S once you are fast enough.',
+    '<b>The tilt is right.</b> The plane leaned the wrong way whenever it was not pointing north (three.js turns things in an order that only works facing one way). It now pitches and banks properly in every direction.',
+    '<b>A cockpit with someone in it.</b> You used to stand up through the plane with your legs sticking out of the back. You now sit inside, under the canopy, and only your head shows. The canopy grew to fit it.',
+    '<b>Heads turn, bodies do not.</b> In a plane, car, boat or coaster cart your body faces the way the vehicle goes and only your head follows your look, as far as a neck allows. Your view also turns with the vehicle, so a long bend no longer leaves you staring out of the side window. The skateboard is unchanged: you stand on it.',
+    '<b>No more chasing your own car.</b> Every vehicle used to sit a frame ahead of you: you were put in the seat, THEN it moved, then the camera looked. At speed it slid away and snapped back all the time. You are now seated after it moves, so you and it are one thing.',
+    '<b>Same for everyone else.</b> On a server, other players used to see your body and your vehicle arrive as two separate stories that drifted apart. Your body is now drawn on the seat of the vehicle they see, tilt and all.',
+    '<b>New key.</b> The plane brake is in Controls → Change keys, next to everything else. Space (the throttle) follows your jump key.',
+  ]},
+ {v:'6.56',label:'Release 1.1',title:'Your keys, your rules',lines:[
     '<b>YOUR KEYS, YOUR RULES.</b> Every key the game uses was nailed to the floor: W was forward, E was the inventory, and left-handed players, arrow-key loyalists and people with a sticky Q simply had to live with it. Not any more.',
     '<b>Change keys.</b> Controls has a new page. Click an action, press the key you want, done. Walking, jumping, sneaking, sprinting, the inventory, dropping, sorting, all nine hotbar slots, the camera, the Powers menu, Laser Eyes, the car horn, chat, the player list, screenshots and replays: 28 actions, any key you like.',
     '<b>The side buttons too.</b> Mouse buttons 4 and 5, the ones that usually mean back and forward, no longer take you back or forward and away from your world. Give them a job instead: jump, sneak, the camera, anything on the list.',

@@ -391,12 +391,33 @@ function dismountPlace(c){
   }
   P.vx=c.vx;P.vz=c.vz;P.vy=0;P.fallD=0;
 }
+/* 6.57: where the rider of c sits: the vehicle's centre, seatY up and seatF forward, turned by its heading and (a plane)
+   its pitch. Worked out by hand (yaw, then pitch, as the plane's mesh turns: rotation order YXZ). */
+const RIDE_SEATED={car:1,boat:1,cart:1,plane:1};   /* sit facing forward, only the head turns, the view turns with it */
+function rideSeatPos(c){
+  const sy=c.seatY!=null?c.seatY:0.45,sf=c.seatF||0,yw=c.yaw||0,pt=c.t==='plane'?(c.pitch||0):0;
+  const ly=sy*Math.cos(pt)+sf*Math.sin(pt),lz=sy*Math.sin(pt)-sf*Math.cos(pt);
+  return [c.x+lz*Math.sin(yw),c.y+ly,c.z+lz*Math.cos(yw)];
+}
+/* 6.57: put the rider on the seat where the vehicle is NOW (frame() calls it after updateEntities, so the camera, the
+   rider's model and the pose all match the vehicle drawn this frame), and turn the view with a seated vehicle */
+function rideSeat(){
+  const c=P.ride;if(!c)return;
+  const s=rideSeatPos(c);P.x=s[0];P.y=s[1];P.z=s[2];
+  if(RIDE_SEATED[c.t]===1){
+    if(P._rideOf!==c){P._rideOf=c;P._rideYaw=c.yaw||0;}
+    let d=(c.yaw||0)-P._rideYaw;d=((d+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI;
+    P.yaw+=d;P._rideYaw=c.yaw||0;
+  }else P._rideOf=null;
+}
+/* how far a seated rider's head turns: the look against the vehicle's heading, wrapped, at most about 80 degrees */
+function rideHeadYaw(look,veh){let d=(look||0)-(veh||0);d=((d+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI;return clamp(d,-1.4,1.4);}
 function updateRide(dt){
   const c=P.ride;
   if(KEY.ShiftLeft){
     if(!P._shl){P._shl=true;P.ride=null;dismountPlace(c);return;}
   }else P._shl=false;
-  P.x=c.x;P.z=c.z;P.y=c.y+(c.seatY!=null?c.seatY:0.45);
+  {const s=rideSeatPos(c);P.x=s[0];P.y=s[1];P.z=s[2];}
   P.vx=c.vx;P.vy=c.vy;P.vz=c.vz;
   P.onGround=true;P.fallD=0;P.sneak=false;
   P.sprint=Math.abs(c.spd)>(c.t==='skate'?7.5:10); /* speed FOV */
