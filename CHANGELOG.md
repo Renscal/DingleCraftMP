@@ -21,6 +21,15 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — Out of sight, out of space
+
+*Game version 6.53, released 2026-10-14.*
+
+- **OUT OF SIGHT, OUT OF SPACE.** A server that has been running for a year keeps every house, mine and dug-out crater anyone ever made, in readable files. Readable is lovely. A year of it is a lot of disk.
+- **Cold land is packed away.** Land nobody has been near for 7 days is written compressed: about 3% of its size. A flattened chunk that took 57 KB now takes a few bytes. The moment someone walks back, it is written plain again.
+- **So are absent players.** A player who has not joined for 7 days has their file compressed too. When they log in, it is plain again. Their login still works the whole time.
+- **For the server owner.** Two settings: **compressAfter** and **compressPlayersAfter** (days, 7 by default, 0 for never). A compressed file ends in .json.br and opens with any Brotli tool. The server README shows how, and how the packed format works, so nothing is locked away.
+
 ## Release 1.1 — Eyes front
 
 *Game version 6.52, released 2026-10-14.*

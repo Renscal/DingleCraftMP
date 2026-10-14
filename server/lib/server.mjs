@@ -23,7 +23,7 @@ import http from 'node:http';
 import https from 'node:https';
 import path from 'node:path';
 import { DEFAULTS, LIMITS, SERVER_DIR, cleanRules, cleanList, findGame } from './config.mjs';
-import { openWorld, applySettings, writeWorld, worldPlace, exportWorld } from './world.mjs';
+import { openWorld, applySettings, writeWorld, worldPlace, exportWorld, regionKey, playerKey as pkey } from './world.mjs';
 import { acceptUpgrade, newConn, textFrame, readFrames, PING, CLOSE } from './websocket.mjs';
 import { handleMessage, worldTick, forget, playerKey, setSkin } from './protocol.mjs';
 import { runCommand } from './commands.mjs';
@@ -79,10 +79,29 @@ export function createServer(opts = {}) {
   };
   const pending = new Set();            // every open socket, joined or not (for timeouts and shutdown)
 
+  /* 6.51: when each region was last near a player (world.rvisit, "over/0.-1" -> ms, kept in level.json). A region the
+     world has but that has no date yet (a world from before 6.51) counts as visited now, so nothing old is compressed the
+     moment the server is updated. */
+  if (!world.rvisit || typeof world.rvisit !== 'object' || Array.isArray(world.rvisit)) world.rvisit = {};
+  const stampNew = () => {
+    for (const ck of [...Object.keys(world.edits), ...Object.keys(world.be).map((bk) => { const [p, k] = [bk.includes(';') ? bk.slice(0, bk.indexOf(';') + 1) : '', bk.includes(';') ? bk.slice(bk.indexOf(';') + 1) : bk], c = k.split(','); return p + Math.floor(+c[0] / 16) + ',' + Math.floor(+c[2] / 16); })]) {
+      const rk = regionKey(ck);
+      if (!(rk in world.rvisit)) world.rvisit[rk] = Date.now();
+    }
+  };
+  stampNew();
+  /* the files to write compressed: regions not visited for compressAfter days, players not seen for compressPlayersAfter */
+  const coldFiles = () => {
+    stampNew();   // a region that got its first edits since the last save counts as visited now
+    const now = Date.now(), regions = new Set(), players = new Set(), online = new Set([...S.clients.values()].map((c) => pkey(c.name || '')));
+    if (o.compressAfter > 0) for (const rk of Object.keys(world.rvisit)) if (now - world.rvisit[rk] > o.compressAfter * 864e5) regions.add(rk);
+    if (o.compressPlayersAfter > 0) for (const k of Object.keys(world.players)) { const t = Date.parse((world.players[k] || {}).seen || ''); if (t && now - t > o.compressPlayersAfter * 864e5 && !online.has(k)) players.add(k); }
+    return { regions, players };
+  };
   /* 6.50: savedAt goes into level.json with the clock, so the next start knows how long the server was off */
   function saveWorld(why) {
     if (!worldDir || !S.dirty) return false;
-    try { world.savedAt = Date.now(); const n = writeWorld(worldDir, world, seen); S.dirty = false; if (why) log(`world saved (${why}: ${n} file${n === 1 ? '' : 's'} changed)`); return true; }
+    try { world.savedAt = Date.now(); const n = writeWorld(worldDir, world, seen, coldFiles()); S.dirty = false; if (why) log(`world saved (${why}: ${n} file${n === 1 ? '' : 's'} changed)`); return true; }
     catch (e) { log('WORLD SAVE FAILED: ' + e.message); return false; }
   }
   S.saveWorld = saveWorld;              // the /save command
@@ -203,6 +222,12 @@ export function createServer(opts = {}) {
   const tick = setInterval(() => {
     const now = Date.now(), dt = Math.min(5, (now - lastTick) / 1000); lastTick = now;
     worldTick(S, net, beats, now, dt);
+    /* 6.51: the regions round every player are being visited (what the player is sent: viewChunks round them) */
+    for (const c of S.clients.values()) {
+      if (!c.ready || !c.pose) continue;
+      const pf = { over: '', nether: 'n;', aether: 'a;', puppet: 'm;' }[c.pose.dim] || '', cx = Math.floor(c.pose.x / 16), cz = Math.floor(c.pose.z / 16), r = o.viewChunks;
+      for (let x = cx - r; x < cx + r + 8; x += 8) for (let z = cz - r; z < cz + r + 8; z += 8) world.rvisit[regionKey(pf + Math.min(x, cx + r) + ',' + Math.min(z, cz + r))] = now;
+    }
     if ((beats.clock = (beats.clock || 0) + dt) >= 5) { beats.clock = 0; for (const h of S.hosts.values()) h.post({ t: 'clock', v: world.clock, max: (o.catchUpMax || 0) * 60 }); }   // 6.50: the games follow the world's clock
     if (o.pauseWhenEmpty > 0) for (const [dim, h] of S.hosts) {
       if (h.paused) continue;

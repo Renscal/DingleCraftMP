@@ -155,7 +155,8 @@ $('cmd').onkeydown = (e) => {
 
 /* ---- settings and game rules: two forms over one server.json ---- */
 const FIELDS = [['name', 'Server name', 'text'], ['motd', 'Message of the day', 'text'], ['port', 'Port', 'int'], ['accounts', 'Players need an account to join (make them on the Players tab)', 'bool'], ['maxPlayers', 'Most players at once', 'int'],
-  ['mode', 'Mode for new players', 'mode'], ['pvp', 'Players can hurt each other (PvP)', 'bool'], ['viewChunks', 'View distance sent to players (chunks)', 'int'], ['pauseWhenEmpty', 'Pause a world nobody is in after (seconds; 0 never)', 'int'], ['catchUpMax', 'Most a crop or furnace catches up at once (minutes; 0 no limit)', 'int'], ['spawnProtection', 'Spawn protection (blocks; 0 for none)', 'int'],
+  ['mode', 'Mode for new players', 'mode'], ['pvp', 'Players can hurt each other (PvP)', 'bool'], ['viewChunks', 'View distance sent to players (chunks)', 'int'], ['pauseWhenEmpty', 'Pause a world nobody is in after (seconds; 0 never)', 'int'], ['catchUpMax', 'Most a crop or furnace catches up at once (minutes; 0 no limit)', 'int'],
+  ['compressAfter', 'Compress land nobody has visited for (days; 0 never)', 'int'], ['compressPlayersAfter', 'Compress players who have not joined for (days; 0 never)', 'int'], ['spawnProtection', 'Spawn protection (blocks; 0 for none)', 'int'],
   ['sleepPercent', 'Players asleep to skip the night (%)', 'int'], ['simulate', 'The server runs the world itself (mobs, water, crops)', 'bool'], ['singlePlayer', 'The served game may also play alone', 'bool'],
   ['lockNames', 'Nobody may change their own name', 'bool'], ['lockPasswords', 'Nobody may change their own password', 'bool'], ['lockSkins', 'Nobody may change their own skin', 'bool'],
   ['whitelist', 'Only listed players may join (whitelist)', 'bool'], ['allow', 'Whitelist (one name a line)', 'list'], ['ops', 'Operators (one name a line)', 'list'], ['bans', 'Banned (one name a line)', 'list']];

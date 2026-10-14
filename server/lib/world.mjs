@@ -27,6 +27,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import zlib from 'node:zlib';
 import { RULES, DIM_PFX, LIMITS, cleanRules } from './config.mjs';
 
 /* the game's hashSeed (src/core/p07f_world_lifecycle.js): a number as typed, words hashed, blank = random */
@@ -160,7 +161,8 @@ function lines(obj, indent) {
 }
 
 /* The world as files: a Map of path (relative to the world folder, forward slashes) -> text. */
-export function worldFiles(world) {
+export function worldFiles(world, cold) {
+  const coldR = (cold && cold.regions) || new Set(), coldP = (cold && cold.players) || new Set();   // 6.51: what is written compressed
   const out = new Map();
   const { edits, be, players, drops, mobs, vehicles, ...level } = world;
   /* data/<name>.json: the world's own records leave level.json for a file each (only the ones this world has) */
@@ -191,12 +193,12 @@ export function worldFiles(world) {
     (ch.blockEntities || (ch.blockEntities = {}))[bk] = be[k];
   }
   for (const [rk, chunks] of regions) {
-    const [folder, r] = rk.split('/'), [rx, rz] = r.split('.').map(Number);
+    const [folder, r] = rk.split('/'), [rx, rz] = r.split('.').map(Number), isCold = coldR.has(rk);
     const body = Object.keys(chunks).sort().map((ck) => {
       const c = chunks[ck];
-      return '    ' + line(ck) + ': {\n      "blocks": ' + line(c.blocks || {}) + ',\n      "blockEntities": ' + lines(c.blockEntities || {}, '      ') + '\n    }';
+      return '    ' + line(ck) + ': {\n      ' + (isCold ? '"runs": ' + line(encodeRuns(c.blocks || {})) : '"blocks": ' + line(c.blocks || {})) + ',\n      "blockEntities": ' + lines(c.blockEntities || {}, '      ') + '\n    }';
     }).join(',\n');
-    out.set(`region/${folder}/r.${r}.json`, `{\n  "dimension": ${line(folder)},\n  "region": [${rx}, ${rz}],\n  "blocksFrom": [${rx * REGION * CHUNK}, ${rz * REGION * CHUNK}],\n  "chunks": {\n${body}\n  }\n}\n`);
+    (isCold ? (rel, text) => out.set(rel + '.br', brotli(text)) : (rel, text) => out.set(rel, text))(`region/${folder}/r.${r}.json`, `{\n  "dimension": ${line(folder)},\n  "region": [${rx}, ${rz}],\n  "blocksFrom": [${rx * REGION * CHUNK}, ${rz * REGION * CHUNK}],\n  "chunks": {\n${body}\n  }\n}\n`);
   }
 
   /* entities/<dim>/r.<rx>.<rz>.json: what lies in that region */
@@ -229,13 +231,51 @@ export function worldFiles(world) {
     /* 6.49: an account's password is the file's second line, in plain text (the owner can read it: the game says so) */
     const head = JSON.stringify({ player: key, ...(typeof password === 'string' ? { password } : {}), ...rest }, null, 2).replace(/\n}$/, '');
     const list = (name, arr) => (Array.isArray(arr) ? `,\n  ${line(name)}: [\n${arr.map((it) => '    ' + line(it)).join(',\n')}\n  ]` : '');
-    out.set('playerdata/' + playerFile(key), head + list('armor', armor) + list('inv', inv) + '\n}\n');
+    const text = head + list('armor', armor) + list('inv', inv) + '\n}\n';
+    if (coldP.has(key)) out.set('playerdata/' + playerFile(key) + '.br', brotli(text)); else out.set('playerdata/' + playerFile(key), text);
   }
   return out;
 }
 
 const md5 = (t) => crypto.createHash('md5').update(t).digest('hex');
-/* every .json file under a folder of the world, as paths relative to the world folder */
+/* ----- cold files (6.51) -----
+   A region nobody has been near for compressAfter days, and a player who has not joined for compressPlayersAfter days, are
+   written compressed: r.<rx>.<rz>.json.br and <name>.json.br, Brotli (Node's own zlib). Inside, a cold region's chunks keep
+   their changed blocks as "runs" instead of "blocks": every changed cell by its index in the chunk (y * 256 + z * 16 + x),
+   in order, and a stretch of cells in a row with the same block written once, in base 36:
+     "<start>[+<length>]=<block>"   separated by spaces; the block is the id plus its meta << 8, as in "blocks"
+   so a dug-out chunk is a few bytes. Anyone can open one: brotli -d, or node -e "process.stdout.write(require('zlib')
+   .brotliDecompressSync(require('fs').readFileSync(process.argv[1])))" <file>. The server reads both forms, and writes a
+   file plain again as soon as its region is visited or its player joins. */
+export function encodeRuns(blocks) {
+  const a = [];
+  for (const lk of Object.keys(blocks || {})) {
+    const p = lk.split(',').map(Number), v = blocks[lk];
+    if (p.length === 3 && p.every(Number.isInteger) && Number.isInteger(v)) a.push([p[1] * 256 + p[2] * 16 + p[0], v]);
+  }
+  a.sort((x, y) => x[0] - y[0]);
+  const out = [];
+  for (let i = 0; i < a.length;) {
+    let j = i;
+    while (j + 1 < a.length && a[j + 1][0] === a[j][0] + 1 && a[j + 1][1] === a[i][1]) j++;
+    out.push(a[i][0].toString(36) + (j > i ? '+' + (j - i + 1).toString(36) : '') + '=' + a[i][1].toString(36));
+    i = j + 1;
+  }
+  return out.join(' ');
+}
+/* the runs back into {"lx,y,lz": block} (anything malformed is skipped) */
+export function decodeRuns(text) {
+  const out = {};
+  for (const r of String(text || '').split(' ')) {
+    const m = /^([0-9a-z]+)(?:\+([0-9a-z]+))?=([0-9a-z]+)$/.exec(r);
+    if (!m) continue;
+    const s = parseInt(m[1], 36), n = m[2] ? parseInt(m[2], 36) : 1, v = parseInt(m[3], 36);
+    for (let i = s; i < s + n && i < CHUNK * CHUNK * 256; i++) out[(i % CHUNK) + ',' + Math.floor(i / 256) + ',' + (Math.floor(i / CHUNK) % CHUNK)] = v;
+  }
+  return out;
+}
+const brotli = (text) => zlib.brotliCompressSync(Buffer.from(text, 'utf8'), { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 11 } });
+/* every .json file under a folder of the world, as paths relative to the world folder (and, since 6.51, .json.br) */
 function listJson(dir, sub) {
   const out = [];
   (function walk(rel) {
@@ -243,7 +283,7 @@ function listJson(dir, sub) {
     try { names = fs.readdirSync(path.join(dir, rel), { withFileTypes: true }); } catch { return; }
     for (const n of names) {
       if (n.isDirectory()) walk(rel + '/' + n.name);
-      else if (n.name.endsWith('.json')) out.push(rel + '/' + n.name);
+      else if (n.name.endsWith('.json') || n.name.endsWith('.json.br')) out.push(rel + '/' + n.name);
     }
   })(sub);
   return out;
@@ -255,8 +295,10 @@ function listJson(dir, sub) {
 export function readWorldDir(dir) {
   const seen = new Map();
   const read = (rel) => {
-    const text = fs.readFileSync(path.join(dir, rel), 'utf8');
-    seen.set(rel, md5(text));
+    const raw = fs.readFileSync(path.join(dir, rel));
+    let text;
+    if (rel.endsWith('.br')) { seen.set(rel, md5(raw)); try { text = zlib.brotliDecompressSync(raw).toString('utf8'); } catch (e) { throw new Error(`${path.join(dir, rel)} is damaged (${e.message}). Fix it, or move the world folder away to start a new world.`); } }
+    else { text = raw.toString('utf8'); seen.set(rel, md5(text)); }
     try { return JSON.parse(text); } catch (e) { throw new Error(`${path.join(dir, rel)} is damaged (${e.message}). Fix it, or move the world folder away to start a new world.`); }
   };
   const { layout, regionSize, chunkSize, ...level } = read('level.json');
@@ -273,7 +315,8 @@ export function readWorldDir(dir) {
     const chunks = read(rel).chunks || {};
     for (const ck of Object.keys(chunks)) {
       const c = chunks[ck] || {};
-      if (c.blocks && Object.keys(c.blocks).length) world.edits[pfx + ck] = c.blocks;
+      const blocks = c.blocks || (typeof c.runs === 'string' ? decodeRuns(c.runs) : null);   // 6.51: a cold region keeps runs
+      if (blocks && Object.keys(blocks).length) world.edits[pfx + ck] = blocks;
       for (const bk of Object.keys(c.blockEntities || {})) world.be[pfx + bk] = c.blockEntities[bk];
     }
   }
@@ -299,8 +342,8 @@ export function readWorldDir(dir) {
 /* Write the world folder: only the files whose text changed since the last write (or the read), each through a .tmp and a
    rename so a crash never leaves half a file, and remove the ones whose content is gone. seen (path -> md5) is updated.
    Returns how many files were written or removed. */
-export function writeWorld(dir, world, seen) {
-  const files = worldFiles(world);
+export function writeWorld(dir, world, seen, cold) {
+  const files = worldFiles(world, cold);
   let n = 0;
   for (const [rel, text] of files) {
     const h = md5(text);
@@ -317,6 +360,12 @@ export function writeWorld(dir, world, seen) {
     seen.delete(rel); n++;
   }
   return n;
+}
+
+/* 6.51: the region a chunk is in, as worldFiles names it ("over/0.-1"), from a chunk key with its dimension prefix */
+export function regionKey(ck) {
+  const [pfx, k] = splitKey(ck), c = k.split(',');
+  return dimFolder(pfx) + '/' + regionOf(+c[0], +c[1]);
 }
 
 /* the world as the one file the game's Import World reads (and a server from before 6.12 used) */

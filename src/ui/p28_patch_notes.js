@@ -3,7 +3,13 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Eyes front',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Out of sight, out of space',lines:[
+    '<b>OUT OF SIGHT, OUT OF SPACE.</b> A server that has been running for a year keeps every house, mine and dug-out crater anyone ever made, in readable files. Readable is lovely. A year of it is a lot of disk.',
+    '<b>Cold land is packed away.</b> Land nobody has been near for 7 days is written compressed: about 3% of its size. A flattened chunk that took 57 KB now takes a few bytes. The moment someone walks back, it is written plain again.',
+    '<b>So are absent players.</b> A player who has not joined for 7 days has their file compressed too. When they log in, it is plain again. Their login still works the whole time.',
+    '<b>For the server owner.</b> Two settings: <b>compressAfter</b> and <b>compressPlayersAfter</b> (days, 7 by default, 0 for never). A compressed file ends in .json.br and opens with any Brotli tool. The server README shows how, and how the packed format works, so nothing is locked away.',
+  ]},
+ {v:'6.52',label:'Release 1.1',title:'Eyes front',lines:[
     '<b>EYES FRONT.</b> Laser Eyes had three problems: nobody else could see them, they came out of your eyes only when you looked straight ahead, and you could not fire them in mid-air. All three are fixed.',
     '<b>Aimed properly.</b> The beam was being turned the wrong way round once you looked anywhere but straight ahead: in 90 of 112 directions tested it pointed somewhere else, by up to 149 degrees. It now leaves from just in front of your eyes and goes exactly where you look, every way you can turn your head.',
     '<b>A key of its own.</b> Hold <b>L</b> to fire, whatever is in your hand, standing, falling or flying. Sneak + right-click with an empty hand no longer does it, which is why it never worked in the air: nobody sneaks in mid-air. It is in the Controls screen.',
