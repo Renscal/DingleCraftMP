@@ -1,6 +1,6 @@
 {
   "name": "dinglecraft-server-gui",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "private": true,
   "description": "DINGLECRAFT Server: a window around the multiplayer server. No terminal, no separate Node install.",
   "author": "DINGLECRAFT",
@@ -19,7 +19,7 @@
     "productName": "DINGLECRAFT Server",
     "asar": false,
     "directories": { "output": "out" },
-    "files": ["main.js", "preload.js", "index.html", "renderer.js", "style.css", "lib/**", "server/**", "tray.png"],
+    "files": ["main.js", "preload.js", "index.html", "renderer.js", "style.css", "lib/**", "tray.png"],
     "win": { "target": [{ "target": "nsis", "arch": ["x64"] }, { "target": "portable", "arch": ["x64"] }] },
     "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true },
     "portable": { "artifactName": "DINGLECRAFT-Server-portable.exe" }

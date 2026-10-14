@@ -8,7 +8,12 @@
    5 save on demand; stop saves the world, says so and exits 0; the world folder is on disk
    6 without a parent listening (no --ipc) the same program prints its banner and takes commands from stdin as ever
    7 the settings check: good settings pass; bad ports, names, world folders, lists and rules are each named; what needs
-     a restart is listed */
+     a restart is listed
+   8 the window's file handling (server-gui/lib/store.cjs); npm run package (Server and Client) and npm run package:gui
+     (the window on its own version, with no server in it)
+   9 server versions: a Server zip or folder imports into the window's library, the bad ones are refused saying why,
+     nothing escapes the zip, a running version is not replaced, servers carry a version (the newest by default), a
+     version in use is not removed, and a server forked from the library runs */
 'use strict';
 const fs=require('fs'),path=require('path'),cp=require('child_process'),{pathToFileURL}=require('url');
 const boot=require('../lib/c_boot.js'),{ok}=boot;
@@ -128,16 +133,61 @@ boot.run(async()=>{
         d(9*min,{})===''&&d(10*min,{})==='a'&&d(15*min,{a:10*min})===''&&d(20*min,{a:10*min})==='a'&&d(61*min,{a:60*min})==='b'&&d(999*min,{a:999*min,b:999*min})==='');}
     const fd=A.formDefaults();
     ok('the forms start from every setting and every game rule (the new ones included)',fd.port===40162&&fd.rules.difficulty==='normal'&&fd.rules.nether===true&&Object.keys(fd.rules).length===Object.keys(C.RULES).length);
-    /* the package: built into out/, read back */
+    /* the packages: built into out/, read back. The window is no longer in a game release (1.0 of the window): it has its own */
     const PK=path.join(outDir('net'),'admin_pkg');fs.rmSync(PK,{recursive:true,force:true});
+    const Z=await import(pathToFileURL(path.join(REPO,'scripts','lib','zip.mjs')).href);
     const r=cp.spawnSync(process.execPath,[path.join(REPO,'scripts','package.mjs'),'--beta'],{env:{...process.env,DC_OUT_DIR:PK},encoding:'utf8'});
-    const zf=path.join(PK,'release','DINGLECRAFT-ServerGUI-v'+V.GAME_VERSION+'.zip');
-    let names=[];if(fs.existsSync(zf)){const Z=await import(pathToFileURL(path.join(REPO,'scripts','lib','zip.mjs')).href);names=Z.readZip(fs.readFileSync(zf)).map(e=>e.name);}
+    const rel=fs.existsSync(path.join(PK,'release'))?fs.readdirSync(path.join(PK,'release')).sort():[];
+    const szf=path.join(PK,'release','DINGLECRAFT-Server-v'+V.GAME_VERSION+'.zip'),snames=fs.existsSync(szf)?Z.readZip(fs.readFileSync(szf)).map(e=>e.name):[];
+    ok('npm run package makes the Server and Client downloads and no window ('+rel.join(', ')+'); the Server zip has the admin module the window drives and the game',
+      r.status===0&&rel.join()===['DINGLECRAFT-Client-v'+V.GAME_VERSION+'.zip','DINGLECRAFT-Server-v'+V.GAME_VERSION+'.zip','notes.md'].sort().join()&&
+      snames.includes('DINGLECRAFT-Server/lib/admin.mjs')&&snames.includes('DINGLECRAFT-Server/dinglecraft_v'+V.GAME_VERSION+'.html')&&!/ServerGUI-v/.test(r.stdout)&&
+      /Server window/.test(fs.readFileSync(path.join(PK,'release','notes.md'),'utf8')));
+    const rg=cp.spawnSync(process.execPath,[path.join(REPO,'scripts','package-gui.mjs')],{env:{...process.env,DC_OUT_DIR:PK},encoding:'utf8'});
+    const gver=JSON.parse(fs.readFileSync(path.join(REPO,'server-gui','package.json'),'utf8')).version,zf=path.join(PK,'release-gui','DINGLECRAFT-ServerGUI-v'+gver+'.zip');
+    const names=fs.existsSync(zf)?Z.readZip(fs.readFileSync(zf)).map(e=>e.name):[];
     const has=n=>names.includes('DINGLECRAFT-ServerGUI/'+n);
-    ok('npm run package makes a third download, the server window ('+names.length+' files): its own files, the server inside it with its admin module, the game beside the server, an icon; no node_modules',
-      r.status===0&&has('main.js')&&has('preload.js')&&has('index.html')&&has('renderer.js')&&has('style.css')&&has('lib/store.cjs')&&has('package.json')&&has('README.md')&&has('tray.png')&&!has('icon.png')&&
-      has('server/dinglecraft-server.mjs')&&has('server/lib/admin.mjs')&&has('server/lib/host_worker.cjs')&&has('server/dinglecraft_v'+V.GAME_VERSION+'.html')&&!names.some(n=>/node_modules|\/data\//.test(n))&&
-      /ServerGUI/.test(fs.readFileSync(path.join(PK,'release','notes.md'),'utf8'))&&/DINGLECRAFT-ServerGUI-v/.test(r.stdout));
+    ok('npm run package:gui makes the window on its own version ('+gver+', '+names.length+' files): its own files and an icon, no server, no game, no node_modules; published as server-gui-v'+gver,
+      rg.status===0&&/^\d+\.\d+\.\d+$/.test(gver)&&gver!=='0.0.0'&&has('main.js')&&has('preload.js')&&has('index.html')&&has('renderer.js')&&has('style.css')&&has('lib/store.cjs')&&has('lib/zip.cjs')&&
+      has('package.json')&&has('README.md')&&has('tray.png')&&!has('icon.png')&&!names.some(n=>/node_modules|\/data\/|dinglecraft-server\.mjs|dinglecraft_v/.test(n))&&
+      new RegExp('gh release create server-gui-v'+gver.replace(/\./g,'\\.')+' ').test(rg.stdout)&&!/"server\/\*\*"/.test(fs.readFileSync(path.join(REPO,'server-gui','package.json'),'utf8')));
+    /* ===== 9. server versions: the window's library (store.cjs) ===== */
+    {const VR=path.join(PK,'gui_root'),inUse=()=>false;
+     const v1=store.importVersion(VR,szf,inUse);
+     const L1=store.listVersions(VR);
+     ok('a Server zip as downloaded imports as its version ('+v1.version+'), unpacked under versions/ with its front door, admin module and game',
+       v1.version===V.GAME_VERSION&&L1.length===1&&L1[0].version===V.GAME_VERSION&&fs.existsSync(path.join(v1.dir,'dinglecraft-server.mjs'))&&fs.existsSync(path.join(v1.dir,'lib','admin.mjs'))&&
+       fs.existsSync(path.join(v1.dir,'dinglecraft_v'+V.GAME_VERSION+'.html'))&&!fs.readdirSync(path.join(VR,'versions')).some(n=>n.startsWith('.import')));
+     /* an older version, made from the same files: a folder import */
+     const OLD=path.join(PK,'v6.42');fs.cpSync(v1.dir,OLD,{recursive:true});fs.renameSync(path.join(OLD,'dinglecraft_v'+V.GAME_VERSION+'.html'),path.join(OLD,'dinglecraft_v6.42.html'));fs.mkdirSync(path.join(OLD,'data'));fs.writeFileSync(path.join(OLD,'data','server.json'),'{}');
+     const v2=store.importVersion(VR,OLD,inUse),L2=store.listVersions(VR).map(v=>v.version);
+     ok('an unpacked folder imports too (its data/ left behind); the list is newest first; 6.9 is older than 6.10',v2.version==='6.42'&&L2.join()===V.GAME_VERSION+',6.42'&&!fs.existsSync(path.join(v2.dir,'data'))&&
+       store.cmpVersion('6.9','6.10')<0&&store.cmpVersion('6.57','6.57')===0&&store.cmpVersion('7.0','6.99')>0);
+     const err=f=>{try{f();return '';}catch(e){return e.message;}};
+     const NOADM=path.join(PK,'v6.40');fs.cpSync(OLD,NOADM,{recursive:true});fs.rmSync(path.join(NOADM,'lib','admin.mjs'));fs.renameSync(path.join(NOADM,'dinglecraft_v6.42.html'),path.join(NOADM,'dinglecraft_v6.40.html'));
+     const NOHTML=path.join(PK,'nohtml');fs.cpSync(OLD,NOHTML,{recursive:true});fs.rmSync(path.join(NOHTML,'dinglecraft_v6.42.html'));
+     const EVIL=path.join(PK,'evil.zip');fs.writeFileSync(EVIL,Z.writeZip([...Z.readZip(fs.readFileSync(szf)).filter(e=>!/\.html$/.test(e.name)),
+       {name:'DINGLECRAFT-Server/dinglecraft_v6.30.html',data:Buffer.from('x'),mode:0o644},{name:'DINGLECRAFT-Server/../../escaped.txt',data:Buffer.from('no'),mode:0o644}]));
+     const e1=err(()=>store.importVersion(VR,zf,inUse)),e2=err(()=>store.importVersion(VR,NOADM,inUse)),e3=err(()=>store.importVersion(VR,NOHTML,inUse)),e4=err(()=>store.importVersion(VR,path.join(REPO,'server-gui'),inUse));
+     const v3=store.importVersion(VR,EVIL,inUse);
+     ok('refused, saying why: the window\'s own zip (no server), a server older than 6.41 (no admin module), one with no game to name its version, a folder that is no server; a path out of the zip is never written',
+       /no DINGLECRAFT server/.test(e1)&&/6\.41 or newer/.test(e2)&&/no game file/.test(e3)&&/no dinglecraft-server\.mjs/.test(e4)&&v3.version==='6.30'&&!fs.existsSync(path.join(PK,'escaped.txt'))&&!fs.existsSync(path.join(VR,'escaped.txt'))&&
+       store.listVersions(VR).length===3);
+     const busy=err(()=>store.importVersion(VR,OLD,v=>v==='6.42'));
+     ok('a version is not replaced under a running server, and is replaced when nothing runs it',/is running/.test(busy)&&store.importVersion(VR,OLD,inUse).version==='6.42');
+     let L=[];L=store.addServer(L,VR,{name:'Old one',version:'6.42'}).list;L=store.addServer(L,VR,{name:'No version'}).list;L=store.addServer(L,VR,{name:'Bad',version:'../x'}).list;
+     const fill=store.fillVersions(L,store.listVersions(VR));
+     ok('each server says its version; one without gets the newest ('+fill.list.map(e=>e.version).join()+')',L[0].version==='6.42'&&L[1].version===''&&L[2].version===''&&fill.changed&&
+       fill.list.map(e=>e.version).join()===['6.42',V.GAME_VERSION,V.GAME_VERSION].join()&&!store.fillVersions(fill.list,store.listVersions(VR)).changed);
+     const rm=err(()=>store.removeVersion(VR,'6.42',fill.list));store.removeVersion(VR,'6.30',fill.list);
+     ok('a version a server is set to cannot be removed; one nobody uses can',/Old one/.test(rm)&&store.listVersions(VR).map(v=>v.version).join()===V.GAME_VERSION+',6.42');
+     /* the imported version runs: forked from the library the way the window forks it */
+     const D2=path.join(PK,'run_data');fs.mkdirSync(D2,{recursive:true});fs.writeFileSync(path.join(D2,'server.json'),JSON.stringify({name:'From the library',port:0,simulate:false}));
+     const kid=cp.fork(path.join(v1.dir,'dinglecraft-server.mjs'),['--ipc','--data',D2],{stdio:['ignore','pipe','pipe','ipc']}),msgs=[];let kx=null;
+     kid.on('message',m=>msgs.push(m));kid.on('exit',c=>{kx=c;});kid.stdout.resume();kid.stderr.resume();
+     await until(()=>msgs.some(m=>m.t==='ready'),20000);const rd=msgs.find(m=>m.t==='ready');
+     kid.send({t:'stop'});await until(()=>kx!==null,15000);
+     ok('a server run from the library is ready and hands out its own game ('+(rd&&rd.status.version)+', game '+(rd&&rd.status.game)+'), and stops cleanly',!!rd&&rd.status.name==='From the library'&&rd.status.game===true&&kx===0);}
     for(const f of ['main.js','preload.js','renderer.js','lib/store.cjs']){const c=cp.spawnSync(process.execPath,['--check',path.join(REPO,'server-gui',f)],{encoding:'utf8'});if(c.status!==0)ok('server-gui/'+f+' parses',false);}
     const html=fs.readFileSync(path.join(REPO,'server-gui','index.html'),'utf8'),js=fs.readFileSync(path.join(REPO,'server-gui','renderer.js'),'utf8');
     const ids=[...js.matchAll(/\$\('([a-z_]+)'\)/g)].map(m=>m[1]),missing=[...new Set(ids)].filter(i=>!new RegExp('id="'+i+'"').test(html));

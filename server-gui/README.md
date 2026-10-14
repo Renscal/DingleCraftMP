@@ -1,8 +1,15 @@
 # The DINGLECRAFT server window
 
 The multiplayer server as a desktop program: a window with buttons instead of a terminal. It is an
-[Electron](https://www.electronjs.org) app around the same server that lives in [`../server`](../server/README.md); that
+[Electron](https://www.electronjs.org) app that runs the same server that lives in [`../server`](../server/README.md); that
 server is not changed, and its terminal form (`Start Server.bat`, `start-server.sh`) works as it always did.
+
+**One window for every server version (1.0).** The window carries no server of its own. You import a game release's
+`DINGLECRAFT-Server-v<version>.zip` (as downloaded, or unpacked) into its library of **server versions**, and each server
+in the list picks the version it runs. Different servers can run different versions at the same time, and a new game
+release needs no new window: import its Server zip and switch the server to it. Any version from 6.41 on works (6.41
+added the `--ipc` mode the window drives). The window has its own version (`package.json`) and its own release
+(`server-gui-v<version>`), made only when the window itself changes.
 
 ## Run it
 
@@ -20,31 +27,39 @@ folder (the Dashboard shows where, and has a button to open it).
 
 The layout follows the server managers people already know: your servers down the left, the one you picked on the right.
 
-- **The list (left):** every server with a dot for running, starting or stopped, its port and how many are online. **New server** makes one with its own folder and the first free port; **Add existing folder** adopts a data folder you already have (the terminal server's `data/`, say). Removing one from the list leaves its folder alone.
-- **The header:** Start, Stop (saves first), Restart, and Kill (ends it at once, without saving) for the server that is picked. Several servers can run at once, each on its own port.
+- **The list (left):** every server with a dot for running, starting or stopped, its port, how many are online and its version. **New server** makes one with its own folder and the first free port; **Add existing folder** adopts a data folder you already have (the terminal server's `data/`, say). Removing one from the list leaves its folder alone.
+- **Server versions (left, below the list):** every imported version and how many servers use it. **Import a .zip** takes `DINGLECRAFT-Server-v<version>.zip`; **Import a folder** takes one unpacked. Importing a version that is already there replaces it (not while a server runs it). A version nobody uses can be removed.
+- **The header:** the **Version** the picked server runs (changed while it is stopped; moving to an older version than the newest that has run the world asks first, as an older server may not read what a newer one wrote), then Start, Stop (saves first), Restart, and Kill (ends it at once, without saving). Several servers can run at once, each on its own port.
 - **Dashboard:** status, players, memory and world as cards; the addresses to give players (with Copy) and Open in browser; which dimensions the server is running a game for.
 - **Console:** the log, and a box for commands (the same ones operators type in the game). Up and Down recall earlier commands.
 - **Players:** who is online, where, and buttons to kick, ban, op or deop, and teleport one player to another.
-- **Settings** and **Game rules:** `server.json` as two forms. Values are checked before they are written, and the window says which changes need a restart.
+- **Settings** and **Game rules:** `server.json` as two forms, as the server's own version knows them: the settings and rules that version has, checked by that version before they are written, and the window says which changes need a restart. A setting from a version newer than the window is shown under its own name.
 - **Worlds:** the worlds in the data folder, switch world, make a new one (name, seed, mode, difficulty).
 - **Backups:** Back up now (a running server saves first), and every dated copy under `backups/` with Restore (the world as it is now is kept as a backup first, so a restore can be undone) and Delete.
 - **Scheduler:** every so many minutes, back up the world (keeping the newest N), restart the server, or run a command. Tasks run while that server runs, counted from when it started.
 
-Closing the window with a server running asks whether to stop everything or keep running in the tray. The list of servers and their tasks is `servers.json` in the program's own user-data folder; each server's settings stay in its own data folder.
+Closing the window with a server running asks whether to stop everything or keep running in the tray. The list of servers (each with its version) and their tasks is `servers.json` in the program's own user-data folder, the imported versions are under `versions/<version>/` beside it; each server's settings stay in its own data folder. A list from before 1.0 of the window gets the newest imported version for every server.
+
+Run from a checkout of the repository, the window also offers the checkout's own `server/` as a version called
+"this checkout" (it hands out the newest build in `dist/`).
 
 ## How it works
 
-`main.js` starts the server as a child process with Electron's own Node (`ELECTRON_RUN_AS_NODE=1`) in its `--ipc` mode
+`main.js` starts each server from its version's folder as a child process with Electron's own Node (`ELECTRON_RUN_AS_NODE=1`) in its `--ipc` mode
 ([`server/lib/admin.mjs`](../server/lib/admin.mjs)): the server reports status, log lines and players over the fork
 channel and takes commands the same way. Nothing is read off its output. A server that crashes cannot take the window
-with it, and the window can start it again. `lib/store.cjs` is the file handling (the server list, settings, worlds, backups,
-scheduled tasks), kept apart from Electron so the test suites can run it.
+with it, and the window can start it again. Settings are checked with that version's own `lib/admin.mjs`. `lib/store.cjs` is the file
+handling (the server list, the versions library, settings, worlds, backups, scheduled tasks), kept apart from Electron so the test
+suites can run it; `lib/zip.cjs` reads a release zip.
+
+The window and a server talk only through the `--ipc` messages listed at the top of `server/lib/admin.mjs`. Keep those
+working the same way (add, do not change), and every window keeps working with every newer server.
 
 ## A Windows program (.exe)
 
 `npm run dist` builds a Windows installer and a portable exe with electron-builder (the settings are in `package.json`).
-That has to be run on Windows (or under Wine), with the server and a game html copied into `server/` here first, as
-`npm run package` lays them out in the release zip: unzip `DINGLECRAFT-ServerGUI-v<X.Y>.zip`, `npm install`, `npm run dist`.
+That has to be run on Windows (or under Wine): unzip `DINGLECRAFT-ServerGUI-v<version>.zip`, `npm install`, `npm run dist`.
+The exe carries no server: import one into it as above. `npm run package:gui` at the top of the repository makes that zip.
 The owner built and started it that way on Windows 10 from the 6.43 zip. The exe is unsigned, so Windows SmartScreen will warn the
 first time it is started. It has the default Electron icon: the picture in this folder is called `tray.png` because the
 builder takes any `icon.png` here as the program's icon and refuses one smaller than 256 x 256.

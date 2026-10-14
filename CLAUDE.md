@@ -60,8 +60,10 @@ server/         the multiplayer server: dinglecraft-server.mjs (the front door) 
                 commands, http, host, server, cli; headless.cjs + host_worker.cjs are the thread its own game runs in), no dependencies; Start Server.bat; its data/ is gitignored. The world on disk is a
                 folder (level.json, region/, entities/, playerdata/, data/; the layout is in lib/world.mjs and server/README.md)
 client/         the desktop client: an Electron wrapper (main.js) around the same html; optional, nobody needs it to play
-server-gui/     the server as a window (Electron): a list of servers, each run as a child in the server's --ipc mode
-                (server/lib/admin.mjs); lib/store.cjs is its file handling (the server list, backups, scheduled tasks), tested by n_admin
+server-gui/     the server as a window (Electron), one program for every server version (its own version and release:
+                npm run package:gui, tag server-gui-v<ver>): a library of imported Server zips (versions/<X.Y>/), each
+                server in its list runs one as a child in the server's --ipc mode (server/lib/admin.mjs: add messages, never
+                change one); lib/store.cjs is its file handling (servers, versions, backups, tasks), tested by n_admin
 docs/           ARCHITECTURE BUILD TESTING QA ASSETS RELEASING PARITY ROADMAP LEGACY LANDMINES
 build/ dist/ out/   gitignored outputs
 ```

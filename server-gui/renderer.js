@@ -3,7 +3,7 @@
 'use strict';
 const $ = (id) => document.getElementById(id);
 const el = (tag, props, kids) => { const e = document.createElement(tag); Object.assign(e, props || {}); for (const k of kids || []) e.append(k); return e; };
-const S = { id: null, servers: [], cur: null, settings: null, tab: 'dash', history: [], hpos: 0 };
+const S = { id: null, servers: [], versions: [], cur: null, settings: null, tab: 'dash', history: [], hpos: 0 };
 
 const fmtUp = (s) => { s = Math.max(0, s | 0); const h = (s / 3600) | 0, m = ((s % 3600) / 60) | 0; return h ? h + ' h ' + String(m).padStart(2, '0') + ' min' : m ? m + ' min ' + String(s % 60).padStart(2, '0') + ' s' : s + ' s'; };
 const fmtB = (n) => (n >= 1073741824 ? (n / 1073741824).toFixed(1) + ' GB' : n >= 1048576 ? (n / 1048576).toFixed(0) + ' MB' : n > 0 ? Math.max(1, Math.round(n / 1024)) + ' KB' : 'not known');
@@ -14,9 +14,40 @@ const DIMS = { over: 'Overworld', nether: 'The Nether', aether: 'The Aether', pu
 function paintList() {
   $('slist').replaceChildren(...S.servers.map((s) => el('div', { className: 'srv' + (s.id === S.id ? ' on' : ''), onclick: () => pick(s.id) }, [
     el('span', { className: 'dot ' + (s.running ? 'on' : s.starting ? 'wait' : '') }),
-    el('div', {}, [el('b', { textContent: s.name }), el('small', { textContent: s.running ? s.players + ' online, port ' + s.port : s.starting ? 'starting' : 'stopped, port ' + s.port })]),
+    el('div', {}, [el('b', { textContent: s.name }), el('small', { textContent: (s.running ? s.players + ' online, port ' + s.port : s.starting ? 'starting' : 'stopped, port ' + s.port) + ', ' + (s.version ? (s.version === 'checkout' ? 'this checkout' : 'v' + s.version) + (s.runs ? '' : ' (missing)') : 'no version') })]),
   ])));
 }
+/* ---- server versions: the library, and the one this server runs ---- */
+function paintVersions() {
+  $('novers').hidden = S.versions.length > 0;
+  $('vlist').replaceChildren(...S.versions.map((v) => el('div', { className: 'ver' }, [
+    el('b', { textContent: v.version === 'checkout' ? 'this checkout' : 'v' + v.version }),
+    el('small', { textContent: v.users.length ? v.users.length + ' server' + (v.users.length === 1 ? '' : 's') : 'not in use' }),
+    ...(v.version === 'checkout' || v.users.length ? [] : [el('button', { textContent: 'Remove', className: 'danger', onclick: async () => { const r = await window.dc.removeVersion(v.version); $('vmsg').textContent = r.ok ? 'Removed v' + v.version + '.' : r.why; } })]),
+  ])));
+  const sel = $('sver'), c = S.cur, have = S.versions.map((v) => v.version);
+  const opts = [...have]; if (c && c.version && !have.includes(c.version)) opts.push(c.version);
+  sel.replaceChildren(...(c && !c.version ? [el('option', { value: '', textContent: 'none' })] : []),
+    ...opts.map((v) => el('option', { value: v, textContent: (v === 'checkout' ? 'this checkout' : 'v' + v) + (have.includes(v) ? '' : ' (missing)') })));
+  sel.value = (c && c.version) || '';
+  sel.disabled = !c || c.running || c.starting;
+  sel.title = c && (c.running || c.starting) ? 'Stop the server to change its version' : 'The server version this server runs';
+}
+$('sver').onchange = async () => {
+  const v = $('sver').value; if (!S.id || !v) return;
+  let r = await window.dc.setVersion(S.id, v, false);
+  if (r && r.ask) r = window.confirm(r.ask) ? await window.dc.setVersion(S.id, v, true) : { ok: false, why: '' };
+  if (r && r.ok === false && r.why) say(r.why);
+  S.settings = null; if (S.tab === 'settings' || S.tab === 'rules') loadSettings();
+  paintVersions();
+};
+const importV = async (kind) => {
+  $('vmsg').textContent = 'Importing...';
+  const r = await window.dc.importVersion(kind);
+  $('vmsg').textContent = r.ok ? 'Imported v' + r.version + '.' : r.why || '';
+};
+$('b_vzip').onclick = () => importV('zip');
+$('b_vdir').onclick = () => importV('folder');
 async function pick(id) {
   S.id = id; S.settings = null;
   $('log').textContent = '';
@@ -27,7 +58,7 @@ async function pick(id) {
   paintList(); paint(); showTab(S.tab);
 }
 function takeServers(o) {
-  S.servers = o.servers; $('noserver').hidden = o.hasServer;
+  S.servers = o.servers; S.versions = o.versions || []; paintVersions();
   if (!S.servers.some((s) => s.id === S.id)) { S.id = null; S.cur = null; if (S.servers[0]) return pick(S.servers[0].id); }
   paintList(); if (!S.id) paint();
 }
@@ -56,10 +87,11 @@ function showTab(name) {
 /* ---- the header and the dashboard ---- */
 function paint() {
   const c = S.cur, st = c && c.status, running = !!(c && c.running), starting = !!(c && c.starting);
+  paintVersions();
   $('sname').textContent = c ? c.name : 'No server selected';
   $('sport').textContent = c ? 'port ' + c.port : '';
   const pill = $('pill'); pill.textContent = running ? 'running' : starting ? 'starting' : 'stopped'; pill.className = 'pill ' + (running ? 'on' : starting ? 'wait' : 'off');
-  $('b_start').disabled = !c || running || starting; $('b_stop').disabled = !running && !starting; $('b_restart').disabled = !running; $('b_kill').disabled = !running && !starting;
+  $('b_start').disabled = !c || running || starting || !c.runs; $('b_stop').disabled = !running && !starting; $('b_restart').disabled = !running; $('b_kill').disabled = !running && !starting;
   $('b_browser').disabled = !(st && st.game);
   $('c_status').textContent = running ? 'Running' : starting ? 'Starting' : 'Stopped';
   $('c_uptime').textContent = st ? 'up ' + fmtUp(st.uptime) + (st.version ? ', game ' + st.version : '') : '';
@@ -77,7 +109,7 @@ function paint() {
       addrs.append(el('div', {}, [el('code', { textContent: url }), el('span', { className: 'dim', textContent: a === 'localhost' ? 'this computer' : 'your network' }), el('button', { textContent: 'Copy', onclick: () => window.dc.copy(url) })]));
     }
     if (!st.game) addrs.append(el('div', { className: 'warn', textContent: 'No game file was found to hand out. Players need their own copy of the game and choose Multiplayer.' }));
-  } else addrs.append(el('div', { className: 'dim', textContent: c ? 'Start the server to get its address.' : 'Pick a server on the left, or make one.' }));
+  } else addrs.append(el('div', { className: c && !c.runs ? 'warn' : 'dim', textContent: !c ? 'Pick a server on the left, or make one.' : !c.runs ? 'Give this server a version (Version, at the top) before starting it. Import one under Server versions on the left.' : 'Start the server to get its address.' }));
   $('hosts').replaceChildren(...(st ? st.hosts : []).map((h) => el('tr', {}, [el('td', { textContent: DIMS[h.dim] || h.dim }), el('td', { textContent: h.paused ? 'paused (nobody there)' : h.ready ? 'running' : h.running ? 'starting' : 'asleep (starts when a player goes there)' }), el('td', { textContent: h.running ? fmtB(h.heap) : '' })])));
   paintPlayers();
 }
@@ -160,7 +192,19 @@ const FIELDS = [['name', 'Server name', 'text'], ['motd', 'Message of the day', 
   ['compressAfter', 'Compress land nobody has visited for (days; 0 never)', 'int'], ['compressPlayersAfter', 'Compress players who have not joined for (days; 0 never)', 'int'], ['spawnProtection', 'Spawn protection (blocks; 0 for none)', 'int'],
   ['sleepPercent', 'Players asleep to skip the night (%)', 'int'], ['simulate', 'The server runs the world itself (mobs, water, crops)', 'bool'], ['singlePlayer', 'The served game may also play alone', 'bool'],
   ['lockNames', 'Nobody may change their own name', 'bool'], ['lockPasswords', 'Nobody may change their own password', 'bool'], ['lockSkins', 'Nobody may change their own skin', 'bool'],
-  ['whitelist', 'Only listed players may join (whitelist)', 'bool'], ['allow', 'Whitelist (one name a line)', 'list'], ['ops', 'Operators (one name a line)', 'list'], ['bans', 'Banned (one name a line)', 'list']];
+  ['whitelist', 'Only listed players may join (whitelist)', 'bool'], ['allow', 'Whitelist (one name a line)', 'list'], ['ops', 'Operators (one name a line)', 'list'], ['bans', 'Banned (one name a line)', 'list'],
+  ['cert', 'TLS certificate file, PEM (empty: plain http)', 'text'], ['key', 'TLS private key file, PEM', 'text'], ['origins', 'Web pages allowed to connect (one address a line; empty: any)', 'list']];
+/* settings the form does not show: the world (Worlds tab), the seed of a new world, the game file */
+const HIDDEN = new Set(['rules', 'world', 'seed', 'game']);
+/* each version shows the settings it has: the ones above it knows, then any newer one by its own name */
+function fieldsFor(settings) {
+  const known = FIELDS.filter(([k]) => k in settings), seen = new Set(FIELDS.map(([k]) => k));
+  const more = Object.keys(settings).filter((k) => !seen.has(k) && !HIDDEN.has(k)).map((k) => {
+    const v = settings[k];
+    return [k, k, typeof v === 'boolean' ? 'bool' : typeof v === 'number' ? 'int' : Array.isArray(v) ? 'list' : 'text'];
+  }).filter(([k]) => { const v = settings[k]; return v === null || ['boolean', 'number', 'string'].includes(typeof v) || (Array.isArray(v) && v.every((x) => typeof x === 'string')); });
+  return [...known, ...more];
+}
 const RULE_NAMES = { keepInv: 'Keep inventory on death', god: 'God mode', mobGrief: 'Mob griefing', mobSpawn: 'Natural mob spawning', dayCycle: 'Daylight cycle', fireTick: 'Fire spreads', fallDmg: 'Fall damage', snail: 'The Eternal Snail',
   jsc: 'Jumpscare chance (0 to 100)', instaKill: 'Instant kill', freezeMobs: 'Freeze all mobs', ghosts: 'Guilt ghosts', figDrops: 'Figurine drops', fbOK: 'Fullbright allowed', store: 'Dingle Store', powers: 'Superpowers', cheats: 'Cheats (the debug menu, for everyone)',
   nether: 'The Nether', aether: 'The Aether', puppet: 'Puppet Purgatory', difficulty: 'Difficulty' };
@@ -170,7 +214,7 @@ async function loadSettings() {
   S.settings = r.settings;
   $('setmsg').textContent = ''; $('rulemsg').textContent = '';
   const sf = $('setform'); sf.replaceChildren();
-  for (const [k, label, kind] of FIELDS) {
+  for (const [k, label, kind] of fieldsFor(S.settings)) {
     const v = S.settings[k];
     let input;
     if (kind === 'bool') { input = el('input', { type: 'checkbox', checked: !!v }); sf.append(el('label', { className: 'check' }, [input, label])); }

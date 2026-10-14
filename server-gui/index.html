@@ -18,7 +18,14 @@
     <input id="ns_name" maxlength="60" placeholder="Name of the new server" required>
     <button>Create</button>
   </form>
-  <div id="noserver" class="warn" hidden>The server's files were not found next to this program.</div>
+  <h3 class="vh">Server versions</h3>
+  <div id="vlist"></div>
+  <div id="novers" class="warn" hidden>No server version yet. Download DINGLECRAFT-Server-v&lt;version&gt;.zip from the releases page and import it here. The window works with every version from 6.41 on.</div>
+  <div class="sideacts">
+    <button id="b_vzip">Import a .zip</button>
+    <button id="b_vdir">Import a folder</button>
+  </div>
+  <div id="vmsg" class="dim"></div>
 </aside>
 <div id="right">
   <header>
@@ -26,6 +33,7 @@
       <h2 id="sname">No server selected</h2>
       <span id="pill" class="pill off">stopped</span>
       <span id="sport" class="dim"></span>
+      <label class="vpick">Version <select id="sver"></select></label>
     </div>
     <button id="b_start" class="go">Start</button>
     <button id="b_stop" disabled>Stop</button>

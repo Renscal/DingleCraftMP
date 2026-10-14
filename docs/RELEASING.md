@@ -134,13 +134,27 @@ gh release create v6.9 out/release/DINGLECRAFT-Server-v6.9.zip out/release/DINGL
 | file | what |
 |---|---|
 | `DINGLECRAFT-Server-v<X.Y>.zip` | `server/` with the game html beside it. The server hands the game out at its own address, so players only need a browser |
-| `DINGLECRAFT-ServerGUI-v<X.Y>.zip` | `server-gui/` (the server as a window, [server-gui/README.md](../server-gui/README.md)) with `server/` and the html inside it. Optional. Source only: no `.exe` is built yet |
 | `DINGLECRAFT-Client-v<X.Y>.zip` | `client/` (the Electron wrapper, [client/README.md](../client/README.md)) with the same html beside `main.js`. Optional: nobody needs it to play |
 | `notes.md` | the version's patch notes as Markdown, plus a line about each download |
 
 It refuses an html that is not the released one (md5 against `shipped.json`), reads both zips back and compares every
 file, and never talks to the network. Before `npm run release` it is a dry run (it says so). The zips are built by
 `scripts/lib/zip.mjs`, so packaging needs nothing but Node.
+
+### The server window has its own releases
+
+The server window (`server-gui/`, [server-gui/README.md](../server-gui/README.md)) is not part of a game release since its 1.0:
+it carries no server, and players import a game release's `DINGLECRAFT-Server-v<X.Y>.zip` into it. It gets a release of its
+own only when the window itself changes: raise `version` in `server-gui/package.json`, then
+
+```
+npm run package:gui
+gh release create server-gui-v<version> out/release-gui/DINGLECRAFT-ServerGUI-v<version>.zip --target Experimental \
+  --prerelease --title "DINGLECRAFT Server window <version>" --notes-file out/release-gui/notes.md -R <owner>/DingleCraftMP
+```
+
+(`scripts/package-gui.mjs` prints the exact line.) The window talks to a server only through the `--ipc` messages of
+`server/lib/admin.mjs`: a game version may add messages, never change or remove one, so older windows keep working.
 
 ## Where the new version gets played
 

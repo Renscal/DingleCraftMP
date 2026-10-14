@@ -4,6 +4,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const { readZip } = require('./zip.cjs');
 
 /* server.json as an object ({} when there is none; throws on a file that is not one JSON object) */
 function readSettings(dataDir) {
@@ -107,8 +108,91 @@ function pruneBackups(dataDir, world, keep) {
   return gone.length;
 }
 
+/* ---- server versions (the window is one program for every version of the server) ---- */
+/* A version is a server release as it is downloaded: DINGLECRAFT-Server-v<X.Y>.zip, or that zip unpacked. Imported, it
+   lives in versions/<X.Y>/ under the program's folder: dinglecraft-server.mjs, lib/ (with admin.mjs, the --ipc mode the
+   window drives, 6.41 and newer) and the game html dinglecraft_v<X.Y>.html that names the version. Each server in the
+   list says which version it runs; several versions can run side by side. */
+const VER_RE = /^\d{1,3}\.\d{1,3}$/;
+/* "6.9" < "6.10" */
+function cmpVersion(a, b) {
+  const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number);
+  return (x[0] - y[0]) || (x[1] - y[1]);
+}
+/* the version a server folder holds, or throws saying why it is not one the window can run */
+function versionOfDir(dir) {
+  if (!fs.existsSync(path.join(dir, 'dinglecraft-server.mjs'))) throw new Error('That is not a DINGLECRAFT server: there is no dinglecraft-server.mjs in it.');
+  if (!fs.existsSync(path.join(dir, 'lib', 'admin.mjs'))) throw new Error('That server is too old for this window: it needs game version 6.41 or newer.');
+  const htmls = fs.readdirSync(dir).map((n) => /^dinglecraft_v(\d{1,3}\.\d{1,3})\.html$/.exec(n)).filter(Boolean).map((m) => m[1]).sort(cmpVersion);
+  if (!htmls.length) throw new Error('That server has no game file (dinglecraft_v<version>.html) beside it, so its version is not known.');
+  return htmls[htmls.length - 1];
+}
+const versionsDir = (root) => path.join(root, 'versions');
+/* every imported version, newest first: [{ version, dir }] */
+function listVersions(root) {
+  let names = [];
+  try { names = fs.readdirSync(versionsDir(root)); } catch { return []; }
+  const out = [];
+  for (const n of names) {
+    if (!VER_RE.test(n)) continue;
+    const dir = path.join(versionsDir(root), n);
+    try { if (versionOfDir(dir) === n) out.push({ version: n, dir }); } catch { /* half-imported or damaged: not offered */ }
+  }
+  return out.sort((a, b) => cmpVersion(b.version, a.version));
+}
+const SKIP = (n) => n === 'data' || n === 'node_modules' || n.startsWith('.');
+/* Import a version from a zip (a release as downloaded) or a folder (one unpacked). It is unpacked into a scratch folder
+   first and only takes its place once it checks out, replacing the same version if it was there. inUse(version): true
+   while a server of that version is running (it is not replaced under a running server). Returns { version, dir }. */
+function importVersion(root, src, inUse) {
+  const st = fs.statSync(src), tmp = path.join(versionsDir(root), '.import-' + process.pid + '-' + Date.now().toString(36));
+  fs.mkdirSync(tmp, { recursive: true });
+  try {
+    if (st.isDirectory()) {
+      const top = fs.existsSync(path.join(src, 'dinglecraft-server.mjs')) ? src : null;
+      if (!top) throw new Error('That folder has no dinglecraft-server.mjs: pick the unpacked DINGLECRAFT-Server folder.');
+      fs.cpSync(top, tmp, { recursive: true, filter: (f) => !SKIP(path.basename(f)) || f === top });
+    } else {
+      const entries = readZip(fs.readFileSync(src));
+      const front = entries.find((e) => /(^|\/)dinglecraft-server\.mjs$/.test(e.name));
+      if (!front) throw new Error('That zip holds no DINGLECRAFT server (no dinglecraft-server.mjs). Pick DINGLECRAFT-Server-v<version>.zip.');
+      const pre = front.name.slice(0, front.name.length - 'dinglecraft-server.mjs'.length);
+      for (const e of entries) {
+        if (!e.name.startsWith(pre) || e.name.endsWith('/')) continue;
+        const rel = e.name.slice(pre.length);
+        if (!rel || rel.split('/').some((p) => p === '..' || p === '' || SKIP(p)) || path.isAbsolute(rel) || /^[A-Za-z]:/.test(rel)) continue;   /* nothing outside the folder */
+        const to = path.join(tmp, ...rel.split('/'));
+        fs.mkdirSync(path.dirname(to), { recursive: true });
+        fs.writeFileSync(to, e.data, { mode: e.mode & 0o111 ? 0o755 : 0o644 });
+      }
+    }
+    const version = versionOfDir(tmp), dir = path.join(versionsDir(root), version);
+    if (inUse && inUse(version)) throw new Error('Version ' + version + ' is running on a server: stop it before importing that version again.');
+    fs.rmSync(dir, { recursive: true, force: true });
+    fs.renameSync(tmp, dir);
+    return { version, dir };
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+}
+/* delete an imported version; refused while a server in the list is set to it */
+function removeVersion(root, version, list) {
+  if (!VER_RE.test(version)) throw new Error('not a version');
+  const users = (list || []).filter((e) => e.version === version).map((e) => e.name);
+  if (users.length) throw new Error('Version ' + version + ' is set on ' + users.join(', ') + ': give ' + (users.length === 1 ? 'it' : 'them') + ' another version first.');
+  fs.rmSync(path.join(versionsDir(root), version), { recursive: true, force: true });
+  return true;
+}
+/* give every server that has no version (a list from before 1.0 of the window, or a fresh import) the newest one */
+function fillVersions(list, versions) {
+  const v = versions[0] && versions[0].version;
+  if (!v) return { list, changed: false };
+  let changed = false;
+  const out = list.map((e) => { if (e.version) return e; changed = true; return { ...e, version: v }; });   /* one set to a version since removed keeps it: the window asks for another */
+  return { list: out, changed };
+}
+
 /* ---- the list of servers (servers.json in the program's own folder) ---- */
-/* Each server is a name and a data folder: { id, name, dataDir, tasks: [...] }. The file is the window's, not the
+/* Each server is a name, a data folder and the version it runs: { id, name, dataDir, version, ran, tasks: [...] } (ran:
+   the newest version that has run it, to warn before an older one opens a world a newer one wrote). The file is the window's, not the
    server's: a server's own settings stay in its data folder's server.json. */
 function readServers(file) {
   try { const o = JSON.parse(fs.readFileSync(file, 'utf8')); return Array.isArray(o.servers) ? o.servers.filter((x) => x && typeof x.id === 'string' && typeof x.dataDir === 'string') : []; } catch { return []; }
@@ -132,7 +216,7 @@ function addServer(list, root, o) {
     let port = 40162; while (used.has(port)) port++;
     writeSettings(dataDir, { name, port });
   }
-  const entry = { id, name, dataDir, tasks: [] };
+  const entry = { id, name, dataDir, version: (o && typeof o.version === 'string' && VER_RE.test(o.version)) ? o.version : '', tasks: [] };
   return { list: [...list, entry], entry };
 }
 /* take a server off the list. Its folder is left exactly where it is. */
@@ -161,5 +245,5 @@ function dueTasks(tasks, last, now, since) {
   return (tasks || []).filter((t) => t.on !== false && now - (last[t.id] === undefined ? since : last[t.id]) >= t.every * 60000);
 }
 
-module.exports = { readSettings, writeSettings, listWorlds, backupWorld, newWorld, goodWorldName, fmtUptime, fmtBytes,
+module.exports = { cmpVersion, versionOfDir, listVersions, importVersion, removeVersion, fillVersions, readSettings, writeSettings, listWorlds, backupWorld, newWorld, goodWorldName, fmtUptime, fmtBytes,
   listBackups, restoreBackup, deleteBackup, pruneBackups, readServers, writeServers, addServer, removeServer, portOf, cleanTask, dueTasks };

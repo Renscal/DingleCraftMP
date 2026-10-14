@@ -2,10 +2,13 @@
 // It manages a list of servers, each one a name and a data folder (its server.json and its worlds), shown down the left
 // of the window; the right side is the server that is picked: dashboard, console, players, settings, game rules,
 // worlds, backups, scheduler.
-// The server itself is not changed and does not run in this process. Each one is started as a child, with this
-// program's own Node (ELECTRON_RUN_AS_NODE), in its --ipc mode (server/lib/admin.mjs): it reports status, log lines and
-// players over the fork channel and takes commands the same way. So a server that crashes cannot take the window down,
-// the window can start it again, and nobody needs Node installed.
+// The server itself is not part of this program and does not run in this process. The window keeps a library of server
+// versions (each a server release, DINGLECRAFT-Server-v<X.Y>.zip, imported once: lib/store.cjs) and every server in the
+// list runs the version it is set to, so one window runs any mix of versions and does not change when the server does.
+// Each server is started as a child, with this program's own Node (ELECTRON_RUN_AS_NODE), in its --ipc mode
+// (server/lib/admin.mjs, 6.41 and newer): it reports status, log lines and players over the fork channel and takes
+// commands the same way. So a server that crashes cannot take the window down, the window can start it again, and nobody
+// needs Node installed.
 //   npm install      once (downloads Electron)
 //   npm start        opens the window          (npm start -- --data <folder> adds that folder as a server)
 'use strict';
@@ -16,28 +19,38 @@ const path = require('path');
 const { pathToFileURL } = require('url');
 const store = require('./lib/store.cjs');
 
-/* the server's files: inside this folder in a packaged copy, next door in a checkout of the repository */
-const SERVER_DIR = [path.join(__dirname, 'server'), path.join(__dirname, '..', 'server')].find((d) => fs.existsSync(path.join(d, 'dinglecraft-server.mjs'))) || path.join(__dirname, 'server');
-const ENTRY = path.join(SERVER_DIR, 'dinglecraft-server.mjs');
+/* run from a checkout of the repository, its own server/ is one more version, "checkout" (it finds the game in dist/) */
+const CHECKOUT = [path.join(__dirname, '..', 'server')].find((d) => fs.existsSync(path.join(d, 'dinglecraft-server.mjs')) && fs.existsSync(path.join(d, 'lib', 'admin.mjs'))) || null;
 
 /* G.list: the servers as servers.json has them. G.run: id -> what is known about each while the program is open. */
-const G = { win: null, tray: null, list: [], run: new Map(), quitting: false, admin: null, timer: null };
+const G = { win: null, tray: null, list: [], run: new Map(), quitting: false, admins: new Map(), timer: null };
 const root = () => app.getPath('userData');
 const listFile = () => path.join(root(), 'servers.json');
 const saveList = () => store.writeServers(listFile(), G.list);
 const entry = (id) => { const e = G.list.find((x) => x.id === id); if (!e) throw new Error('No such server.'); return e; };
+/* the versions this window can run, newest first (the checkout's own first, when there is one) */
+const versions = () => [...(CHECKOUT ? [{ version: 'checkout', dir: CHECKOUT }] : []), ...store.listVersions(root())];
+const dirOf = (v) => { const x = v && versions().find((y) => y.version === v); return x ? x.dir : null; };
+const NO_VERSION = 'This server has no server version to run. Import one (a DINGLECRAFT-Server-v<version>.zip from the releases page) under Server versions, then pick it above.';
+function fillAll() { const r = store.fillVersions(G.list, versions()); if (r.changed) { G.list = r.list; saveList(); } }
 function rt(id) {
   if (!G.run.has(id)) G.run.set(id, { child: null, running: false, starting: false, status: null, log: [], restart: false, seq: 0, waiting: new Map(), since: 0, last: {} });
   return G.run.get(id);
 }
 const tell = (what, v) => { if (G.win && !G.win.isDestroyed()) G.win.webContents.send(what, v); };
 function addLog(id, line) { const r = rt(id); r.log.push(line); if (r.log.length > 2000) r.log.splice(0, r.log.length - 2000); tell('log', { id, line }); }
-const brief = (e) => { const r = rt(e.id); return { id: e.id, name: e.name, dataDir: e.dataDir, port: store.portOf(e.dataDir), running: r.running, starting: r.starting, players: r.status ? r.status.players.length : 0 }; };
-const overview = () => ({ servers: G.list.map(brief), hasServer: fs.existsSync(ENTRY) });
+const brief = (e) => { const r = rt(e.id); return { id: e.id, name: e.name, dataDir: e.dataDir, port: store.portOf(e.dataDir), running: r.running, starting: r.starting, players: r.status ? r.status.players.length : 0,
+  version: e.version || '', ran: e.ran || '', runs: !!dirOf(e.version), live: r.child ? r.version : '' }; };
+const overview = () => ({ servers: G.list.map(brief), versions: versions().map((v) => ({ version: v.version, users: G.list.filter((e) => e.version === v.version).map((e) => e.name) })) });
 const detail = (id) => { const e = entry(id), r = rt(id); return { ...brief(e), status: r.status, log: r.log.slice(-500), tasks: e.tasks || [] }; };
 const changed = (id) => { tell('servers', overview()); if (id) tell('state', detail(id)); refreshTray(); };
-/* the server's own settings check (an ES module: loaded once) */
-async function admin() { if (!G.admin) G.admin = await import(pathToFileURL(path.join(SERVER_DIR, 'lib', 'admin.mjs')).href); return G.admin; }
+/* a version's own settings check (an ES module: loaded once per version). For a server with no version yet, the newest. */
+async function admin(e) {
+  const dir = dirOf(e && e.version) || (versions()[0] && versions()[0].dir);
+  if (!dir) throw new Error(NO_VERSION);
+  if (!G.admins.has(dir)) G.admins.set(dir, await import(pathToFileURL(path.join(dir, 'lib', 'admin.mjs')).href));
+  return G.admins.get(dir);
+}
 /* the settings on disk laid over the defaults, rule by rule (an older server.json lists fewer rules) */
 function formMerge(def, cur) { return { ...def, ...cur, rules: { ...def.rules, ...(cur.rules || {}) } }; }
 
@@ -45,12 +58,14 @@ function formMerge(def, cur) { return { ...def, ...cur, rules: { ...def.rules, .
 function startServer(id) {
   const e = entry(id), r = rt(id);
   if (r.child) return { ok: false, why: 'That server is already running.' };
-  if (!fs.existsSync(ENTRY)) return { ok: false, why: 'The server files are missing (' + ENTRY + ').' };
+  const dir = dirOf(e.version), ENTRY = dir && path.join(dir, 'dinglecraft-server.mjs');
+  if (!ENTRY || !fs.existsSync(ENTRY)) return { ok: false, why: e.version ? 'Version ' + e.version + ' is not in the library any more. Import it again, or pick another version above.' : NO_VERSION };
   const port = store.portOf(e.dataDir), clash = G.list.find((x) => x.id !== id && rt(x.id).child && store.portOf(x.dataDir) === port);
   if (clash) return { ok: false, why: '"' + clash.name + '" is already running on port ' + port + '. Give this server another port in Settings.' };
   fs.mkdirSync(e.dataDir, { recursive: true });
-  r.starting = true; r.status = null;
-  addLog(id, '--- starting the server ---');
+  r.starting = true; r.status = null; r.version = e.version;
+  if (e.version !== 'checkout' && (!e.ran || store.cmpVersion(e.version, e.ran) > 0)) { e.ran = e.version; saveList(); }
+  addLog(id, '--- starting the server (version ' + e.version + ') ---');
   const child = fork(ENTRY, ['--ipc', '--data', e.dataDir], { execPath: process.execPath, env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' }, stdio: ['ignore', 'pipe', 'pipe', 'ipc'], windowsHide: true });
   r.child = child;
   child.stderr.on('data', (b) => { for (const l of String(b).split(/\r?\n/)) if (l.trim()) addLog(id, l); });   /* errors before the server could speak for itself */
@@ -167,13 +182,13 @@ function makeTray() {
 function wire() {
   const h = (name, fn) => ipcMain.handle(name, async (_e, ...a) => { try { return await fn(...a); } catch (e) { return { ok: false, why: e.message }; } });
   h('servers', () => overview());
-  h('server:add', (o) => { const r = store.addServer(G.list, root(), o || {}); G.list = r.list; saveList(); changed(); return { ok: true, id: r.entry.id }; });
+  h('server:add', (o) => { const r = store.addServer(G.list, root(), { ...(o || {}), version: (versions().find((v) => v.version !== 'checkout') || versions()[0] || {}).version }); G.list = r.list; fillAll(); saveList(); changed(); return { ok: true, id: r.entry.id }; });
   h('server:adopt', async () => {
     const r = await dialog.showOpenDialog(G.win, { title: 'Choose a server\'s data folder (the one with server.json and the world in it)', properties: ['openDirectory'] });
     if (r.canceled || !r.filePaths[0]) return { ok: false, why: '' };
     let name = path.basename(r.filePaths[0]);
     try { name = store.readSettings(r.filePaths[0]).name || name; } catch { /* no settings yet: the folder's name */ }
-    const a = store.addServer(G.list, root(), { name, dataDir: r.filePaths[0] }); G.list = a.list; saveList(); changed();
+    const a = store.addServer(G.list, root(), { name, dataDir: r.filePaths[0] }); G.list = a.list; fillAll(); saveList(); changed();
     return { ok: true, id: a.entry.id };
   });
   h('server:remove', (id) => { if (rt(id).child) return { ok: false, why: 'Stop the server first.' }; G.list = store.removeServer(G.list, id); G.run.delete(id); saveList(); changed(); return { ok: true }; });
@@ -184,9 +199,28 @@ function wire() {
   h('restart', async (id) => { const r = rt(id); if (r.child) { r.restart = true; await stopServer(id); return { ok: true }; } return startServer(id); });
   h('command', (id, line) => sendCommand(id, line));
   h('setskin', (id, name, png) => sendCommand(id, null, { t: 'setskin', name: String(name || ''), png: String(png || '') }));   // 6.49: a skin is too long for a command line
-  h('settings:read', async (id) => ({ ok: true, settings: formMerge((await admin()).formDefaults(), store.readSettings(entry(id).dataDir)) }));
+  /* ---- server versions ---- */
+  h('version:import', async (kind) => {
+    const r = await dialog.showOpenDialog(G.win, kind === 'folder'
+      ? { title: 'Choose an unpacked DINGLECRAFT-Server folder (the one with dinglecraft-server.mjs in it)', properties: ['openDirectory'] }
+      : { title: 'Choose a server release: DINGLECRAFT-Server-v<version>.zip', properties: ['openFile'], filters: [{ name: 'Server release', extensions: ['zip'] }] });
+    if (r.canceled || !r.filePaths[0]) return { ok: false, why: '' };
+    const v = store.importVersion(root(), r.filePaths[0], (ver) => G.list.some((e) => rt(e.id).child && rt(e.id).version === ver));
+    for (const [d] of G.admins) if (path.resolve(d) === path.resolve(v.dir)) G.admins.delete(d);   /* a re-import: read its settings check afresh */
+    fillAll(); changed(); return { ok: true, version: v.version };
+  });
+  h('version:remove', (v) => { if (v === 'checkout') return { ok: false, why: 'The checkout\'s own server is not in the library.' }; store.removeVersion(root(), v, G.list); changed(); return { ok: true }; });
+  /* set the version a server runs. Older than the newest that has run it: asked first (force), as the world may not load in it */
+  h('server:version', (id, v, force) => {
+    const e = entry(id);
+    if (rt(id).child) return { ok: false, why: 'Stop the server before changing its version.' };
+    if (!dirOf(v)) return { ok: false, why: 'That version is not in the library.' };
+    if (!force && v !== 'checkout' && e.ran && store.cmpVersion(v, e.ran) < 0) return { ok: false, ask: 'This server\'s world was last run by version ' + e.ran + '. An older version may not read everything a newer one wrote, and what it does not know it can lose. Run it on ' + v + ' anyway? (A backup first is a good idea.)' };
+    e.version = v; saveList(); changed(id); return { ok: true };
+  });
+  h('settings:read', async (id) => { const e = entry(id); return { ok: true, settings: formMerge((await admin(e)).formDefaults(), store.readSettings(e.dataDir)) }; });
   h('settings:save', async (id, o) => {
-    const e = entry(id), v = (await admin()).validateSettings(o, store.readSettings(e.dataDir));
+    const e = entry(id), v = (await admin(e)).validateSettings(o, store.readSettings(e.dataDir));
     if (!v.ok) return { ok: false, errors: v.errors, restart: [] };
     const clash = G.list.find((x) => x.id !== id && store.portOf(x.dataDir) === o.port);
     store.writeSettings(e.dataDir, o);
@@ -215,7 +249,8 @@ else {
     G.list = store.readServers(listFile());
     const i = process.argv.indexOf('--data');
     if (i > 0 && process.argv[i + 1] && !G.list.some((e) => path.resolve(e.dataDir) === path.resolve(process.argv[i + 1]))) { G.list = store.addServer(G.list, root(), { name: path.basename(process.argv[i + 1]), dataDir: process.argv[i + 1] }).list; saveList(); }
-    if (!G.list.length) { G.list = store.addServer(G.list, root(), { name: 'My DINGLECRAFT Server' }).list; saveList(); }   /* a first run starts with one server ready to press Start on */
+    if (!G.list.length) { G.list = store.addServer(G.list, root(), { name: 'My DINGLECRAFT Server' }).list; saveList(); }   /* a first run starts with one server, ready once a version is imported */
+    fillAll();
     wire(); openWindow(); makeTray();
     G.timer = setInterval(() => { runSchedules().catch(() => {}); }, 20000);
   });
