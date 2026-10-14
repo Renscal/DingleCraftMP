@@ -3,7 +3,13 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Out of sight, out of space',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Feet on the ground',lines:[
+    '<b>FEET ON THE GROUND.</b> Some new worlds started you off with a 15-block drop into a ravine and half your hearts gone before you had pressed a key. The spawn finder looked at the land as planned, before the caves and ravines were cut into it.',
+    '<b>Fixed.</b> It now checks the ground that is really there: a new world always starts you on dry, solid ground above the sea. Tested on 40 seeds. A world that is open sea for hundreds of blocks still starts you over the water, which is at least soft.',
+    '<b>Logging in is a little quicker.</b> On a server with accounts, the Username box now starts with the name you play under, so most people only need to type the password.',
+    '<b>Behind the scenes.</b> The desktop client was started for the first time and works (muted, logged in, played), and a server running on https/wss with a certificate was tested end to end.',
+  ]},
+ {v:'6.53',label:'Release 1.1',title:'Out of sight, out of space',lines:[
     '<b>OUT OF SIGHT, OUT OF SPACE.</b> A server that has been running for a year keeps every house, mine and dug-out crater anyone ever made, in readable files. Readable is lovely. A year of it is a lot of disk.',
     '<b>Cold land is packed away.</b> Land nobody has been near for 7 days is written compressed: about 3% of its size. A flattened chunk that took 57 KB now takes a few bytes. The moment someone walks back, it is written plain again.',
     '<b>So are absent players.</b> A player who has not joined for 7 days has their file compressed too. When they log in, it is plain again. Their login still works the whole time.',

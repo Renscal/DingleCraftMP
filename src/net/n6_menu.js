@@ -47,7 +47,7 @@ function ntLoginShow(m){
   NET.loginWait=true;
   const box=$('t_mp_login');if(box)box.hidden=false;
   const u=$('t_mp_user'),p=$('t_mp_pass'),k=$('t_mp_keep'),go=$('t_mp_go');
-  if(u&&!u.value)u.value=(NET.cred&&NET.cred.u)||m.user||'';
+  if(u&&!u.value)u.value=(NET.cred&&NET.cred.u)||m.user||PNAME||'';   /* 6.54: the name this game goes by, if nothing better is known */
   if(NET.cred&&NET.cred.p&&m.why){ntMplSet(NET.addr,{u:NET.cred.u});NET.cred.p='';}   /* a remembered password that no longer works is forgotten */
   if(p)p.value='';
   if(k&&NET.cred)k.checked=!!NET.cred.keep;

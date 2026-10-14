@@ -135,6 +135,9 @@ boot.run(async()=>{
     const bandG=()=>V.mg2BandState&&V.getMG2SND?V.getMG2SND().band.g:null;
     const srcs=()=>ac.nodes.filter(q=>q.kind==='src'&&q.buffer&&q.started);
     const bars=()=>srcs().filter(q=>q.out[0]&&q.out[0]===bandG());
+    /* 6.54: wait for the second bar by the audio clock, not a fixed count of frames (the clock starts with the first sound,
+       which until 6.54 was the hurt of a fall at the spawn) */
+    until(()=>bars().filter(q=>Math.abs(q.buffer.length-4.0*SR)<2).length>=2,300);
     const tb=bars().filter(q=>Math.abs(q.buffer.length-4.0*SR)<2);
     const st=tb.map(q=>q.started[0]).sort((a,b)=>a-b),gaps=st.slice(1).map((t,i)=>t-st[i]);
     ok('Round I plays The Table: '+tb.length+' bars scheduled ahead on AC time, back to back (every gap exactly 4.000 s)',tb.length>=2&&gaps.every(g=>Math.abs(g-4.0)<1e-6)&&st[st.length-1]>ac.t);

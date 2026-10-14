@@ -13,7 +13,14 @@ function findSpawn(){
       const a=i/8*Math.PI*2;
       const x=Math.round(Math.sin(a)*r*9),z=Math.round(Math.cos(a)*r*9);
       const ci=colInfo(x,z);
-      if(ci.h>=SEA+1&&ci.b!==0)return [x+0.5,ci.h+2,z+0.5];
+      if(!(ci.h>=SEA+1&&ci.b!==0))continue;
+      /* 6.54: the column as it really is: caves and ravines are cut after the land is shaped, and a spawn on top of the
+         planned land could be over a ravine (seed 653: a 15-block fall at the very start). Build the chunk and stand on
+         its real top block: dry, solid, above the sea. */
+      const ck=ckey(Math.floor(x/CH),Math.floor(z/CH));
+      if(!chunks.get(ck))createChunk(Math.floor(x/CH),Math.floor(z/CH));
+      const t=surfaceTop(x,z),top=getBlock(x,t,z);
+      if(t>=SEA+1&&DEFS[top].solid!==false&&top!==B.WATER&&top!==B.LAVA)return [x+0.5,t+1.05,z+0.5];
     }
   }
   return [0.5,Math.max(colInfo(0,0).h,SEA)+2,0.5];

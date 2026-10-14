@@ -21,6 +21,15 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — Feet on the ground
+
+*Game version 6.54, released 2026-10-14.*
+
+- **FEET ON THE GROUND.** Some new worlds started you off with a 15-block drop into a ravine and half your hearts gone before you had pressed a key. The spawn finder looked at the land as planned, before the caves and ravines were cut into it.
+- **Fixed.** It now checks the ground that is really there: a new world always starts you on dry, solid ground above the sea. Tested on 40 seeds. A world that is open sea for hundreds of blocks still starts you over the water, which is at least soft.
+- **Logging in is a little quicker.** On a server with accounts, the Username box now starts with the name you play under, so most people only need to type the password.
+- **Behind the scenes.** The desktop client was started for the first time and works (muted, logged in, played), and a server running on https/wss with a certificate was tested end to end.
+
 ## Release 1.1 — Out of sight, out of space
 
 *Game version 6.53, released 2026-10-14.*
