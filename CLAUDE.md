@@ -5,15 +5,16 @@ You are working on **DINGLECRAFT**, an original fan-made Minecraft-style voxel s
 test-first, surgical-edit discipline. This file hands that discipline to you. Read it fully before touching code, then
 read the doc for the area you are working in.
 
-The owner, Dan, talks casually and loves absurd features (a casino, a microtransaction-store parody, walking Nuke Kegs, a
+The owner talks casually and loves absurd features (a casino, a microtransaction-store parody, walking Nuke Kegs, a
 16-metre demon in a 16 px world, Puppet Purgatory). Match that energy in patch notes. Be rigorous in the code. Keep it
 original: no real characters, brands or trademarks in names, art or text (the IP scan in `tests/repo/` enforces the list).
+("Dan" in the code and the suites is the engine's name for the local player, e.g. `HIT_BY='Dan'`; it is not the owner.)
 
 ---
 
 ## 0. Hard rules (never break these)
 
-1. **Testing is always muted.** Dan may be at the machine. In any browser: your own headless Chrome with
+1. **Testing is always muted.** The owner may be at the machine. In any browser: your own headless Chrome with
    `--mute-audio`, `vx_vox_settings` merged with `{snd:0,mus:0,tp:'og'}` before the page runs (merge, never wipe), and
    `soundOn=false; if(AC)AC.suspend()` after every load. Never turn sound on. Verify audio offline only. Put `tp:'og'`
    back when done. Details: `docs/QA.md`.
@@ -21,7 +22,7 @@ original: no real characters, brands or trademarks in names, art or text (the IP
    rule name, never a value.
 3. **No paid API calls.** Never run `tools/art/fal.mjs` or any art driver, with any key, real or fake.
 4. **Shipped versions are frozen.** If `GAME_VERSION` is in `tests/fixtures/shipped.json`, the build must reproduce it
-   byte for byte. Bump first (`npm run bump`) for anything that changes output. Never overwrite a `dist/` html Dan may be
+   byte for byte. Bump first (`npm run bump`) for anything that changes output. Never overwrite a `dist/` html the owner may be
    playing; never modify a shipped html anywhere. "Release 1.0" is a public LABEL (`RELEASE_LABEL`), not a game version:
    Release 1.0 is game versions 6.4 (the preview) to 6.9. Never set `GAME_VERSION` or `package.json` to a label;
    `GAME_VERSION` only goes up ([CONTRIBUTING.md](CONTRIBUTING.md), "Versions and release labels").
@@ -78,7 +79,9 @@ build/ dist/ out/   gitignored outputs
 4. **Exports.** Everything testable goes into `__vox` (core names in `src/boot/export_boot.js`) or the update's export
    object (`TPEX`, `PGEX`, `CREX`, `MGEX`).
 5. **Tests.** Statics and smokes for every feature, registered in `tests/gate.json` (section 6).
-6. **Run repeatedly.** `npm run test:quick` while iterating, `npm test` before committing, and repeat the relevant smokes
+6. **Run repeatedly.** `npm run test:quick` while iterating, the full suite before committing (the owner's choice:
+   `node scripts/gate.mjs --once --keep-going --jobs 3`, about 20 min; a timing check that fails is re-run alone before it
+   is believed), and repeat the relevant smokes
    4-6 times. Flakes are real and almost always rig bugs (`docs/TESTING.md`, the field manual). A red test stops the
    line.
 7. **HTML.** UI markup and CSS in `html/`; if it adds a key or a mouse action, a row in the Controls screen (`html/dom/help.html`,
@@ -88,7 +91,8 @@ build/ dist/ out/   gitignored outputs
    **Every update is pushed**: work on the `Experimental` branch, and after each finished update (tests green) commit and
    push it to the DingleCraftMP repository on GitHub (`git push mp Experimental`). `main` moves only when the owner says so.
    **Every version gets a GitHub release**, cut from `Experimental`, with two downloads, a server zip and a client zip
-   (`npm run package`, then the `gh release create` line it prints; `docs/RELEASING.md` step 6). These are betas for
+   (`npm run package`, then the `gh release create` line it prints, with `-R <owner>/DingleCraftMP` added (the repository the `mp`
+   remote points at): the `origin` remote is a different repository, and `gh` run from a worktree picks it; `docs/RELEASING.md` step 6). These are betas for
    players to test: the owner releases them without the gate (`npm run release -- --no-gate`). The access token lives in the machine's git credentials, never in this file or any other repo file (hard
    rule 2: a token in a tracked file is published with the next push, and GitHub revokes it on sight).
 10. **Announce** with playful per-feature patch notes, plus the test counts `npm run release` prints (the in-game
@@ -173,6 +177,21 @@ Full map: `docs/ARCHITECTURE.md` (PART-to-file table, systems index, how each up
   message type has a per-second limit (`RATE` in `server/lib/config.mjs`: a new message type needs an entry), the game
   pings every 2 s and reconnects by itself after a lost connection, and chests and drops are sent by range like edits. Anything that writes blocks must go through `setBlock`, anything that drops an item through `spawnDrop`,
   and anything that hurts a mob through `hurtMob`, or it will not reach other players.
+  **Since 6.46** (protocol 6 since 6.49):
+  - **Accounts (6.49):** with `accounts` on, `hello` is answered with `login` until a username and password match a
+    playerdata record's `password` (plain text, the file's second line, never sent to a game, `/status` or `/export`; a
+    `save` cannot set it). The helpers (`passOK`, `accountOf`, `locksOf`, `renameAccount`, `setSkin`) live in
+    `commands.mjs`, because `commands.mjs` may not import `protocol.mjs` (the layering rule in `n_static`). Messages
+    `login`, `acct`, `rename`. Locks `lockNames`/`lockPasswords`/`lockSkins`, global or per player.
+  - **Pausing (6.46, 6.55):** a dimension's game nobody is in is paused after `pauseWhenEmpty` s (`{t:'pause'}` to its
+    worker); a paused Nether or Aether is stopped after `stopWhenEmpty` min; a crashed Overworld game restarts.
+    `simulationDistance` (8) is how far round each player the host builds chunks and moves entities (`NT_HOSTR`).
+  - **The world clock (6.50):** `CATCH.clock` (`features/p53h_catchup.js`) runs with the land; the server keeps it in
+    `level.json` with `savedAt`, runs it while empty, sends it as `{t:'clock'}`; crops, saplings and furnaces catch up
+    on gaps. Use the clock, never `Date.now`, on a per-frame path (a save and a load each read `Date.now` once).
+  - **Cold files (6.53):** regions unvisited for `compressAfter` days and players unseen for `compressPlayersAfter` days
+    are written as `.json.br` (regions keep `runs` instead of `blocks`: `encodeRuns`/`decodeRuns` in `world.mjs`).
+  - **The server does not own inventories:** read ROADMAP step 6b before trying; it cannot be done one action at a time.
 
 **ID ledger** (`docs/ARCHITECTURE.md` section 7): grep before allocating. Next free at v6.43: **no block id is left**
 (212 stays undefined on purpose; farming took 217-219 and 248, saplings 249: new blocks must share an id and use meta); item ids 309, 339, then 382+. Purgatory ids are assigned only in
@@ -200,10 +219,15 @@ shipped version that changed bytes also fails.
 - Smokes: `stepper(base)` with strictly increasing timestamps (40-60 ms gaps; base >= 700000 for Malgorath), ~160
   warm-up frames, settle >= 25 frames after any teleport, purge hostiles before damage-sensitive phases, assert item
   totals not entity counts, never cache `V.P`, `boot.detClock(V)` for long timing-sensitive runs, seed `Math.random`.
-- Commands: `npm run test:quick` (~45 s), `npm test` (~11 min), `npm run gate` (~20 min, run it in the background, never
+- Commands: `npm run test:quick` (~6 min), `npm test` (~23 min one at a time; use `--jobs 3`), `npm run gate` (~20 min, run it in the background, never
   two heavy gates at once), one suite: `npm run build && node tests/<group>/<suite>.js`.
 - og_trace compares the OG game with golden recordings; re-bless (`--bless <file> --reason "..."`) only for a deliberate
-  OG change.
+  OG change, after proving the divergence comes only from it (put the old behaviour back in a scratch copy of
+  `build/game.js`, check the golden matches, restore): the reason goes into the file.
+- Rig lessons from 6.46-6.55: seed suites with mulberry32 (`Math.imul`), never a float LCG (it falls into short cycles);
+  a suite that may run beside a copy of itself writes to its own folder (`out/net/host_data_<pid>`); the server's
+  `dirty` flag is internal, so a test changes something real (`S.setTime`) to make `saveWorld` write; the test THREE is
+  a stand-in without 3D maths (load `assets/vendor/three.r128.min.js` for a real check).
 
 **Debugging protocol:** instrument, do not theorise past two guesses. Insert a temporary probe
 (`if(typeof __xProbe!=='undefined')__xProbe({...});`), define `global.__xProbe` in the test, read the truth, then strip
@@ -231,7 +255,14 @@ end.
 - Malgorath: his entities route to `mgMobMesh`/`mgBrain`/`mgPreHurt` (always -1); spawn only via `mgSpawnBoss`; damage
   needs an attacker (`V.mgHitAs`); M1 owns every block write in the Bite; `BufferAttribute`, never
   `Float32BufferAttribute`, for geometry rewritten in place.
-- Nobody can hear the game's audio: verify offline (`c2_audio`, `m2_audio`, the parity rigs).
+- Nobody can hear the game's audio: verify offline (`c2_audio`, `m2_audio`, the parity rigs). The audio clock starts
+  with the first sound, so a check timed in frames can depend on which sound came first.
+- A mesh pointed at something uses `lookAt`, not `rotation.y`/`rotation.x`: in three's default Euler order those go wrong
+  once yaw and pitch are both set (the laser before 6.52 was off in 90 of 112 directions).
+- The spawn finder stands on the real ground (`findSpawn` builds the chunk): caves and ravines are cut after the land is
+  shaped, so `colInfo` heights can be over a hole.
+- Shared chests open only when the server answers (`ntBeAsk`): anything a click does next must not assume the window is
+  open (6.51: a held block was placed against it).
 
 ## 9. Voice
 
