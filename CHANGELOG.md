@@ -21,6 +21,14 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## DingleCraft Multiplayer 2.0 — Log in with a click
+
+*Game version 6.59, released 2026-10-14.*
+
+- **LOG IN WITH A CLICK.** On a server with accounts, the Log in button was greyed out the whole time the server was waiting for you to log in, which is the one time anybody wants to press it. Only Enter worked, and nothing said so.
+- **Fixed.** The button works. While your login is on its way it waits for the answer, so a double click spends one of your five tries, not two, and a wrong password gives it straight back for the next go.
+- **How it got past us.** The tests logged in the way Enter does and never pressed the button. They press the button now.
+
 ## DingleCraft Multiplayer 2.0 — Two point oh
 
 *Game version 6.58, released 2026-10-14.*

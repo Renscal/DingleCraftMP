@@ -3,7 +3,12 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Two point oh',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Log in with a click',lines:[
+    '<b>LOG IN WITH A CLICK.</b> On a server with accounts, the Log in button was greyed out the whole time the server was waiting for you to log in, which is the one time anybody wants to press it. Only Enter worked, and nothing said so.',
+    '<b>Fixed.</b> The button works. While your login is on its way it waits for the answer, so a double click spends one of your five tries, not two, and a wrong password gives it straight back for the next go.',
+    '<b>How it got past us.</b> The tests logged in the way Enter does and never pressed the button. They press the button now.',
+  ]},
+ {v:'6.58',label:'DingleCraft Multiplayer 2.0',title:'Two point oh',lines:[
     '<b>DINGLECRAFT MULTIPLAYER 2.0.</b> Same game, bigger number. Everything since the first multiplayer server (game 6.10) has been living under the name Release 1.1 for forty-eight versions, which is a lot of point-ones. It has earned a proper name.',
     '<b>What 2.0 is.</b> A real server that runs the world itself: mobs, water, fire, crops, furnaces and the market, the same for everyone, in every dimension. Accounts, operators and slash commands. Farming, saplings, flowing water and lava, real light, monsters by the book, difficulty and DingleCore, your own skin, rebindable keys, and a plane you actually fly.',
     '<b>And the tools around it.</b> A desktop client, and a server window that runs any number of servers on any version, downloading new ones from GitHub by itself.',

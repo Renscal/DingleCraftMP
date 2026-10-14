@@ -162,8 +162,13 @@ boot.run(async()=>{
     V.ntOpenMenu();V.ntMsg({t:'login',user:'Bea',why:'',accounts:true});
     const box=global.document.getElementById('t_mp_login'),go=global.document.getElementById('t_mp_go');
     ok('asked to log in, the game shows the box (username filled in) and Join Server becomes Log in',box.hidden===false&&global.document.getElementById('t_mp_user').value==='Bea'&&go.textContent==='Log in'&&N.loginWait===true);
-    global.document.getElementById('t_mp_pass').value='s3cret!';V.ntMenuGo();
-    ok('...and Log in sends the login',sent.some(m=>m.t==='login'&&m.user==='Bea'&&m.pass==='s3cret!')&&N.cred&&N.cred.u==='Bea');
+    ok('6.59: ...and the Log in button can be pressed (it was greyed out while the server waited, so only Enter worked)',go.disabled===false);
+    global.document.getElementById('t_mp_pass').value='s3cret!';go.onclick();
+    ok('...and pressing Log in sends the login',sent.some(m=>m.t==='login'&&m.user==='Bea'&&m.pass==='s3cret!')&&N.cred&&N.cred.u==='Bea');
+    const tries=sent.filter(m=>m.t==='login').length;go.disabled||go.onclick();
+    ok('...then waits for the answer: greyed out, so a double click spends one try, not two',go.disabled===true&&sent.filter(m=>m.t==='login').length===tries);
+    V.ntMsg({t:'login',user:'Bea',why:'Wrong username or password.',accounts:true});
+    ok('...and a wrong password gives the button back for the next try',go.disabled===false&&N.loginWait===true&&go.textContent==='Log in');
     V.ntLoginHide();N.ws=null;N.st='off';N.cred=null;V.tmShow('main');}
   fs.rmSync(OUT,{recursive:true,force:true});
 });

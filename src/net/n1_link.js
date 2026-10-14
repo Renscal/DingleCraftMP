@@ -20,11 +20,13 @@ function ntUrl(addr){
   if(!/:\d+$/.test(a)&&!/^\[.*\]$/.test(a)&&!secure)a+=':'+NT_PORT;
   return (secure?'wss://':'ws://')+a;
 }
-/* the status line on the Multiplayer screen (bad = shown as an error); also greys out Join while connecting */
+/* the status line on the Multiplayer screen (bad = shown as an error); also greys out Join while connecting. 6.59: not
+   while the server is waiting for a login (it was greyed out then too, so only Enter could log in), except for the moment
+   a login is on its way (a double click would spend two of the five tries) */
 function ntStatus(txt,bad){
   NET.msg=txt||'';
   const el=$('t_mp_status');if(el){el.textContent=NET.msg;if(el.classList)el.classList.toggle('bad',!!bad);}
-  const b=$('t_mp_go');if(b)b.disabled=NET.st==='connecting';
+  const b=$('t_mp_go');if(b)b.disabled=NET.st==='connecting'&&(!NET.loginWait||!!NET.loginBusy);
 }
 /* send one message; false (and nothing else) when there is no open connection */
 function ntSend(m){

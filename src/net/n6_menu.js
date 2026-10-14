@@ -44,7 +44,7 @@ function ntMplSet(addr,v){
 }
 /* the server asks who this is (m.why: what was wrong with the last try) */
 function ntLoginShow(m){
-  NET.loginWait=true;
+  NET.loginWait=true;NET.loginBusy=false;                  /* 6.59: the button is pressable again (ntStatus below) */
   const box=$('t_mp_login');if(box)box.hidden=false;
   const u=$('t_mp_user'),p=$('t_mp_pass'),k=$('t_mp_keep'),go=$('t_mp_go');
   if(u&&!u.value)u.value=(NET.cred&&NET.cred.u)||m.user||PNAME||'';   /* 6.54: the name this game goes by, if nothing better is known */
@@ -61,12 +61,13 @@ function ntLoginGo(){
   const cred={u:u?(''+u.value).trim():'',p:p?''+p.value:'',keep:!!(k&&k.checked)};
   if(!cred.u||!cred.p){ntStatus('Type your username and password.',true);return;}
   NET.cred=cred;
+  NET.loginBusy=true;                                      /* 6.59: one try at a time: the button waits for the answer */
   ntSend({t:'login',user:cred.u,pass:cred.p});
   ntStatus('Logging in …');
 }
 /* the login box away, and Join Server back */
 function ntLoginHide(){
-  NET.loginWait=false;
+  NET.loginWait=false;NET.loginBusy=false;
   const box=$('t_mp_login');if(box)box.hidden=true;
   const go=$('t_mp_go');if(go)go.textContent='Join Server';
 }
