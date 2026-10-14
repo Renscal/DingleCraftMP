@@ -20,15 +20,17 @@ function paintList() {
 /* ---- server versions: the library, and the one this server runs ---- */
 function paintVersions() {
   $('novers').hidden = S.versions.length > 0;
-  $('vlist').replaceChildren(...S.versions.map((v) => el('div', { className: 'ver' }, [
+  let lastLab = null;                                      /* 1.1.1: a heading for each release name */
+  $('vlist').replaceChildren(...S.versions.flatMap((v) => { const lab = v.version === 'checkout' ? 'This checkout' : v.label || 'Other versions';
+    const head = lab !== lastLab ? [el('div', { className: 'vlab', textContent: lab })] : []; lastLab = lab; return [...head, el('div', { className: 'ver', title: v.label || '' }, [
     el('b', { textContent: v.version === 'checkout' ? 'this checkout' : 'v' + v.version }),
     el('small', { textContent: v.users.length ? v.users.length + ' server' + (v.users.length === 1 ? '' : 's') : 'not in use' }),
     ...(v.version === 'checkout' || v.users.length ? [] : [el('button', { textContent: 'Remove', className: 'danger', onclick: async () => { const r = await window.dc.removeVersion(v.version); $('vmsg').textContent = r.ok ? 'Removed v' + v.version + '.' : r.why; } })]),
-  ])));
+  ])]; }));
   const sel = $('sver'), c = S.cur, have = S.versions.map((v) => v.version);
-  const opts = [...have]; if (c && c.version && !have.includes(c.version)) opts.push(c.version);
-  sel.replaceChildren(...(c && !c.version ? [el('option', { value: '', textContent: 'none' })] : []),
-    ...opts.map((v) => el('option', { value: v, textContent: (v === 'checkout' ? 'this checkout' : 'v' + v) + (have.includes(v) ? '' : ' (missing)') })));
+  versionOptions(sel, allVersions().filter((x) => x.have), () => '');   /* 1.1.1: grouped under their release names */
+  if (c && c.version && !have.includes(c.version)) sel.append(el('option', { value: c.version, textContent: vName(c.version) + ' (missing)' }));
+  if (c && !c.version) sel.prepend(el('option', { value: '', textContent: 'none' }));
   sel.value = (c && c.version) || '';
   sel.disabled = !c || c.running || c.starting;
   sel.title = c && (c.running || c.starting) ? 'Stop the server to change its version' : 'The server version this server runs';
@@ -66,12 +68,25 @@ function takeServers(o) {
    here yet is downloaded and imported when the server is created. The refresh button asks GitHub again. ---- */
 const vName = (v) => (v === 'checkout' ? 'this checkout' : 'v' + v);
 const mb = (n) => (n > 0 ? Math.round(n / 1048576) + ' MB' : '');
-function nsOptions() {
-  const sel = $('ns_ver'), was = sel.value, have = new Set(S.versions.map((v) => v.version));
-  const all = [...S.versions.map((v) => ({ version: v.version, have: true })), ...S.remote.filter((x) => !have.has(x.version)).map((x) => ({ ...x, have: false }))];
+/* 1.1.1: every version, here or on GitHub, with its release name ("DingleCraft Multiplayer 2.0", "Release 1.1"), its title
+   and whether it is a full release or a beta (what GitHub says; a version only here takes the name its game file has) */
+function allVersions() {
+  const remote = new Map(S.remote.map((x) => [x.version, x]));
+  const all = [...S.versions.map((v) => ({ ...(remote.get(v.version) || {}), version: v.version, label: (remote.get(v.version) || {}).label || v.label || '', have: true })),
+    ...S.remote.filter((x) => !S.versions.some((v) => v.version === x.version)).map((x) => ({ ...x, have: false }))];
   const num = (v) => (v === 'checkout' ? [1e9, 0] : v.split('.').map(Number));
-  all.sort((a, b) => { const x = num(a.version), y = num(b.version); return (y[0] - x[0]) || (y[1] - x[1]); });
-  sel.replaceChildren(...all.map((x) => el('option', { value: x.version, textContent: vName(x.version) + (x.have ? '' : '  (download' + (x.size ? ', ' + mb(x.size) : '') + ')') })));
+  return all.sort((a, b) => { const x = num(a.version), y = num(b.version); return (y[0] - x[0]) || (y[1] - x[1]); });
+}
+/* a select's options, grouped under each release name in the order the names first come (newest first) */
+function versionOptions(sel, all, extra) {
+  const groups = [];
+  for (const x of all) { const g = x.version === 'checkout' ? 'This checkout' : x.label || 'Other versions'; let G = groups.find((q) => q.g === g); if (!G) groups.push(G = { g, list: [] }); G.list.push(x); }
+  const text = (x) => vName(x.version) + (x.title ? '  ' + x.title : x.label ? '  ' + x.label : '')   /* no title of its own (a named release): its name, so the closed box says it */ + (x.prerelease === false ? '  (release)' : x.prerelease ? '  (beta)' : '') + extra(x);
+  sel.replaceChildren(...groups.map((G) => el('optgroup', { label: G.g }, G.list.map((x) => el('option', { value: x.version, textContent: text(x) })))));
+}
+function nsOptions() {
+  const sel = $('ns_ver'), was = sel.value, all = allVersions();
+  versionOptions(sel, all, (x) => (x.have ? '' : '  (download' + (x.size ? ', ' + mb(x.size) : '') + ')'));
   if (!all.length) sel.append(el('option', { value: '', textContent: 'no versions: press refresh' }));
   sel.value = all.some((x) => x.version === was) ? was : (all[0] ? all[0].version : '');
 }

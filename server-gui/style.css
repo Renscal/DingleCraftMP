@@ -20,6 +20,7 @@ aside h3.vh{margin:6px 6px 0}
 #vlist{display:flex;flex-direction:column;gap:2px;max-height:30vh;overflow:auto}
 .ver{display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:6px}
 .ver b{font-weight:600}.ver small{color:var(--dim);flex:1}
+#vlist .vlab{font-size:11px;color:var(--dim);padding:6px 8px 0;text-transform:uppercase;letter-spacing:.04em}
 .ver button{padding:2px 6px;font-size:12px}
 #vmsg{padding:0 6px;font-size:12.5px}
 .vpick{color:var(--dim);font-size:13px;margin-left:10px}

@@ -221,6 +221,12 @@ boot.run(async()=>{
       ok('a download is checked against GitHub\'s fingerprint: the right one passes (any case), a wrong or malformed one fails, none at all has nothing to check',
         store.digestOK(zb,h)&&store.digestOK(zb,h.toUpperCase().replace('SHA256','sha256'))&&!store.digestOK(Buffer.concat([zb,Buffer.from('x')]),h)&&!store.digestOK(zb,'sha256:'+'0'.repeat(64))&&
         !store.digestOK(zb,'md5:abc')&&store.digestOK(zb,''));}
+     {const N=store.releaseName,named=store.releaseVersions([gh('v6.58',false,[as('DINGLECRAFT-Server-v6.58.zip')],{name:'DingleCraft Multiplayer 2.0'}),gh('v6.57',true,[as('DINGLECRAFT-Server-v6.57.zip')],{name:'Release 1.1 (v6.57) Sit down and fly'})]);
+      const lv=store.listVersions(VR),mine=lv.find(v=>v.version===V.GAME_VERSION);
+      ok('1.1.1: each version has its release name: from GitHub\'s title ('+named.map(x=>x.label+'/'+x.title).join(', ')+'), and from an imported game file ('+(mine&&mine.label)+'), remembered in .label',
+        N('Release 1.1 (v6.57) Sit down and fly','6.57').join('|')==='Release 1.1|Sit down and fly'&&N('DingleCraft Multiplayer 2.0','6.58').join('|')==='DingleCraft Multiplayer 2.0|'&&N('','6.41').join('|')==='|'&&
+        named[0].label==='DingleCraft Multiplayer 2.0'&&named[0].title===''&&named[0].prerelease===false&&named[1].label==='Release 1.1'&&named[1].title==='Sit down and fly'&&
+        !!mine&&mine.label===V.RELEASE_LABEL&&fs.readFileSync(path.join(mine.dir,'.label'),'utf8').trim()===V.RELEASE_LABEL);}
      ok('the window asks this repository\'s releases (or DC_RELEASES_REPO for a fork)',store.releasesUrl()==='https://api.github.com/repos/Renscal/DingleCraftMP/releases?per_page=100'&&store.releasesUrl('a/b').endsWith('/repos/a/b/releases?per_page=100'));
      /* the imported version runs: forked from the library the way the window forks it */
      const D2=path.join(PK,'run_data');fs.mkdirSync(D2,{recursive:true});fs.writeFileSync(path.join(D2,'server.json'),JSON.stringify({name:'From the library',port:0,simulate:false}));

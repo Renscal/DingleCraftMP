@@ -41,7 +41,7 @@ const tell = (what, v) => { if (G.win && !G.win.isDestroyed()) G.win.webContents
 function addLog(id, line) { const r = rt(id); r.log.push(line); if (r.log.length > 2000) r.log.splice(0, r.log.length - 2000); tell('log', { id, line }); }
 const brief = (e) => { const r = rt(e.id); return { id: e.id, name: e.name, dataDir: e.dataDir, port: store.portOf(e.dataDir), running: r.running, starting: r.starting, players: r.status ? r.status.players.length : 0,
   version: e.version || '', ran: e.ran || '', runs: !!dirOf(e.version), live: r.child ? r.version : '' }; };
-const overview = () => ({ servers: G.list.map(brief), versions: versions().map((v) => ({ version: v.version, users: G.list.filter((e) => e.version === v.version).map((e) => e.name) })) });
+const overview = () => ({ servers: G.list.map(brief), versions: versions().map((v) => ({ version: v.version, label: v.label || '', users: G.list.filter((e) => e.version === v.version).map((e) => e.name) })) });
 const detail = (id) => { const e = entry(id), r = rt(id); return { ...brief(e), status: r.status, log: r.log.slice(-500), tasks: e.tasks || [] }; };
 const changed = (id) => { tell('servers', overview()); if (id) tell('state', detail(id)); refreshTray(); };
 /* a version's own settings check (an ES module: loaded once per version). For a server with no version yet, the newest. */
@@ -228,7 +228,7 @@ function wire() {
   /* 1.1: the versions on GitHub, each marked if it is already here; force: ask GitHub again (the refresh button) */
   h('remote:list', async (force) => {
     const R = await remoteList(!!force), have = new Set(versions().map((v) => v.version));
-    return { ok: !R.why, why: R.why, list: R.list.map((x) => ({ version: x.version, prerelease: x.prerelease, date: x.date, size: x.size, have: have.has(x.version) })) };
+    return { ok: !R.why, why: R.why, list: R.list.map((x) => ({ version: x.version, prerelease: x.prerelease, date: x.date, size: x.size, label: x.label || '', title: x.title || '', have: have.has(x.version) })) };
   });
   h('version:download', async (v) => { if (typeof v !== 'string' || !/^\d{1,3}\.\d{1,3}$/.test(v)) return { ok: false, why: 'not a version' }; const out = await downloadVersion(v); return { ok: true, version: out.version }; });
   h('server:adopt', async () => {

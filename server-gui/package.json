@@ -1,6 +1,6 @@
 {
   "name": "dinglecraft-server-gui",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "private": true,
   "description": "DINGLECRAFT Server: a window around the multiplayer server. No terminal, no separate Node install.",
   "author": "DINGLECRAFT",

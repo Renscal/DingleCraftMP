@@ -129,7 +129,22 @@ function versionOfDir(dir) {
   return htmls[htmls.length - 1];
 }
 const versionsDir = (root) => path.join(root, 'versions');
-/* every imported version, newest first: [{ version, dir }] */
+/* 1.1.1: the public name a version was released under ("DingleCraft Multiplayer 2.0", "Release 1.1"), read from its game
+   file once (RELEASE_LABEL, near the start of the script, a few MB in) and kept beside it in .label. '' if it says none. */
+function versionLabel(dir, version) {
+  const keep = path.join(dir, '.label');
+  try { return fs.readFileSync(keep, 'utf8').trim(); } catch { /* not read yet */ }
+  let label = '';
+  try {
+    const fd = fs.openSync(path.join(dir, 'dinglecraft_v' + version + '.html'), 'r'), buf = Buffer.alloc(6 * 1048576);
+    const n = fs.readSync(fd, buf, 0, buf.length, 0); fs.closeSync(fd);
+    const m = /const RELEASE_LABEL = '([^'\n]{1,60})';/.exec(buf.toString('latin1', 0, n));
+    if (m) label = m[1];
+  } catch { /* unreadable: no name */ }
+  try { fs.writeFileSync(keep, label + '\n'); } catch { /* read-only: read it again next time */ }
+  return label;
+}
+/* every imported version, newest first: [{ version, dir, label }] */
 function listVersions(root) {
   let names = [];
   try { names = fs.readdirSync(versionsDir(root)); } catch { return []; }
@@ -137,7 +152,7 @@ function listVersions(root) {
   for (const n of names) {
     if (!VER_RE.test(n)) continue;
     const dir = path.join(versionsDir(root), n);
-    try { if (versionOfDir(dir) === n) out.push({ version: n, dir }); } catch { /* half-imported or damaged: not offered */ }
+    try { if (versionOfDir(dir) === n) out.push({ version: n, dir, label: versionLabel(dir, n) }); } catch { /* half-imported or damaged: not offered */ }
   }
   return out.sort((a, b) => cmpVersion(b.version, a.version));
 }
@@ -196,8 +211,15 @@ function fillVersions(list, versions) {
 const RELEASES_REPO = /^[\w.-]+\/[\w.-]+$/.test(process.env.DC_RELEASES_REPO || '') ? process.env.DC_RELEASES_REPO : 'Renscal/DingleCraftMP';
 const releasesUrl = (repo) => 'https://api.github.com/repos/' + (repo || RELEASES_REPO) + '/releases?per_page=100';
 const OLDEST = '6.41';   /* the first version with the --ipc mode the window drives */
+/* a release's title -> its public name and its own title: "Release 1.1 (v6.57) Sit down and fly" -> ["Release 1.1",
+   "Sit down and fly"]; "DingleCraft Multiplayer 2.0" -> ["DingleCraft Multiplayer 2.0", ""] */
+function releaseName(name, version) {
+  const s = String(name || '').trim().slice(0, 120), m = /^(.*?)\s*\(v(\d{1,3}\.\d{1,3})\)\s*(.*)$/.exec(s);
+  if (m && m[2] === version) return [m[1], m[3]];
+  return [s.replace(new RegExp('\\s*\\(?v' + version.replace('.', '\\.') + '\\)?\\s*'), ' ').trim(), ''];
+}
 /* GitHub's list of releases (the JSON of releasesUrl) -> the server versions it offers, newest first:
-   [{ version, url, size, digest, prerelease, date }]. Only github.com download links are taken. */
+   [{ version, url, size, digest, prerelease, date, label, title }]. Only github.com download links are taken. */
 function releaseVersions(json) {
   const out = new Map();
   for (const r of Array.isArray(json) ? json : []) {
@@ -206,8 +228,9 @@ function releaseVersions(json) {
       const m = a && typeof a.name === 'string' && /^DINGLECRAFT-Server-v(\d{1,3}\.\d{1,3})\.zip$/.exec(a.name);
       if (!m || cmpVersion(m[1], OLDEST) < 0 || out.has(m[1])) continue;
       if (typeof a.browser_download_url !== 'string' || !/^https:\/\/github\.com\//.test(a.browser_download_url)) continue;
+      const [label, title] = releaseName(r.name, m[1]);
       out.set(m[1], { version: m[1], url: a.browser_download_url, size: Number(a.size) || 0, digest: typeof a.digest === 'string' ? a.digest : '',
-        prerelease: !!r.prerelease, date: typeof r.published_at === 'string' ? r.published_at.slice(0, 10) : '' });
+        prerelease: !!r.prerelease, date: typeof r.published_at === 'string' ? r.published_at.slice(0, 10) : '', label, title });
     }
   }
   return [...out.values()].sort((a, b) => cmpVersion(b.version, a.version));
@@ -274,5 +297,5 @@ function dueTasks(tasks, last, now, since) {
   return (tasks || []).filter((t) => t.on !== false && now - (last[t.id] === undefined ? since : last[t.id]) >= t.every * 60000);
 }
 
-module.exports = { RELEASES_REPO, releasesUrl, releaseVersions, digestOK, cmpVersion, versionOfDir, listVersions, importVersion, removeVersion, fillVersions, readSettings, writeSettings, listWorlds, backupWorld, newWorld, goodWorldName, fmtUptime, fmtBytes,
+module.exports = { RELEASES_REPO, releasesUrl, releaseVersions, releaseName, versionLabel, digestOK, cmpVersion, versionOfDir, listVersions, importVersion, removeVersion, fillVersions, readSettings, writeSettings, listWorlds, backupWorld, newWorld, goodWorldName, fmtUptime, fmtBytes,
   listBackups, restoreBackup, deleteBackup, pruneBackups, readServers, writeServers, addServer, removeServer, portOf, cleanTask, dueTasks };
