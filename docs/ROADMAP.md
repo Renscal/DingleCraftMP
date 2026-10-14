@@ -109,6 +109,15 @@ Left for later, from the old token plan:
 
 ### Step 6b. The server decides inventory and damage
 
+**Read this first (2026-10-14, after 6.55).** This step cannot be shipped one kind of action at a time. A server copy of
+an inventory that follows only pickups and drops drifts from the truth after the first crafted item (and then refuses
+real drops), and any check against the inventory a game reports in its `save` stops nobody: a modified game simply
+reports the item first. Today a modified game can still give itself anything, and drop anything for others (the
+server takes any well-formed `drop`). The only real fix is the whole of item 1 and 2 together: the server's own game
+works out each inventory from actions it can check, and `save` stops carrying `inv`/`armor`. The owner chose to leave
+it for now: with accounts (6.49), nobody can be someone else, which on a server for friends is the main protection.
+
+
 Today each player's game decides what they hold and what hurts them, and the server stores the result unread. This is
 the largest change to how the game feels, because that is why the game responds instantly.
 
