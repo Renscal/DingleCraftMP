@@ -7,8 +7,9 @@ texture pack, a trip to Puppet Purgatory and a sixteen-metre demon who has taken
 
 This fork adds a real multiplayer server that runs the world itself, accounts, farming, flowing water, proper lighting,
 skins, difficulty and DingleCore, and a lot more: the full list is in
-[What this fork adds](#what-this-fork-adds-to-the-original). The original game is Release 1.0 (game version 6.9); this
-fork is Release 1.1, game version 6.10 and up.
+[What this fork adds](#what-this-fork-adds-to-the-original). The original game is Release 1.0 (game version 6.9). This
+fork is **DingleCraft Multiplayer 2.0** (game version 6.58 and up); its earlier versions, 6.10 to 6.57, were released as
+Release 1.1.
 
 > DINGLECRAFT is an independent fan-made game. NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH
 > MOJANG OR MICROSOFT. Other names belong to their owners.
@@ -50,10 +51,14 @@ Every version has a page under [**Releases**](https://github.com/Renscal/DingleC
 | download | what it is |
 |---|---|
 | `DINGLECRAFT-Server-v<version>.zip` | the multiplayer server, with the game inside it. Start here to host |
-| `DINGLECRAFT-ServerGUI-v<version>.zip` | the same server as a desktop program with a window (optional) |
 | `DINGLECRAFT-Client-v<version>.zip` | the game as a desktop app (optional: the html does the same) |
 
-Releases cut from the `Experimental` branch are betas, published for testing without the full test run.
+The **server window** (`DINGLECRAFT-ServerGUI-v<version>.zip`) is a separate download with releases of its own (tagged
+`server-gui-v<version>`): one program for every server version, so it does not change when the game does. See
+[Hosting a server](#hosting-a-server).
+
+The release marked **Latest** is the one to play. Pre-releases cut from the `Experimental` branch are betas, published
+for testing without the full test run.
 
 **Your worlds** are saved in the browser, per address: the html opened from disk and a page served from
 `http://127.0.0.1:8643` each have their own list. Clearing your browsing data deletes them, so use **Export World** in
@@ -74,7 +79,7 @@ changed afterwards. Die in DingleCore and you can only spectate.
 
 ### Controls
 
-The full list is in **Help & Controls** on the title screen.
+The full list is in **Controls** on the title screen.
 
 | | |
 |---|---|
@@ -87,12 +92,16 @@ The full list is in **Help & Controls** on the title screen.
 | Camera | F cycles first person, third person and front view |
 | Fly (creative) | double-tap Space |
 | Laser Eyes | hold L |
+| Fly a plane | Space throttle, W nose down, S nose up, A/D turn, Alt brake (where you look does not steer) |
 | Powers menu | P |
 | Chat, commands | T or Enter; `/` for commands, `/msg <player>` to whisper |
 | Player list | hold Tab (shows everyone's ping on a server) |
 | Screenshot, replay | F2 saves a PNG; F8 saves the last 30 seconds as a video |
 | Debug screen | F3; F3 + B hitboxes, F3 + G chunk borders |
 | Pause | Esc (on a server the world keeps going) |
+
+**Change keys:** Controls on the title screen has an index of every control and a **Change keys** page: click an action
+and press the key you want (mouse buttons 4 and 5 work too). Your keys are saved in this browser.
 
 **In an inventory window:** drag left to share a stack out evenly, drag right to place one in each slot, double-click to
 gather, Shift-drag to quick-move a row of slots, the wheel moves one item, 1-9 swaps with the hotbar, Q throws, click
@@ -185,9 +194,12 @@ file that single player can import), and for everyone `/msg`, `/me`, `/list`, `/
 
 **Memory.** The server runs a copy of the game for each dimension someone is in: about 110 MB each.
 
-**The server window.** If you prefer buttons to a terminal, `DINGLECRAFT-ServerGUI` manages several servers with a
-dashboard, console, player list, settings and game-rule forms, world switching, backups and a scheduler. Unpack it, run
-`npm install` and `npm start` ([server-gui/README.md](server-gui/README.md)).
+**The server window.** If you prefer buttons to a terminal, download `DINGLECRAFT-ServerGUI-v<version>.zip` from its own
+release (tagged `server-gui-v<version>`), unpack it, run `npm install` and `npm start`. It manages several servers with a
+dashboard, console, players and accounts, settings and game-rule forms, worlds, backups and a scheduler. It carries no
+server of its own: **New server** asks for a name and a version, and lists the versions on the releases page, which it
+downloads, checks and installs for you (or import a Server zip by hand). Different servers can run different versions at
+once, and a new game version needs no new window ([server-gui/README.md](server-gui/README.md)).
 
 Every setting, command and limit is in [server/README.md](server/README.md).
 
@@ -254,7 +266,7 @@ its output folder to the server's `data` folder, and add a script step that rest
 ## What this fork adds to the original
 
 The original repository ([dandingle/dinglecraft](https://github.com/dandingle/dinglecraft)) ends at **Release 1.0, game
-version 6.9** (replays and screenshots). Everything below came after, in game versions 6.10 to 6.55. Each version's own
+version 6.9** (replays and screenshots). Everything below came after, in game versions 6.10 to 6.58. Each version's own
 patch notes are in [CHANGELOG.md](CHANGELOG.md).
 
 ### Multiplayer
@@ -291,9 +303,15 @@ patch notes are in [CHANGELOG.md](CHANGELOG.md).
 - **Farms at full range** (6.55): the server simulates 128 blocks around each player (`simulationDistance`).
 - **Cold files** (6.53): land and players unvisited for a week are written compressed (about 3% of the size).
 - **The server window** (6.41): an Electron program to manage several servers, with a dashboard, console, players,
-  settings, game rules, worlds, backups and a scheduler.
-- **The desktop client:** an Electron wrapper around the same html, with single player and Multiplayer.
-- **Release downloads:** a server zip, a server-window zip and a client zip for every version.
+  settings, game rules, worlds, backups and a scheduler. Since its own 1.0 it is one program for every server version
+  (each server picks its version), and since 1.1 it downloads versions from the releases page itself and shows each
+  version's own settings and game rules, new ones included.
+- **The desktop client:** an Electron wrapper around the same html, with single player and Multiplayer. It has no browser
+  shortcuts (no reload, close, zoom or developer tools; Ctrl+C and Ctrl+V still work), and mouse buttons 4 and 5 never go
+  back or forward (6.56).
+- **Riding together** (6.57): other players' bodies are drawn on the seat of the vehicle you see, so rider and vehicle
+  move as one.
+- **Release downloads:** a server zip and a client zip for every version; the server window on its own releases.
 
 ### Gameplay
 
@@ -323,6 +341,11 @@ patch notes are in [CHANGELOG.md](CHANGELOG.md).
 - **Bullets go through** leaves, doors and water, not lava or glass (6.47).
 - **Laser Eyes** fire with **L**, aim where you look, and work in mid-air (6.52).
 - **Safe spawns** (6.54): a new world never starts you over a ravine.
+- **The plane flies like a plane** (6.57): Space throttle, W dives, S climbs, A/D turn and bank, Alt brakes (and backs up
+  on the ground); where you look does not steer it, and the nose levels itself when you let go.
+- **Seated riders** (6.57): in a plane, car, boat or coaster cart your body faces the vehicle and only your head follows
+  your look; your view turns with the vehicle; in the plane you sit in the cockpit. Every vehicle now carries you
+  without lag, instead of sliding ahead and snapping back.
 
 ### Looks and controls
 
@@ -337,6 +360,10 @@ patch notes are in [CHANGELOG.md](CHANGELOG.md).
   F3 + G chunk borders.
 - **Water has an underside** (6.20): the surface is visible from below.
 - **A new logo:** DINGLECRAFT MULTIPLAYER, and the title shows the game version (6.50).
+- **Controls with an index** (6.56): one page per topic, the keys shown as your own, and **Change keys** for 29 actions,
+  mouse buttons 4 and 5 included.
+- **Credits** link this repository and the original (6.56); the main menu button goes to Renscal.net (6.56).
+- **DingleCraft Multiplayer 2.0** (6.58): the name in the game, on the title screen and the ending.
 
 ### Removed
 
@@ -368,8 +395,8 @@ the way. A version that has already shipped is frozen: the build warns you to bu
 Every suite is a plain Node script that boots the real game against stubs and prints `N passed, M failed`: no test
 framework, no network. Browser checks are always muted ([docs/QA.md](docs/QA.md)).
 
-"Release 1.0" and "Release 1.1" are public labels, not game versions: Release 1.0 is game versions 6.4 to 6.9, Release 1.1
-starts at 6.10.
+"Release 1.0", "Release 1.1" and "DingleCraft Multiplayer 2.0" are public labels, not game versions: Release 1.0 is game
+versions 6.4 to 6.9, Release 1.1 is 6.10 to 6.57, and DingleCraft Multiplayer 2.0 starts at 6.58.
 
 ## Project map and documentation
 
