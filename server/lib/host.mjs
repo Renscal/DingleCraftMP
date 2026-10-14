@@ -46,15 +46,26 @@ export function startHost(S, script, handle, log, dim = 'over') {
   const waiting = [];
   const H = { c, ready: false, stopped: false, asleep: false, ticks: 0, post(m) { if (H.stopped) return; if (H.ready) worker.postMessage(m); else waiting.push(m); },
     stop() { H.stopped = true; return worker.terminate().catch(() => {}); },
+    /* the thread ends as if it had crashed (tests/net/n_host.js: the Overworld's game comes back by itself) */
+    kill() { return worker.terminate().catch(() => {}); },
     /* the bytes of JavaScript heap this dimension's game is using (a promise; rejected where Node cannot say) */
     heap() { return typeof worker.getHeapStatistics === 'function' ? worker.getHeapStatistics().then((s) => s.used_heap_size | 0) : Promise.reject(new Error('not available')); } };
   c.h = H;
   const here = (list) => (Array.isArray(list) ? list.filter((x) => (x.d || 'over') === dim) : []);
-  const worker = new Worker(path.join(HERE, 'host_worker.cjs'), { workerData: { game: script, world: { ...level, edits, be }, mobs: here(mobs), vehs: here(vehicles), dim, primary: dim === 'over' } });
+  const worker = new Worker(path.join(HERE, 'host_worker.cjs'), { workerData: { game: script, world: { ...level, edits, be }, mobs: here(mobs), vehs: here(vehicles), dim, primary: dim === 'over', simDist: S.o.simulationDistance } });
   const gone = (why) => {
     if (H.stopped) return;
     H.stopped = true; H.ready = false; c.closed = true;
     if (S.hosts.get(dim) === H) S.hosts.delete(dim);
+    /* 6.55: the Overworld's game is the one that cooks and runs the market: a crash restarts it after 5 s, at most 3 times in
+       10 minutes (then the players' games run the mobs, as without one). The others start again with the next player there. */
+    const now = Date.now(), recent = (S.hostCrashes = (S.hostCrashes || []).filter((t) => now - t < 600000));
+    if (dim === 'over' && recent.length < 3) {
+      recent.push(now);
+      log('THE SERVER GAME FOR OVERWORLD STOPPED (' + why + '). Starting it again in 5 seconds.');
+      setTimeout(() => { if (S.startHost) S.startHost('over'); }, 5000).unref();
+      return;
+    }
     log('THE SERVER GAME FOR ' + dim.toUpperCase() + ' STOPPED (' + why + '). It is started again when a player next enters that dimension.');
   };
   worker.on('message', (m) => {

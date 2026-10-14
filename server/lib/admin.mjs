@@ -91,7 +91,7 @@ export function attachAdmin(S, { send, stop }) {
 
 /* ---- server.json, checked ---- */
 /* the settings that only take effect when the server is started again (everything a running server read once) */
-export const RESTART_KEYS = ['port', 'name', 'motd', 'accounts', 'maxPlayers', 'seed', 'mode', 'pvp', 'world', 'game', 'spawnProtection', 'sleepPercent', 'viewChunks', 'cert', 'key', 'origins', 'simulate', 'singlePlayer', 'pauseWhenEmpty', 'catchUpMax', 'compressAfter', 'compressPlayersAfter'];
+export const RESTART_KEYS = ['port', 'name', 'motd', 'accounts', 'maxPlayers', 'seed', 'mode', 'pvp', 'world', 'game', 'spawnProtection', 'sleepPercent', 'viewChunks', 'cert', 'key', 'origins', 'simulate', 'singlePlayer', 'pauseWhenEmpty', 'stopWhenEmpty', 'simulationDistance', 'catchUpMax', 'compressAfter', 'compressPlayersAfter'];
 const isInt = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
 const NAME_RE = /^[\x21-\x7e][\x20-\x7e]{0,15}$/;           // a player name: printable ASCII, at most 16, not starting with a space
 /* Check a settings object (what server.json holds, or what the window's form produced). Returns
@@ -112,6 +112,8 @@ export function validateSettings(o, running) {
   if (!isInt(s.sleepPercent, 1, 100)) bad('sleepPercent', 'a whole number from 1 to 100');
   if (!isInt(s.viewChunks, 4, 32)) bad('viewChunks', 'a whole number from 4 to 32');
   for (const k of ['compressAfter', 'compressPlayersAfter']) if (!isInt(s[k], 0, 3650)) bad(k, 'a whole number of days from 0 (never) to 3650');
+  if (!isInt(s.simulationDistance, 4, 12)) bad('simulationDistance', 'a whole number of chunks from 4 to 12');
+  if (!isInt(s.stopWhenEmpty, 0, 1440)) bad('stopWhenEmpty', 'a whole number of minutes from 0 (never) to 1440');
   if (!isInt(s.catchUpMax, 0, 525600)) bad('catchUpMax', 'a whole number of minutes from 0 (no cap) to 525600 (a year)');
   if (!isInt(s.pauseWhenEmpty, 0, 86400)) bad('pauseWhenEmpty', 'a whole number of seconds from 0 (never) to 86400');
   for (const k of ['ops', 'allow', 'bans']) {

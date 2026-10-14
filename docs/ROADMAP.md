@@ -146,9 +146,9 @@ Smaller, independent, any order.
 - **Disasters and the Snail** start in one player's game.
 - **A boss fights one player** (the nearest), and the dungeon boss and the Stone Titan have no kill record of their own.
 - **Furnace progress** updates in 2-second steps when opening one the server has been cooking.
-- **A server game that crashes** is only restarted when a player next enters its dimension; the Overworld's should be
-  restarted at once.
-- **Idle dimension games are never stopped.** Stop one after some minutes with nobody in it.
+- **A server game that crashes**: done in 6.55 (the Overworld's restarts after 5 s, at most 3 times in 10 minutes).
+- **Idle dimension games**: paused since 6.46, and since 6.55 a paused Nether or Aether game is stopped after
+  `stopWhenEmpty` minutes.
 
 ### Verification debt
 
@@ -168,7 +168,8 @@ Still to do:
 
 - a muted two-browser session per `docs/QA.md` (join, log in, mobs, a vehicle, a portal trip, reconnect). The QA
   rigs need Chrome or Chromium, which the owner's Linux machine does not have;
-- the Electron client (`client/`) has never been started (it opens a window: with the owner's say-so, and muted);
+- **the Electron client**: started for the first time on 2026-10-14 (muted, its own profile): loads, asks for a login on
+  an accounts server, logs in and plays. It also found the spawn-over-a-ravine bug (fixed in 6.54);
 - 14 textures of the removed AI-player models are still packed into the html (about 2 MB): needs a repack from the art
   sources;
 - Purgatory and Malgorath still carry unreachable "is this target an AI player" branches.

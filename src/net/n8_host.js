@@ -12,7 +12,8 @@
    pointed at the nearest real player (ntHostAim), as a stand-in object filled from that player's last pose; the brain then
    chases, flees from and hits "the player" as it always did. What a brain does to P never happens here: damage is sent to
    that player's own game (damagePlayer -> ntHostHurt -> {t:'hurt'}), and XP they pick up likewise ({t:'xp'}).
-   An entity with no player within 72 blocks, or in a chunk the host has not built, is not updated at all: it waits.
+   An entity with no player within its reach (the simulation distance in blocks, at least 72), or in a chunk the host has
+   not built, is not updated at all: it waits.
    The host builds chunks (blocks only, no meshes) 5 chunks around every player and drops them when the players leave.
    Since 6.15 the host also runs the Overworld's water (tickFlow), its fire (updateFires: a player's game sends it the
    cells to light and is told which are alight) and its falling blocks (they are entities, so they came with the rest;
@@ -21,8 +22,8 @@
    alone cooks the furnaces and runs the market: NET.hprim), the Nether's and the Aether's from the moment a player first
    goes there. Each is "player 0" to the players in its dimension. Puppet Purgatory stays each player's own. */
 
-/* how far around each player the host keeps chunks, in chunks */
-const NT_HOSTR=5;
+/* how far around each player the host keeps chunks, in chunks: the server's simulationDistance (6.55; 5 before it) */
+let NT_HOSTR=5;
 /* the host as the players' games address it */
 const NT_HOST={id:0};
 
@@ -33,7 +34,8 @@ function ntHosted(){return !NET.host&&NET.hdims.indexOf(DIM)>=0;}
 /* ----- on the server's game ----- */
 /* Become the host: load the server's world like a save (blocks and chests; no player, no entities), then put back the
    mobs the server had saved. w is the world as the server keeps it, mobs the list ntHostSnap made last time. */
-function ntHostStart(w,mobs,vehs,dim,primary){
+function ntHostStart(w,mobs,vehs,dim,primary,simDist){
+  if(Number.isInteger(simDist)&&simDist>=4&&simDist<=12)NT_HOSTR=simDist;   /* 6.55 */
   const sp=w.spawn&&typeof w.spawn.x==='number'?[w.spawn.x,w.spawn.y,w.spawn.z]:[0.5,WH-8,0.5];
   const d={...w,f:w.f||SAVE_FORMAT,edits:w.edits||{},be:w.be||{},mode:'s',dim:dim||'over',ents:[],player:{x:sp[0],y:sp[1],z:sp[2],spawn:sp}};
   delete d.mp;delete d.stash;delete d.players;delete d.drops;delete d.mobs;
@@ -93,9 +95,10 @@ function ntHostPlayers(){
   return out;
 }
 /* The updateEntities hook: before the host updates an entity, P becomes the nearest player to it (one a mob may go for,
-   if there is one). true = nobody is within 72 blocks, or its chunk is not built: leave it exactly as it is. */
+   if there is one). true = nobody is within reach, or its chunk is not built: leave it exactly as it is. */
 function ntHostAim(e){
-  let best=null,bd=72,alt=null,ad=72;
+  const reach=Math.max(72,NT_HOSTR*16);                 /* 6.55: as far as the host keeps chunks (128 at 8: the spawner's reach) */
+  let best=null,bd=reach,alt=null,ad=reach;
   for(const q of NET.hpl){
     const d=Math.hypot(q.x-e.x,q.z-e.z);
     if(d<ad){ad=d;alt=q;}

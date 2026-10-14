@@ -191,6 +191,7 @@ export function createServer(opts = {}) {
           const h = S.hosts.get(dim);
           if (!h) return;
           h.emptyT = 0;
+          h.pausedT = 0;
           if (h.paused) { h.post({ t: 'clock', v: world.clock, max: (o.catchUpMax || 0) * 60 }); h.paused = false; h.post({ t: 'resume' }); log('the server game for ' + dim + ' is running again'); }
         };
       }
@@ -230,6 +231,13 @@ export function createServer(opts = {}) {
     }
     if ((beats.clock = (beats.clock || 0) + dt) >= 5) { beats.clock = 0; for (const h of S.hosts.values()) h.post({ t: 'clock', v: world.clock, max: (o.catchUpMax || 0) * 60 }); }   // 6.50: the games follow the world's clock
     if (o.pauseWhenEmpty > 0) for (const [dim, h] of S.hosts) {
+      /* 6.55: a Nether or Aether game paused for stopWhenEmpty minutes is stopped, which frees its memory; the next player
+         there starts it again from the saved world (the Overworld's stays paused: it holds the furnaces and the market) */
+      if (h.paused && dim !== 'over' && o.stopWhenEmpty > 0 && (h.pausedT = (h.pausedT || 0) + dt) >= o.stopWhenEmpty * 60) {
+        S.hosts.delete(dim); h.stop();
+        log('nobody has been in ' + dim + ' for ' + o.stopWhenEmpty + ' min: its server game is stopped (it starts again when someone goes there)');
+        continue;
+      }
       if (h.paused) continue;
       if ([...S.clients.values()].some((p) => p.ready && (p.pose ? p.pose.dim : 'over') === dim)) { h.emptyT = 0; continue; }
       if ((h.emptyT = (h.emptyT || 0) + dt) < o.pauseWhenEmpty) continue;

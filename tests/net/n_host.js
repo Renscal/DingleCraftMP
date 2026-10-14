@@ -27,7 +27,9 @@
    14 (6.46) nobody home: a dimension's game nobody has been in for pauseWhenEmpty seconds is paused (no ticks at all, the
       world saved first), and the next player in wakes it at once, with no catching up
    15 (6.50) the world's clock: level.json keeps it and when it was saved; a server started a day later adds the day
-      (catchUpMax caps it) */
+      (catchUpMax caps it)
+   16 (6.55) farm range: at simulationDistance 8 a mob 110 blocks from the player still moves (at 5 it waited); a paused
+      Nether game is stopped after stopWhenEmpty and comes back with the next player; a crashed Overworld game restarts */
 'use strict';
 const boot=require('../lib/c_boot.js'),{ok}=boot;
 const path=require('path'),fs=require('fs'),{pathToFileURL}=require('url');
@@ -322,5 +324,28 @@ boot.run(async()=>{
       ok('a server started a day after its last save adds the day to the clock ('+Math.round(c5-L.clock)+' s); with catchUpMax 10, ten minutes ('+Math.round(S6.world().clock-L.clock)+' s)',
         Math.abs(c5-L.clock-86400)<120&&Math.abs(S6.world().clock-L.clock-600)<2);}
   }
+  /* ===== 16. farm range, idle dimensions, a crash ===== */
+  for(const [r,moves] of [[8,true],[5,false]]){
+    const S7=createServer({port:0,memory:true,world:'',noGame:true,hostGame:GAME,quiet:true,seed:'4242',simulationDistance:r,pauseWhenEmpty:0,rules:{snail:false,mobSpawn:false}});await S7.listen();
+    await until(()=>S7.host()&&S7.host().ready,20000);
+    const b=raw(S7.port,'Bea');await b.open;await until(()=>!!b.last('ready'));
+    for(let i=0;i<200;i++)await b.pose(sx,sy,sz);   /* time for the host to build out to its radius (17 x 17 chunks at 8) */
+    b.send({t:'mgive',to:0,m:['f.1','pig',sx+110,sy+30,sz,0,10,0,'',sx+110,sz,'0,0,0']});
+    for(let i=0;i<100&&!b.mobs().has('f.1');i++)await b.pose(sx,sy,sz);const y0=b.mobs().has('f.1')?b.mobs().get('f.1')[3]:NaN;
+    for(let i=0;i<30;i++)await b.pose(sx,sy,sz);const y1=b.mobs().has('f.1')?b.mobs().get('f.1')[3]:NaN;
+    ok('simulationDistance '+r+': a pig dropped 110 blocks from the player '+(moves?'falls (the host runs it)':'waits in the air (beyond reach)')+' (y '+(y0||0).toFixed(1)+' -> '+(y1||0).toFixed(1)+')',
+      moves?!isNaN(y0)&&!isNaN(y1)&&y1<y0-1:isNaN(y1)||Math.abs(y1-y0)<0.01);   /* at 5 its chunk is not even built: never sent, or sent and waiting */
+    await S7.close();}
+  {const S8=createServer({port:0,memory:true,world:'',noGame:true,hostGame:GAME,quiet:true,seed:'4242',pauseWhenEmpty:1,stopWhenEmpty:0.03,rules:{snail:false,mobSpawn:false}});await S8.listen();
+    await until(()=>S8.host()&&S8.host().ready,20000);
+    const b=raw(S8.port,'Bea');await b.open;await until(()=>!!b.last('ready'));
+    await b.pose(sx,sy,sz,{dim:'nether'});ok('a player in the Nether starts its game',await until(()=>S8.host('nether')&&S8.host('nether').ready,20000));
+    await b.pose(sx,sy,sz);
+    ok('everyone gone from the Nether: its game is paused, then stopped (stopWhenEmpty)',await until(()=>S8.host('nether')===null,8000)&&!!S8.host());
+    await b.pose(sx,sy,sz,{dim:'nether'});ok('...and the next player there starts it again',await until(()=>S8.host('nether')&&S8.host('nether').ready,20000));
+    await b.pose(sx,sy,sz);
+    const h0=S8.host();h0.kill();
+    ok('the Overworld game crashes: it is back by itself within seconds',await until(()=>S8.host()&&S8.host()!==h0&&S8.host().ready,25000));
+    await S8.close();}
   fs.rmSync(OUT,{recursive:true,force:true});
 });

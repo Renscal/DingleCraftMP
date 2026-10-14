@@ -21,7 +21,7 @@ try {
   const V = global.__vox;
   if (!V || typeof V.ntHostStart !== 'function') throw new Error('this game build cannot be a host (it needs 6.13 or newer)');
   V.NET.ws = { readyState: 1, send: (text) => say(text), close() {} };
-  const n = V.ntHostStart(workerData.world, workerData.mobs, workerData.vehs, workerData.dim, workerData.primary);
+  const n = V.ntHostStart(workerData.world, workerData.mobs, workerData.vehs, workerData.dim, workerData.primary, workerData.simDist);
   let last = Date.now(), bad = 0, paused = false, ticks = 0;
   parentPort.on('message', (m) => {
     if (m && (m.t === 'pause' || m.t === 'resume')) { paused = m.t === 'pause'; last = Date.now(); say({ asleep: paused, ticks }); return; }   // resumed: no catching up

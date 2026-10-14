@@ -21,6 +21,16 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — Farms at full range
+
+*Game version 6.55, released 2026-10-14.*
+
+- **FARMS AT FULL RANGE.** Since 6.48 monsters spawn by the book, but on a server the world only ran 80 blocks around each player, and a mob further out than 72 blocks froze in mid-air. Farm towers built the classic way, high above the AFK spot, sat partly outside that.
+- **Now 128 blocks.** The server runs the world 8 chunks around every player: spawning, falling, walking, the lot, out to the full range the spawning rules use. A pig dropped 110 blocks away now actually falls.
+- **What it costs.** Measured with four players spread out: about 15% of one CPU core for the whole world, up from 7%. The setting **simulationDistance** (4 to 12 chunks) turns it down on a small machine.
+- **Idle worlds let go of their memory.** A Nether or Aether nobody has visited for 10 minutes after it paused is shut down completely and started again when someone goes there (**stopWhenEmpty**, in minutes, 0 to keep it).
+- **A crash is not the end.** If the Overworld's server game ever crashes, it restarts by itself 5 seconds later (up to three times in ten minutes), instead of waiting for a player to notice.
+
 ## Release 1.1 — Feet on the ground
 
 *Game version 6.54, released 2026-10-14.*

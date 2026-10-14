@@ -3,7 +3,14 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Feet on the ground',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Farms at full range',lines:[
+    '<b>FARMS AT FULL RANGE.</b> Since 6.48 monsters spawn by the book, but on a server the world only ran 80 blocks around each player, and a mob further out than 72 blocks froze in mid-air. Farm towers built the classic way, high above the AFK spot, sat partly outside that.',
+    '<b>Now 128 blocks.</b> The server runs the world 8 chunks around every player: spawning, falling, walking, the lot, out to the full range the spawning rules use. A pig dropped 110 blocks away now actually falls.',
+    '<b>What it costs.</b> Measured with four players spread out: about 15% of one CPU core for the whole world, up from 7%. The setting <b>simulationDistance</b> (4 to 12 chunks) turns it down on a small machine.',
+    '<b>Idle worlds let go of their memory.</b> A Nether or Aether nobody has visited for 10 minutes after it paused is shut down completely and started again when someone goes there (<b>stopWhenEmpty</b>, in minutes, 0 to keep it).',
+    '<b>A crash is not the end.</b> If the Overworld&#x27;s server game ever crashes, it restarts by itself 5 seconds later (up to three times in ten minutes), instead of waiting for a player to notice.',
+  ]},
+ {v:'6.54',label:'Release 1.1',title:'Feet on the ground',lines:[
     '<b>FEET ON THE GROUND.</b> Some new worlds started you off with a 15-block drop into a ravine and half your hearts gone before you had pressed a key. The spawn finder looked at the land as planned, before the caves and ravines were cut into it.',
     '<b>Fixed.</b> It now checks the ground that is really there: a new world always starts you on dry, solid ground above the sea. Tested on 40 seeds. A world that is open sea for hundreds of blocks still starts you over the water, which is at least soft.',
     '<b>Logging in is a little quicker.</b> On a server with accounts, the Username box now starts with the name you play under, so most people only need to type the password.',
