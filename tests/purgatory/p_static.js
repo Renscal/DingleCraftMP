@@ -83,7 +83,7 @@ boot.run(async()=>{
     G.includes('if(id===B.AIR||id===B.BEDROCK||id===B.PG_STRUNK||id===B.PG_DOOR||id===B.PG_MBLACK)continue;'));
   ok('the y 62 placement guard is in Dan\u2019s place branch (P0-23)',G.includes("if(!blocked&&DIM==='puppet'&&!mpPlaceOK(tx,ty,tz,pid))blocked=true;"));
   ok('living blocks, figurines, ghosts, store, battle pass, dragons and superpowers are gated',
-    G.includes("if(DIM!=='puppet'&&blockComesAlive(")&&G.includes("if(DIM!=='puppet'&&Math.random()<FIG_CHANCE)")&&G.includes("GR.ghosts&&DIM!=='puppet'&&")&&
+    G.includes("if(DIM!=='puppet'&&blockComesAlive(")&&G.includes("&&DIM!=='puppet'&&Math.random()<FIG_CHANCE)")&&G.includes("GR.ghosts&&DIM!=='puppet'&&")&&
     G.includes("if(DIM==='puppet'){showToast('No crew on stage.');")&&G.includes("P.dead||DIM==='puppet')return;")&&G.includes("dragT=9;\n  if(DIM==='puppet')return;")&&
     G.includes("function powActive(k){if(DIM==='puppet')return false;"));
 

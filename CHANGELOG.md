@@ -21,6 +21,15 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — Three small mercies
+
+*Game version 6.51, released 2026-10-14.*
+
+- **THREE SMALL MERCIES.** Little things that were quietly ruining someone's afternoon.
+- **Figurine Drops, a game rule.** Slain mobs drop a figurine of themselves one time in twenty. Now you can switch that off: on Create New World, in the debug menu, or on a server with /gamerule figDrops false. Museums everywhere mourn.
+- **Chests no longer get bricked in.** On a server, right-clicking a chest or furnace with a block in your hand placed the block against it while the server was still deciding whether you could open it. Now a click that opens something places nothing until you let go of the button.
+- **Escape does not stop the world.** On a server, the pause menu used to freeze your own game: your mobs, your physics, your furnaces, all holding their breath while everyone else carried on. Now the menu opens and the world keeps going, as it should on a server. Your keys let go, so you do not walk off a cliff while changing the volume. Single player still pauses properly.
+
 ## Release 1.1 — The world keeps time
 
 *Game version 6.50, released 2026-10-14.*

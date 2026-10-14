@@ -34,7 +34,11 @@ function frame(t){
   requestAnimationFrame(frame);
   const dt=Math.min(0.05,Math.max(0,t-lastT)/1000||0.016)*GAMESPD;lastT=t;
   if(playing&&P){
-    if(!paused){
+    /* 6.51: on a server the world cannot stop for one player: with the pause menu up the game runs on (physics, mobs,
+       furnaces, the sky), only this player's hands are off the controls */
+    const run=!paused||NET.on;
+    if(paused&&NET.on){for(const k in KEY)KEY[k]=false;MB.l=MB.r=false;}
+    if(run){
       if(GR.dayCycle)timeOfDay+=dt/DAY_LEN;
       dimEvict();                                          /* 6.33: a dimension the world has switched off (world/p38) */
       drainLook();
@@ -56,10 +60,10 @@ function frame(t){
       if(MODAL.kind==='furnace'&&frameCount%10===0)redrawModal();
     }
     updatePlayerMesh(dt);
-    updateDisaster(paused?0:dt);
-    if(playing&&!paused)updateStocks(dt);
-    trickFrame(paused?0:dt);
-    if(playing&&!paused){if(DIM==='over'){processVillages(dt);processParks(dt);processWD(dt);processCells(dt);tickTitans(dt);processRoosts(dt);tickMalg(dt);tickCompass(dt);}tickSpawners(dt);updateBossBar();updateXPHud();tickFlow(dt);updateArmorHud();tickDragons(dt);tickTrail(dt);tickBPass(dt);updateCut(dt);tickWin(dt);tickNuke(dt);tickMega(dt);tickTerr(dt);tickXray(dt);tickGadgets(dt);tickBig(dt);tickDisp(dt);tickLawns(dt);tickCine(dt);tickSnail(dt);tickScare(dt);tickHorror(dt);processNether(dt);processAether(dt);processPuppet(dt);tickPortal(dt);tickPCompass(dt);processCrea(dt);}
+    updateDisaster(run?dt:0);
+    if(playing&&run)updateStocks(dt);
+    trickFrame(run?dt:0);
+    if(playing&&run){if(DIM==='over'){processVillages(dt);processParks(dt);processWD(dt);processCells(dt);tickTitans(dt);processRoosts(dt);tickMalg(dt);tickCompass(dt);}tickSpawners(dt);updateBossBar();updateXPHud();tickFlow(dt);updateArmorHud();tickDragons(dt);tickTrail(dt);tickBPass(dt);updateCut(dt);tickWin(dt);tickNuke(dt);tickMega(dt);tickTerr(dt);tickXray(dt);tickGadgets(dt);tickBig(dt);tickDisp(dt);tickLawns(dt);tickCine(dt);tickSnail(dt);tickScare(dt);tickHorror(dt);processNether(dt);processAether(dt);processPuppet(dt);tickPortal(dt);tickPCompass(dt);processCrea(dt);}
     const hideCur=playing&&!paused&&P&&!P.dead&&!modalOpen();
     if(hideCur!==curHidden){curHidden=hideCur;$('gl').style.cursor=hideCur?'none':'default';}
     engineSnd(!paused&&!!P.ride&&(P.ride.t==='car'||P.ride.t==='plane'),P.ride?P.ride.spd:0);

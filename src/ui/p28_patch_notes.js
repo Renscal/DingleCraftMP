@@ -3,7 +3,13 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'The world keeps time',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Three small mercies',lines:[
+    '<b>THREE SMALL MERCIES.</b> Little things that were quietly ruining someone&#x27;s afternoon.',
+    '<b>Figurine Drops, a game rule.</b> Slain mobs drop a figurine of themselves one time in twenty. Now you can switch that off: on Create New World, in the debug menu, or on a server with /gamerule figDrops false. Museums everywhere mourn.',
+    '<b>Chests no longer get bricked in.</b> On a server, right-clicking a chest or furnace with a block in your hand placed the block against it while the server was still deciding whether you could open it. Now a click that opens something places nothing until you let go of the button.',
+    '<b>Escape does not stop the world.</b> On a server, the pause menu used to freeze your own game: your mobs, your physics, your furnaces, all holding their breath while everyone else carried on. Now the menu opens and the world keeps going, as it should on a server. Your keys let go, so you do not walk off a cliff while changing the volume. Single player still pauses properly.',
+  ]},
+ {v:'6.50',label:'Release 1.1',title:'The world keeps time',lines:[
     '<b>THE WORLD KEEPS TIME.</b> Plant a field, walk off on an adventure, come back: the wheat used to be exactly as tall as you left it, frozen in place out of politeness. A paused server (since 6.46) froze everyone&#x27;s furnaces as well. Not any more.',
     '<b>What catches up.</b> Crops on watered farmland, saplings in the light, and furnaces. When their land is next run (you walk back, a chunk loads, the server wakes up), everything they would have done happens at once, with the same odds as if you had stood there and watched.',
     '<b>Real time.</b> It counts time the server sat empty or paused, time the server was switched off, and time your single-player game was closed. Leave a full furnace overnight and the ingots are waiting in the morning. Day and night do not move while nobody plays.',

@@ -207,7 +207,7 @@ function killMob(e){
   if(e.blockId)spawnDrop(e.x,e.y+0.4,e.z,{id:e.blockId,count:1},0,2,0);
   if(e.mt==='snake'&&e.segs&&e.segs.length)
     spawnDrop(e.x,e.y+0.4,e.z,{id:IT.APPLE,count:Math.min(8,e.segs.length)},0,2,0);
-  if(DIM!=='puppet'&&Math.random()<FIG_CHANCE)
+  if(GR.figDrops!==false&&DIM!=='puppet'&&Math.random()<FIG_CHANCE)   /* 6.51: a game rule; checked first, so no dice are rolled when it is off */
     spawnDrop(e.x,e.y+0.6,e.z,{id:IT.FIGURINE,count:1,mob:{t:e.mt}},(Math.random()-0.5)*2,2.5,(Math.random()-0.5)*2);
   if(GR.ghosts&&DIM!=='puppet'&&Math.random()<GHOST_CHANCE)spawnGhost(e.mt,e.x,e.y+0.5,e.z);
   if(T.drop){

@@ -108,6 +108,7 @@ world each time the server starts. Stop the server, edit the file, start it agai
   "instaKill": false,
   "freezeMobs": false,
   "ghosts": true,
+  "figDrops": true,
   "fbOK": true,
   "store": true,
   "powers": true,
@@ -133,6 +134,7 @@ world each time the server starts. Stop the server, edit the file, start it agai
 | `instaKill` | any hit kills a mob outright |
 | `freezeMobs` | every mob stops where it stands |
 | `ghosts` | guilt ghosts |
+| `figDrops` | slain mobs sometimes drop a figurine of themselves |
 | `fbOK` | players may use the Fullbright setting |
 | `store` | the Dingle Store in the pause menu |
 | `powers` | superpowers (the P menu) |

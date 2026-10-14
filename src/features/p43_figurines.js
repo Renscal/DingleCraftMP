@@ -30,7 +30,7 @@ function dispUse(x,y,z){
     P.inv[P.sel]=null;
     redrawHotbar();playS('place');
     showToast((MOBT[be.fig.t]?MOBT[be.fig.t].hp+'hp of ':'')+be.fig.t+' figurine displayed. Museum quality.');
-  }else showToast('Holds one mob figurine (5% drop from any kill).');
+  }else showToast('Holds one mob figurine (5% drop from any kill'+(GR.figDrops===false?', but figurine drops are off in this world':'')+').');
   dispRefresh(x,y,z);
 }
 function dispRefresh(x,y,z){

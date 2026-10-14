@@ -266,6 +266,7 @@ function critNow(){return !!(P&&P.vy<0&&!P.onGround&&!P.inWater&&!P.inLava&&!P.r
 function critFx(x,y,z){burstParticles(x,y,z,B.GLOWSTONE,14,1.5);if(typeof playSAt==='function')playSAt('crit',x,y,z);else playS('crit');}
 let rEdge=false;
 function doUse(dt){
+  if(!MB.r)P.useHold=false;                                /* 6.51: the button is up: a block may be placed again */
   if(modalOpen()||P.spec){rEdge=false;P.bowT=0;P.eatT=0;return;}
   const st=heldStack();
   const d=DEFS[st?st.id:0]||{};
@@ -324,7 +325,7 @@ function doUse(dt){
       return;
     }
     if(hd.interact){
-      rEdge=false;
+      rEdge=false;if(NET.on)P.useHold=true;   /* 6.51: on a server a shared chest opens only when the server says so: until the button is let go, nothing is placed against it */
       if(PREG.interact[hd.interact])PREG.interact[hd.interact](hit,hd);
       else if(hd.interact==='craft')openModal('craft');
       else if(hd.interact==='furnace'){ensureBE(hit.x,hit.y,hit.z,'furnace');openModal('furnace',bkey(hit.x,hit.y,hit.z));}
@@ -676,7 +677,7 @@ function doUse(dt){
     return;
   }
   /* place block */
-  if(st&&!DEFS[st.id].item&&st.id!==B.AIR&&hit&&(rEdge||P.useT<=0)){
+  if(st&&!DEFS[st.id].item&&st.id!==B.AIR&&hit&&!P.useHold&&(rEdge||P.useT<=0)){
     let tx=hit.x+hit.nx,ty=hit.y+hit.ny,tz=hit.z+hit.nz;
     if(DEFS[hit.id].replace){tx=hit.x;ty=hit.y;tz=hit.z;}
     const cur=getBlock(tx,ty,tz);

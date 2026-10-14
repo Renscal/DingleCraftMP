@@ -160,7 +160,7 @@ const FIELDS = [['name', 'Server name', 'text'], ['motd', 'Message of the day', 
   ['lockNames', 'Nobody may change their own name', 'bool'], ['lockPasswords', 'Nobody may change their own password', 'bool'], ['lockSkins', 'Nobody may change their own skin', 'bool'],
   ['whitelist', 'Only listed players may join (whitelist)', 'bool'], ['allow', 'Whitelist (one name a line)', 'list'], ['ops', 'Operators (one name a line)', 'list'], ['bans', 'Banned (one name a line)', 'list']];
 const RULE_NAMES = { keepInv: 'Keep inventory on death', god: 'God mode', mobGrief: 'Mob griefing', mobSpawn: 'Natural mob spawning', dayCycle: 'Daylight cycle', fireTick: 'Fire spreads', fallDmg: 'Fall damage', snail: 'The Eternal Snail',
-  jsc: 'Jumpscare chance (0 to 100)', instaKill: 'Instant kill', freezeMobs: 'Freeze all mobs', ghosts: 'Guilt ghosts', fbOK: 'Fullbright allowed', store: 'Dingle Store', powers: 'Superpowers', cheats: 'Cheats (the debug menu, for everyone)',
+  jsc: 'Jumpscare chance (0 to 100)', instaKill: 'Instant kill', freezeMobs: 'Freeze all mobs', ghosts: 'Guilt ghosts', figDrops: 'Figurine drops', fbOK: 'Fullbright allowed', store: 'Dingle Store', powers: 'Superpowers', cheats: 'Cheats (the debug menu, for everyone)',
   nether: 'The Nether', aether: 'The Aether', puppet: 'Puppet Purgatory', difficulty: 'Difficulty' };
 async function loadSettings() {
   const r = await window.dc.readSettings(S.id);

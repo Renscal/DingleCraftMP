@@ -2,7 +2,7 @@
 /* PART 27 — DEBUG MENU, GAMERULES & SETTINGS MEMORY  (2.3.1)            */
 /* ===================================================================== */
 function GR_DEF(){return {keepInv:false,god:false,mobGrief:true,mobSpawn:true,
-  dayCycle:true,fireTick:true,fallDmg:true,snail:true,jsc:0,instaKill:false,freezeMobs:false,ghosts:true,fbOK:true,store:true,powers:true,cheats:true,nether:true,aether:true,puppet:true,difficulty:'normal'};}
+  dayCycle:true,fireTick:true,fallDmg:true,snail:true,jsc:0,instaKill:false,freezeMobs:false,ghosts:true,figDrops:true,fbOK:true,store:true,powers:true,cheats:true,nether:true,aether:true,puppet:true,difficulty:'normal'};}
 const GR=GR_DEF();
 let dbgmOpen=false;
 const GR_LABELS=[
@@ -17,6 +17,7 @@ const GR_LABELS=[
   ['instaKill','Instant Kill',              'Any hit you land kills a mob outright \u2014 guns, blades, tools, all of it.'],
   ['freezeMobs','Freeze All Mobs',          'Every mob stops where it stands \u2014 no moving, no attacking \u2014 until you turn this off.'],
   ['ghosts',  'Guilt Ghosts',              'Slain mobs sometimes return to guilt-trip you. Off keeps them away for good.'],
+  ['figDrops','Figurine Drops',           'Slain mobs sometimes drop a figurine of themselves (1 in 20). Off: never.'],
   ['fbOK',    'Fullbright Toggle',         'Off removes the Fullbright button from Settings and turns it off.'],
   ['store',   'Dingle Store',              'Off closes the shop and removes it from the pause menu.'],
   ['powers',  'Superpowers',               'Off disables the P menu and its button.'],
