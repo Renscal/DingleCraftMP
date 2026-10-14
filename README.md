@@ -53,9 +53,9 @@ Every version has a page under [**Releases**](https://github.com/Renscal/DingleC
 | `DINGLECRAFT-Server-v<version>.zip` | the multiplayer server, with the game inside it. Start here to host |
 | `DINGLECRAFT-Client-v<version>.zip` | the game as a desktop app (optional: the html does the same) |
 
-The **server window** (`DINGLECRAFT-ServerGUI-v<version>.zip`) is a separate download with releases of its own (tagged
-`server-gui-v<version>`): one program for every server version, so it does not change when the game does. See
-[Hosting a server](#hosting-a-server).
+The **server window** is a Windows program, `DINGLECRAFT-Server-Setup-<version>.exe`, with releases of its own (tagged
+`server-gui-v<version>`; DingleCraft Multiplayer 2.0 carries it too): one program for every server version, so it does
+not change when the game does. See [Hosting a server](#hosting-a-server).
 
 The release marked **Latest** is the one to play. Pre-releases cut from the `Experimental` branch are betas, published
 for testing without the full test run.
@@ -194,12 +194,23 @@ file that single player can import), and for everyone `/msg`, `/me`, `/list`, `/
 
 **Memory.** The server runs a copy of the game for each dimension someone is in: about 110 MB each.
 
-**The server window.** If you prefer buttons to a terminal, download `DINGLECRAFT-ServerGUI-v<version>.zip` from its own
-release (tagged `server-gui-v<version>`), unpack it, run `npm install` and `npm start`. It manages several servers with a
-dashboard, console, players and accounts, settings and game-rule forms, worlds, backups and a scheduler. It carries no
-server of its own: **New server** asks for a name and a version, and lists the versions on the releases page, which it
-downloads, checks and installs for you (or import a Server zip by hand). Different servers can run different versions at
-once, and a new game version needs no new window ([server-gui/README.md](server-gui/README.md)).
+**The server window.** If you prefer buttons to a terminal, download `DINGLECRAFT-Server-Setup-<version>.exe` from the
+[latest release](https://github.com/Renscal/DingleCraftMP/releases/latest) (or the window's own, tagged `server-gui-v<version>`)
+and run it: no Node.js, no terminal. It is not signed, so the first time Windows SmartScreen says it protected your PC:
+click **More info**, then **Run anyway**. It manages several servers with a dashboard, console, players and accounts,
+settings and game-rule forms, worlds, backups and a scheduler. It carries no server of its own: **New server** asks for a
+name and a version, and lists the versions on the releases page, which it downloads, checks and installs for you (or
+import a Server zip by hand). Different servers can run different versions at once, and a new game version needs no new
+window ([server-gui/README.md](server-gui/README.md)).
+
+**Build the server window from source** (or run it on Linux or macOS): download `DINGLECRAFT-ServerGUI-v<version>.zip`
+(or use `server-gui/` in a checkout), and with [Node.js](https://nodejs.org) 20 or newer:
+
+```sh
+npm install     # once: downloads Electron and the builder
+npm start       # runs the window
+npm run dist    # builds out/DINGLECRAFT Server Setup <version>.exe and a portable exe (on Windows; elsewhere it needs Wine)
+```
 
 Every setting, command and limit is in [server/README.md](server/README.md).
 
@@ -311,7 +322,8 @@ patch notes are in [CHANGELOG.md](CHANGELOG.md).
   back or forward (6.56).
 - **Riding together** (6.57): other players' bodies are drawn on the seat of the vehicle you see, so rider and vehicle
   move as one.
-- **Release downloads:** a server zip and a client zip for every version; the server window on its own releases.
+- **Release downloads:** a server zip and a client zip for every version; the server window, as a Windows installer
+  (`.exe`) and its source, on its own releases.
 
 ### Gameplay
 

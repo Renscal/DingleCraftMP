@@ -46,7 +46,8 @@ const notes = [
   '**One window for every server version.** It carries no server of its own. Download a game release\'s `DINGLECRAFT-Server-v<version>.zip` (any version from 6.41 on) and import it under **Server versions**; each server in the list picks the version it runs, and different servers can run different versions at the same time. A new game release needs no new window: import its Server zip and switch.', '',
   '**Or straight from GitHub.** New server asks for a name and a version: the drop-down lists the versions you have and the ones on the releases page, with a refresh button. Pick one you do not have and it is downloaded, checked against GitHub\'s fingerprint and imported for you.', '',
   '**Settings that keep up.** From game version 6.58 the server describes its own settings and game rules, so ones added later show in the window with their own names and limits. Older servers use the window\'s own list.', '',
-  '**Start it:** unpack, `npm install` (once, downloads Electron; needs Node.js 20 or newer), then `npm start`. `npm run dist` builds a Windows installer and a portable .exe (unsigned, so SmartScreen warns the first time).', '',
+  `**Install it (Windows):** download **DINGLECRAFT-Server-Setup-${VER}.exe** and run it. It is not signed, so the first time Windows SmartScreen says it protected your PC: click **More info**, then **Run anyway**.`, '',
+  `**Build it from source** (or run it on Linux or macOS): unpack **${TOP}-v${VER}.zip**, then \`npm install\` (once; needs Node.js 20 or newer) and \`npm start\`. \`npm run dist\` builds the Windows installer and a portable exe into \`out/\` (on Windows; elsewhere it needs Wine).`, '',
 ].join('\n');
 const notesFile = path.join(OUT, 'notes.md');
 fs.writeFileSync(notesFile, notes);

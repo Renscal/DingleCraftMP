@@ -153,7 +153,10 @@ gh release create server-gui-v<version> out/release-gui/DINGLECRAFT-ServerGUI-v<
   --prerelease --title "DINGLECRAFT Server window <version>" --notes-file out/release-gui/notes.md -R <owner>/DingleCraftMP
 ```
 
-(`scripts/package-gui.mjs` prints the exact line.) The window talks to a server only through the `--ipc` messages of
+(`scripts/package-gui.mjs` prints the exact line.) The installer is the main download: the owner builds it on Windows from that
+zip (`npm install`, `npm run dist`), and it is attached to the same release renamed without spaces
+(`gh release upload server-gui-v<version> DINGLECRAFT-Server-Setup-<version>.exe`; GitHub would turn the spaces into dots).
+Check it first: `file` says "PE32 ... Nullsoft Installer", and its ProductVersion is the window's version. The window talks to a server only through the `--ipc` messages of
 `server/lib/admin.mjs`: a game version may add messages, never change or remove one, so older windows keep working.
 
 ## Where the new version gets played

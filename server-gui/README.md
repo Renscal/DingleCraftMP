@@ -11,9 +11,16 @@ release needs no new window: import its Server zip and switch the server to it. 
 added the `--ipc` mode the window drives). The window has its own version (`package.json`) and its own release
 (`server-gui-v<version>`), made only when the window itself changes.
 
-## Run it
+## Install it (Windows)
 
-It needs [Node.js](https://nodejs.org) 20 or newer to install; after that it runs on Electron's own Node.
+Download `DINGLECRAFT-Server-Setup-<version>.exe` from the window's release (tagged `server-gui-v<version>`) or from the
+latest game release, and run it. That is all: no Node.js, no terminal. The exe is not signed, so the first time Windows
+SmartScreen says it protected your PC: click **More info**, then **Run anyway**.
+
+## Run it from source (any system)
+
+It needs [Node.js](https://nodejs.org) 20 or newer to install; after that it runs on Electron's own Node. Unzip
+`DINGLECRAFT-ServerGUI-v<version>.zip` (or use this folder in a checkout), then:
 
 ```sh
 npm install     # once: downloads Electron
@@ -56,11 +63,13 @@ suites can run it; `lib/zip.cjs` reads a release zip.
 The window and a server talk only through the `--ipc` messages listed at the top of `server/lib/admin.mjs`. Keep those
 working the same way (add, do not change), and every window keeps working with every newer server.
 
-## A Windows program (.exe)
+## Build the Windows program (.exe)
 
-`npm run dist` builds a Windows installer and a portable exe with electron-builder (the settings are in `package.json`).
-That has to be run on Windows (or under Wine): unzip `DINGLECRAFT-ServerGUI-v<version>.zip`, `npm install`, `npm run dist`.
-The exe carries no server: import one into it as above. `npm run package:gui` at the top of the repository makes that zip.
-The owner built and started it that way on Windows 10 from the 6.43 zip. The exe is unsigned, so Windows SmartScreen will warn the
+`npm run dist` builds the installer (`out/DINGLECRAFT Server Setup <version>.exe`) and a portable exe
+(`out/DINGLECRAFT-Server-portable.exe`) with electron-builder (the settings are in `package.json`). That has to be run on
+Windows (or anywhere with Wine): unzip `DINGLECRAFT-ServerGUI-v<version>.zip`, `npm install`, `npm run dist`. The exe
+carries no server: it downloads or imports one as above. `npm run package:gui` at the top of the repository makes that zip.
+The owner builds the released installer this way on Windows (1.1.1 was the first published, attached to its release as
+`DINGLECRAFT-Server-Setup-1.1.1.exe`, and to DingleCraft Multiplayer 2.0). The exe is unsigned, so Windows SmartScreen will warn the
 first time it is started. It has the default Electron icon: the picture in this folder is called `tray.png` because the
 builder takes any `icon.png` here as the program's icon and refuses one smaller than 256 x 256.
