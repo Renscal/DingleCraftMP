@@ -21,6 +21,19 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — The world keeps time
+
+*Game version 6.50, released 2026-10-14.*
+
+- **THE WORLD KEEPS TIME.** Plant a field, walk off on an adventure, come back: the wheat used to be exactly as tall as you left it, frozen in place out of politeness. A paused server (since 6.46) froze everyone's furnaces as well. Not any more.
+- **What catches up.** Crops on watered farmland, saplings in the light, and furnaces. When their land is next run (you walk back, a chunk loads, the server wakes up), everything they would have done happens at once, with the same odds as if you had stood there and watched.
+- **Real time.** It counts time the server sat empty or paused, time the server was switched off, and time your single-player game was closed. Leave a full furnace overnight and the ingots are waiting in the morning. Day and night do not move while nobody plays.
+- **Within reason.** A furnace only cooks what its fuel and input allow. A crop stops at ripe, and dry farmland still grows nothing. A sapling that would have become a tree becomes one the moment you are back, so trees never sprout half-built at the edge of the world.
+- **Not caught up.** Fire, flowing water, falling leaves and mobs. Those are physics and wildlife, not gardening.
+- **For the server owner.** The setting **catchUpMax** (minutes, 0 for no limit, which is the default) caps how much time any one catch-up may cover. The world's clock lives in level.json.
+- **A new face.** The title has a new logo: DINGLECRAFT MULTIPLAYER, in chunky grey letters with the sprinkles still on.
+- **Which version is this?** The line under the logo now says the game's own version number, and keeps itself up to date with every release, instead of the release name it had been stuck on.
+
 ## Release 1.1 — Who goes there
 
 *Game version 6.49, released 2026-10-14.*

@@ -144,8 +144,8 @@ Full map: `docs/ARCHITECTURE.md` (PART-to-file table, systems index, how each up
   one saved object each (`MP`, `save.cr`, `save.mg`), written only when it differs from the default.
 - **Multiplayer** (PART 58, `src/net/`: `n0_contract` state and the map, `n1_link` connection and messages, `n2_world`
   blocks, chests and their locks, `n3_drops`, `n4_self` this player and the frame tick, `n5_players`, `n6_menu`,
-  `n7_mobs` shared mobs and explosions, `n8_host` the server's own game, `n9_ents` what flies and what you ride, `na_data` what the world remembers): 40 core
-  hooks, 34 behind `NET.on` (or `e.pup`) and 6 behind `NET.host`, all of which only PART 58 sets, so single player is byte-for-byte the old behaviour.
+  `n7_mobs` shared mobs and explosions, `n8_host` the server's own game, `n9_ents` what flies and what you ride, `na_data` what the world remembers): 41 core
+  hooks, 35 behind `NET.on` (or `e.pup`) and 6 behind `NET.host`, all of which only PART 58 sets, so single player is byte-for-byte the old behaviour.
   **The server runs the game** (6.13, first step): `server/lib/host.mjs` loads the html's own script headless in a worker
   thread and that game ("the host", player id 0) spawns, runs and saves the Overworld's shared mobs. The game knows one
   player, so the host points `P` at the nearest real player before each entity update (`ntHostAim`); anything a brain

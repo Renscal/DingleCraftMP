@@ -130,6 +130,7 @@ function ntMsg(m){
     case 'fire':if(NET.on&&!NET.host)ntFireIn(m);return;
     case 'ign':if(NET.host&&Array.isArray(m.c))for(const c of m.c)if(Array.isArray(c))igniteAt(c[0]|0,c[1]|0,c[2]|0);return;   /* only the server's game is sent these */
     case 'fx':if(NET.on)ntFxIn(m);return;
+    case 'clock':if(NET.host)catchClockIn(m.v,m.max);return;   /* 6.50: only the server's game is sent these */
     case 'fxgone':if(NET.on)ntFxGone(m);return;
     case 'vehs':if(NET.on)ntVehsIn(m);return;
     case 'vgone':if(NET.on)ntVehsGone(m);return;
@@ -209,6 +210,7 @@ function ntMsg(m){
     case 'time':
       if(NET.on&&typeof m.v==='number'){let d=m.v-(((timeOfDay%1)+1)%1);if(d>0.5)d-=1;if(d<-0.5)d+=1;
         if(Math.abs(d)>0.003){timeOfDay+=d;NET.tPrev=timeOfDay;}}
+      if(NET.on&&typeof m.clock==='number')catchClockIn(m.clock,m.cmax);   /* 6.50: the world's clock is the server's */
       return;
     case 'gr':
       if(NET.on&&m.gr&&typeof m.gr==='object'){Object.assign(GR,m.gr);NET.grS=JSON.stringify(GR);if(typeof grApplyUI==='function')grApplyUI();}

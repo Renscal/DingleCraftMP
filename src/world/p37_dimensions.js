@@ -209,7 +209,7 @@ function setDim(d,x,y,z){
   }
   stashEnts();
   DIM=d;
-  for(const [k,ch] of chunks)disposeChunkMeshes(ch);
+  for(const [k,ch] of chunks){catchStamp(k,ch);disposeChunkMeshes(ch);}   /* 6.50: the land left behind remembers when */
   chunks.clear();
   if(P){P.x=x;P.y=y;P.z=z;P.vx=P.vy=P.vz=0;P.fallD=0;P.portalT=0;P.ride=null;}
   unstashEnts();

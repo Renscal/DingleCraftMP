@@ -53,6 +53,14 @@ export function createServer(opts = {}) {
 
   /* ---- the world ---- */
   const { world, isNew, seen } = openWorld(place, o, log);
+  /* 6.50: the world's clock (lib/protocol.mjs worldTick; the games catch up crops and furnaces by it) went on while the
+     server was off: the time since the last save is added, at most catchUpMax minutes if that is set. A single-player
+     world brings the moment its save was written as "wall". */
+  { const at = typeof world.savedAt === 'number' ? world.savedAt : typeof world.wall === 'number' ? world.wall : 0;
+    delete world.wall;
+    if (typeof world.clock !== 'number' || !Number.isFinite(world.clock)) world.clock = 0;
+    const gap = at && Date.now() > at ? (Date.now() - at) / 1000 : 0;
+    world.clock += o.catchUpMax > 0 ? Math.min(gap, o.catchUpMax * 60) : gap; }
   applySettings(world, o.rules, opts.mode);    // opts, not o: a mode nobody asked for must not override the world file's
 
   /* ---- the server's state, shared with lib/protocol.mjs and lib/http.mjs ---- */
@@ -71,9 +79,10 @@ export function createServer(opts = {}) {
   };
   const pending = new Set();            // every open socket, joined or not (for timeouts and shutdown)
 
+  /* 6.50: savedAt goes into level.json with the clock, so the next start knows how long the server was off */
   function saveWorld(why) {
     if (!worldDir || !S.dirty) return false;
-    try { const n = writeWorld(worldDir, world, seen); S.dirty = false; if (why) log(`world saved (${why}: ${n} file${n === 1 ? '' : 's'} changed)`); return true; }
+    try { world.savedAt = Date.now(); const n = writeWorld(worldDir, world, seen); S.dirty = false; if (why) log(`world saved (${why}: ${n} file${n === 1 ? '' : 's'} changed)`); return true; }
     catch (e) { log('WORLD SAVE FAILED: ' + e.message); return false; }
   }
   S.saveWorld = saveWorld;              // the /save command
@@ -163,7 +172,7 @@ export function createServer(opts = {}) {
           const h = S.hosts.get(dim);
           if (!h) return;
           h.emptyT = 0;
-          if (h.paused) { h.paused = false; h.post({ t: 'resume' }); log('the server game for ' + dim + ' is running again'); }
+          if (h.paused) { h.post({ t: 'clock', v: world.clock, max: (o.catchUpMax || 0) * 60 }); h.paused = false; h.post({ t: 'resume' }); log('the server game for ' + dim + ' is running again'); }
         };
       }
       else log('the game html holds no script the server can run: the players\' games will run the mobs between them');
@@ -194,6 +203,7 @@ export function createServer(opts = {}) {
   const tick = setInterval(() => {
     const now = Date.now(), dt = Math.min(5, (now - lastTick) / 1000); lastTick = now;
     worldTick(S, net, beats, now, dt);
+    if ((beats.clock = (beats.clock || 0) + dt) >= 5) { beats.clock = 0; for (const h of S.hosts.values()) h.post({ t: 'clock', v: world.clock, max: (o.catchUpMax || 0) * 60 }); }   // 6.50: the games follow the world's clock
     if (o.pauseWhenEmpty > 0) for (const [dim, h] of S.hosts) {
       if (h.paused) continue;
       if ([...S.clients.values()].some((p) => p.ready && (p.pose ? p.pose.dim : 'over') === dim)) { h.emptyT = 0; continue; }

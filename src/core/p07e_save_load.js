@@ -90,6 +90,7 @@ function snapshot(name,lite){   /* lite (6.34): leave the blocks, chests and ent
     gr:{...GR},
     ...crSaveFields(),
     ...dbgSaveFields(),
+    clock:+CATCH.clock.toFixed(2),wall:Date.now(),cseen:catchOut(),   /* 6.50: the world's clock, when it was saved, and when each growing chunk last ran */
     spw:[...SPW.keys()],
     edits,be,ents};
 }
@@ -97,7 +98,7 @@ function resetWorld(){
   DIM='over';
   SNL=null;SNL_ON=false;
   dbgLoad(null);
-  lightReset();farmReset();treeReset();
+  lightReset();farmReset();treeReset();catchReset();
   NUKES.length=0;NARM.e=null;NARM.t=0;nukeHud(-1);
   for(const k2 in ENT_STASH)delete ENT_STASH[k2];
   NCOLM.clear();ACOLM.clear();mpReset();
@@ -140,6 +141,7 @@ function applySave(d){
   DIM=(dd==='nether'||dd==='aether'||dd==='puppet')?dd:'over';
   SNL=null;SNL_ON=!!d.snl;
   dbgLoad(d);
+  catchIn(d,Date.now());                                   /* 6.50 */
   NUKES.length=0;
   for(const a of (d.nukes||[]))NUKES.push({x:a[0],y:a[1],z:a[2],d:a[3]===1?'nether':(a[3]===2?'aether':(a[3]===3?'puppet':'over'))});
   for(const k in (d.edits||{})){

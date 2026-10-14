@@ -231,6 +231,7 @@ function updateChunks(){
   if(frameCount%180===0){
     for(const [k,ch] of chunks){
       if(Math.max(Math.abs(ch.cx-pcx),Math.abs(ch.cz-pcz))>RD+2){
+          catchStamp(k,ch);                                      /* 6.50 */
           disposeChunkMeshes(ch);
         chunks.delete(k);
       }

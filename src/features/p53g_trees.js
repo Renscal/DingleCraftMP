@@ -171,7 +171,7 @@ function treeTick(dt){
       continue;
     }
     if(!skyOpen(x,y,z)&&getLight(x,y+1,z)<9&&getLight(x,y,z)<9)continue;      /* it wants light */
-    if(treeRnd()>=TREE.p)continue;
+    if(!CATCH.due.delete(k)&&treeRnd()>=TREE.p)continue;   /* 6.50: due after catching up: it grows now */
     const m=getMeta(x,y,z),stage=(m>>2)&3;
     if(stage<3){setBlock(x,y,z,B.SAPLING,(m&3)|((stage+1)<<2));continue;}
     treeGrow(x,y,z,m&3);                                                     /* no room: it tries again another second */

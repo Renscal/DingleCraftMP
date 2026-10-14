@@ -28,6 +28,7 @@ function createChunk(cx,cz){
   lightChunk(ch);                                          /* 6.26: block light (world/p03e_light.js) */
   farmResume(ch);                                          /* 6.39: the crops still growing in it */
   treeResume(ch);                                          /* 6.43: and the saplings */
+  catchChunk(k,ch);                                        /* 6.50: what they missed while it was away */
   markDirty(cx-1,cz);markDirty(cx+1,cz);markDirty(cx,cz-1);markDirty(cx,cz+1);
   return ch;
 }

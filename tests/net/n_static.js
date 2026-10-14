@@ -95,7 +95,7 @@ boot.run(async()=>{
   ok('the stock market stands still in a player\'s game on a server that runs it',count(readSrc('features/p12_ramps_tricks_stocks.js'),'if(NET.on&&NET.hosted)return;')===1);
   for(const [f,h] of hooks)ok('hook in '+f+': '+h.slice(0,34)+'… once, and once in the build',count(readSrc(f),h)===1&&count(G,h)===1);
   {const outside=G.slice(0,i58)+G.slice(i57);const calls=outside.match(/\bnt[A-Z]\w*\(/g)||[];
-    ok('the core calls into PART 58 exactly 40 times: 34 behind NET.on or e.pup, 6 for the server\'s own game ('+calls.length+')',calls.length===40);
+    ok('the core calls into PART 58 exactly 41 times: 35 behind NET.on or e.pup (6.50: catching up asks who runs the land), 6 for the server\'s own game ('+calls.length+')',calls.length===41);
     ok('single player never reaches the server-game hooks: each is behind NET.host or NET.on, which only PART 58 sets',!/NET\.(host|hosted|on)\s*=[^=]/.test(outside));
     ok('the two drop guards: networked drops stay out of the dimension stash, and drops do not merge online',
       count(readSrc('world/p37_dimensions.js'),"e.t==='drop'&&e.st&&!e.nid){out.push(")===1&&count(readSrc('entities/p05a_entities_drops.js'),'&&e.st.dur==null&&!NET.on){')===1);

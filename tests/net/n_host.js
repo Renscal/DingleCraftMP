@@ -25,7 +25,9 @@
    13 (6.17) every dimension: the Nether gets a game of its own the moment a player goes there (the Aether's is not started
       for nothing), "player 0" is the game of your own dimension, its mobs stay in it and are saved under entities/nether
    14 (6.46) nobody home: a dimension's game nobody has been in for pauseWhenEmpty seconds is paused (no ticks at all, the
-      world saved first), and the next player in wakes it at once, with no catching up */
+      world saved first), and the next player in wakes it at once, with no catching up
+   15 (6.50) the world's clock: level.json keeps it and when it was saved; a server started a day later adds the day
+      (catchUpMax caps it) */
 'use strict';
 const boot=require('../lib/c_boot.js'),{ok}=boot;
 const path=require('path'),fs=require('fs'),{pathToFileURL}=require('url');
@@ -308,6 +310,17 @@ boot.run(async()=>{
     ok('...and it ran not one tick while it slept, and does not try to catch up',S4.host().ticks===t0);
     {await sleep(1000);b5.send({t:'pose',x:sx,y:sy,z:sz+1,yaw:0,pitch:0,dim:'nether',held:0,hp:20,fl:0});await sleep(1200);b5.send({t:'pose',x:sx,y:sy,z:sz,yaw:0,pitch:0,dim:'over',held:0,hp:20,fl:0});
       ok('a player moving on to another dimension leaves the one behind to pause on its own',await until(()=>S4.host('nether')&&S4.host('nether').ready,20000)&&await until(()=>S4.host('nether').asleep===true,5000)&&S4.host().asleep===false);}
-    await S4.close();}
+    await S4.close();
+    /* ===== 15. the world's clock ===== */
+    {const lf=path.join(P4,'world','level.json'),L=JSON.parse(fs.readFileSync(lf,'utf8'));
+      ok('level.json keeps the world\'s clock and the moment it was saved ('+Math.round(L.clock)+' s)',typeof L.clock==='number'&&L.clock>0&&typeof L.savedAt==='number');
+      L.savedAt-=86400e3;fs.writeFileSync(lf,JSON.stringify(L));
+      const S5=createServer({port:0,data:P4,world:'world',noGame:true,quiet:true,simulate:false});
+      const c5=S5.world().clock;
+      L.savedAt=Date.now()-86400e3;fs.writeFileSync(lf,JSON.stringify(L));
+      const S6=createServer({port:0,data:P4,world:'world',noGame:true,quiet:true,simulate:false,catchUpMax:10});
+      ok('a server started a day after its last save adds the day to the clock ('+Math.round(c5-L.clock)+' s); with catchUpMax 10, ten minutes ('+Math.round(S6.world().clock-L.clock)+' s)',
+        Math.abs(c5-L.clock-86400)<120&&Math.abs(S6.world().clock-L.clock-600)<2);}
+  }
   fs.rmSync(OUT,{recursive:true,force:true});
 });

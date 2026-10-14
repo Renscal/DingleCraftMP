@@ -146,7 +146,7 @@ function ntHostChunks(pl){
   for(const [k,ch] of chunks){
     let keep=false;
     for(const q of pl)if(Math.max(Math.abs(ch.cx-Math.floor(q.x/CH)),Math.abs(ch.cz-Math.floor(q.z/CH)))<=NT_HOSTR+2){keep=true;break;}
-    if(!keep){disposeChunkMeshes(ch);chunks.delete(k);}
+    if(!keep){catchStamp(k,ch);disposeChunkMeshes(ch);chunks.delete(k);}   /* 6.50: remembered for catching up */
   }
 }
 /* 8 times a second: report the mobs that died or were despawned, give ids to the new ones, and send every mob that has a
@@ -202,5 +202,5 @@ function ntHostTick(dt){
   ntFxTick();
   ntFlush();
   if(NET.acc-NET.scanT>=1){NET.scanT=NET.acc;ntDropsScan();}
-  if(NET.acc-NET.hsnT>=5){NET.hsnT=NET.acc;ntSend({t:'hsnap',mobs:ntHostSnap(),vehs:ntHostVehSnap()});}
+  if(NET.acc-NET.hsnT>=5){NET.hsnT=NET.acc;ntSend({t:'hsnap',mobs:ntHostSnap(),vehs:ntHostVehSnap(),cseen:catchOut()});}
 }

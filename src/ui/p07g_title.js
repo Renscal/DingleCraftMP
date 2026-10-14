@@ -271,3 +271,6 @@ function tbgStop(){
   TBG.r=null;
   const T=$('title');if(T)T.classList.remove('tbg-live');
 }
+/* 6.50: the line under the logo shows the game's own version (GAME_VERSION, which every bump moves on), not the release
+   label the html carries */
+{const tv=$('t_ver');if(tv)tv.textContent='Version '+GAME_VERSION;}

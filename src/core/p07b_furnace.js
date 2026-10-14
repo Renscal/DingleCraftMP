@@ -3,6 +3,14 @@ function furnaceTick(dt){
   for(const be of blockEnts.values()){
     if(be.t!=='furnace')continue;
     if(NET.on&&ntNoTick(be))continue;   /* PART 58: one game cooks each furnace: the one that has it open, else the server's */
+    if(be.at!=null&&CATCH.clock-be.at>2)furnaceCatch(be,CATCH.clock-be.at);   /* 6.50: the time nobody cooked it */
+    be.at=CATCH.clock;
+    furnaceStep(be,dt);
+  }
+}
+/* one furnace, dt seconds (6.50: also what furnaceCatch replays) */
+function furnaceStep(be,dt){
+  {
     const out=be.in?SMELT[be.in.id]:undefined;
     const can=out!==undefined&&(!be.out||(be.out.id===out&&be.out.count<stackMax(out)));
     if(be.burn>0)be.burn=Math.max(0,be.burn-dt);

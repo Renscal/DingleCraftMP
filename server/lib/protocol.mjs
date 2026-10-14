@@ -621,12 +621,19 @@ export function handleMessage(S, net, c, m, size) {
       return;
     }
     case 'hsnap': {                    // (the server's game) every mob and vehicle it has, for the next save
-      { const key = JSON.stringify([m.mobs, m.vehs]);   // 6.46: the same as last time (nobody near, nothing moved): nothing to save
+      { const key = JSON.stringify([m.mobs, m.vehs, m.cseen]);   // 6.46: the same as last time (nobody near, nothing moved): nothing to save
         if (key === c.hsnapK) return;
         c.hsnapK = key; }
       { const d = c.hdim, others = (list) => (Array.isArray(list) ? list.filter((x) => (x.d || 'over') !== d) : []);   // each dimension's game reports its own
         world.mobs = others(world.mobs).concat(cleanMobs(m.mobs).map((x) => (d === 'over' ? x : { ...x, d })));
         world.vehicles = others(world.vehicles).concat(cleanMobs(m.vehs).filter((v) => RIDES.has(v.t)).map((x) => (d === 'over' ? x : { ...x, d }))); }
+      if (m.cseen && typeof m.cseen === 'object' && !Array.isArray(m.cseen)) {   // 6.50: when each growing chunk of this dimension last ran
+        const pfx = DIM_PFX[c.hdim] || '', mine = (k) => (pfx ? k.startsWith(pfx) : !k.includes(';'));
+        const next = {};
+        for (const k of Object.keys(world.cseen || {})) if (!mine(k)) next[k] = world.cseen[k];
+        for (const k of Object.keys(m.cseen).slice(0, 20000)) if (mine(k) && CK_RE.test(k.slice(pfx.length)) && Number.isFinite(m.cseen[k])) next[k] = m.cseen[k];
+        world.cseen = next;
+      }
       S.dirty = true;
       return;
     }
@@ -762,8 +769,9 @@ export function handleMessage(S, net, c, m, size) {
    T holds the two 5-second counters between calls. */
 export function worldTick(S, net, T, now, dt) {
   const { world } = S;
+  world.clock = (world.clock || 0) + dt;   // 6.50: the world's own clock runs always, with or without players (crops and furnaces catch up by it)
   if (S.clients.size && world.gr.dayCycle !== false) { world.time = (world.time + dt / DAY_LEN) % 1; S.dirty = true; }
-  if (S.clients.size && (T.time += dt) >= 5) { T.time = 0; net.broadcast({ t: 'time', v: +world.time.toFixed(5) }); }
+  if (S.clients.size && (T.time += dt) >= 5) { T.time = 0; net.broadcast({ t: 'time', v: +world.time.toFixed(5), clock: Math.round(world.clock) }); }
   if (S.clients.size && (T.drops += dt) >= 5) {
     const aged = T.drops; T.drops = 0;
     for (const id of Object.keys(world.drops)) {

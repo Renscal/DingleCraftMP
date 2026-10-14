@@ -3,7 +3,17 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Who goes there',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'The world keeps time',lines:[
+    '<b>THE WORLD KEEPS TIME.</b> Plant a field, walk off on an adventure, come back: the wheat used to be exactly as tall as you left it, frozen in place out of politeness. A paused server (since 6.46) froze everyone&#x27;s furnaces as well. Not any more.',
+    '<b>What catches up.</b> Crops on watered farmland, saplings in the light, and furnaces. When their land is next run (you walk back, a chunk loads, the server wakes up), everything they would have done happens at once, with the same odds as if you had stood there and watched.',
+    '<b>Real time.</b> It counts time the server sat empty or paused, time the server was switched off, and time your single-player game was closed. Leave a full furnace overnight and the ingots are waiting in the morning. Day and night do not move while nobody plays.',
+    '<b>Within reason.</b> A furnace only cooks what its fuel and input allow. A crop stops at ripe, and dry farmland still grows nothing. A sapling that would have become a tree becomes one the moment you are back, so trees never sprout half-built at the edge of the world.',
+    '<b>Not caught up.</b> Fire, flowing water, falling leaves and mobs. Those are physics and wildlife, not gardening.',
+    '<b>For the server owner.</b> The setting <b>catchUpMax</b> (minutes, 0 for no limit, which is the default) caps how much time any one catch-up may cover. The world&#x27;s clock lives in level.json.',
+    '<b>A new face.</b> The title has a new logo: DINGLECRAFT MULTIPLAYER, in chunky grey letters with the sprinkles still on.',
+    '<b>Which version is this?</b> The line under the logo now says the game&#x27;s own version number, and keeps itself up to date with every release, instead of the release name it had been stuck on.',
+  ]},
+ {v:'6.49',label:'Release 1.1',title:'Who goes there',lines:[
     '<b>WHO GOES THERE.</b> On a server, you used to be whoever you said you were. Type an operator&#x27;s name and you had their rights, their inventory and their spot in the sun. Servers now have accounts.',
     '<b>How it works.</b> The server&#x27;s owner makes an account (a username and a password) and hands it to the player. When the player joins, the server asks for it before they spawn. Get it wrong five times and you are shown the door.',
     '<b>Remembered.</b> The game remembers your username for each server. Tick "Remember the password" and it remembers that too, on this computer only.',
