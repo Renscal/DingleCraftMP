@@ -17,6 +17,7 @@ const MOBT={
   alien: {hp:16,hw:0.3, h:1.8, spd:1.0, dmg:3,body:'#7ec850',legc:'#4a4f63',
           drop:{id:IT.IRON,min:0,max:1}},
 };
+const MOB_FALL={pig:1,cow:1,sheep:1,zombie:1,skel:1,boomer:1,spider:1,snake:1};   /* 6.48: the mobs a fall hurts */
 const MOBFACE={};
 function mobFace(mt){
   if(MOBFACE[mt])return MOBFACE[mt];
@@ -316,7 +317,11 @@ function updateMob(e,dt){
   if(e.vy<-45)e.vy=-45;
   const k=1-Math.exp(-dt*(e.onGround?12:3));
   e.vx=lerp(e.vx,mvx*spd,k);e.vz=lerp(e.vz,mvz*spd,k);
+  const fy0=e.y;
   const wall=moveBody(e,e.vx*dt,e.vy*dt,e.vz*dt,false);
+  /* 6.48: a fall of more than 3 blocks hurts, a point a block beyond that, rounded up (water breaks a fall) */
+  if(e.y<fy0&&!inW)e.fallD=(e.fallD||0)+(fy0-e.y);
+  if(inW||e.onGround){if(e.onGround&&!inW&&e.fallD>3&&MOB_FALL[e.mt]&&!e.noFall)hurtMob(e,Math.ceil(e.fallD-3-1e-6),0,0);e.fallD=0;}
   if(wall&&e.onGround&&!inW)e.vy=7.6;
   if(e.y<-40){removeEnt(e);return;}
   /* visuals */

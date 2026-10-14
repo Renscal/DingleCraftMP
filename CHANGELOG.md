@@ -21,6 +21,21 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — Monsters by the book
+
+*Game version 6.48, released 2026-10-14.*
+
+- **MONSTERS BY THE BOOK.** Mob farms are a whole engineering discipline in the blocky game this one takes after, and none of them worked here, because our monsters followed our own rules. Now they follow those rules, closely enough that a farm built from a tutorial should just work.
+- **The sky has a light level now.** Every block knows how much sky light reaches it: full 15 straight down an open shaft, one less per block sideways under a roof, a little less under leaves or water. Night takes up to 11 off it. Torches still count separately.
+- **Dark is a dice roll.** A monster needs no torchlight at all, and then the light from the sky (after the hour takes its share) has to beat a random number from 0 to 7. A sealed room spawns every time, an open field at noon never, and the open sky at night about a quarter of the time.
+- **How spawning works now.** Twenty times a second, every loaded chunk within 8 of you gets one try: a random spot at a random height, then up to three packs of up to four. Never within 24 blocks of a player, never more than 128 from one.
+- **The cap scales.** 70 monsters and 10 animals for a full 17 by 17 area of chunks, counted only near you, and fewer when less of the world is loaded.
+- **Despawning.** A monster more than 128 blocks from everyone vanishes at once. Past 32, once nobody has been near it for half a minute, it has a small chance each tick. Inside 32, never. Bosses, villagers and anything with a name stay put.
+- **Animals.** On grass, in the light, every 20 seconds. They go only past 128 blocks.
+- **Dungeon spawners.** They wake up when a player is within 16 blocks, try 4 spots within 4 blocks of themselves, accept torchlight up to 11, wait 10 to 40 seconds after a success, and stop once there are 6 of their kind around. Spawner farms, in other words.
+- **Falling hurts monsters.** More than 3 blocks hurts them, a point per block beyond that, and water breaks the fall. Drop towers now do what drop towers do. The Pig Cannon's pigs are issued parachutes.
+- **Not changed.** The Nether, the Aether and Puppet Purgatory keep their own spawners, because their residents were never going to follow anyone's rules.
+
 ## Release 1.1 — Shoot through the hedge
 
 *Game version 6.47, released 2026-10-14.*

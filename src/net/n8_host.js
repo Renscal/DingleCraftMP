@@ -119,7 +119,7 @@ function ntHostClear(x,z){
   return true;
 }
 /* the countMobs hook: the spawn caps count the mobs around the player being spawned for, not the whole world */
-function ntHostNear(e){return Math.hypot(e.x-P.x,e.z-P.z)<=72;}
+function ntHostNear(e){return Math.hypot(e.x-P.x,e.z-P.z)<=SPAWN.far;}   /* 6.48: the spawner's own reach (it also counts only the spawnable chunks) */
 /* The damagePlayer hook: a brain hit "the player". Nothing happens to the stand-in: the hit goes to that player's own game,
    which applies its armour and its own rules. An explosion is not sent this way: it reaches everyone near it as {t:'boom'}. */
 function ntHostHurt(n,kx,kz){
@@ -192,7 +192,7 @@ function ntHostTick(dt){
     for(const q of pl)if(q.xp>0){ntSend({t:'xp',to:q.nid,n:Math.round(q.xp)});q.xp=0;}
     tickFlow(dt);                                          /* water, fire: only this game runs them in the Overworld (6.15) */
     updateFires(dt);
-    try{P=pl[NET.hrr%pl.length];tickSpawners(dt*pl.length);}finally{P=NET.hp0;}   /* spawners, for one player in turn (6.16) */
+    try{P=pl[NET.hrr%pl.length];tickSpawners(dt);}finally{P=NET.hp0;}   /* spawners (6.16); since 6.48 each looks at every player itself */
   }
   if(NET.peers.size&&NET.hprim){updateStocks(dt);ntHostMkt();}   /* one market for everyone */
   ntWdTick();

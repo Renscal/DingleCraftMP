@@ -1,31 +1,27 @@
-/* ----- spawner ----- */
-let spawnT=0;
-function countMobs(){
-  let h=0,p=0;
-  for(const e of entities)if(e.t==='mob'&&!e.dead&&!MOBT[e.mt].pnc&&(!NET.host||ntHostNear(e))){if(e.hostile)h++;else p++;}   /* PART 58: per player on the server's game */
-  return [h,p];
-}
-function torchNear(x,y,z){
-  for(const k of torches){
-    const p=dimP(k);
-    if(!p)continue;
-    const dx=p[0]-x,dy=p[1]-y,dz=p[2]-z;
-    if(dx*dx+dy*dy+dz*dz<64)return true;
-  }
-  return false;
-}
-/* ----- where a mob may appear (6.44) -----
-   Monsters used to appear on the surface at night and at random underground by day, with a torch keeping an 8-block
-   bubble clear, and nothing checked what was actually at the spot. Now, as in the game this one takes after:
-     dark     no block light at all (the 6.26 light map), and not daylit: by night nothing is, by day a spot is daylit
-              if open sky is within SPAWN.sky steps through open air (skyLit). A sealed room is dark at noon.
-     safe     a solid, opaque block underneath, and every cell the mob's own box touches free of blocks and of water
-              and lava. The box is the mob's size, so a spider needs three by three and a zombie two cells of height.
-     far      never within SPAWN.near blocks of a player.
-   Each cycle makes a few tries anywhere in the loaded area round the player, at a height picked between the bottom of
-   the world and the top of that column, so caves and rooms get their share; a spot that takes one may seat a small pack. */
-const SPAWN={tries:10,near:24,range:88,sky:8,pack:4,capH:14,capP:8,rnd:null};
+/* ----- where a mob may appear (6.48: the rules of the game this one takes after, Java edition) -----
+   6.44 made monsters go by how dark it is; 6.48 makes the whole spawner work the way that game's does, so the farms people
+   know how to build work here too.
+     when      every game tick (20 a second), one try per spawnable chunk (the loaded chunks within SPAWN.chunks (8) of
+               the player), in a new order each tick, as long as there are fewer monsters near that player than the cap
+     cap       70 monsters for 289 spawnable chunks (a full 17 x 17), and that much less for fewer; 10 animals likewise.
+               What counts is the mobs within those chunks of the player
+     where     a random column of the chunk and a random height from 1 to one above its surface. Nothing if that cell is
+               a solid block. From there three packs of up to four, each step a few blocks sideways at the same height
+     dark      (monsters) the sky's light there (sl) above a random 0..31: no. Any block light: no. Then the brighter of
+               the sky (less the hour's darkening) and the block light must be at most a random 0..7. So: always in a
+               sealed room, never in daylight, about half the time under the night sky, and a torch makes a spot safe
+     safe      a solid, opaque block underneath, and every cell the mob's own box touches free of blocks, water and lava
+     far       more than SPAWN.near (24) blocks from every player, and within SPAWN.far (128) of one
+     animals   once every 400 ticks, on grass or snowy grass, where the light (sky or block, not counting the hour) is
+               above 8
+     gone      a monster more than 128 blocks from every player vanishes at once; past 32, after half a minute with no
+               player within 32, it has a 1 in 800 chance a tick. Animals go only past 128 (here the world keeps no mobs
+               with unloaded chunks, so an animal left far behind would be lost anyway). Bosses, villagers and other
+               named mobs, and anything kept on purpose, never go
+   The Nether, the Aether and Puppet Purgatory keep their own spawners (their mobs are their own). */
+const SPAWN={near:24,far:128,chunks:8,base:289,capH:70,capP:10,pack:4,packs:3,passEvery:400,idle:30,quiet:32,rnd:null,t:0,pass:0};
 function spawnRnd(){return SPAWN.rnd?SPAWN.rnd():Math.random();}
+function spawnInt(n){return Math.floor(spawnRnd()*n);}
 /* room for this kind of mob standing in cell x,y,z: a floor under it and nothing in its box */
 function spawnRoom(mt,x,y,z){
   const T=MOBT[mt];
@@ -39,53 +35,107 @@ function spawnRoom(mt,x,y,z){
   }
   return true;
 }
-/* dark enough for a monster? */
+/* dark enough for a monster, right now? (random: see above) */
 function spawnDark(x,y,z){
-  if(getLight(x,y,z)>0)return false;
-  if(DIM!=='over'||!sunUp())return true;
-  return !skyLit(x,y,z,SPAWN.sky);
+  const s=getSky(x,y,z);
+  if(s>spawnInt(32))return false;
+  const b=getLight(x,y,z);
+  if(b>0)return false;
+  return Math.max(s-skyDarken(),b)<=spawnInt(8);
 }
-/* far enough from every player (the server's game has several) */
+/* the players the spawner measures from (the server's game has several) */
+function spawnPlayers(){return NET.host&&NET.hpl?NET.hpl:[P];}
+/* far enough from every player, and near enough to one */
 function spawnClear(x,y,z){
-  const pl=NET.host&&NET.hpl?NET.hpl:[P];
-  for(const q of pl)if(Math.hypot(q.x-x-0.5,q.y-y,q.z-z-0.5)<SPAWN.near)return false;
-  return true;
+  let near=false;
+  for(const q of spawnPlayers()){
+    const d=Math.hypot(q.x-x-0.5,q.y-y,q.z-z-0.5);
+    if(d<=SPAWN.near)return false;
+    if(d<=SPAWN.far)near=true;
+  }
+  return near;
 }
-/* a monster for the Overworld, by the old odds */
-function spawnPick(){const r=spawnRnd();return r<0.35?'zombie':r<0.62?'skel':r<0.82?'boomer':'spider';}
+/* a monster for the Overworld, by that game's weights */
+function spawnPick(){const r=spawnInt(395);return r<95?'zombie':r<195?'skel':r<295?'spider':'boomer';}
+function spawnPickP(){const r=spawnInt(33);return r<10?'pig':r<18?'cow':r<30?'sheep':'snake';}
 /* may this kind of monster appear standing in cell x,y,z right now? */
 function spawnOK(mt,x,y,z){
-  return chunkAt(x,z)&&spawnRoom(mt,x,y,z)&&spawnDark(x,y,z)&&spawnClear(x,y,z)&&!(MGP_ON&&mgNoSpawn(x,z));
+  return chunkAt(x,z)&&spawnRoom(mt,x,y,z)&&spawnClear(x,y,z)&&spawnDark(x,y,z)&&!(MGP_ON&&mgNoSpawn(x,z));
 }
-/* One try for the Overworld's monsters: a column near the anchor, a height in it, the first floor at or below that
-   height; then up to SPAWN.pack of one kind round it. room: how many more the cap allows. Returns how many appeared. */
-function spawnTry(an,room){
-  const x=Math.floor(an.x+(spawnRnd()*2-1)*SPAWN.range),z=Math.floor(an.z+(spawnRnd()*2-1)*SPAWN.range);
-  if(!chunkAt(x,z))return 0;
-  let y=1+Math.floor(spawnRnd()*(surfaceTop(x,z)+1));
-  for(let i=0;i<12&&y>1&&DEFS[getBlock(x,y-1,z)].solid===false;i++)y--;   /* down to a floor */
-  const mt=spawnPick();
-  if(!spawnOK(mt,x,y,z))return 0;
-  spawnMob(mt,x+0.5,y,z+0.5);
-  let n=1;
-  const want=Math.min(room,1+Math.floor(spawnRnd()*SPAWN.pack));
-  for(let i=0;i<8&&n<want;i++){
-    const px=x+Math.floor(spawnRnd()*11)-5,pz=z+Math.floor(spawnRnd()*11)-5;
-    for(let py=y+1;py>=y-1;py--)if(spawnOK(mt,px,py,pz)){spawnMob(mt,px+0.5,py,pz+0.5);n++;break;}
+/* may this animal appear there? */
+function spawnOKP(mt,x,y,z){
+  if(!chunkAt(x,z)||!spawnRoom(mt,x,y,z)||!spawnClear(x,y,z))return false;
+  const g=getBlock(x,y-1,z);
+  return (g===B.GRASS||g===B.SNOWGRASS)&&Math.max(getSky(x,y,z),getLight(x,y,z))>8;
+}
+/* the spawnable chunks round the player: loaded, within SPAWN.chunks */
+function spawnChunks(){
+  const out=[],pcx=Math.floor(P.x/CH),pcz=Math.floor(P.z/CH),r=SPAWN.chunks;
+  for(let dx=-r;dx<=r;dx++)for(let dz=-r;dz<=r;dz++){const ch=chunks.get(ckey(pcx+dx,pcz+dz));if(ch)out.push(ch);}
+  return out;
+}
+/* the mobs that count against the player's caps: in the spawnable chunks round them */
+function countMobs(){
+  let h=0,p=0;
+  const pcx=Math.floor(P.x/CH),pcz=Math.floor(P.z/CH),r=SPAWN.chunks;
+  const inR=e=>Math.abs(Math.floor(e.x/CH)-pcx)<=r&&Math.abs(Math.floor(e.z/CH)-pcz)<=r;
+  for(const e of entities)if(e.t==='mob'&&!e.dead&&!MOBT[e.mt].pnc&&inR(e)&&(!NET.host||ntHostNear(e))){if(e.hostile)h++;else p++;}   /* PART 58: per player on the server's game */
+  return [h,p];
+}
+/* One try in one chunk: a cell, then up to three packs round it. ok: spawnOK or spawnOKP; pick: the kind (once a pack).
+   room: how many more the cap allows. Returns how many appeared. */
+function spawnTry(ch,room,ok,pick){
+  const x=ch.cx*CH+spawnInt(CH),z=ch.cz*CH+spawnInt(CH);
+  const y=1+spawnInt(Math.max(1,surfaceTop(x,z)+1));
+  const d=DEFS[getBlock(x,y,z)];
+  if(d.solid!==false&&d.opq)return 0;
+  let n=0;
+  for(let k=0;k<SPAWN.packs;k++){
+    let px=x,pz=z,mt=null;
+    const size=Math.ceil(spawnRnd()*SPAWN.pack);
+    for(let l=0;l<size;l++){
+      px+=spawnInt(6)-spawnInt(6);pz+=spawnInt(6)-spawnInt(6);
+      if(!spawnClear(px,y,pz))continue;
+      if(!mt)mt=pick();
+      if(!ok(mt,px,y,pz))continue;
+      spawnMob(mt,px+0.5,y,pz+0.5);n++;
+      if(n>=room)return n;
+    }
   }
   return n;
 }
+/* the despawn rules (above), for dt seconds */
+function mobsDespawn(dt){
+  const pl=spawnPlayers();
+  for(const e of entities){
+    if(e.t!=='mob'||e.dead)continue;
+    const T=MOBT[e.mt];
+    if(T.boss||T.pnc||e.pkeep||e.name||(NET.host&&NT_UNIQ[e.mt]===1))continue;
+    let d=1e9;
+    for(const q of pl){const v=Math.hypot(q.x-e.x,q.y-e.y,q.z-e.z);if(v<d)d=v;}
+    if(d>SPAWN.far){removeEnt(e);continue;}
+    if(!e.hostile)continue;
+    if(d<SPAWN.quiet){e.idleT=0;continue;}
+    e.idleT=(e.idleT||0)+dt;
+    if(e.idleT>SPAWN.idle&&spawnRnd()<1-Math.pow(1-1/800,dt*20))removeEnt(e);
+  }
+}
+let spawnT=0;
 function mobsTick(dt){
-  spawnT-=dt;
-  if(spawnT>0)return;
-  spawnT=1.4;
   if(NET.host&&LGT.q.length){LGT.ch=null;lightFlood();lightFlush(true);}   /* the server's game has no frame to finish a long flood of light in */
-  const [h,p]=countMobs();
-  /* despawn far */
-  for(const e of entities)if(e.t==='mob'&&!e.dead&&!MOBT[e.mt].boss&&!MOBT[e.mt].pnc&&!e.pkeep&&mobFarFromAll(e))removeEnt(e);
+  if(NET.host&&SKYL.q.length)skyFlood();
+  SPAWN.t+=dt;
+  const ticks=Math.min(8,Math.floor(SPAWN.t/0.05));
+  SPAWN.t=ticks===8?0:SPAWN.t-ticks*0.05;
+  if(!ticks)return;
+  mobsDespawn(ticks*0.05);
   if(!GR.mobSpawn||(NET.on&&ntHosted()))return;   /* PART 58: on a server that runs the mobs, the server spawns them */
-  const _an=mobAnchor();
   if(DIM==='nether'||DIM==='puppet'||DIM==='aether'){
+    spawnT-=ticks*0.05;
+    if(spawnT>0)return;
+    spawnT=1.4;
+    const [h,p]=countMobs();
+    const _an=mobAnchor();
     const ang=Math.random()*6.28,dist=14+Math.random()*22;
     const x=Math.floor(_an.x+Math.sin(ang)*dist),z=Math.floor(_an.z+Math.cos(ang)*dist);
     if(!chunkAt(x,z))return;
@@ -103,19 +153,14 @@ function mobsTick(dt){
     }
     return;
   }
-  if(P.mode!=='c'){
-    let have=h;
-    for(let i=0;i<SPAWN.tries&&have<SPAWN.capH;i++)have+=spawnTry(_an,SPAWN.capH-have);
-  }
-  if(p<SPAWN.capP&&sunUp()){
-    const ang=Math.random()*6.28,dist=14+Math.random()*22;
-    const x=Math.floor(_an.x+Math.sin(ang)*dist),z=Math.floor(_an.z+Math.cos(ang)*dist);
-    if(!chunkAt(x,z))return;
-    const sy=surfaceTop(x,z);
-    const g=getBlock(x,sy,z);
-    if((g===B.GRASS||g===B.SNOWGRASS)&&Math.random()<0.5){
-      const r=Math.random(),mt=r<0.08?'snake':(r<0.36?'pig':r<0.68?'cow':'sheep');
-      if(spawnRoom(mt,x,sy+1,z)&&skyOpen(x,sy+1,z))spawnMob(mt,x+0.5,sy+1,z+0.5);   /* 6.44: room for it, in the open */
+  const list=spawnChunks(),k=list.length/SPAWN.base,capH=Math.floor(SPAWN.capH*k),capP=Math.floor(SPAWN.capP*k);
+  let [h,p]=countMobs();
+  for(let t=0;t<ticks;t++){
+    for(let i=list.length-1;i>0;i--){const j=spawnInt(i+1),c=list[i];list[i]=list[j];list[j]=c;}   /* a new order every tick, so no corner is always first to the cap */
+    if(P.mode!=='c')for(const ch of list){if(h>=capH)break;h+=spawnTry(ch,capH-h,spawnOK,spawnPick);}
+    if(++SPAWN.pass>=SPAWN.passEvery){
+      SPAWN.pass=0;
+      for(const ch of list){if(p>=capP)break;p+=spawnTry(ch,capP-p,spawnOKP,spawnPickP);}
     }
   }
 }

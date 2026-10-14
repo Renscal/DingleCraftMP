@@ -495,7 +495,7 @@ function doUse(dt){
       const e3=eyePos(),l3=lookDir();
       spawnMob('pig',e3[0]+l3[0],e3[1]+l3[1]-0.3,e3[2]+l3[2]);
       const pg=entities[entities.length-1];
-      pg.vx=l3[0]*16;pg.vy=l3[1]*16+3;pg.vz=l3[2]*16;
+      pg.vx=l3[0]*16;pg.vy=l3[1]*16+3;pg.vz=l3[2]*16;pg.noFall=true;   /* 6.48: a deployed pig lands safely */
       showToast('Pig deployed.');
     }
     rEdge=false;return;

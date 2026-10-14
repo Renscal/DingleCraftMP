@@ -3,7 +3,19 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Shoot through the hedge',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Monsters by the book',lines:[
+    '<b>MONSTERS BY THE BOOK.</b> Mob farms are a whole engineering discipline in the blocky game this one takes after, and none of them worked here, because our monsters followed our own rules. Now they follow those rules, closely enough that a farm built from a tutorial should just work.',
+    '<b>The sky has a light level now.</b> Every block knows how much sky light reaches it: full 15 straight down an open shaft, one less per block sideways under a roof, a little less under leaves or water. Night takes up to 11 off it. Torches still count separately.',
+    '<b>Dark is a dice roll.</b> A monster needs no torchlight at all, and then the light from the sky (after the hour takes its share) has to beat a random number from 0 to 7. A sealed room spawns every time, an open field at noon never, and the open sky at night about a quarter of the time.',
+    '<b>How spawning works now.</b> Twenty times a second, every loaded chunk within 8 of you gets one try: a random spot at a random height, then up to three packs of up to four. Never within 24 blocks of a player, never more than 128 from one.',
+    '<b>The cap scales.</b> 70 monsters and 10 animals for a full 17 by 17 area of chunks, counted only near you, and fewer when less of the world is loaded.',
+    '<b>Despawning.</b> A monster more than 128 blocks from everyone vanishes at once. Past 32, once nobody has been near it for half a minute, it has a small chance each tick. Inside 32, never. Bosses, villagers and anything with a name stay put.',
+    '<b>Animals.</b> On grass, in the light, every 20 seconds. They go only past 128 blocks.',
+    '<b>Dungeon spawners.</b> They wake up when a player is within 16 blocks, try 4 spots within 4 blocks of themselves, accept torchlight up to 11, wait 10 to 40 seconds after a success, and stop once there are 6 of their kind around. Spawner farms, in other words.',
+    '<b>Falling hurts monsters.</b> More than 3 blocks hurts them, a point per block beyond that, and water breaks the fall. Drop towers now do what drop towers do. The Pig Cannon&#x27;s pigs are issued parachutes.',
+    '<b>Not changed.</b> The Nether, the Aether and Puppet Purgatory keep their own spawners, because their residents were never going to follow anyone&#x27;s rules.',
+  ]},
+ {v:'6.47',label:'Release 1.1',title:'Shoot through the hedge',lines:[
     '<b>SHOOT THROUGH THE HEDGE.</b> Bullets used to treat a single oak leaf like a slab of reinforced concrete. Zombies learned to stand behind bushes. That era is over.',
     '<b>What a bullet goes through now.</b> Leaves of every kind, doors (shut or open: it is a wooden door, not a bank vault) and water. Puppet Purgatory&#x27;s fleece canopy too.',
     '<b>What still stops it.</b> Stone and every other solid block, glass, Bunker Glass (it was always in the name) and lava. Lava used to let bullets through, which was physics nobody had signed off on.',

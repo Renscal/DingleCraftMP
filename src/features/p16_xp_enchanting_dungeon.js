@@ -201,10 +201,15 @@ function closeEnch(){
 }
 
 /* ----- mob spawners ----- */
+/* 6.48: the way the game this one takes after runs them. A spawner wakes with a player within 16 blocks. When its delay
+   is up it makes 4 tries in the 9 x 3 x 9 round it (up to 4 blocks either way, one up or down), each needing the mob's room
+   and a block light of at most 11 (daylight does not count); if one appears it waits 10 to 40 seconds, if none did it tries
+   again next tick. With 6 or more of its kind within that box already it only waits. */
 const SPW=new Map(); /* bkey -> cooldown */
 function tickSpawners(dt){
   if(NET.on&&ntHosted())return;   /* PART 58: where the server runs the world, the spawners are its to run */
   if(!P||P.dead)return;
+  const pl=NET.host&&NET.hpl?NET.hpl:[P];
   for(const [k,cd] of SPW){
     const p=dimP(k);
     if(!p)continue;
@@ -212,29 +217,26 @@ function tickSpawners(dt){
     if(!chunkAt(x,z))continue;
     const id=getBlock(x,y,z);
     if(id!==B.SPAWNER_Z&&id!==B.SPAWNER_S){SPW.delete(k);spawnXP(x+0.5,y+0.5,z+0.5,15);continue;}
-    const pd=Math.hypot(P.x-(x+0.5),P.y-(y+0.5),P.z-(z+0.5));
-    if(pd>14)continue;
+    if(!pl.some(q=>Math.hypot(q.x-(x+0.5),q.y-(y+0.5),q.z-(z+0.5))<=16))continue;
     let n=cd-dt;
     if(n<=0){
+      const mt=id===B.SPAWNER_Z?'zombie':'skel';
       let near=0;
       for(const e of entities)
-        if(e.t==='mob'&&!e.dead&&MOBT[e.mt].hostile&&Math.hypot(e.x-x,e.z-z)<11)near++;
-      if(near<6){
-        for(let tr=0;tr<8;tr++){
-          const sx=x+((Math.random()*5)|0)-2,sz=z+((Math.random()*5)|0)-2;
-          let ok=false,sy=y;
-          for(const oy of [0,-1,1]){
-            if(getBlock(sx,y+oy,sz)===B.AIR&&getBlock(sx,y+oy+1,sz)===B.AIR&&DEFS[getBlock(sx,y+oy-1,sz)].solid){sy=y+oy;ok=true;break;}
-          }
-          if(ok){
-            spawnMob(id===B.SPAWNER_Z?'zombie':'skel',sx+0.5,sy+0.05,sz+0.5);
-            burstParticles(sx+0.5,sy+0.8,sz+0.5,B.SPAWNER_Z,8,0.6);
-            playS('spawner');
-            break;
-          }
+        if(e.t==='mob'&&!e.dead&&e.mt===mt&&Math.abs(e.x-x-0.5)<=4.5&&Math.abs(e.y-y-0.5)<=4.5&&Math.abs(e.z-z-0.5)<=4.5)near++;
+      if(near>=6)n=10+spawnRnd()*30;
+      else{
+        let got=false;
+        for(let tr=0;tr<4&&near<6;tr++){
+          const sx=Math.floor(x+0.5+(spawnRnd()-spawnRnd())*4),sy=y+spawnInt(3)-1,sz=Math.floor(z+0.5+(spawnRnd()-spawnRnd())*4);
+          if(!chunkAt(sx,sz)||!spawnRoom(mt,sx,sy,sz)||getLight(sx,sy,sz)>11)continue;
+          spawnMob(mt,sx+0.5,sy+0.05,sz+0.5);
+          burstParticles(sx+0.5,sy+0.8,sz+0.5,B.SPAWNER_Z,8,0.6);
+          if(!got)playS('spawner');
+          got=true;near++;
         }
+        n=got?10+spawnRnd()*30:0;
       }
-      n=2.4+Math.random()*1.6;
     }
     SPW.set(k,n);
   }

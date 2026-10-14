@@ -110,6 +110,7 @@ function lightEdit(x,y,z){
   if(!DEFS[id].opq)for(const o of LGT_N){const nl=getLight(x+o[0],y+o[1],z+o[2])-1;if(nl>v)v=nl;}
   if(v>0){setLight(x,y,z,v);LGT.q.push(x,y,z);}
   lightFlood();lightFlush();
+  skyEdit(x,y,z);                                          /* 6.48 */
 }
 /* The createChunk hook: a chunk was built. Its own lights are found and spread, and the light standing at the edges of
    the chunks around it flows in. */
@@ -132,9 +133,10 @@ function lightChunk(ch){
     }
   }
   lightFlood();lightFlush(true);
+  skyChunk(ch);                                            /* 6.48 */
 }
 /* forget everything (a new world, a loaded one) */
-function lightReset(){LGT.q.length=0;LGT.rq.length=0;LGT.dirty.clear();LGT.ch=null;}
+function lightReset(){LGT.q.length=0;LGT.rq.length=0;LGT.dirty.clear();LGT.ch=null;SKYL.q.length=0;SKYL.rq.length=0;}
 
 /* ----- drawing it ----- */
 /* The light at every vertex of a mesh buffer, 0 to 1, into b.l: the average over the cells that meet at the vertex on the
@@ -195,31 +197,125 @@ function blightPatch(m){
   m.customProgramCacheKey=()=>'blight1';
   return m;
 }
-/* ----- daylight, for whoever asks if a place is dark (6.44) -----
-   There is no map of the sky's light. Instead: a cell is daylit if open sky can be reached from it within n steps through
-   cells light passes through, which is what sky light fading by one a block comes to. A short flood, done on demand (a
-   spawn attempt asks a handful of times a second), not kept. */
-function skyLit(x,y,z,n){
-  if(y>=WH)return true;
-  if(y<0||DEFS[getBlock(x,y,z)].opq)return false;
-  if(skyOpen(x,y,z))return true;
-  const seen=new Set([x+','+y+','+z]);
-  let ring=[[x,y,z]];
-  for(let d=0;d<n;d++){
-    const next=[];
-    for(const c of ring)for(const o of LGT_N){
-      const X=c[0]+o[0],Y=c[1]+o[1],Z=c[2]+o[2],k=X+','+Y+','+Z;
-      if(seen.has(k))continue;
-      seen.add(k);
-      if(Y<0||Y>=WH||DEFS[getBlock(X,Y,Z)].opq)continue;
-      if(skyOpen(X,Y,Z))return true;
-      next.push([X,Y,Z]);
-    }
-    ring=next;
-    if(!ring.length)break;
+/* ----- sky light (6.48) -----
+   Beside the block light every chunk keeps the sky's light per cell (ch.sl, 0 to 15), worked out the way the game this
+   one takes after does it: 15 comes straight down from the open sky through anything light passes through, and stays 15
+   as long as nothing but air (or another such see-through block) is in the way; leaves, water and ice dim it, so below
+   them it is 14 and falls from there; sideways (and down from below 15) it loses 1 a block. Opaque blocks stop it. It is
+   the light of the sky itself, not of the hour: how dark it is right now takes the sun off it (skyDarken). Like block
+   light it is never saved, built with the chunk and kept up by every block change, on the server's game too. Nothing is
+   drawn by it: it is there for the mob spawner (src/entities/p05e_spawning_tick.js). */
+const SKYL={q:[],rq:[],A:null,cap:60000};
+/* what a block does to the sky's light: 16 stops it (opaque), 1 dims it (leaves, water, ice), 0 lets it through */
+function skyAtten(id){
+  if(!SKYL.A){
+    SKYL.A=new Uint8Array(256);
+    for(let i=1;i<256;i++){const d=DEFS[i];if(!d)continue;SKYL.A[i]=d.opq?16:((i===B.WATER||i===B.ICE||isLeafId(i))?1:0);}
   }
-  return false;
+  return SKYL.A[id&255];
 }
+/* the sky's light at a cell (15 above the world, 0 below it and in an unbuilt chunk) */
+function getSky(x,y,z){
+  if(y>=WH)return 15;
+  if(y<0)return 0;
+  const ch=lightCh(x,z);
+  return ch&&ch.sl?ch.sl[bidx(x-ch.cx*CH,y,z-ch.cz*CH)]:0;
+}
+function setSky(x,y,z,v){
+  if(y<0||y>=WH)return;
+  const ch=lightCh(x,z);
+  if(ch&&ch.sl)ch.sl[bidx(x-ch.cx*CH,y,z-ch.cz*CH)]=v;
+}
+/* the light a cell gets from a neighbour holding v, d the step's direction index in LGT_N (3 is down) */
+function skyPass(v,d,id){
+  const a=skyAtten(id);
+  if(a>=16)return 0;
+  return d===3&&v===15&&a===0?15:v-1;
+}
+function skyFlood(){
+  const q=SKYL.q;
+  let i=0,n=0;
+  while(i<q.length&&n<SKYL.cap){
+    const x=q[i],y=q[i+1],z=q[i+2];i+=3;n++;
+    const v=getSky(x,y,z);
+    if(v<=1)continue;
+    for(let d=0;d<6;d++){
+      const o=LGT_N[d],X=x+o[0],Y=y+o[1],Z=z+o[2];
+      if(Y<0||Y>=WH)continue;
+      const ch=lightCh(X,Z);
+      if(!ch||!ch.sl)continue;
+      const nv=skyPass(v,d,ch.bl[bidx(X-ch.cx*CH,Y,Z-ch.cz*CH)]);
+      if(nv<=0||ch.sl[bidx(X-ch.cx*CH,Y,Z-ch.cz*CH)]>=nv)continue;
+      ch.sl[bidx(X-ch.cx*CH,Y,Z-ch.cz*CH)]=nv;q.push(X,Y,Z);
+    }
+  }
+  if(i>=q.length)q.length=0;else q.splice(0,i);
+}
+/* take away: every cell in SKYL.rq (with the light it had) darkens what it lit; the rest flows back */
+function skyUnflood(){
+  const q=SKYL.rq;
+  let i=0;
+  while(i<q.length){
+    const x=q[i],y=q[i+1],z=q[i+2],was=q[i+3];i+=4;
+    for(let d=0;d<6;d++){
+      const o=LGT_N[d],X=x+o[0],Y=y+o[1],Z=z+o[2],nl=getSky(X,Y,Z);
+      if(!nl||Y>=WH)continue;
+      if(nl<was||(d===3&&was===15&&nl===15)){setSky(X,Y,Z,0);q.push(X,Y,Z,nl);}
+      else SKYL.q.push(X,Y,Z);
+    }
+  }
+  q.length=0;
+}
+/* the setBlock hook (through lightEdit): the cell is emptied of sky light, then lit again from its neighbours */
+function skyEdit(x,y,z){
+  LGT.ch=null;
+  const ch=chunkAt(x,z);
+  if(!ch||!ch.sl||y<0||y>=WH)return;
+  const id=getBlock(x,y,z),was=getSky(x,y,z);
+  if(was){setSky(x,y,z,0);SKYL.rq.push(x,y,z,was);skyUnflood();}
+  let v=0;
+  for(let d=0;d<6;d++){
+    const o=LGT_N[d],nl=getSky(x-o[0],y-o[1],z-o[2]);   /* the neighbour the light would come from, stepping in direction d */
+    if(nl>0){const p=skyPass(nl,d,id);if(p>v)v=p;}
+  }
+  if(v>0){setSky(x,y,z,v);SKYL.q.push(x,y,z);}
+  skyFlood();
+  LGT.ch=null;
+}
+/* the createChunk hook (through lightChunk): every column from the top down, then sideways, and in from the chunks around */
+function skyChunk(ch){
+  LGT.ch=null;
+  skyAtten(0);
+  const A=SKYL.A,bl=ch.bl,sl=ch.sl=new Uint8Array(bl.length),x0=ch.cx*CH,z0=ch.cz*CH;
+  for(let lx=0;lx<CH;lx++)for(let lz=0;lz<CH;lz++){
+    let v=15;
+    for(let y=WH-1;y>=0&&v>0;y--){
+      const i=bidx(lx,y,lz),a=A[bl[i]];
+      v=a>=16?0:(v===15&&a===0?15:v-1);
+      sl[i]=v;
+    }
+  }
+  /* a lit cell next to a darker one it could light starts the sideways flood */
+  for(let lx=0;lx<CH;lx++)for(let lz=0;lz<CH;lz++)for(let y=0;y<WH;y++){
+    const v=sl[bidx(lx,y,lz)];
+    if(v<=1)continue;
+    if(lx===0||lx===CH-1||lz===0||lz===CH-1){SKYL.q.push(x0+lx,y,z0+lz);continue;}
+    if(sl[bidx(lx+1,y,lz)]<v-1||sl[bidx(lx-1,y,lz)]<v-1||sl[bidx(lx,y,lz+1)]<v-1||sl[bidx(lx,y,lz-1)]<v-1||(y>0&&sl[bidx(lx,y-1,lz)]<v-1))
+      SKYL.q.push(x0+lx,y,z0+lz);
+  }
+  for(const [dx,dz] of [[1,0],[-1,0],[0,1],[0,-1]]){
+    const nb=chunks.get(ckey(ch.cx+dx,ch.cz+dz));
+    if(!nb||!nb.sl)continue;
+    for(let a=0;a<CH;a++){
+      const lx=dx?(dx>0?0:CH-1):a,lz=dz?(dz>0?0:CH-1):a;
+      for(let y=0;y<WH;y++)if(nb.sl[bidx(lx,y,lz)]>1)SKYL.q.push(nb.cx*CH+lx,y,nb.cz*CH+lz);
+    }
+  }
+  skyFlood();
+  LGT.ch=null;
+}
+/* how many levels the hour takes off the sky's light: 0 by day, 11 at night, in between at dusk and dawn */
+function skyDarken(){return Math.round((1-dayRamp(timeOfDay))*11);}
 /* how much of the torch glow shows: all of it at night, a quarter by day (0 night .. 1 day) */
 function lightDay(t){return dayLight(t);}
 /* once a frame (from updateChunks): finish any spreading left over, set the glow for the hour, tint the mobs */
