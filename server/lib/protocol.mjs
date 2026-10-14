@@ -347,7 +347,10 @@ export function handleMessage(S, net, c, m, size) {
         dim: DIMS.has(m.dim) ? m.dim : 'over', held: num(m.held, 0, 99999, 0) | 0, hp: num(m.hp, 0, 9999, 20), fl: num(m.fl, 0, 255, 0) | 0, ms: c.ms };
       /* what they wear (four item ids, 0 for a bare slot) and what they ride: only sent on when there is something to say */
       if (Array.isArray(m.ar) && m.ar.length === 4 && m.ar.some((v) => v)) c.pose.ar = m.ar.map((v) => num(v, 0, 99999, 0) | 0);
-      if (S.startHost && (!was || was.dim !== c.pose.dim)) S.startHost(c.pose.dim);   // the first player into a dimension wakes the game that runs it
+      if (!was || was.dim !== c.pose.dim) {   // the first player into a dimension wakes the game that runs it (starts it, or resumes a paused one)
+        if (S.startHost) S.startHost(c.pose.dim);
+        if (S.wakeHost) S.wakeHost(c.pose.dim);
+      }
       if (typeof m.rv === 'string' && RIDES.has(m.rv)) { c.pose.rv = m.rv; c.pose.ry = num(m.ry, -1e4, 1e4, 0); c.pose.rh = num(m.rh, -8, 8, 0); }
       syncAround(S, net, c, c.pose.dim, c.pose.x, c.pose.z);
       /* players nearby see every pose; everyone else gets one a second (enough for the player list), and a change of
@@ -596,6 +599,9 @@ export function handleMessage(S, net, c, m, size) {
       return;
     }
     case 'hsnap': {                    // (the server's game) every mob and vehicle it has, for the next save
+      { const key = JSON.stringify([m.mobs, m.vehs]);   // 6.46: the same as last time (nobody near, nothing moved): nothing to save
+        if (key === c.hsnapK) return;
+        c.hsnapK = key; }
       { const d = c.hdim, others = (list) => (Array.isArray(list) ? list.filter((x) => (x.d || 'over') !== d) : []);   // each dimension's game reports its own
         world.mobs = others(world.mobs).concat(cleanMobs(m.mobs).map((x) => (d === 'over' ? x : { ...x, d })));
         world.vehicles = others(world.vehicles).concat(cleanMobs(m.vehs).filter((v) => RIDES.has(v.t)).map((x) => (d === 'over' ? x : { ...x, d }))); }

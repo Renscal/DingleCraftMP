@@ -155,6 +155,16 @@ export function createServer(opts = {}) {
           for (const p of S.clients.values()) if (p.ready) { h.post({ t: 'join', id: p.id, name: p.name }); if (p.pose) h.post({ t: 'pose', id: p.id, ...p.pose }); }
         };
         S.startHost('over');
+        /* 6.46: a dimension's game that nobody has been in for pauseWhenEmpty seconds is paused (Minecraft's
+           pause-when-empty-seconds): no ticks, so no CPU, and its clock, mobs, water and fires stand still. The first
+           player into it wakes it at once (the pose handler in lib/protocol.mjs); the once-a-second clock below puts it
+           to sleep. When the whole server is empty the world is saved first. */
+        S.wakeHost = (dim) => {
+          const h = S.hosts.get(dim);
+          if (!h) return;
+          h.emptyT = 0;
+          if (h.paused) { h.paused = false; h.post({ t: 'resume' }); log('the server game for ' + dim + ' is running again'); }
+        };
       }
       else log('the game html holds no script the server can run: the players\' games will run the mobs between them');
     } catch (e) { log('the server game could not be started (' + e.message + '): the players\' games will run the mobs between them'); }
@@ -184,6 +194,14 @@ export function createServer(opts = {}) {
   const tick = setInterval(() => {
     const now = Date.now(), dt = Math.min(5, (now - lastTick) / 1000); lastTick = now;
     worldTick(S, net, beats, now, dt);
+    if (o.pauseWhenEmpty > 0) for (const [dim, h] of S.hosts) {
+      if (h.paused) continue;
+      if ([...S.clients.values()].some((p) => p.ready && (p.pose ? p.pose.dim : 'over') === dim)) { h.emptyT = 0; continue; }
+      if ((h.emptyT = (h.emptyT || 0) + dt) < o.pauseWhenEmpty) continue;
+      if (![...S.clients.values()].some((p) => p.ready)) saveWorld('nobody online');
+      h.paused = true; h.post({ t: 'pause' });
+      log('nobody has been in ' + dim + ' for ' + o.pauseWhenEmpty + ' s: its server game is paused until someone comes');
+    }
     for (const c of pending) {          // quiet sockets: ping after 5 s, give up after 20 s; 15 s to say hello
       if (c.closed) continue;
       if (!c.ready && now - c.born > 15000) drop(c, 'never said hello');

@@ -78,7 +78,7 @@ function paint() {
     }
     if (!st.game) addrs.append(el('div', { className: 'warn', textContent: 'No game file was found to hand out. Players need their own copy of the game and choose Multiplayer.' }));
   } else addrs.append(el('div', { className: 'dim', textContent: c ? 'Start the server to get its address.' : 'Pick a server on the left, or make one.' }));
-  $('hosts').replaceChildren(...(st ? st.hosts : []).map((h) => el('tr', {}, [el('td', { textContent: DIMS[h.dim] || h.dim }), el('td', { textContent: h.ready ? 'running' : h.running ? 'starting' : 'asleep (starts when a player goes there)' }), el('td', { textContent: h.running ? fmtB(h.heap) : '' })])));
+  $('hosts').replaceChildren(...(st ? st.hosts : []).map((h) => el('tr', {}, [el('td', { textContent: DIMS[h.dim] || h.dim }), el('td', { textContent: h.paused ? 'paused (nobody there)' : h.ready ? 'running' : h.running ? 'starting' : 'asleep (starts when a player goes there)' }), el('td', { textContent: h.running ? fmtB(h.heap) : '' })])));
   paintPlayers();
 }
 function paintPlayers() {
@@ -119,7 +119,7 @@ $('cmd').onkeydown = (e) => {
 
 /* ---- settings and game rules: two forms over one server.json ---- */
 const FIELDS = [['name', 'Server name', 'text'], ['motd', 'Message of the day', 'text'], ['port', 'Port', 'int'], ['password', 'Password (empty for none)', 'text'], ['maxPlayers', 'Most players at once', 'int'],
-  ['mode', 'Mode for new players', 'mode'], ['pvp', 'Players can hurt each other (PvP)', 'bool'], ['viewChunks', 'View distance sent to players (chunks)', 'int'], ['spawnProtection', 'Spawn protection (blocks; 0 for none)', 'int'],
+  ['mode', 'Mode for new players', 'mode'], ['pvp', 'Players can hurt each other (PvP)', 'bool'], ['viewChunks', 'View distance sent to players (chunks)', 'int'], ['pauseWhenEmpty', 'Pause a world nobody is in after (seconds; 0 never)', 'int'], ['spawnProtection', 'Spawn protection (blocks; 0 for none)', 'int'],
   ['sleepPercent', 'Players asleep to skip the night (%)', 'int'], ['simulate', 'The server runs the world itself (mobs, water, crops)', 'bool'], ['singlePlayer', 'The served game may also play alone', 'bool'],
   ['whitelist', 'Only listed players may join (whitelist)', 'bool'], ['allow', 'Whitelist (one name a line)', 'list'], ['ops', 'Operators (one name a line)', 'list'], ['bans', 'Banned (one name a line)', 'list']];
 const RULE_NAMES = { keepInv: 'Keep inventory on death', god: 'God mode', mobGrief: 'Mob griefing', mobSpawn: 'Natural mob spawning', dayCycle: 'Daylight cycle', fireTick: 'Fire spreads', fallDmg: 'Fall damage', snail: 'The Eternal Snail',

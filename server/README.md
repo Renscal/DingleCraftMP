@@ -80,6 +80,7 @@ The first run writes `data/server.json`. Edit it and restart, or pass the same t
 | `viewChunks` | | 12 | how far around a player the server sends block changes, chests and dropped items, for a game that does not say (the game asks for its own draw distance + 3) |
 | `cert`, `key` | `--cert`, `--key` | | a TLS certificate and its private key (PEM files, looked for in the data folder unless a full path). With both, the server is `https://` and `wss://` |
 | `simulate` | | `true` | the server runs the Overworld's mobs itself (see "The server runs the mobs"). `false`: the players' games do |
+| `pauseWhenEmpty` | | `60` | seconds after the last player leaves a dimension before the server's game for it is paused: no CPU, and its time, mobs, water, fires and furnaces stand still until someone comes back (the whole world is saved first when the server empties). `0`: never pause |
 | `singlePlayer` | | `false` | `true`: the page the server hands out is the whole game, with Create New World and Load World (as before 6.18). Worlds made there live in the player's browser, under this server's address |
 | `origins` | | `[]` | web addresses whose pages may connect, e.g. `["https://play.example"]`. Empty: any page may (needed for "open your own copy of the game"). The server's own page, a game opened from a file and the desktop client are always let in |
 

@@ -21,6 +21,16 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — Lights out when nobody is home
+
+*Game version 6.46, released 2026-10-14.*
+
+- **LIGHTS OUT WHEN NOBODY IS HOME.** A server with nobody on it used to keep the whole world running for an audience of zero: the sun crossing an empty sky, zombies shuffling around nobody, furnaces cooking for a player asleep in another time zone. All of that cost CPU the computer could have spent on anything else.
+- **Now the world naps.** A minute after the last player leaves a dimension, the server stops running it entirely. Time, mobs, water, fire and furnaces freeze exactly where they were, and the server game for it uses no CPU at all.
+- **And wakes up instantly.** The moment a player steps back in, it picks up from that exact moment: no fast-forward, no zombies teleporting to catch up on the minute they missed.
+- **Per dimension.** Everyone off in the Nether? The Overworld naps by itself, and so does the Nether once you all come home. When the whole server empties, the world is saved first.
+- **For the server owner.** The new setting **pauseWhenEmpty** (seconds, 60 by default, 0 to never pause) is in server.json and in the server window's Settings. The dashboard shows which worlds are asleep.
+
 ## Release 1.1 — Hemlock, a little less hidden
 
 *Game version 6.45, released 2026-10-13.*

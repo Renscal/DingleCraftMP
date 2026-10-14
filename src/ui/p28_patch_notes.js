@@ -3,7 +3,14 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Hemlock, a little less hidden',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Lights out when nobody is home',lines:[
+    '<b>LIGHTS OUT WHEN NOBODY IS HOME.</b> A server with nobody on it used to keep the whole world running for an audience of zero: the sun crossing an empty sky, zombies shuffling around nobody, furnaces cooking for a player asleep in another time zone. All of that cost CPU the computer could have spent on anything else.',
+    '<b>Now the world naps.</b> A minute after the last player leaves a dimension, the server stops running it entirely. Time, mobs, water, fire and furnaces freeze exactly where they were, and the server game for it uses no CPU at all.',
+    '<b>And wakes up instantly.</b> The moment a player steps back in, it picks up from that exact moment: no fast-forward, no zombies teleporting to catch up on the minute they missed.',
+    '<b>Per dimension.</b> Everyone off in the Nether? The Overworld naps by itself, and so does the Nether once you all come home. When the whole server empties, the world is saved first.',
+    '<b>For the server owner.</b> The new setting <b>pauseWhenEmpty</b> (seconds, 60 by default, 0 to never pause) is in server.json and in the server window&#x27;s Settings. The dashboard shows which worlds are asleep.',
+  ]},
+ {v:'6.45',label:'Release 1.1',title:'Hemlock, a little less hidden',lines:[
     '<b>HEMLOCK, A LITTLE LESS HIDDEN.</b> Last update made wild hemlock fifty times rarer, which turned out to mean one plant in about two thousand chunks: not hidden so much as missing. It is now about one plant in a hundred chunks of ordinary country.',
     '<b>What that means on foot.</b> A hundred chunks is a square ten chunks on a side, 160 blocks each way. Walk grassland for a few minutes and you should pass one. Open plains have more, forests fewer, and desert, snow and sea have none: it only grows on bare grass.',
     '<b>Carrots are unchanged.</b> Wild carrots are still two to three times as common as hemlock, so most of what looks like a carrot is one. Check the leaves anyway.',

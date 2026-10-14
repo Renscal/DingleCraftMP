@@ -23,7 +23,9 @@
       that is gone is taken off the list by the server's game, the stock market is the server's and one for all, a player's
       own things (the Snail, Malgorath, their Creativity works) travel with their save, and all of it is in data/ on disk
    13 (6.17) every dimension: the Nether gets a game of its own the moment a player goes there (the Aether's is not started
-      for nothing), "player 0" is the game of your own dimension, its mobs stay in it and are saved under entities/nether */
+      for nothing), "player 0" is the game of your own dimension, its mobs stay in it and are saved under entities/nether
+   14 (6.46) nobody home: a dimension's game nobody has been in for pauseWhenEmpty seconds is paused (no ticks at all, the
+      world saved first), and the next player in wakes it at once, with no catching up */
 'use strict';
 const boot=require('../lib/c_boot.js'),{ok}=boot;
 const path=require('path'),fs=require('fs'),{pathToFileURL}=require('url');
@@ -289,5 +291,23 @@ boot.run(async()=>{
     await S3.close();
     const junk=path.join(OUT,'junk.html');fs.writeFileSync(junk,'<!doctype html><title>stand-in</title>');
     ok('a game file with no script in it gives no host script',gameScript(junk,path.join(OUT,'.cache'))===null);}
+
+  /* ===== 14. nobody home ===== */
+  {const P4=path.join(OUT,'pause');
+    const S4=createServer({port:0,data:P4,world:'world',noGame:true,hostGame:GAME,quiet:true,seed:'4242',pauseWhenEmpty:1,rules:{snail:false,mobSpawn:false}});await S4.listen();
+    await until(()=>S4.host()&&S4.host().ready,20000);
+    const b4=raw(S4.port,'Bea');await b4.open;await until(()=>!!b4.last('ready'));await b4.pose(sx,sy,sz);
+    await sleep(2500);
+    ok('with a player in it, the Overworld\'s game keeps running past the pause delay',!!S4.host()&&S4.host().asleep===false&&S4.status().players.length===1);
+    b4.ws.close();await until(()=>b4.closed&&S4.status().players.length===0,3000);
+    ok('when the last player leaves, its game is paused within a couple of seconds',await until(()=>S4.host()&&S4.host().asleep===true,5000));
+    ok('...and the world is saved first (level.json is on disk)',fs.existsSync(path.join(P4,'world','level.json')));
+    const t0=S4.host().ticks;await sleep(1500);
+    const b5=raw(S4.port,'Cal');await b5.open;await until(()=>!!b5.last('ready'));await b5.pose(sx,sy,sz);
+    ok('the next player in wakes it at once',await until(()=>S4.host().asleep===false,2000));
+    ok('...and it ran not one tick while it slept, and does not try to catch up',S4.host().ticks===t0);
+    {await sleep(1000);b5.send({t:'pose',x:sx,y:sy,z:sz+1,yaw:0,pitch:0,dim:'nether',held:0,hp:20,fl:0});await sleep(1200);b5.send({t:'pose',x:sx,y:sy,z:sz,yaw:0,pitch:0,dim:'over',held:0,hp:20,fl:0});
+      ok('a player moving on to another dimension leaves the one behind to pause on its own',await until(()=>S4.host('nether')&&S4.host('nether').ready,20000)&&await until(()=>S4.host('nether').asleep===true,5000)&&S4.host().asleep===false);}
+    await S4.close();}
   fs.rmSync(OUT,{recursive:true,force:true});
 });

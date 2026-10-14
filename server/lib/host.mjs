@@ -2,7 +2,9 @@
 // does, and it does it with the game's own code: the script inside the game html is loaded headless in a worker thread
 // (host_worker.cjs, with the hollow browser of headless.cjs) and told to be "the host" (src/net/n8_host.js).
 // To the protocol the host is a player with id 0 who is never listed, never drawn and never counted:
-//   S.hosts.get(dimension) = { c, post, stop, ready }    c is that player (lib/protocol.mjs handles what it sends)
+//   S.hosts.get(dimension) = { c, post, stop, ready, asleep, ticks }    c is that player (lib/protocol.mjs handles what it sends);
+//   asleep: the game is paused because nobody has been in its dimension for a while (6.46, lib/server.mjs); ticks: how
+//   many ticks it had run when it last paused or resumed
 // One game holds one dimension, so there is one host per dimension (6.17): the Overworld's from the start, the others
 // from the moment a player first goes there.
 // What it costs: one thread, and the memory of a game with no pictures (about 150 MB plus the chunks around the players).
@@ -42,7 +44,7 @@ export function startHost(S, script, handle, log, dim = 'over') {
   const c = { id: 0, name: '#server', host: true, hdim: dim, ready: true, closed: false, addr: 'host', pose: null, sent: null, rate: {},
     seen: Date.now(), poseT: 0, chatT: 0, chatN: 0, hitT: 0, lastHit: null, sleepT: 0, sleepAt: null, gm: null, ms: 0, rd: 0 };
   const waiting = [];
-  const H = { c, ready: false, stopped: false, post(m) { if (H.stopped) return; if (H.ready) worker.postMessage(m); else waiting.push(m); },
+  const H = { c, ready: false, stopped: false, asleep: false, ticks: 0, post(m) { if (H.stopped) return; if (H.ready) worker.postMessage(m); else waiting.push(m); },
     stop() { H.stopped = true; return worker.terminate().catch(() => {}); },
     /* the bytes of JavaScript heap this dimension's game is using (a promise; rejected where Node cannot say) */
     heap() { return typeof worker.getHeapStatistics === 'function' ? worker.getHeapStatistics().then((s) => s.used_heap_size | 0) : Promise.reject(new Error('not available')); } };
@@ -58,6 +60,7 @@ export function startHost(S, script, handle, log, dim = 'over') {
   worker.on('message', (m) => {
     if (typeof m === 'string') { let o; try { o = JSON.parse(m); } catch { return; } try { handle(c, o, m.length); } catch (e) { log('error handling a message from the server game: ' + e.message); } return; }
     if (m && m.ready) { H.ready = true; log(`the server game for ${dim} is running (v${m.version}; ${m.mobs} saved mob${m.mobs === 1 ? '' : 's'} and vehicle${m.mobs === 1 ? '' : 's'} put back)`); for (const w of waiting.splice(0)) worker.postMessage(w); }
+    else if (m && typeof m.asleep === 'boolean') { H.asleep = m.asleep; H.ticks = m.ticks | 0; }
     else if (m && m.log) log(m.log);
     else if (m && m.error) gone(m.error);
   });

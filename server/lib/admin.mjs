@@ -31,7 +31,7 @@ export function adminStatus(S, startedAt, heaps) {
     port: S.port, secure: !!S.secure, addresses: lanAddresses(), game: !!S.gameFile, worldDir: S.worldDir || '',
     uptime: Math.round((Date.now() - startedAt) / 1000), memory: process.memoryUsage().rss,
     difficulty: S.world().gr.difficulty || 'normal', mode: S.world().mode || 's',
-    hosts: ['over', 'nether', 'aether'].map((d) => { const h = S.host(d); return { dim: d, running: !!h, ready: !!(h && h.ready), heap: (heaps && heaps[d]) || 0 }; }),
+    hosts: ['over', 'nether', 'aether'].map((d) => { const h = S.host(d); return { dim: d, running: !!h, ready: !!(h && h.ready), paused: !!(h && h.paused), heap: (heaps && heaps[d]) || 0 }; }),
     players: S.players().filter((c) => c.ready && !c.host).map((c) => ({ id: c.id, name: c.name, op: ops.has(playerKey(c.name)), gm: c.gm || '', ms: c.ms | 0,
       dim: c.pose ? c.pose.dim : '', x: c.pose ? Math.round(c.pose.x) : 0, y: c.pose ? Math.round(c.pose.y) : 0, z: c.pose ? Math.round(c.pose.z) : 0 })),
   };
@@ -81,7 +81,7 @@ export function attachAdmin(S, { send, stop }) {
 
 /* ---- server.json, checked ---- */
 /* the settings that only take effect when the server is started again (everything a running server read once) */
-export const RESTART_KEYS = ['port', 'name', 'motd', 'password', 'maxPlayers', 'seed', 'mode', 'pvp', 'world', 'game', 'spawnProtection', 'sleepPercent', 'viewChunks', 'cert', 'key', 'origins', 'simulate', 'singlePlayer'];
+export const RESTART_KEYS = ['port', 'name', 'motd', 'password', 'maxPlayers', 'seed', 'mode', 'pvp', 'world', 'game', 'spawnProtection', 'sleepPercent', 'viewChunks', 'cert', 'key', 'origins', 'simulate', 'singlePlayer', 'pauseWhenEmpty'];
 const isInt = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
 const NAME_RE = /^[\x21-\x7e][\x20-\x7e]{0,15}$/;           // a player name: printable ASCII, at most 16, not starting with a space
 /* Check a settings object (what server.json holds, or what the window's form produced). Returns
@@ -102,6 +102,7 @@ export function validateSettings(o, running) {
   if (!isInt(s.spawnProtection, 0, 256)) bad('spawnProtection', 'a whole number from 0 to 256');
   if (!isInt(s.sleepPercent, 1, 100)) bad('sleepPercent', 'a whole number from 1 to 100');
   if (!isInt(s.viewChunks, 4, 32)) bad('viewChunks', 'a whole number from 4 to 32');
+  if (!isInt(s.pauseWhenEmpty, 0, 86400)) bad('pauseWhenEmpty', 'a whole number of seconds from 0 (never) to 86400');
   for (const k of ['ops', 'allow', 'bans']) {
     if (!Array.isArray(s[k])) { bad(k, 'a list of player names'); continue; }
     const wrong = s[k].find((n) => typeof n !== 'string' || !NAME_RE.test(n.trim()));
