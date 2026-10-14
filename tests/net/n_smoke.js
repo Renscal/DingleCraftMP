@@ -14,7 +14,7 @@
    9 time: the server's clock moves Dan's, and a local jump (a bed) is sent to the server
    10 game rules: a local change is sent, a remote one applied (only rules the game has)
    11 saving: saveToStorage goes to the server (the player by name), not to local storage; rejoining restores inventory and position
-   12 refusals: a wrong password, a full server, an old game; a kick returns Dan to the title with the reason
+   12 refusals: a full server, an old game; a kick returns Dan to the title with the reason (logins: n_accounts.js, 6.49)
    13 the server: /status, a served game file when given one, bad input ignored (bad keys, bad ids, oversized), the world file
       round trip (adopt an exported save: the exporter's player, ents and bots are dropped)
    14 world settings in the settings file: rules and mode applied on every start over the world file, bad rules ignored, a rule
@@ -74,7 +74,7 @@ boot.run(async()=>{
   ok('ntUrl: nothing typed is null',V.ntUrl('')===null&&V.ntUrl('   ')===null&&V.ntUrl(null)===null);
 
   /* ===== the server, with a world that already has an edit, a chest and a known player ===== */
-  const S=createServer({port:0,memory:true,world:'',noGame:true,quiet:true,seed:'4242',name:'Test Server',motd:'be nice',maxPlayers:2,password:'pw',rules:{mobSpawn:false,snail:false,keepInv:true,jsc:'lots',madeUp:true}});   /* no mobs: nothing may push or hurt Dan mid-check */
+  const S=createServer({port:0,memory:true,world:'',noGame:true,quiet:true,seed:'4242',name:'Test Server',motd:'be nice',maxPlayers:2,rules:{mobSpawn:false,snail:false,keepInv:true,jsc:'lots',madeUp:true}});   /* no mobs: nothing may push or hurt Dan mid-check */
   await S.listen();
   const port=S.port,W=S.world();
   /* find a spot near the spawn the game will pick, in the server's seed, without touching the server */
@@ -89,17 +89,13 @@ boot.run(async()=>{
   const lastBefore=(await window.storage.get('vxwlast')||{}).value;
 
   /* ===== 12a. refusals before anyone is in ===== */
-  {const r=raw(port,{pw:'nope'});await r.open;await until(()=>r.closed);
-    ok('a wrong password is refused with a reason',r.closed&&/password/i.test((r.last('kick')||{}).why||'')&&S.players().length===0);}
   {const r=raw(port,{pw:'pw',v:'6.9'});await r.open;await until(()=>r.closed);
     ok('a game older than this server needs is refused with a reason',r.closed&&/needs DINGLECRAFT 6\.\d+ or newer/.test((r.last('kick')||{}).why||''));}
   {const r=raw(port,{pw:'pw',proto:99});await r.open;await until(()=>r.closed);ok('another protocol version is refused',r.closed&&!!r.last('kick'));}
-  {V.ntConnect('127.0.0.1:'+port,'wrong');await until(()=>NET.st==='off');
-    ok('the game: a wrong password leaves you on the title with the reason',NET.on===false&&V.playing===false&&/password/i.test(NET.msg||''));}
 
   /* ===== 3. join ===== */
-  ok('ntConnect starts',V.ntConnect('127.0.0.1:'+port,'pw')===true&&NET.st==='connecting');
-  ok('a second ntConnect while connecting does nothing',V.ntConnect('127.0.0.1:'+port,'pw')===false);
+  ok('ntConnect starts',V.ntConnect('127.0.0.1:'+port,null)===true&&NET.st==='connecting');
+  ok('a second ntConnect while connecting does nothing',V.ntConnect('127.0.0.1:'+port,null)===false);
   await until(()=>NET.on);
   ok('joined: playing, in the server world (seed, mode, the server name)',NET.on&&V.playing===true&&V.snapshot('x').seed===W.seed&&V.P.mode==='s'&&NET.server==='Test Server'&&NET.id>0);
   ok('joined: the server time',Math.abs((V.getTime()%1)-0.61)<0.01);
@@ -331,7 +327,7 @@ boot.run(async()=>{
     await V.quitToTitle();await until(()=>S.players().length===1,2000);
     ok('quit to title: disconnected, peers gone, the server saw Dan leave',NET.on===false&&NET.peers.size===0&&V.playing===false&&S.players().length===1);
     ok('Bea is told',await until(()=>bea.by('leave').length>0,2000));
-    V.ntConnect('127.0.0.1:'+port,'pw');await until(()=>NET.on);step(30);
+    V.ntConnect('127.0.0.1:'+port,null);await until(()=>NET.on);step(30);
     ok('rejoin: the inventory and the position come back',NET.on&&V.P.inv[3]&&V.P.inv[3].id===B.GLASS&&V.P.inv[3].count===11&&Math.abs(V.P.x-px)<0.01&&Math.abs(V.P.z-pz)<0.01);
     {const t0=Date.now();while(Date.now()-t0<5000&&!V.entities.some(e=>e.nid==='beakeep1.1'&&!e.dead)){step(2);await sleep(8);}
       ok('rejoin: the dropped items lying around here come with the world (one 6000 blocks away comes when its chunk does)',NET.drops.has('beakeep1.1')&&!NET.drops.has('beafar01.1')&&('beafar01.1' in W.drops)&&V.entities.filter(e=>e.nid==='beakeep1.1'&&!e.dead).length===1&&V.entities.find(e=>e.nid==='beakeep1.1').st.count===3);}
@@ -525,7 +521,7 @@ boot.run(async()=>{
 
   /* ===== 13. the server itself ===== */
   {const r=await fetch('http://127.0.0.1:'+port+'/status').then(x=>x.json());
-    ok('/status: name, players, max, password flag',r.name==='Test Server'&&r.players.length===1&&r.players[0]==='Bea'&&r.max===2&&r.password===true&&r.proto===PROTO);
+    ok('/status: name, players, max, the accounts flag (and no password flag: 6.49)',r.name==='Test Server'&&r.players.length===1&&r.players[0]==='Bea'&&r.max===2&&r.accounts===false&&!('password' in r)&&r.proto===PROTO);
     const t=await fetch('http://127.0.0.1:'+port+'/').then(x=>x.text());ok('/ without a game file explains what to do',/Multiplayer/.test(t));
     ok('anything else is a 404',(await fetch('http://127.0.0.1:'+port+'/etc/passwd')).status===404);}
   {const big='x'.repeat(3*1024*1024);const r=raw(port,null);await r.open;r.ws.send(big);await until(()=>r.closed,3000);ok('an oversized message drops that client only',r.closed&&!bea.closed);}

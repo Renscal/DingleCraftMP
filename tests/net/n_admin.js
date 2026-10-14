@@ -41,10 +41,14 @@ boot.run(async()=>{
   ok('commands answer: list -> "'+String(l1).slice(0,40)+'", a nonsense one is told so, gamerule difficulty -> "'+l3+'"',/0|no|player/i.test(String(l1))&&/unknown|help/i.test(String(l2))&&/hard/.test(String(l3)));
   ok('the log arrives as messages ('+by('log').length+' lines), and the banner is still printed for anyone reading the output',by('log').length>0&&by('log').every(m=>typeof m.line==='string')&&/Window Test/.test(outText));
   /* ===== 4 ===== */
+  /* 6.49: a new server has accounts: the window makes Vera one first */
+  const made=await cmd('account add Vera v3ra');await until(()=>(last('status').status.accountList||[]).some(a=>a.name==='Vera'),3000);
+  {const st2=last('status').status,a=(st2.accountList||[]).find(x=>x.name==='Vera')||{};
+    ok('a new server has accounts on; one made from the window is in the next status, with its password for the window to show ('+made+')',st2.accounts===true&&a.password==='v3ra'&&a.online===false&&st2.locks&&st2.locks.skin===false);}
   const ws=new WebSocket('ws://127.0.0.1:'+st.port+'/');const inbox=[];
   await new Promise((res,rej)=>{ws.onopen=res;ws.onerror=()=>rej(new Error('no connection'));});
   ws.onmessage=e=>{try{inbox.push(JSON.parse(e.data));}catch(x){}};
-  ws.send(JSON.stringify({t:'hello',proto:V.NT_PROTO,name:'Vera',v:V.GAME_VERSION}));
+  ws.send(JSON.stringify({t:'hello',proto:V.NT_PROTO,name:'Vera',user:'Vera',pass:'v3ra',v:V.GAME_VERSION}));
   await until(()=>inbox.some(m=>m.t==='welcome'),3000);
   ws.send(JSON.stringify({t:'pose',x:12,y:40,z:-7,yaw:0,pitch:0,dim:'over',held:0,hp:20,fl:0}));
   await until(()=>by('event').some(e=>e.what==='join')&&last('status').status.players.some(p=>p.name==='Vera'&&p.x===12),4000);
@@ -52,6 +56,9 @@ boot.run(async()=>{
   ok('a player joins: an event, and the status lists her with her dimension and place ('+[pv.dim,pv.x,pv.y,pv.z].join(' ')+')',by('event').some(e=>e.what==='join'&&e.name==='Vera')&&pv.dim==='over'&&pv.x===12&&pv.y===40&&pv.z===-7&&pv.op===false);
   const opd=await cmd('op Vera');await until(()=>(last('status').status.players.find(p=>p.name==='Vera')||{}).op===true,3000);
   ok('op from the window shows in the next status',/vera/i.test(String(opd))&&last('status').status.players.find(p=>p.name==='Vera').op===true);
+  {const b=Buffer.alloc(33);b.writeUInt32BE(0x89504e47,0);b.writeUInt32BE(0x0d0a1a0a,4);b.writeUInt32BE(13,8);b.write('IHDR',12,'latin1');b.writeUInt32BE(64,16);b.writeUInt32BE(64,20);
+    child.send({t:'setskin',id:901,name:'Vera',png:b.toString('base64')});await until(()=>by('reply').some(x=>x.id===901),3000);
+    ok('a skin from the window (too long for a command line) is its own message, and Vera wears it at once',/now wears/.test((by('reply').find(x=>x.id===901)||{}).text||'')&&await until(()=>inbox.some(m=>m.t==='skin'&&m.png===b.toString('base64')),2000));}
   ws.send(JSON.stringify({t:'save',player:{x:12,y:40,z:-7,hp:20,inv:[]}}));await sleep(80);
   ws.close();await until(()=>by('event').some(e=>e.what==='leave'&&e.name==='Vera'),4000);
   ok('she leaves: an event, and the list is empty again',by('event').some(e=>e.what==='leave'&&e.name==='Vera')&&(await until(()=>last('status').status.players.length===0,3000)));

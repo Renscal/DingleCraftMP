@@ -27,7 +27,7 @@ function printWelcome(S) {
   const lan = lanAddresses();
   console.log('');
   console.log(`  ${S.opts.name}`);
-  console.log(`  listening on port ${S.port}` + (S.opts.password ? ' (password required)' : '') + `, up to ${S.opts.maxPlayers} players, PvP ${S.opts.pvp ? 'on' : 'off'}`);
+  console.log(`  listening on port ${S.port}` + (S.opts.accounts ? ' (accounts: players log in)' : ' (open: anyone may join by name)') + `, up to ${S.opts.maxPlayers} players, PvP ${S.opts.pvp ? 'on' : 'off'}`);
   if (S.gameFile) {
     console.log('  Players open one of these in a browser (it hands them the game, already pointed at this server):');
     console.log(`    this computer   ${S.secure ? 'https' : 'http'}://localhost:${S.port}/`);
@@ -64,10 +64,23 @@ export async function main() {
   const cfgFile = path.join(dataDir, 'server.json');
   let fresh = !fs.existsSync(cfgFile);
   let cfg = readSettings(cfgFile);
+  /* 6.49: accounts. A server.json that does not say gets them if it is new (no player has played here yet), or if it had a
+     server password (accounts replace those); an existing open server stays open. */
+  if (typeof cfg.accounts !== 'boolean') {
+    const had = typeof cfg.password === 'string' && cfg.password !== '';
+    const pdir = path.join(dataDir, String(cfg.world || DEFAULTS.world), 'playerdata');
+    let played = false;
+    try { played = fs.readdirSync(pdir).some((n) => /\.json(\.br)?$/.test(n)); } catch { /* no world yet */ }
+    cfg.accounts = had || !played;
+    if (had) console.log('Server passwords are gone (6.49): this server had one, so it now uses accounts instead. Make one for each player: /account add <name> <password>');
+  }
+  delete cfg.password;
+  if (args.passwordGone) { console.log('--password is gone (6.49): the server uses accounts. Make one for each player: /account add <name> <password>'); delete args.passwordGone; }
   /* server.json always shows the whole truth: every game rule and the mode the world is really running with. It is
      rewritten when it is new, when it is missing rules (an older file), and when a rule is changed from inside the game. */
   const writeCfg = (S, why) => {
-    const next = { ...DEFAULTS, ...(fresh ? {} : cfg), mode: S.world().mode, rules: S.rules(), ops: S.opts.ops, whitelist: S.opts.whitelist, allow: S.opts.allow, bans: S.opts.bans };
+    const next = { ...DEFAULTS, ...(fresh ? {} : cfg), mode: S.world().mode, rules: S.rules(), ops: S.opts.ops, whitelist: S.opts.whitelist, allow: S.opts.allow, bans: S.opts.bans,
+      accounts: !!S.opts.accounts, lockNames: !!S.opts.lockNames, lockPasswords: !!S.opts.lockPasswords, lockSkins: !!S.opts.lockSkins };
     if (!fresh && JSON.stringify(next) === JSON.stringify(cfg)) return;
     try { fs.mkdirSync(dataDir, { recursive: true }); fs.writeFileSync(cfgFile, JSON.stringify(next, null, 2) + '\n'); cfg = next; fresh = false; console.log(why + ' ' + cfgFile); } catch { /* read-only folder: run on what we have */ }
   };
@@ -77,7 +90,7 @@ export async function main() {
   const ipc = !!args.ipc && typeof process.send === 'function';
   let admin = null; const early = [];
   let S;
-  try { S = createServer({ ...(fresh ? {} : cfg), ...args, data: dataDir, ...(ipc ? { onLog: (l) => (admin ? admin.log(l) : early.push(l)) } : {}), onRules: () => writeCfg(S, 'a game rule was changed in the game: updated'),
+  try { S = createServer({ ...(fresh ? { accounts: cfg.accounts } : cfg), ...args, data: dataDir, ...(ipc ? { onLog: (l) => (admin ? admin.log(l) : early.push(l)) } : {}), onRules: () => writeCfg(S, 'a game rule was changed in the game: updated'),
     onSettings: () => writeCfg(S, 'a command changed the settings: updated') }); }
   catch (e) { console.error('dinglecraft-server: ' + e.message); process.exit(1); }
   writeCfg(S, fresh ? 'wrote the settings to' : 'added the missing settings to');

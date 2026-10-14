@@ -95,24 +95,17 @@ player does and draws what it is told. Steps 1 to 5 are released (game 6.13 to 6
 | 4 | 6.16 | keeps what the world remembers (found structures, dead bosses, spawners, nukes, one stock market) under `data/` |
 | 5 | 6.17 | one game per dimension: Overworld, Nether, Aether. Puppet Purgatory stays per player |
 
-### Step 6a. Accounts (next; self-contained)
+### Step 6a. Accounts (done in 6.49)
 
-Today a player is whoever types a name, and an operator is a name on a list. Anyone who knows an operator's name has
-their rights and their inventory.
+The owner chose passwords, made by an operator, over tokens: each server keeps its own accounts (anyone can run one,
+with nobody else involved), the password sits in plain text at the top of `playerdata/<name>.json` (the game warns the
+player), and the server password is gone. Logins, `/account`, `/setskin`, the three locks (per player and for everyone)
+and the server window's Accounts table are in `server/README.md` ("Accounts"); `tests/net/n_accounts.js` covers them.
 
-1. **A secret per player.** On a name's first join the server makes a random token, stores only its hash in
-   `playerdata/<name>.json`, and sends the token once in `welcome`. The game keeps it (browser storage; the desktop client
-   can keep it in a file) and sends it in `hello` from then on. A name that has a token is refused without it.
-2. **Recovery.** An operator command (`/resetlogin <name>`) clears a token, for a player who lost theirs (cleared
-   browser data, a new machine). Say so in the refusal message.
-3. **Moving between devices.** Show the token on request in the game (Settings) so it can be typed in elsewhere.
-4. **`usercache.json`** next to `server.json`: name, first seen, last seen, last address.
-5. **Split `ops.json`, `whitelist.json`, `banned-players.json`** out of `server.json`, as Minecraft has them.
-6. Tests: a second connection with the right name and the wrong token is refused; the reset command; an old world's
-   players (no token yet) get one on their next join.
+Left for later, from the old token plan:
 
-Open choice for the owner: tokens only (no passwords to manage) or a per-player password typed on the join screen. The
-plan above assumes tokens.
+- **`usercache.json`** next to `server.json`: name, first seen, last seen, last address.
+- **Split `ops.json`, `whitelist.json`, `banned-players.json`** out of `server.json`, as Minecraft has them.
 
 ### Step 6b. The server decides inventory and damage
 

@@ -85,7 +85,7 @@
 /* (permessage-deflate); nothing here knows about it.                    */
 /* NT_PROTO must equal PROTO in the server (tests/net/n_static.js).      */
 /* ===================================================================== */
-const NT_PROTO=5,NT_PORT=40162;
+const NT_PROTO=6,NT_PORT=40162;
 /* All multiplayer state, in one object:
      on      true while playing on a server (every core hook checks this)
      st      'off' | 'connecting' | 'on'          ws    the WebSocket
@@ -106,7 +106,8 @@ const NT_PROTO=5,NT_PORT=40162;
      saveT   when the next "save soon" is due (-1: none)         rdS   the draw distance as last told to the server
      mobs    id -> every shared mob this game knows, its own and other players' (n7_mobs.js); mseq mobT ownT belong to it
      dmgRef  the last damage record from before the current hurt (so a death can tell what caused it)   guardT  toast timer
-     pw      the password last used (memory only, for reconnecting)   retryN retryH   the reconnect attempt number and its timer
+     cred    the login last used {u, p, keep} (6.49; memory only, for reconnecting; remembered per server in 'vox_mpl')
+     acct    what the server said about this player's account {accounts, account, locks: {name, password, skin}, skin}   retryN retryH   the reconnect attempt number and its timer
      pingT pingN pingAt ms   the heartbeat: when the last ping went (NET.acc), its number, when it went (wall clock), the last
              round trip in milliseconds      rxAt    when the last message arrived (wall clock): silence means the line is dead
      act     this player's own hand is about to change a block (set by ntGuard, spent by ntEdit): others hear and see that one
@@ -117,7 +118,7 @@ const NT_PROTO=5,NT_PORT=40162;
 const NET={on:false,st:'off',ws:null,id:0,name:'',server:'',pvp:true,ap:false,pend:null,why:'',
   peers:new Map(),drops:new Map(),dropIn:false,dseq:0,dim:'over',q:[],acc:0,poseT:0,poseS:'',scanT:0,beS:new Map(),grS:'',tPrev:0,tSet:false,stats:{in:0,out:0,edIn:0,edOut:0},
   op:false,prot:0,spawn:null,lockK:null,lockWant:null,saveT:-1,rdS:0,mobs:new Map(),mseq:0,mobT:0,ownT:0,dmgRef:null,guardT:-9,
-  pw:'',retryN:0,retryH:0,pingT:0,pingN:0,pingAt:0,ms:0,rxAt:0,act:false,
+  cred:null,acct:null,acctPass:'',loginWait:false,skinOwn:false,retryN:0,retryH:0,pingT:0,pingN:0,pingAt:0,ms:0,rxAt:0,act:false,
   hosted:false,host:false,hp0:null,hpl:[],hrr:0,hsnT:0,hchT:0,
   fx:new Map(),fseq:0,vehs:new Map(),vseq:0,vehT:0,ignQ:[],fbT:0,apd:false,
   wd:{},wdT:0,mktT:0,hdims:[],hprim:false,
@@ -132,4 +133,4 @@ const NTEX={NET,NT_PROTO,ntTagAlpha,ntTagSeen,ntTagTick,ntCrit,ntSaveSig,ntSaveW
   ntHosted,ntHostStart,ntHostTick,ntHostSnap,ntHostPlayers,ntHostAim,ntHostHurt,ntMobFull,
   ntFxTick,ntFxIn,ntFxGone,ntFxPup,ntVehTick,ntVehsIn,ntVehsGone,ntVehHit,ntVehPup,ntEntPup,ntHostVehSnap,
   spawnArrow,spawnBoat,hitCar,ntIgnite,ntFireIn,ntNoTick,ntHostBeScan,checkFalling,igniteAt,updateFires,furnaceTick,tickFlow,getFires:()=>fires,
-  ntWdGet,ntWdTick,ntWdIn,ntWdReset,ntMktIn,ntHostMkt,tickSpawners,updateStocks,ntServedMenu,loadWorldByName,importWorldFile,ntSkinUrl,ntSkinSend,ntPeerMesh,getMKT:()=>MKT,getSPW:()=>SPW,getNUKES:()=>NUKES,getVSEEN:()=>VSEEN,getINFKILL:()=>INFKILL};   /* three core names the suites need to shoot, launch and hit with */
+  ntWdGet,ntWdTick,ntWdIn,ntWdReset,ntMktIn,ntHostMkt,tickSpawners,updateStocks,ntServedMenu,ntMenuGo,ntLoginShow,ntLoginHide,ntLoginGo,ntAcctSync,ntAcctIn,ntRenamed,ntSkinOwn,ntMplGet,loadWorldByName,importWorldFile,ntSkinUrl,ntSkinSend,ntPeerMesh,getMKT:()=>MKT,getSPW:()=>SPW,getNUKES:()=>NUKES,getVSEEN:()=>VSEEN,getINFKILL:()=>INFKILL};   /* three core names the suites need to shoot, launch and hit with */

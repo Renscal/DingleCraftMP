@@ -215,6 +215,8 @@ select.mc-in{appearance:auto}
 #settings .panel{width:min(560px,100%)}
 .sskin{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 .sskinb{display:flex;flex-direction:column;gap:8px;min-width:0}
+.sacct{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:6px}.sacct .mc-in{flex:1 1 140px;min-width:0}
+.tkeep{display:flex;gap:8px;align-items:center;cursor:pointer}
 #s_skinpv{width:144px;height:128px;image-rendering:pixelated;background:#8f8f8f;border:2px solid #373737}
 #s_skin{font:inherit;font-size:13px;max-width:100%}
 #death{z-index:35;background:rgba(120,0,0,.45)}

@@ -2,7 +2,7 @@
 // DINGLECRAFT multiplayer server (game 6.25 and up). No dependencies: plain Node 20+, on Windows, macOS or Linux.
 //
 //   node server/dinglecraft-server.mjs [--port 40162] [--world file] [--game file.html] [--seed text] [--mode s|c]
-//                                      [--name text] [--password text] [--max 8] [--no-pvp] [--data dir]
+//                                      [--name text] [--max 8] [--no-pvp] [--data dir]
 //   Windows: double-click "Start Server.bat" next to this file.
 //
 // What it is: the keeper of one shared world. It owns the seed, the game rules, the time of day, every block edit, every

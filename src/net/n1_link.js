@@ -34,7 +34,7 @@ function ntSend(m){
 }
 /* open the connection and say hello. The answer arrives in ntMsg: welcome, the world, then ready -> ntEnter.
    retry: the attempt number when ntRetry is calling (a call from the menu starts over) */
-function ntConnect(addr,pw,retry){
+function ntConnect(addr,cred,retry){
   if(NET.st==='connecting'||NET.on)return false;
   if(!retry)ntRetryStop();
   const url=ntUrl(addr);
@@ -42,9 +42,11 @@ function ntConnect(addr,pw,retry){
   if(typeof WebSocket!=='function'){ntStatus('This browser cannot open a connection.',true);return false;}
   let ws;
   try{ws=new WebSocket(url);}catch(e){ntStatus('That address does not look right.',true);return false;}
-  NET.ws=ws;NET.st='connecting';NET.why='';NET.pend=null;NET.addr=addr;NET.pw=''+(pw||'');
+  NET.ws=ws;NET.st='connecting';NET.why='';NET.pend=null;NET.addr=addr;NET.cred=cred&&cred.u?cred:null;NET.loginWait=false;
   ntStatus(retry?'Lost the connection. Reconnecting (try '+retry+' of '+NT_RETRIES+') …':'Connecting to '+url.replace(/^wss?:\/\//,'')+' …');
-  ws.onopen=()=>{if(NET.ws!==ws)return;ntSend({t:'hello',proto:NT_PROTO,v:GAME_VERSION,name:PNAME,pw:pw||'',rd:RD+3});ntStatus('Connected. Loading the world …');};
+  ws.onopen=()=>{if(NET.ws!==ws)return;
+    const c=NET.cred;   /* 6.49: a login this game remembers goes along; without one the server asks (login) if it wants one */
+    ntSend({t:'hello',proto:NT_PROTO,v:GAME_VERSION,name:PNAME,...(c?{user:c.u,pass:c.p||''}:{}),rd:RD+3});ntStatus('Connected. Loading the world …');};
   ws.onmessage=ev=>{if(NET.ws!==ws)return;let m;try{m=JSON.parse(ev.data);}catch(e){return;}NET.stats.in++;NET.rxAt=Date.now();
     try{ntMsg(m);}catch(e){if(typeof console!=='undefined')console.error('[net]',e);}};
   ws.onclose=()=>{if(NET.ws===ws)ntDown(NET.why||(NET.st==='connecting'?'Could not reach the server.':'Lost the connection to the server.'));};
@@ -55,7 +57,7 @@ function ntConnect(addr,pw,retry){
 /* the connection is gone (or was refused): back to the title, with the reason. If it was simply lost, try again. */
 function ntDown(why){
   const was=NET.on,told=!!NET.why,again=NET.retryN;   /* told: the server gave a reason (a kick, a refusal, a shutdown) */
-  NET.ws=null;NET.pend=null;
+  NET.ws=null;NET.pend=null;ntLoginHide();
   if(NET.st==='off')return;
   NET.st='off';
   ntStatus(why,true);
@@ -75,7 +77,7 @@ function ntRetry(n){
     NET.retryH=0;
     if(NET.retryN!==n)return;
     if(playing||NET.on||NET.st!=='off'){NET.retryN=0;return;}
-    ntConnect(NET.addr,NET.pw,n);
+    ntConnect(NET.addr,NET.cred,n);
   },Math.min(8000,1000*Math.pow(2,n-1)));
 }
 /* call the reconnecting off */
@@ -91,6 +93,7 @@ function ntLeave(){
   NET.mobs.clear();NET.lockK=null;NET.lockWant=null;NET.saveT=-1;NET.sigS=undefined;NET.crS='';NET.sigT=0;NET.op=false;NET.prot=0;NET.spawn=null;
   ntClearPeers();
   if(ws){try{ws.onclose=null;ws.close();}catch(e){}}
+  ntLoginHide();if(NET.skinOwn){NET.skinOwn=false;skinBoot();}   /* 6.49: back to this browser's own skin */
   ntStatus(NET.why||'',!!NET.why);NET.why='';
 }
 
@@ -103,6 +106,7 @@ function ntMsg(m){
       NET.hosted=m.host===true;                             /* the server runs games of its own (n8_host.js), for these dimensions */
       NET.hdims=Array.isArray(m.hdims)?m.hdims.map(String):(NET.hosted?['over']:[]);
       NET.pend={world:m.world||{},player:m.player||null,edits:{},be:{},n:0};
+      NET.acct=m.acct&&typeof m.acct==='object'?m.acct:null;ntLoginDone();   /* 6.49 */
       ntClearPeers();
       for(const p of (m.players||[])){const q=ntPeerAdd(p.id,p.name,p.pose);if(q)q.skin=ntSkinUrl(p.skin);}
       return;
@@ -117,7 +121,10 @@ function ntMsg(m){
       if(m.n===NET.pingN&&NET.pingAt){NET.ms=Math.max(0,Math.min(9999,Math.round(Date.now()-NET.pingAt)));NET.pingAt=0;}
       return;
     case 'mheir':if(NET.on)ntMobAdopt(m.from|0);return;
-    case 'skin':{const p=NET.peers.get(m.id);if(p)p.skin=ntSkinUrl(m.png);return;}   /* another player's skin (or '' for the default) */
+    case 'skin':{if(m.id===NET.id){ntSkinOwn(m.png);return;}const p=NET.peers.get(m.id);if(p)p.skin=ntSkinUrl(m.png);return;}   /* another player's skin (or '' for the default); this player's own: an operator dressed them (6.49) */
+    case 'login':ntLoginShow(m);return;                     /* 6.49: the server wants a username and password */
+    case 'acct':ntAcctIn(m);return;
+    case 'rename':ntRenamed(m.id|0,''+(m.name||''));return;
     case 'wd':if(NET.on)ntWdIn(m);return;
     case 'mkt':if(NET.on)ntMktIn(m);return;
     case 'fire':if(NET.on&&!NET.host)ntFireIn(m);return;
@@ -243,7 +250,9 @@ function ntEnter(){
   ntWdReset();NET.mktT=0;
   ntRetryStop();NET.pingT=0;NET.pingN=0;NET.pingAt=0;NET.ms=0;NET.rxAt=Date.now();NET.act=false;
   if(found)ntSend({t:'spawn',x:found[0],y:found[1],z:found[2]});
-  if(SKINS.url)ntSkinSend();                                /* what this player wears (nothing is sent for the default) */
+  if(NET.acct&&NET.acct.locks&&NET.acct.locks.skin)ntSkinOwn(NET.acct.skin||'');   /* 6.49: skins are locked here: the server's choice */
+  else if(SKINS.url)ntSkinSend();                           /* what this player wears (nothing is sent for the default) */
+  else if(NET.acct&&NET.acct.skin)ntSkinOwn(NET.acct.skin);   /* none of its own: what the server keeps for them */
   for(const d of (W.drops||[]))ntDropKnow(d);   /* they appear as their chunks load (ntDropsScan) */
   WORLD.name='';enterGame();WORLD.name=(w.name||NET.server||'server');   /* never becomes this browser's "last world" */
   sysMsg('Connected to '+NET.server+' as '+NET.name+'. '+(NET.peers.size?NET.peers.size+' other player'+(NET.peers.size===1?'':'s')+' online.':'You are the first one here.'));

@@ -5,8 +5,12 @@
 //   net  { send(client, msg), broadcast(msg, exceptClient, onlyIf), drop(client, why, tell) }
 //
 //   from a player                                 to players
-//   hello {proto, v, name, pw, rd}                welcome, perm, edits..., bes, drops, ready   (to the one joining)
+//   hello {proto, v, name, user?, pass?, rd}      welcome, perm, edits..., bes, drops, ready   (to the one joining)
 //                                                 join, sys                                    (to the others)
+//                                                 or login {user, why, accounts} (6.49: who are you? a username and
+//                                                 password are needed: accounts are on, or the name is an account)
+//   login {user, pass}                            the same as hello, or login again (at most 5 tries, one a second)
+//   acct {name} | {pass, old}                     acct {ok, why, locks?} (to them); rename {id, name} (to everyone)
 //   pose {x y z yaw pitch dim held hp fl ar rv}   pose (+id, ms): at once to players nearby, once a second to the rest;
 //                                                 edits (s:1), bes and drops (add:1) for the chunks that came into range
 //   ping {n, ms}                                  pong {n}  (the game times the round trip and reports it in the next ping)
@@ -70,12 +74,11 @@
 //   mkt {p, mu}  (the server's game)              mkt       (the stock prices, to everyone)
 // A chest that already has a record can only be rewritten by the player who has it open: a later visitor's game, which
 // filled the same chest with loot of its own, is sent the server's copy back. Loot is rolled once.
-import crypto from 'node:crypto';
 import { PROTO, DAY_LEN, MIN_GAME, LIMITS, RATE, RULES, CK_RE, LK_RE, BK_RE, DROP_ID_RE, DIMS, DIM_PFX, cleanRules, cmpVer } from './config.mjs';
-import { num, cleanName, cleanText, cleanStack, cleanMobs, playerKey } from './world.mjs';
-import { runCommand, isOp, protRadius, permOf } from './commands.mjs';
+import { num, cleanName, cleanText, cleanStack, cleanMobs, cleanSkin, playerKey } from './world.mjs';
+import { runCommand, isOp, protRadius, permOf, renameAccount, passOK, accountOf, locksOf, passwordProblem, setSkin } from './commands.mjs';
 
-export { playerKey };
+export { playerKey, setSkin };
 
 /* the name a joining player gets: their own, or name_2, name_3... if someone online already has it */
 function uniqueName(S, want) {
@@ -85,11 +88,18 @@ function uniqueName(S, want) {
   return name;
 }
 
-/* compared as hashes in constant time, so the password cannot be guessed a character at a time */
-function passwordOK(S, pw) {
-  if (!S.o.password) return true;
-  const h = (s) => crypto.createHash('sha256').update(String(s == null ? '' : s)).digest();
-  return crypto.timingSafeEqual(h(pw), h(S.o.password));
+/* ----- accounts (6.49) -----
+   An account is a player record (playerdata/<name>.json) with a password in it, in plain text, made by an operator
+   (/account add, lib/commands.mjs, or the server window). With "accounts" on, nobody joins without one; with it off anyone
+   may join by name as before, except as a name that is an account. */
+/* a player record as their own game may see it: never the password or the locks */
+const ownView = (rec) => { if (!rec || typeof rec !== 'object') return rec || null; const { password, locks, ...r } = rec; return r; };
+/* a login: hello again, with the username and password the player typed (one try a second) */
+function login(S, net, c, m, now) {
+  const user = typeof m.user === 'string' ? m.user : '';
+  if (now - (c.loginT || 0) < 1000) return net.send(c, { t: 'login', user: cleanName(user), why: 'Wait a second between tries.', accounts: !!S.o.accounts });
+  c.loginT = now;
+  hello(S, net, c, { ...c.helloM, user, pass: typeof m.pass === 'string' ? m.pass : '' });
 }
 
 /* are two poses in the same dimension and within dist blocks of each other (flat distance, like the game's own checks)? */
@@ -119,15 +129,6 @@ function cleanVeh(a) {
   if (!Array.isArray(a) || a.length < 7 || a.length > 8 || typeof a[0] !== 'string' || !VEH_ID_RE.test(a[0]) || !RIDES.has(a[1])) return null;
   for (let i = 2; i < a.length; i++) if (!Number.isFinite(a[i])) return null;
   return a;
-}
-/* a skin as a game sends it: base64 of a PNG that is 64x64 or 64x32 and small. '' clears it. null: not a skin. */
-function cleanSkin(png) {
-  if (png === '' || png == null) return '';
-  if (typeof png !== 'string' || png.length > LIMITS.skinB64 || /[^A-Za-z0-9+/=]/.test(png)) return null;
-  const b = Buffer.from(png, 'base64');
-  if (b.length < 33 || b.readUInt32BE(0) !== 0x89504e47 || b.readUInt32BE(4) !== 0x0d0a1a0a || b.toString('latin1', 12, 16) !== 'IHDR') return null;
-  const w = b.readUInt32BE(16), h = b.readUInt32BE(20);
-  return w === 64 && (h === 64 || h === 32) ? png : null;
 }
 /* the server's own game, if it is running */
 const hostOf = (S, dim) => { const h = S.hosts.get(dim || 'over'); return h && !h.stopped ? h.c : null; };
@@ -198,26 +199,40 @@ function hello(S, net, c, m) {
   if (m.proto !== PROTO) return net.drop(c, 'This game and this server speak different multiplayer versions. Update both.', true);
   if (typeof m.v !== 'string' || cmpVer(m.v, MIN_GAME) < 0) return net.drop(c, `This server needs DINGLECRAFT ${MIN_GAME} or newer.`, true);
   if (S.gameVersion && m.v !== S.gameVersion) return net.drop(c, `This server runs DINGLECRAFT ${S.gameVersion}; you have ${m.v}. Open the game from the server's own address to get the right one.`, true);
-  if (!passwordOK(S, m.pw)) { S.log(`  ${c.addr}: wrong password`); return net.drop(c, 'Wrong password.', true); }
-  const want = cleanName(m.name), key = playerKey(want || 'Player');
+  /* 6.49: who is this? With accounts on: a username and password. With them off: the name they typed, unless that name
+     is an account, which needs its password all the same. No answer yet, or a wrong one: ask (login), up to 5 times. */
+  const user = cleanName(S.o.accounts ? m.user : (m.user || m.name)), acct = accountOf(S, user);
+  if (S.o.accounts || acct) {
+    if (!acct || !passOK(acct, m.pass)) {
+      const tried = typeof m.pass === 'string' && m.pass !== '';
+      if (tried) { c.loginN = (c.loginN || 0) + 1; S.log(`  ${c.addr}: wrong login (${user || 'no name'})`); }
+      if (c.loginN >= 5) return net.drop(c, 'Too many wrong logins. Ask the server\'s owner if you have forgotten yours.', true);
+      c.helloM = { ...m, user: undefined, pass: undefined };
+      return net.send(c, { t: 'login', user: user || '', why: tried ? 'Wrong username or password.' : '', accounts: !!S.o.accounts });
+    }
+  }
+  const want = acct ? cleanName(acct.name) || user : user, key = playerKey(want || 'Player');
   if (o.bans.includes(key) || o.bans.includes(String(c.addr).toLowerCase())) { S.log(`  ${c.addr}: banned (${want})`); return net.drop(c, 'You are banned from this server.', true); }
   if (o.whitelist && !o.allow.includes(key) && !o.ops.includes(key)) return net.drop(c, 'You are not on this server\'s whitelist.', true);
   /* The same name again. If the one already here has gone quiet (a dropped connection the server has not noticed yet) the
      new one takes its place, like Minecraft's "logged in from another location". If it is alive, they are two people who
      both kept the default name, and the newcomer becomes name_2. */
   const twin = [...S.clients.values()].find((p) => playerKey(p.name) === key);
-  if (twin && Date.now() - twin.seen > 3000) net.drop(twin, 'You logged in from another location.', true);
+  if (twin && (acct || Date.now() - twin.seen > 3000)) net.drop(twin, 'You logged in from another location.', true);   // an account is one person: the newest login wins
   if (S.clients.size >= o.maxPlayers) return net.drop(c, 'The server is full.', true);
   if (!S.gameVersion) { S.gameVersion = m.v; S.log(`game version pinned to ${m.v} (the first player's)`); }
-  c.name = uniqueName(S, want);
+  c.name = acct ? want : uniqueName(S, want);
+  delete c.helloM;
   c.id = S.nextId++;
   c.rd = Math.round(num(m.rd, 4, 32, 0)) || o.viewChunks;
   S.clients.set(c.id, c);
   const saved = world.players[playerKey(c.name)] || null;
   c.gm = saved && (saved.gm === 'c' || saved.gm === 's' || saved.gm === 'spectator') ? saved.gm : null;
+  c.skin = saved && typeof saved.skin === 'string' ? saved.skin : '';   // 6.49: what they wore last time (or what an operator gave them)
   const { edits, be, players, drops, spawn, ...meta } = world;   // meta: seed, mode, time, rules and whatever else the save carried
   net.send(c, { t: 'welcome', proto: PROTO, id: c.id, name: c.name, server: o.name, motd: o.motd, pvp: !!o.pvp, host: S.hdims.length > 0, hdims: S.hdims,
-    world: { ...meta, mode: c.gm || world.mode }, player: saved,
+    world: { ...meta, mode: c.gm || world.mode }, player: ownView(saved),
+    acct: { accounts: !!S.o.accounts, account: !!acct, locks: locksOf(S, c.name), skin: c.skin },
     players: [...S.clients.values()].filter((p) => p !== c && p.ready).map((p) => ({ id: p.id, name: p.name, pose: p.pose, ...(p.skin ? { skin: p.skin } : {}) })) });
   net.send(c, permOf(S, c));
   /* where they will appear: their saved place, else the world spawn. Without either (the very first player of a world that
@@ -328,7 +343,11 @@ export function handleMessage(S, net, c, m, size) {
   if (!m || typeof m.t !== 'string') return;
   if (c.host) { if (!HOST_SENDS.has(m.t)) return; }
   else {
-    if (!c.ready) { if (m.t === 'hello' && !c.id) hello(S, net, c, m); return; }
+    if (!c.ready) {
+      if (m.t === 'hello' && !c.id && !c.helloM) hello(S, net, c, m);
+      else if (m.t === 'login' && !c.id && c.helloM) login(S, net, c, m, Date.now());
+      return;
+    }
     if (HOST_ONLY.has(m.t)) return;
   }
   const { o, world } = S;
@@ -460,9 +479,12 @@ export function handleMessage(S, net, c, m, size) {
     case 'save': {                     // this player's own state (inventory, position...), handed back when they next join
       if (!m.player || typeof m.player !== 'object' || size > LIMITS.playerBlob) return;
       const key = playerKey(c.name), had = world.players[key];
-      world.players[key] = { ...m.player, name: c.name, seen: new Date().toISOString(), ...(c.gm ? { gm: c.gm } : {}), ...(c.skin ? { skin: c.skin } : {}) };
+      const { password: _pw, locks: _lk, ...mine } = m.player;   // 6.49: a game cannot give itself a password or take its locks off
+      world.players[key] = { ...mine, name: c.name, seen: new Date().toISOString(), ...(c.gm ? { gm: c.gm } : {}), ...(c.skin ? { skin: c.skin } : {}) };
       // 6.34: a game sends its Creativity works only when they change; a save without them keeps the ones already here
       if (!('cr' in m.player) && had && had.cr !== undefined) world.players[key].cr = had.cr;
+      if (had && typeof had.password === 'string') world.players[key].password = had.password;   // the account stays an account
+      if (had && had.locks) world.players[key].locks = had.locks;
       S.dirty = true;
       return;
     }
@@ -610,11 +632,31 @@ export function handleMessage(S, net, c, m, size) {
     }
     case 'skin': {                     // what a player wears: checked, kept with the player, passed on ('' is the default)
       const png = cleanSkin(m.png);
+      if (locksOf(S, c.name).skin) { net.send(c, { t: 'skin', id: c.id, png: c.skin }); return net.send(c, { t: 'sys', txt: 'Skins are locked on this server: an operator chooses yours.' }); }
       if (png === null) return net.send(c, { t: 'sys', txt: 'The server did not take that skin (it wants a PNG, 64 x 64, under 50 KB).' });
       c.skin = png;
       const rec = world.players[playerKey(c.name)];
       if (rec && typeof rec === 'object') { if (png) rec.skin = png; else delete rec.skin; S.dirty = true; }
       net.broadcast({ t: 'skin', id: c.id, png }, c);
+      return;
+    }
+    case 'acct': {                     // 6.49: a player changes their own username or password (Settings)
+      const rec = accountOf(S, c.name), L = locksOf(S, c.name);
+      if (!rec) return net.send(c, { t: 'acct', ok: false, why: 'You have no account on this server.' });
+      if (typeof m.name === 'string') {
+        if (L.name) return net.send(c, { t: 'acct', ok: false, why: 'Name changes are locked on this server.' });
+        const r = renameAccount(S, net, c.name, m.name);
+        return net.send(c, { t: 'acct', ok: r.ok, why: r.why });
+      }
+      if (typeof m.pass === 'string') {
+        if (L.password) return net.send(c, { t: 'acct', ok: false, why: 'Password changes are locked on this server.' });
+        if (!passOK(rec, m.old)) return net.send(c, { t: 'acct', ok: false, why: 'Your current password is not right.' });
+        const bad = passwordProblem(m.pass);
+        if (bad) return net.send(c, { t: 'acct', ok: false, why: bad });
+        rec.password = m.pass; S.dirty = true;
+        S.log(`${c.name} changed their password`);
+        return net.send(c, { t: 'acct', ok: true, why: 'Password changed.' });
+      }
       return;
     }
     case 'wd': {                       // a game learnt something about the world: a structure found, a boss dead, a spawner placed or broken

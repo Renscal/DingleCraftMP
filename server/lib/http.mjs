@@ -11,7 +11,7 @@ import { PROTO, MIN_GAME } from './config.mjs';
 /* what /status says (also used by the suites) */
 export function statusOf(S) {
   return { name: S.o.name, motd: S.o.motd, version: S.gameVersion, proto: PROTO,
-    players: [...S.clients.values()].filter((c) => c.ready).map((c) => c.name), max: S.o.maxPlayers, password: !!S.o.password };
+    players: [...S.clients.values()].filter((c) => c.ready).map((c) => c.name), max: S.o.maxPlayers, accounts: !!S.o.accounts };
 }
 
 /* the line a served page gets */

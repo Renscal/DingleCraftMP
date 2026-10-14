@@ -27,7 +27,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { RULES, DIM_PFX, cleanRules } from './config.mjs';
+import { RULES, DIM_PFX, LIMITS, cleanRules } from './config.mjs';
 
 /* the game's hashSeed (src/core/p07f_world_lifecycle.js): a number as typed, words hashed, blank = random */
 export function hashSeed(str) {
@@ -225,8 +225,9 @@ export function worldFiles(world) {
   for (const key of Object.keys(players)) {
     const p = players[key];
     if (!p || typeof p !== 'object') continue;
-    const { inv, armor, ...rest } = p;
-    const head = JSON.stringify({ player: key, ...rest }, null, 2).replace(/\n}$/, '');
+    const { inv, armor, password, ...rest } = p;
+    /* 6.49: an account's password is the file's second line, in plain text (the owner can read it: the game says so) */
+    const head = JSON.stringify({ player: key, ...(typeof password === 'string' ? { password } : {}), ...rest }, null, 2).replace(/\n}$/, '');
     const list = (name, arr) => (Array.isArray(arr) ? `,\n  ${line(name)}: [\n${arr.map((it) => '    ' + line(it)).join(',\n')}\n  ]` : '');
     out.set('playerdata/' + playerFile(key), head + list('armor', armor) + list('inv', inv) + '\n}\n');
   }
@@ -320,7 +321,9 @@ export function writeWorld(dir, world, seen) {
 
 /* the world as the one file the game's Import World reads (and a server from before 6.12 used) */
 export function exportWorld(world) {
-  return JSON.stringify(world);
+  const players = {};   // 6.49: the one file is for single player: accounts (passwords, locks) stay with the server
+  for (const k of Object.keys(world.players || {})) { const p = world.players[k]; if (p && typeof p === 'object') { const { password, locks, ...rest } = p; players[k] = rest; } else players[k] = p; }
+  return JSON.stringify({ ...world, players });
 }
 
 /* The world the server starts with ({world, isNew, seen}): the folder if there is one, else a world file from before 6.12
@@ -354,3 +357,13 @@ export function applySettings(world, rules, mode) {
 }
 
 
+
+/* a skin as a game sends it: base64 of a PNG that is 64x64 or 64x32 and small. '' clears it. null: not a skin. */
+export function cleanSkin(png) {
+  if (png === '' || png == null) return '';
+  if (typeof png !== 'string' || png.length > LIMITS.skinB64 || /[^A-Za-z0-9+/=]/.test(png)) return null;
+  const b = Buffer.from(png, 'base64');
+  if (b.length < 33 || b.readUInt32BE(0) !== 0x89504e47 || b.readUInt32BE(4) !== 0x0d0a1a0a || b.toString('latin1', 12, 16) !== 'IHDR') return null;
+  const w = b.readUInt32BE(16), h = b.readUInt32BE(20);
+  return w === 64 && (h === 64 || h === 32) ? png : null;
+}

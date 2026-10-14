@@ -11,7 +11,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /* the multiplayer protocol version: a game and a server with different numbers refuse each other */
-export const PROTO = 5;
+export const PROTO = 6;
 /* seconds per in-game day */
 export const DAY_LEN = 1200;
 /* the oldest game build that can talk to this server */
@@ -58,7 +58,7 @@ export const LIMITS = {
 /* messages from one player per second, by type (pose, chat, cmd, hit, mobs, mhit and boom keep their own counters in
    lib/protocol.mjs). Over the limit, a message is dropped without a word: a real game never gets near these. */
 export const RATE = { edits: 40, be: 60, open: 20, close: 20, drop: 80, dropAt: 80, take: 80, save: 4, rd: 4, time: 10, gr: 4, sleep: 6, death: 20,
-  spawn: 2, mgone: 20, mgive: 200, ping: 4, fx: 70, fxgone: 70, vehs: 30, vgive: 20, vtake: 20, vfree: 20, vgone: 20, vhit: 20, ign: 20, wd: 30, skin: 2, crit: 6 };
+  acct: 2, spawn: 2, mgone: 20, mgive: 200, ping: 4, fx: 70, fxgone: 70, vehs: 30, vgive: 20, vtake: 20, vfree: 20, vgone: 20, vhit: 20, ign: 20, wd: 30, skin: 2, crit: 6 };
 
 /* the save format's own keys, checked before anything is stored under them */
 export const CK_RE = /^(?:[a-z];)?-?\d{1,7},-?\d{1,7}$/;            // chunk key: optional dimension prefix + cx,cz
@@ -85,7 +85,7 @@ export function cleanRules(r) {
 }
 
 /* a fresh data/server.json (rules is filled in from the world on the first run: lib/cli.mjs) */
-export const DEFAULTS = { port: 40162, name: 'A DINGLECRAFT Server', motd: '', password: '', maxPlayers: 8, seed: '', mode: 's', pvp: true, world: 'world', game: '', rules: null,
+export const DEFAULTS = { port: 40162, name: 'A DINGLECRAFT Server', motd: '', accounts: false, lockNames: false, lockPasswords: false, lockSkins: false, maxPlayers: 8, seed: '', mode: 's', pvp: true, world: 'world', game: '', rules: null,
   ops: [], whitelist: false, allow: [], bans: [], spawnProtection: 16, sleepPercent: 100, viewChunks: 12, cert: '', key: '', origins: [], simulate: true, singlePlayer: false, pauseWhenEmpty: 60 };
 
 /* a list of player names (or addresses) from the settings: lower case, no blanks, no repeats */
@@ -106,7 +106,7 @@ export function parseArgs(argv) {
     else if (a === '--mode') o.mode = val();
     else if (a === '--name') o.name = val();
     else if (a === '--motd') o.motd = val();
-    else if (a === '--password') o.password = val();
+    else if (a === '--password') { val(); o.passwordGone = true; }   // 6.49: server passwords are gone (accounts replace them)
     else if (a === '--max') o.maxPlayers = Number(val());
     else if (a === '--no-pvp') o.pvp = false;
     else if (a === '--data') o.data = val();
@@ -122,7 +122,7 @@ export function parseArgs(argv) {
 
 export const HELP = 'DINGLECRAFT multiplayer server\n\n  node dinglecraft-server.mjs [options]\n\n' +
   '  --port <n>        port to listen on (default ' + DEFAULTS.port + ')\n  --name <text>     the server name players see\n  --motd <text>     a line shown to players when they join\n' +
-  '  --password <text> require this password to join\n  --max <n>         most players at once (default 8)\n  --seed <text>     seed for a NEW world (blank = random)\n' +
+  '  --max <n>         most players at once (default 8)\n  --seed <text>     seed for a NEW world (blank = random)\n' +
   '  --mode s|c        survival or creative (applied on every start)\n  --no-pvp          players cannot hurt each other\n' +
   '  --world <name>    the world folder (default "world" in the data folder). Name an exported single-player world\n' +
   '                    (a .json file) and it is read once into a folder of the same name\n' +
@@ -130,7 +130,9 @@ export const HELP = 'DINGLECRAFT multiplayer server\n\n  node dinglecraft-server
   '  --cert <file> --key <file>   a TLS certificate and its private key (PEM): the server then speaks https:// and wss://\n\n' +
   'The same settings live in data/server.json (the command line wins), and so do the world\'s game rules:\n' +
   '  "rules": { ' + Object.keys(RULES).map((k) => `"${k}": ${RULES[k]}`).join(', ') + ' }\n' +
-  'Edit the file and restart the server. The rules and the mode in the file are applied to the world on every start.';
+  'Edit the file and restart the server. The rules and the mode in the file are applied to the world on every start.\n\n' +
+  'Accounts ("accounts": true, the default for a new server): nobody joins without a username and password an operator made\n' +
+  'with /account add <name> <password> (from this console, the server window, or in the game). See server/README.md.';
 
 /* compare two "6.10"-style versions: negative, zero or positive */
 export function cmpVer(a, b) {

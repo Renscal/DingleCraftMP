@@ -89,8 +89,13 @@
       <h2 id="tmp_h">Multiplayer</h2>
       <label class="mlabel" for="t_mp_addr">Server address</label>
       <input id="t_mp_addr" class="mc-in" maxlength="120" autocomplete="off" spellcheck="false" placeholder="e.g. 192.168.1.20:40162">
-      <label class="mlabel" for="t_mp_pw">Password (only if the server has one)</label>
-      <input id="t_mp_pw" class="mc-in" type="password" maxlength="64" autocomplete="off">
+      <div id="t_mp_login" hidden>
+        <label class="mlabel" for="t_mp_user">Username</label>
+        <input id="t_mp_user" class="mc-in" maxlength="16" autocomplete="username" spellcheck="false">
+        <label class="mlabel" for="t_mp_pass">Password</label>
+        <input id="t_mp_pass" class="mc-in" type="password" maxlength="64" autocomplete="current-password">
+        <label class="mlabel tkeep"><input id="t_mp_keep" type="checkbox"> Remember the password on this computer</label>
+      </div>
       <div class="mlabel" id="t_mp_name"></div>
       <div class="mlabel" id="t_mp_status" role="status"></div>
       <p class="twarn">Blocks, chests, dropped items, chat, the time of day and the other players are shared. Mobs and vehicles are your own. Your inventory is kept by the server.</p>

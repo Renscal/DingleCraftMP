@@ -343,7 +343,7 @@ In the core: world stamping (`mgStampChunk`), protection of his site (`MGP_ON`, 
 | `n3_drops.js` | dropped items |
 | `n4_self.js` | this player: `ntSave`, the pose, chat, death, and `ntFrame` (the per-frame tick) |
 | `n5_players.js` | the other players: bodies and name tags, the Tab list rows, melee (`ntMelee`) |
-| `n6_menu.js` | the Multiplayer screen on the title |
+| `n6_menu.js` | the Multiplayer screen on the title; since 6.49 the login box (asked for by `login`), the remembered logins (`vox_mpl`) and the account box in Settings |
 | `n7_mobs.js` | shared mobs (owner and puppet, the hand-over), explosions that reach other players |
 
 Eight small files on the client, and on the server a dependency-free Node program: `server/dinglecraft-server.mjs` is the
@@ -355,7 +355,7 @@ front door (and what tests import), `Start Server.bat` starts it on Windows, and
 | `world.mjs` | the world as data: new, load, apply the settings file, atomic save, validators (`cleanStack`, `num`) | config |
 | `websocket.mjs` | the WebSocket wire format (handshake, frames) | nothing; knows nothing about the game |
 | `protocol.mjs` | what every game message means (`handleMessage`), the join sequence, the checks (reach, rights, chest locks), the once-a-second `worldTick` | config, world, commands; knows nothing about sockets |
-| `commands.mjs` | the slash commands, for operators in the game and for the server window (`runCommand`), `isOp`, spawn protection's radius | config, world; knows nothing about sockets |
+| `commands.mjs` | the slash commands, for operators in the game and for the server window (`runCommand`), `isOp`, spawn protection's radius; since 6.49 the accounts (`passOK`, `accountOf`, `locksOf`, `renameAccount`, `setSkin`, which `protocol.mjs` uses for logins) | config, world; knows nothing about sockets |
 | `http.mjs` | the game page at `/` and `/status` | config |
 | `server.mjs` | `createServer`: state, sending, connections, clocks | all of the above |
 | `cli.mjs` | the program: `server.json`, the banner, console commands | config, server |

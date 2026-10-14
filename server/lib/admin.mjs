@@ -27,11 +27,16 @@ export function adminStatus(S, startedAt, heaps) {
   const st = S.status();
   const ops = new Set((S.opts.ops || []).map((n) => playerKey(n)));
   return {
-    name: st.name, motd: st.motd, version: st.version, proto: st.proto, max: st.max, password: st.password,
+    name: st.name, motd: st.motd, version: st.version, proto: st.proto, max: st.max, accounts: st.accounts,
     port: S.port, secure: !!S.secure, addresses: lanAddresses(), game: !!S.gameFile, worldDir: S.worldDir || '',
     uptime: Math.round((Date.now() - startedAt) / 1000), memory: process.memoryUsage().rss,
     difficulty: S.world().gr.difficulty || 'normal', mode: S.world().mode || 's',
     hosts: ['over', 'nether', 'aether'].map((d) => { const h = S.host(d); return { dim: d, running: !!h, ready: !!(h && h.ready), paused: !!(h && h.paused), heap: (heaps && heaps[d]) || 0 }; }),
+    /* 6.49: every account on this server (the window is the owner's: it may show the password, which is plain text on disk anyway) */
+    accountList: Object.entries(S.world().players || {}).filter(([, r]) => r && typeof r.password === 'string').map(([k, r]) => ({ name: r.name || k, key: k,
+      online: S.players().some((c) => c.ready && !c.host && playerKey(c.name) === k), op: ops.has(k), password: r.password, skin: !!r.skin, locks: r.locks || {}, seen: r.seen || '' }))
+      .sort((a, b) => a.key.localeCompare(b.key)),
+    locks: { name: !!S.opts.lockNames, password: !!S.opts.lockPasswords, skin: !!S.opts.lockSkins },
     players: S.players().filter((c) => c.ready && !c.host).map((c) => ({ id: c.id, name: c.name, op: ops.has(playerKey(c.name)), gm: c.gm || '', ms: c.ms | 0,
       dim: c.pose ? c.pose.dim : '', x: c.pose ? Math.round(c.pose.x) : 0, y: c.pose ? Math.round(c.pose.y) : 0, z: c.pose ? Math.round(c.pose.z) : 0 })),
   };
@@ -63,6 +68,11 @@ export function attachAdmin(S, { send, stop }) {
       if (!m || typeof m !== 'object') return;
       if (m.t === 'status') return safe({ t: 'status', status: status() });
       if (m.t === 'save') { S.saveWorld('asked by the window'); return safe({ t: 'reply', id: m.id || 0, text: 'saved' }); }
+      if (m.t === 'setskin') {               // 6.49: a skin for a player, from a file the owner picked (too long for a command line)
+        let text = '';
+        try { text = S.setSkin(String(m.name || ''), typeof m.png === 'string' ? m.png : ''); } catch (e) { text = 'error: ' + e.message; }
+        return safe({ t: 'reply', id: m.id || 0, text: String(text) });
+      }
       if (m.t === 'stop') return stop('stopped from the window');
       if (m.t === 'cmd' && typeof m.line === 'string') {
         const line = m.line.trim().slice(0, 300), word = line.replace(/^\//, '').split(/\s+/)[0].toLowerCase();
@@ -81,7 +91,7 @@ export function attachAdmin(S, { send, stop }) {
 
 /* ---- server.json, checked ---- */
 /* the settings that only take effect when the server is started again (everything a running server read once) */
-export const RESTART_KEYS = ['port', 'name', 'motd', 'password', 'maxPlayers', 'seed', 'mode', 'pvp', 'world', 'game', 'spawnProtection', 'sleepPercent', 'viewChunks', 'cert', 'key', 'origins', 'simulate', 'singlePlayer', 'pauseWhenEmpty'];
+export const RESTART_KEYS = ['port', 'name', 'motd', 'accounts', 'maxPlayers', 'seed', 'mode', 'pvp', 'world', 'game', 'spawnProtection', 'sleepPercent', 'viewChunks', 'cert', 'key', 'origins', 'simulate', 'singlePlayer', 'pauseWhenEmpty'];
 const isInt = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
 const NAME_RE = /^[\x21-\x7e][\x20-\x7e]{0,15}$/;           // a player name: printable ASCII, at most 16, not starting with a space
 /* Check a settings object (what server.json holds, or what the window's form produced). Returns
@@ -93,11 +103,10 @@ export function validateSettings(o, running) {
   if (!isInt(s.port, 1, 65535)) bad('port', 'a whole number from 1 to 65535');
   if (typeof s.name !== 'string' || !s.name.trim() || s.name.length > 60) bad('name', 'a name of 1 to 60 characters');
   if (typeof s.motd !== 'string' || s.motd.length > 200) bad('motd', 'at most 200 characters');
-  if (typeof s.password !== 'string' || s.password.length > 64) bad('password', 'at most 64 characters (empty for none)');
   if (!isInt(s.maxPlayers, 1, 100)) bad('maxPlayers', 'a whole number from 1 to 100');
   if (typeof s.seed !== 'string' && typeof s.seed !== 'number') bad('seed', 'text or a number'); else if (String(s.seed).length > 64) bad('seed', 'at most 64 characters');
   if (s.mode !== 's' && s.mode !== 'c') bad('mode', '"s" (survival) or "c" (creative)');
-  for (const k of ['pvp', 'whitelist', 'simulate', 'singlePlayer']) if (typeof s[k] !== 'boolean') bad(k, 'true or false');
+  for (const k of ['pvp', 'whitelist', 'simulate', 'singlePlayer', 'accounts', 'lockNames', 'lockPasswords', 'lockSkins']) if (typeof s[k] !== 'boolean') bad(k, 'true or false');
   if (typeof s.world !== 'string' || !/^[A-Za-z0-9_][A-Za-z0-9_. -]{0,39}$/.test(s.world) || s.world.includes('..')) bad('world', 'a folder name: letters, digits, spaces, dots, dashes and underscores, at most 40');
   if (!isInt(s.spawnProtection, 0, 256)) bad('spawnProtection', 'a whole number from 0 to 256');
   if (!isInt(s.sleepPercent, 1, 100)) bad('sleepPercent', 'a whole number from 1 to 100');

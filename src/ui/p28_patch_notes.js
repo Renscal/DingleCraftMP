@@ -3,7 +3,17 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Monsters by the book',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Who goes there',lines:[
+    '<b>WHO GOES THERE.</b> On a server, you used to be whoever you said you were. Type an operator&#x27;s name and you had their rights, their inventory and their spot in the sun. Servers now have accounts.',
+    '<b>How it works.</b> The server&#x27;s owner makes an account (a username and a password) and hands it to the player. When the player joins, the server asks for it before they spawn. Get it wrong five times and you are shown the door.',
+    '<b>Remembered.</b> The game remembers your username for each server. Tick "Remember the password" and it remembers that too, on this computer only.',
+    '<b>Per server, on purpose.</b> There is no central account system. Each server keeps its own accounts, so anyone can run one, forever, with nobody&#x27;s permission. The password is stored in plain text at the top of your player file, where the owner can read it. Settings says so in a red box. Do not reuse a password you care about.',
+    '<b>Change your own.</b> While you are on a server, Settings has a box for your account: a new username, or a new password (the old one first).',
+    '<b>For the owner.</b> The server window&#x27;s Players tab lists every account: add one, set a password, rename, remove, set a skin from a PNG file, and lock a player&#x27;s name, password or skin. The same from the console: <b>/account add, password, rename, remove, lock, list</b> and <b>/setskin</b>. Settings has the same three locks for everyone at once.',
+    '<b>The server password is gone.</b> Accounts replace it. A server that had one switches to accounts by itself. An open server with players stays open (anyone joins by name, as before) until its owner switches accounts on. A brand new server starts with accounts on.',
+    '<b>Skins stick.</b> The skin you last wore on a server is kept with your account, and what an operator gives you is what everyone sees, you included.',
+  ]},
+ {v:'6.48',label:'Release 1.1',title:'Monsters by the book',lines:[
     '<b>MONSTERS BY THE BOOK.</b> Mob farms are a whole engineering discipline in the blocky game this one takes after, and none of them worked here, because our monsters followed our own rules. Now they follow those rules, closely enough that a farm built from a tutorial should just work.',
     '<b>The sky has a light level now.</b> Every block knows how much sky light reaches it: full 15 straight down an open shaft, one less per block sideways under a roof, a little less under leaves or water. Night takes up to 11 off it. Torches still count separately.',
     '<b>Dark is a dice roll.</b> A monster needs no torchlight at all, and then the light from the sky (after the hour takes its share) has to beat a random number from 0 to 7. A sealed room spawns every time, an open field at noon never, and the open sky at night about a quarter of the time.',

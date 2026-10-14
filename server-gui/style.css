@@ -67,3 +67,5 @@ input[type=checkbox]{width:16px;height:16px}
 .tag{font-size:11px;color:var(--warn);margin-left:6px}
 td.acts{white-space:nowrap;text-align:right}
 td.acts button{padding:3px 8px;margin-left:4px}
+td.acts input{width:150px}
+.acrow{display:flex;gap:8px;margin:6px 0}

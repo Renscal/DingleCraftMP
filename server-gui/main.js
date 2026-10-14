@@ -86,13 +86,13 @@ function stopServer(id, kill) {
   });
 }
 const stopAll = () => Promise.all(G.list.map((e) => stopServer(e.id)));
-function sendCommand(id, line) {
+function sendCommand(id, line, msg) {
   return new Promise((resolve) => {
     const r = rt(id);
     if (!r.child || !r.running) return resolve('The server is not running.');
     const n = ++r.seq;
     r.waiting.set(n, resolve);
-    try { r.child.send({ t: 'cmd', id: n, line: String(line) }); } catch { r.waiting.delete(n); resolve('The server is not running.'); }
+    try { r.child.send(msg ? { ...msg, id: n } : { t: 'cmd', id: n, line: String(line) }); } catch { r.waiting.delete(n); resolve('The server is not running.'); }
     setTimeout(() => { if (r.waiting.delete(n)) resolve('(no answer)'); }, 5000);
   });
 }
@@ -183,6 +183,7 @@ function wire() {
   h('kill', async (id) => { await stopServer(id, true); return { ok: true }; });
   h('restart', async (id) => { const r = rt(id); if (r.child) { r.restart = true; await stopServer(id); return { ok: true }; } return startServer(id); });
   h('command', (id, line) => sendCommand(id, line));
+  h('setskin', (id, name, png) => sendCommand(id, null, { t: 'setskin', name: String(name || ''), png: String(png || '') }));   // 6.49: a skin is too long for a command line
   h('settings:read', async (id) => ({ ok: true, settings: formMerge((await admin()).formDefaults(), store.readSettings(entry(id).dataDir)) }));
   h('settings:save', async (id, o) => {
     const e = entry(id), v = (await admin()).validateSettings(o, store.readSettings(e.dataDir));

@@ -21,6 +21,19 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## Release 1.1 — Who goes there
+
+*Game version 6.49, released 2026-10-14.*
+
+- **WHO GOES THERE.** On a server, you used to be whoever you said you were. Type an operator's name and you had their rights, their inventory and their spot in the sun. Servers now have accounts.
+- **How it works.** The server's owner makes an account (a username and a password) and hands it to the player. When the player joins, the server asks for it before they spawn. Get it wrong five times and you are shown the door.
+- **Remembered.** The game remembers your username for each server. Tick "Remember the password" and it remembers that too, on this computer only.
+- **Per server, on purpose.** There is no central account system. Each server keeps its own accounts, so anyone can run one, forever, with nobody's permission. The password is stored in plain text at the top of your player file, where the owner can read it. Settings says so in a red box. Do not reuse a password you care about.
+- **Change your own.** While you are on a server, Settings has a box for your account: a new username, or a new password (the old one first).
+- **For the owner.** The server window's Players tab lists every account: add one, set a password, rename, remove, set a skin from a PNG file, and lock a player's name, password or skin. The same from the console: **/account add, password, rename, remove, lock, list** and **/setskin**. Settings has the same three locks for everyone at once.
+- **The server password is gone.** Accounts replace it. A server that had one switches to accounts by itself. An open server with players stays open (anyone joins by name, as before) until its owner switches accounts on. A brand new server starts with accounts on.
+- **Skins stick.** The skin you last wore on a server is kept with your account, and what an operator gives you is what everyone sees, you included.
+
 ## Release 1.1 — Monsters by the book
 
 *Game version 6.48, released 2026-10-14.*

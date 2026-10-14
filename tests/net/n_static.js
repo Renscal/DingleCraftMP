@@ -108,11 +108,11 @@ boot.run(async()=>{
     ok('ntFrame and ntLeave guard themselves; every other hook is behind NET.on',/function ntFrame\(dt\)\{\n  if\(!NET\.on\|\|!P\)return;/.test(N)&&/function ntLeave\(\)\{\n  if\(!NET\.on&&NET\.st==='off'&&!NET\.ws\)return;/.test(N));}
 
   /* ---- 5. the title ---- */
-  const ids=['t_go_mp','tmp','t_mp_addr','t_mp_pw','t_mp_name','t_mp_status','t_back_mp','t_mp_go'];
+  const ids=['t_go_mp','tmp','t_mp_addr','t_mp_login','t_mp_user','t_mp_pass','t_mp_keep','t_mp_name','t_mp_status','t_back_mp','t_mp_go'];
   ok('title markup: '+ids.join(' ')+' each once',ids.every(id=>count(HH,'id="'+id+'"')===1));
   ok('every $() id PART 58 uses is in the markup',(N.match(/\$\('([\w]+)'\)/g)||[]).map(s=>s.slice(3,-2)).every(id=>count(HH,'id="'+id+'"')===1));
   ok('the Multiplayer button sits between Load World and Controls',HH.indexOf('id="t_go_load"')<HH.indexOf('id="t_go_mp"')&&HH.indexOf('id="t_go_mp"')<HH.indexOf('id="t_help"'));
-  ok('the password field is a password field',/<input id="t_mp_pw"[^>]*type="password"/.test(HH));
+  ok('the password field is a password field, and the server password is gone (6.49)',/<input id="t_mp_pass"[^>]*type="password"/.test(HH)&&!HH.includes('id="t_mp_pw"'));
   ok('the title menu knows the view (tmEls)',/mp:\$\('tmp'\)/.test(readSrc('ui/p07g_title.js')));
   {V.ntOpenMenu();ok('ntOpenMenu shows #tmp and hides the main menu',global.document.getElementById('tmp').hidden===false&&global.document.getElementById('tmain').hidden===true);V.tmShow('main');}
 

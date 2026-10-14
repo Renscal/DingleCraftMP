@@ -64,6 +64,13 @@
     <section id="t_players" hidden>
       <table><thead><tr><th>Player</th><th>Dimension</th><th>Position</th><th>Ping</th><th></th></tr></thead><tbody id="plist"></tbody></table>
       <p id="noplayers" class="dim">Nobody is online.</p>
+      <h3>Accounts</h3>
+      <p id="acnote" class="dim"></p>
+      <form id="acform" class="acrow"><input id="ac_name" maxlength="16" autocomplete="off" spellcheck="false" placeholder="username"><input id="ac_pass" maxlength="64" autocomplete="off" spellcheck="false" placeholder="password"><button>Add account</button></form>
+      <label class="dim"><input type="checkbox" id="ac_show"> Show passwords (they are kept in plain text in each player's file)</label>
+      <table><thead><tr><th>Account</th><th>Password</th><th>Locked</th><th></th></tr></thead><tbody id="aclist"></tbody></table>
+      <p id="noaccounts" class="dim">No accounts yet.</p>
+      <input type="file" id="ac_skinfile" accept=".png,image/png" hidden>
     </section>
     <section id="t_settings" hidden>
       <form id="setform" class="form"></form>

@@ -46,6 +46,14 @@
     <input id="s_pname" class="mc-in" maxlength="16" autocomplete="off" spellcheck="false">
     <div class="mlabel">Your skin (a PNG, 64 x 64; kept in this browser)</div>
     <div class="sskin"><canvas id="s_skinpv" width="144" height="128" aria-label="Your skin, front and back"></canvas><div class="sskinb"><input id="s_skin" type="file" accept=".png,image/png" aria-label="Choose a skin file"><button id="s_skinreset" class="mc-btn">Reset to default</button></div></div>
+    <div id="s_acct" hidden>
+      <div class="mlabel">Your account on this server</div>
+      <div class="sacct"><input id="s_acname" class="mc-in" maxlength="16" autocomplete="off" spellcheck="false" aria-label="Your username"><button id="s_acname_go" class="mc-btn">Change name</button></div>
+      <div class="sacct"><input id="s_acold" class="mc-in" type="password" maxlength="64" autocomplete="current-password" placeholder="Current password" aria-label="Current password"><input id="s_acnew" class="mc-in" type="password" maxlength="64" autocomplete="new-password" placeholder="New password" aria-label="New password"><button id="s_acpw_go" class="mc-btn">Change password</button></div>
+      <p class="twarn">The owner of this server can read your password in plain text. Do not use a password you use anywhere else.</p>
+      <div class="mlabel" id="s_aclock"></div>
+      <div class="mlabel" id="s_acmsg" role="status"></div>
+    </div>
     <div class="mlabel">Mouse sensitivity: <span id="s_sensv">100</span>%</div>
     <input id="s_sens" class="range" type="range" min="10" max="300" step="5" value="100">
     <div class="mlabel">Sound volume: <span id="s_sfxv">100</span>%</div>

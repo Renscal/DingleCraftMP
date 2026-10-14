@@ -1,7 +1,7 @@
 // server.mjs: createServer puts the pieces together. One call makes one server: it opens (or generates) the world, accepts
 // connections, hands each message to the protocol, runs the clocks, and returns a small object to drive it with.
 //
-//   const S = createServer({ port, data, world, seed, mode, rules, name, motd, password, maxPlayers, pvp, game, ... });
+//   const S = createServer({ port, data, world, seed, mode, rules, name, motd, accounts, maxPlayers, pvp, game, ... });
 //   await S.listen();   ...   await S.close();
 //
 // Options are the settings of data/server.json (lib/config.mjs DEFAULTS) plus a few for programs and tests:
@@ -25,7 +25,7 @@ import path from 'node:path';
 import { DEFAULTS, LIMITS, SERVER_DIR, cleanRules, cleanList, findGame } from './config.mjs';
 import { openWorld, applySettings, writeWorld, worldPlace, exportWorld } from './world.mjs';
 import { acceptUpgrade, newConn, textFrame, readFrames, PING, CLOSE } from './websocket.mjs';
-import { handleMessage, worldTick, forget, playerKey } from './protocol.mjs';
+import { handleMessage, worldTick, forget, playerKey, setSkin } from './protocol.mjs';
 import { runCommand } from './commands.mjs';
 import { pageHandler, statusOf } from './http.mjs';
 import { startHost, gameScript } from './host.mjs';
@@ -204,7 +204,7 @@ export function createServer(opts = {}) {
     }
     for (const c of pending) {          // quiet sockets: ping after 5 s, give up after 20 s; 15 s to say hello
       if (c.closed) continue;
-      if (!c.ready && now - c.born > 15000) drop(c, 'never said hello');
+      if (!c.ready && now - c.born > (c.helloM ? 120000 : 15000)) drop(c, c.helloM ? 'did not log in' : 'never said hello', !!c.helloM);   // 6.49: two minutes to type a login
       else if (now - c.seen > LIMITS.quietDrop) drop(c, 'timed out');
       else if (now - c.seen > LIMITS.quietPing) { try { c.sock.write(PING); } catch { /* gone */ } }
     }
@@ -221,6 +221,7 @@ export function createServer(opts = {}) {
     kick(name, why) { const c = [...S.clients.values()].find((p) => playerKey(p.name) === playerKey(name)); if (c) drop(c, why || 'Kicked by the server.', true); return !!c; },
     setTime(v) { world.time = ((v % 1) + 1) % 1; S.dirty = true; broadcast({ t: 'time', v: world.time }); },
     command: (line) => runCommand(S, net, null, line),   // a console command: the reply as a string
+    setSkin: (name, png) => setSkin(S, net, name, png),   // 6.49: an operator dresses a player (lib/protocol.mjs)
     stats: () => ({ edits: S.editCount, chunks: Object.keys(world.edits).length, be: Object.keys(world.be).length, drops: Object.keys(world.drops).length }),
     listen() {
       return new Promise((resolve, reject) => {

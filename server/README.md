@@ -37,8 +37,8 @@ TCP port 40162 forwarded to your computer on your router.
 A page served over `https://` cannot talk to a plain `ws://` server (browsers forbid it). Open the game from the server's
 own `http://` address, or from a file on disk, and it works.
 
-**Encryption.** Out of the box the server speaks plain `http://` and `ws://`: fine on a home network, but the password
-travels in the clear. Give it a certificate (`cert` and `key` below, PEM files) and it speaks `https://` and `wss://`
+**Encryption.** Out of the box the server speaks plain `http://` and `ws://`: fine on a home network, but the players' passwords
+travel in the clear. Give it a certificate (`cert` and `key` below, PEM files) and it speaks `https://` and `wss://`
 instead, on the same port. The certificate must be for the address players type. A player using their own copy of the game
 then enters `wss://<address>:40162`.
 
@@ -63,7 +63,8 @@ The first run writes `data/server.json`. Edit it and restart, or pass the same t
 | `port` | `--port` | 40162 | TCP port for both the game page and the game connection |
 | `name` | `--name` | A DINGLECRAFT Server | shown to players when they join |
 | `motd` | `--motd` | | one line shown in chat on joining |
-| `password` | `--password` | | if set, players must type it |
+| `accounts` | | `true` for a new server | players log in with an account an operator made (see "Accounts" below). `false`: anyone joins by name, as before 6.49, except as a name that is an account. A `server.json` from before 6.49 gets `true` if it had a `password` (gone in 6.49) and `false` if players have already played on it |
+| `lockNames`, `lockPasswords`, `lockSkins` | | `false` | nobody may change their own name, password or skin (an operator still can). The same locks can be set for one player: `/account lock` |
 | `maxPlayers` | `--max` | 8 | |
 | `seed` | `--seed` | random | only for a new world |
 | `mode` | `--mode` | `s` | `s` survival or `c` creative: what new players start in (an operator can give one player another with `/gamemode`); applied on every start |
@@ -84,7 +85,7 @@ The first run writes `data/server.json`. Edit it and restart, or pass the same t
 | `singlePlayer` | | `false` | `true`: the page the server hands out is the whole game, with Create New World and Load World (as before 6.18). Worlds made there live in the player's browser, under this server's address |
 | `origins` | | `[]` | web addresses whose pages may connect, e.g. `["https://play.example"]`. Empty: any page may (needed for "open your own copy of the game"). The server's own page, a game opened from a file and the desktop client are always let in |
 
-`data/` is ignored by git: the world, the settings and the password stay on your machine.
+`data/` is ignored by git: the world, the settings and the accounts stay on your machine.
 
 ### World settings
 
@@ -213,9 +214,33 @@ The first operator is made from the server window (`op <name>`) or by adding the
 | `/op <player>`, `/deop <player>` | operators | |
 | `/say <text>`, `/seed`, `/save` | operators | |
 | `/export` | operators | writes the whole world as one file (`world.export.vxw.json`, next to the world folder) that the game's Import World reads |
+| `/account add <name> <password>` | operators | make an account (for a name that has played here before: everything they had is theirs) |
+| `/account password <name> <password>`, `/account rename <name> <new name>` | operators | |
+| `/account remove <name>` | operators | the login goes; what they had is kept |
+| `/account lock <name \| *> <name \| password \| skin> [on \| off]` | operators | stop one player (or, with `*`, everyone) changing their own name, password or skin |
+| `/account list` | operators | every account; the server window and console are also shown the passwords |
+| `/setskin <player> reset` | operators | back to the default skin. From the console: `/setskin <player> <file.png>` (a path from the data folder). The server window has a Set skin button |
 | `stop` | the server window only | saves and stops |
 
-Changes to the operators, the bans, the whitelist and the default mode are written back into `server.json`.
+Changes to the operators, the bans, the whitelist, the locks and the default mode are written back into `server.json`.
+
+## Accounts
+
+Since 6.49 each server keeps its own accounts. Nothing is central: whoever runs a server makes the accounts on it.
+
+1. An operator makes one: `/account add <name> <password>` in the console or the game's chat, or Add account on the
+   server window's Players tab. Give the player the name and the password.
+2. The player opens Multiplayer and joins. The server asks for the username and password before they spawn. Five wrong
+   tries and the connection is closed; one try a second. The game remembers the username per server, and the password
+   only if the player ticks "Remember the password" (in that browser).
+3. The account is the player's record: `playerdata/<name>.json`. The password is its second line, **in plain text**, so the
+   owner can read it. The game says so where the player changes it (Settings, while online). Players should not reuse a
+   password they use anywhere else.
+4. Logging in to an account that is already online closes the older connection ("logged in from another location").
+5. Operators are names on a list, so with accounts on an operator's rights can no longer be taken by typing their name.
+
+The password never goes back to a game (not in the welcome, not in `/status`, not in `/export`) and is hidden in the log
+of an `/account` command typed in the game.
 
 ## Hosting a single-player world
 
@@ -312,8 +337,8 @@ connection is closed.
 
 ## How much to trust it
 
-This is a server for friends. There are no accounts: a player is whoever types that name, which is also all an operator
-is, so use the password (and the whitelist) if the address gets around. The server has no terrain and does not run the
+This is a server for friends. With accounts on (the default for a new server, see "Accounts") a player is whoever has
+the password; with them off, whoever types the name, which is also all an operator is. The server has no terrain and does not run the
 game, so it checks what it can without one: who may change the time and the rules, that a hit came from within reach,
 that you are standing by the item you pick up, that only one player writes to a chest, that nobody but an operator
 builds at spawn, and it writes the death messages itself. It validates everything it stores (block keys, ids, sizes),

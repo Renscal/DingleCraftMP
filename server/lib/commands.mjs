@@ -4,8 +4,11 @@
 // Who may do what follows Minecraft: anyone may /help, /list, /me and /msg; everything else needs an operator (the "ops" list
 // in server.json, or /op from the console). Commands that change a player's own game (teleport, give, game mode) are sent to
 // that player's game as tp / give / mode messages; the rest change the server's world or its settings.
+import fs from 'node:fs';
+import path from 'node:path';
 import { cleanList, cleanRules, RULES } from './config.mjs';
-import { num, cleanText, playerKey } from './world.mjs';
+import { num, cleanText, cleanName, cleanSkin, playerKey } from './world.mjs';
+import crypto from 'node:crypto';
 
 /* is this player an operator? */
 export const isOp = (S, c) => !!c && S.o.ops.includes(playerKey(c.name));
@@ -28,6 +31,63 @@ export function permOf(S, c) {
 function settingsChanged(S, net) {
   if (typeof S.o.onSettings === 'function') S.o.onSettings();
   for (const p of S.clients.values()) if (p.ready) net.send(p, permOf(S, p));
+}
+
+/* ----- accounts (6.49): the helpers lib/protocol.mjs uses too ----- */
+/* does this password open this account? Compared as hashes in constant time, so it cannot be guessed a character at a time */
+export function passOK(rec, pass) {
+  if (!rec || typeof rec.password !== 'string' || typeof pass !== 'string') return false;
+  const h = (s) => crypto.createHash('sha256').update(String(s)).digest();
+  return crypto.timingSafeEqual(h(pass), h(rec.password));
+}
+/* the account of that name, or null */
+export function accountOf(S, name) {
+  const r = S.world.players[playerKey(name || '')];
+  return r && typeof r === 'object' && typeof r.password === 'string' ? r : null;
+}
+/* what a player may not change: the server's rules for everyone, or their own */
+export function locksOf(S, name) {
+  const r = S.world.players[playerKey(name || '')], l = (r && r.locks) || {};
+  return { name: !!(S.o.lockNames || l.name), password: !!(S.o.lockPasswords || l.password), skin: !!(S.o.lockSkins || l.skin) };
+}
+/* a password an account may have: 1 to 64 printable characters, no spaces (a command line splits on them) */
+export const passwordProblem = (p) => (typeof p === 'string' && /^[\x21-\x7e]{1,64}$/.test(p) ? '' : 'A password is 1 to 64 letters, digits or symbols, with no spaces.');
+/* an operator dresses a player: the skin is kept with them, and everyone (them too) sees it at once. Returns the reply. */
+export function setSkin(S, net, name, png) {
+  const k = playerKey(name), rec = S.world.players[k];
+  if (!k || !rec || typeof rec !== 'object') return 'No player called ' + (name || '?') + ' has played here.';
+  const clean = cleanSkin(png === 'reset' ? '' : png);
+  if (clean === null) return 'That is not a skin: it must be a PNG, 64 x 64 or 64 x 32, under 50 KB.';
+  if (clean) rec.skin = clean; else delete rec.skin;
+  S.dirty = true;
+  const p = [...S.clients.values()].find((q) => q.ready && !q.host && playerKey(q.name) === k);
+  if (p) { p.skin = clean; net.broadcast({ t: 'skin', id: p.id, png: clean }); }
+  return (rec.name || name) + (clean ? ' now wears the new skin' : ' wears the default skin again');
+}
+/* 6.49: give an account (and everything kept with it) a new name. The playerdata file follows at the next save, and so do
+   the ops, whitelist and ban lists; a player online is renamed for everyone at once. Returns {ok, why}. */
+export function renameAccount(S, net, from, to) {
+  const a = playerKey(from), name = cleanName(to), b = playerKey(name);
+  if (!name) return { ok: false, why: 'A name is 1 to 16 letters, digits or symbols.' };
+  const rec = S.world.players[a];
+  if (!rec || typeof rec !== 'object') return { ok: false, why: 'No player called ' + (from || '?') + ' has played here.' };
+  if (b !== a && S.world.players[b]) return { ok: false, why: 'The name ' + name + ' is taken.' };
+  delete S.world.players[a];
+  rec.name = name;
+  S.world.players[b] = rec;
+  S.dirty = true;
+  for (const k of ['ops', 'allow', 'bans']) if (S.o[k].includes(a)) S.o[k] = cleanList(S.o[k].map((x) => (x === a ? b : x)));
+  const p = findPlayer(S, from);
+  if (p) { p.name = name; net.broadcast({ t: 'rename', id: p.id, name }); }
+  settingsChanged(S, net);
+  S.log(`${from} is now called ${name}`);
+  return { ok: true, why: 'Renamed to ' + name + '.' };
+}
+/* the server-wide setting behind a lock (name, password, skin) */
+const lockKey = (f) => ['lockNames', 'lockPasswords', 'lockSkins'][['name', 'password', 'skin'].indexOf(f)];
+/* tell a player online what they may not change (after a lock was set) */
+function locksSent(S, net, key) {
+  for (const p of S.clients.values()) if (p.ready && !p.host && (!key || playerKey(p.name) === key)) net.send(p, { t: 'acct', locks: locksOf(S, p.name) });
 }
 
 /* set the time of day for everyone */
@@ -207,6 +267,70 @@ const COMMANDS = {
     try { file = S.exportWorld ? S.exportWorld() : null; } catch (e) { return 'Export failed: ' + e.message; }
     return file ? 'The world was written as one file the game can import: ' + file : 'This server keeps no world on disk.';
   } },
+  /* 6.49: accounts. The password is plain text in the player's file, and the console (the owner) is shown it */
+  account: { op: true, use: '/account <add | password | remove | rename | lock | list> ...', run: ({ S, net, c, a }) => {
+    const sub = (a[0] || '').toLowerCase(), name = a[1] || '', k = playerKey(name), rec = k ? S.world.players[k] : null;
+    if (sub === 'list') {
+      const L = Object.keys(S.world.players).filter((x) => accountOf(S, x));
+      if (!L.length) return 'No accounts yet. Make one: /account add <name> <password>';
+      const lk = (x) => { const l = (S.world.players[x].locks) || {}; const on = ['name', 'password', 'skin'].filter((y) => l[y]); return on.length ? ' [locked: ' + on.join(', ') + ']' : ''; };
+      return L.length + ' account' + (L.length === 1 ? '' : 's') + (S.o.accounts ? '' : ' (accounts are off: anyone may also join by name)') + ': ' +
+        L.map((x) => (S.world.players[x].name || x) + (c ? '' : ' (password: ' + S.world.players[x].password + ')') + lk(x)).join(', ');
+    }
+    if (sub === 'add') {
+      const nm = cleanName(name), pw = a[2];
+      if (!nm) return 'Usage: /account add <name> <password>';
+      const bad = a.length > 3 ? passwordProblem(' ') : passwordProblem(pw);   // the line was split on spaces: more words is a password with a space
+      if (bad) return bad;
+      if (accountOf(S, nm)) return nm + ' already has an account (/account password ' + nm + ' <new> sets a new password)';
+      const old = S.world.players[playerKey(nm)];
+      if (old && typeof old === 'object') old.password = pw; else S.world.players[playerKey(nm)] = { name: nm, password: pw };
+      S.dirty = true;
+      return 'Account ' + nm + ' made' + (old ? ' (for the player who has played here before: everything they had is theirs)' : '') + '. They log in with that name and password.';
+    }
+    if (sub === 'password') {
+      if (!accountOf(S, name)) return 'Usage: /account password <account> <new password>';
+      const bad = a.length > 3 ? passwordProblem(' ') : passwordProblem(a[2]);
+      if (bad) return bad;
+      rec.password = a[2]; S.dirty = true;
+      return 'New password set for ' + (rec.name || name);
+    }
+    if (sub === 'remove') {
+      if (!accountOf(S, name)) return 'No account called ' + (name || '?');
+      delete rec.password; delete rec.locks; S.dirty = true;
+      const p = findPlayer(S, name);
+      if (p && S.o.accounts) net.drop(p, 'Your account was removed.', true);
+      return 'The account ' + (rec.name || name) + ' is gone (what they had is kept, in case it comes back)';
+    }
+    if (sub === 'rename') {
+      if (!rec) return 'Usage: /account rename <name> <new name>';
+      return renameAccount(S, net, name, a[2] || '').why;
+    }
+    if (sub === 'lock') {
+      const what = (a[2] || '').toLowerCase(), on = (a[3] || 'on').toLowerCase() !== 'off', field = { name: 'name', password: 'password', skin: 'skin' }[what];
+      if (!field || !name) return 'Usage: /account lock <name | *> <name | password | skin> [on | off]   (* is everyone)';
+      if (name === '*') {
+        S.o[lockKey(field)] = on;
+        settingsChanged(S, net); locksSent(S, net, null);
+        return on ? 'Nobody may change their own ' + field + ' now' : 'Everyone may change their own ' + field + ' again';
+      }
+      if (!rec) return 'No player called ' + name + ' has played here.';
+      const l = { ...(rec.locks || {}) };
+      if (on) l[field] = true; else delete l[field];
+      if (Object.keys(l).length) rec.locks = l; else delete rec.locks;
+      S.dirty = true; locksSent(S, net, k);
+      return (rec.name || name) + (on ? ' may no longer change their ' : ' may change their ') + field + (on ? '' : ' again') + (S.o[lockKey(field)] ? ' (but it is locked for everyone)' : '');
+    }
+    return 'Usage: /account <add | password | remove | rename | lock | list> ...';
+  } },
+  setskin: { op: true, use: '/setskin <player> <reset | file.png>', run: ({ S, net, c, a }) => {
+    if (!a[0] || !a[1]) return 'Usage: /setskin <player> reset' + (c ? '' : '   or   /setskin <player> <a .png file, next to server.json>');
+    if (a[1].toLowerCase() === 'reset') return setSkin(S, net, a[0], '');
+    if (c) return 'A skin from a file can only be given from the console or the server window.';
+    let png;
+    try { png = fs.readFileSync(path.resolve(S.o.data || '.', a[1])).toString('base64'); } catch (e) { return 'Could not read ' + a[1] + ': ' + e.message; }
+    return setSkin(S, net, a[0], png);
+  } },
   stop: { con: true, use: '/stop', run: () => undefined },   // the program itself stops (lib/cli.mjs); listed here for /help
   w: { alias: 'msg' }, tell: { alias: 'msg' }, whisper: { alias: 'msg' }, gm: { alias: 'gamemode' }, players: { alias: 'list' }, '?': { alias: 'help' },
   unban: { alias: 'pardon' },
@@ -222,7 +346,8 @@ export function runCommand(S, net, c, line) {
   const cmd = Object.hasOwn(COMMANDS, name) ? COMMANDS[name] : null;
   if (!cmd) return 'Unknown command. Type /help';
   if (c && (cmd.con || (cmd.op && !isOp(S, c)))) return 'You do not have permission to use /' + name + '.';
-  if (c) S.log(`${c.name} ran /${name}${words.length ? ' ' + words.join(' ') : ''}`);
+  if (c) { const shown = name === 'account' && /^(add|password)$/i.test(words[0] || '') ? words.map((x, i) => (i === 2 ? '****' : x)) : words;   // 6.49: no passwords in the log
+    S.log(`${c.name} ran /${name}${shown.length ? ' ' + shown.join(' ') : ''}`); }
   const out = cmd.run({ S, net, c, a: words, rest: words.join(' '), who: c ? c.name : 'Server' });
   return typeof out === 'string' ? out : '';
 }
