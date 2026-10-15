@@ -81,6 +81,9 @@ select.mc-in{appearance:auto}
 #modal{z-index:20;background:rgba(0,0,0,.55)}
 #modal .panel{position:relative;max-width:min(calc(100% - 16px),600px)}
 #mclose{position:absolute;right:8px;top:8px;width:auto;margin:0;padding:3px 9px}
+#mlabel{position:absolute;top:8px;right:48px;width:30px;height:30px;box-sizing:border-box;padding:1px;cursor:pointer;background:#8b8b8b;border:2px solid;border-color:#373737 #fff #fff #373737}
+#mlabel[hidden]{display:none}
+#mlabel canvas{display:block;width:100%;height:100%;object-fit:contain;image-rendering:pixelated}
 .grow{display:flex}
 .slot{width:54px;height:54px;margin:1px;background:#8b8b8b;border:2px solid;
   border-color:#373737 #fff #fff #373737;display:flex;align-items:center;justify-content:center;cursor:pointer}

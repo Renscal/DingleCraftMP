@@ -3,6 +3,8 @@
 
    node tools/qa/boot_check.mjs --launch [--port 9397] [--profile DIR] [--build dist/dinglecraft_v<VER>.html] [--out DIR] [--no-hr]
    node tools/qa/boot_check.mjs --port 9397 [--server 9497] ...      (your own Chrome + server already running)
+   node tools/qa/boot_check.mjs --launch --electron [--port 9397] ... (no Chrome on this machine: the client's Electron,
+                                                                       off-screen with its own profile: lib/electron.mjs)
 
    --launch starts YOUR OWN headless Chrome (tools/qa/chrome.sh, --mute-audio) on --port and the repo's static server
    (scripts/serve.mjs) on port+100, and stops both at the end. Checks: the page loads with WebGL2, three r128, __vox and the
@@ -25,9 +27,11 @@ const stopKids=()=>{for(const k of kids){try{process.kill(k.pid,'SIGTERM');}catc
 process.on('exit',stopKids);process.on('SIGINT',()=>{stopKids();process.exit(130);});
 
 if(A.launch){
+  if(A.electron){const {launchGame}=await import('./lib/electron.mjs');const E=await launchGame({port:PORT});process.on('exit',()=>{E.stop();});kids.push({pid:E.pid,name:'electron'});}
+  else{
   const prof=path.resolve(A.profile||path.join(REPO,'out','qa','chrome_'+PORT));
   const pid=execFileSync(path.join(REPO,'tools','qa','chrome.sh'),[String(PORT),prof],{encoding:'utf8'}).trim();
-  kids.push({pid:+pid,name:'chrome'});
+  kids.push({pid:+pid,name:'chrome'});}
   const srv=spawn(process.execPath,[path.join(REPO,'scripts','serve.mjs'),'--port',String(SRV)],{cwd:REPO,stdio:'ignore'});
   kids.push({pid:srv.pid,name:'server'});
   for(let i=0;i<50;i++){try{const r=await fetch(`http://127.0.0.1:${SRV}/`);if(r)break;}catch(e){}await sleep(100);}
@@ -51,12 +55,13 @@ await C.ev(HELP);
 const I=await C.ev(`const c=document.createElement('canvas');return {ver:__vox.GAME_VERSION,three:typeof THREE!=='undefined'?THREE.REVISION:null,
   gl2:!!c.getContext('webgl2'),rgl2:!!(typeof renderer!=='undefined'&&renderer.capabilities&&renderer.capabilities.isWebGL2),sound:soundOn,
   tp:JSON.parse(localStorage.getItem('vx_vox_settings')||'{}').tp,hasHR:typeof __vox.setPack==='function',
-  payloads:typeof hrAssets==='function'?Object.keys(hrAssets()).length:0,mg:typeof hrMgAssets==='function'?Object.keys(hrMgAssets()).length:0};`);
+  payloads:typeof hrAssets==='function'?Object.keys(hrAssets()||{}).length:0,mg:typeof hrMgAssets==='function'?Object.keys(hrMgAssets()||{}).length:0,
+  artFiles:typeof HRART!=='undefined'?HRART.files.length:0};`);
 check(`page loads (${loadS.toFixed(1)} s): GAME_VERSION ${I.ver} = repo ${VER}`,I.ver===VER,I);
 check('three r128',I.three==='128',I.three);
 check('WebGL2 (browser and the game renderer)',I.gl2&&I.rgl2,{gl2:I.gl2,renderer:I.rgl2});
 check('sound off, tp og at load',I.sound===false&&I.tp==='og',{sound:I.sound,tp:I.tp});
-check('embedded art present (hr + mg payloads)',I.payloads>0&&I.mg>0,{hr:I.payloads,mg:I.mg});
+check('the art is beside the page (6.62), not loaded until Hyperreal',I.artFiles>0&&I.payloads===0&&I.mg===0,{files:I.artFiles,hr:I.payloads,mg:I.mg});
 check('no console errors at load',errs().length===0,errs().slice(0,5));
 await shot('title');
 
@@ -67,8 +72,9 @@ check('OG renders a real picture (not black, not flat)',W.pic.mean>20&&W.pic.sd>
 await shot('og_world');
 
 if(DO_HR){
-  const H=await C.ev(`await __vox.setQuality(1);const ok=await __vox.setPack('hr');__bc.stp(30);return {ok,tp:__vox.getTP(),pic:__bc.pic(),sound:soundOn};`);
+  const H=await C.ev(`await __vox.setQuality(1);const ok=await __vox.setPack('hr');__bc.stp(30);return {ok,tp:__vox.getTP(),pic:__bc.pic(),sound:soundOn,hr:Object.keys(hrAssets()||{}).length,mg:Object.keys(hrMgAssets()||{}).length};`);
   check('Hyperreal switches on',H.ok===true&&H.tp.hr===true&&H.tp.id==='hr',{id:H.tp.id,hr:H.tp.hr,q:H.tp.q,qr:H.tp.qr});
+  check('...with its art loaded from beside the page (hr + mg payloads)',H.hr>0&&H.mg>0,{hr:H.hr,mg:H.mg});
   check('Hyperreal renders a real picture',H.pic.mean>20&&H.pic.sd>8,H.pic);
   await shot('hr_world');
   const O=await C.ev(`const ok=await __vox.setPack('og');__bc.stp(10);return {ok,tp:__vox.getTP(),pic:__bc.pic(),sound:soundOn};`);

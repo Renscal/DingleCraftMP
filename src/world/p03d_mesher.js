@@ -37,12 +37,12 @@ function faceVisible(id,nid){
 function newBuf(){return {p:[],n:[],u:[],c:[],ix:[],vc:0};}
 function addQuad(b,x,y,z,F,uvr,br,lower){
   const u0=uvr[0],v0=uvr[1],u1=uvr[2],v1=uvr[3];
-  const uvs=[[u0,v0],[u1,v0],[u1,v1],[u0,v1]];
+  /* corners 0..3 are (u0,v0) (u1,v0) (u1,v1) (u0,v1); 6.58: pushed straight, no arrays made per quad */
   for(let i=0;i<4;i++){
     const V=F.verts[i];
     b.p.push(x+V[0],y+V[1]-(V[1]===1?lower:0),z+V[2]);
     b.n.push(F.n[0],F.n[1],F.n[2]);
-    b.u.push(uvs[i][0],uvs[i][1]);
+    b.u.push(i===1||i===2?u1:u0,i>=2?v1:v0);
     b.c.push(br[i],br[i],br[i]);
   }
   const s=b.vc;
@@ -55,12 +55,12 @@ function addQuad(b,x,y,z,F,uvr,br,lower){
    of water is there when you look out of it. (A one-sided face is simply not drawn from behind.) */
 function addQuadBack(b,x,y,z,F,uvr,br,lower){
   const u0=uvr[0],v0=uvr[1],u1=uvr[2],v1=uvr[3];
-  const uvs=[[u0,v0],[u1,v0],[u1,v1],[u0,v1]];
+  /* corners 0..3 are (u0,v0) (u1,v0) (u1,v1) (u0,v1); 6.58: pushed straight, no arrays made per quad */
   for(let i=0;i<4;i++){
     const V=F.verts[i];
     b.p.push(x+V[0],y+V[1]-(V[1]===1?lower:0),z+V[2]);
     b.n.push(-F.n[0],-F.n[1],-F.n[2]);
-    b.u.push(uvs[i][0],uvs[i][1]);
+    b.u.push(i===1||i===2?u1:u0,i>=2?v1:v0);
     b.c.push(br[i],br[i],br[i]);
   }
   const s=b.vc;
@@ -126,13 +126,25 @@ function addCross(b,x,y,z,d,ti){
 function meshChunk(ch){
   const bl=ch.bl,mt=ch.mt,x0=ch.cx*CH,z0=ch.cz*CH;
   const bufs={op:newBuf(),cut:newBuf(),wat:newBuf()};
+  /* 6.58: the eight chunks round this one, looked up once. A face, its shading and its light reach at most one block
+     over the edge, and getBlock built a key and searched the map for every such block. The answers are the same. */
+  const nb=[];
+  for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++)nb.push(i||j?chunks.get(ckey(ch.cx+i,ch.cz+j))||null:ch);
   const gb=(x,y,z)=>{
     if(y<0)return B.BEDROCK;
     if(y>=WH)return B.AIR;
-    if(x>=0&&x<CH&&z>=0&&z<CH)return bl[bidx(x,y,z)];
-    return getBlock(x0+x,y,z0+z);
+    if(x>=0&&x<CH&&z>=0&&z<CH)return bl[(x*WH+y)*CH+z];
+    if(x<-CH||x>=2*CH||z<-CH||z>=2*CH)return getBlock(x0+x,y,z0+z);
+    const i=x<0?0:x>=CH?2:1,j=z<0?0:z>=CH?2:1,n=nb[i*3+j];
+    return n?n.bl[((x-(i-1)*CH)*WH+y)*CH+(z-(j-1)*CH)]:B.AIR;
   };
-  const gm=(x,y,z)=>(y<0||y>=WH)?0:((x>=0&&x<CH&&z>=0&&z<CH)?mt[bidx(x,y,z)]:getMeta(x0+x,y,z0+z));
+  const gm=(x,y,z)=>{
+    if(y<0||y>=WH)return 0;
+    if(x>=0&&x<CH&&z>=0&&z<CH)return mt[(x*WH+y)*CH+z];
+    if(x<-CH||x>=2*CH||z<-CH||z>=2*CH)return getMeta(x0+x,y,z0+z);
+    const i=x<0?0:x>=CH?2:1,j=z<0?0:z>=CH?2:1,n=nb[i*3+j];
+    return n?n.mt[((x-(i-1)*CH)*WH+y)*CH+(z-(j-1)*CH)]:0;
+  };
   for(let lx=0;lx<CH;lx++)for(let lz=0;lz<CH;lz++)for(let y=0;y<WH;y++){
     const id=bl[bidx(lx,y,lz)];
     if(id===B.AIR)continue;
@@ -172,9 +184,15 @@ function meshChunk(ch){
   /* 6.26: the block light at every vertex (world/p03e_light.js) */
   const lt=ch.lt;
   if(lt){
-    const gl=(x,y,z)=>(y<0||y>=WH)?0:((x>=0&&x<CH&&z>=0&&z<CH)?lt[bidx(x,y,z)]:getLight(x0+x,y,z0+z));
+    const gl=(x,y,z)=>{                                     /* 6.58: the neighbours from nb, as gb */
+      if(y<0||y>=WH)return 0;
+      if(x>=0&&x<CH&&z>=0&&z<CH)return lt[(x*WH+y)*CH+z];
+      if(x<-CH||x>=2*CH||z<-CH||z>=2*CH)return getLight(x0+x,y,z0+z);
+      const i=x<0?0:x>=CH?2:1,j=z<0?0:z>=CH?2:1,n=nb[i*3+j];
+      return n&&n.lt?n.lt[((x-(i-1)*CH)*WH+y)*CH+(z-(j-1)*CH)]:0;
+    };
     let top=ch.ltTop;
-    for(const o of [[1,0],[-1,0],[0,1],[0,-1]]){const nb=chunks.get(ckey(ch.cx+o[0],ch.cz+o[1]));if(nb&&nb.lt&&nb.ltTop>top)top=nb.ltTop;}
+    for(const k of [7,1,5,3]){const n=nb[k];if(n&&n.lt&&n.ltTop>top)top=n.ltTop;}   /* the four side neighbours (+x, -x, +z, -z) */
     const lc=new Int8Array((CH+2)*(CH+2)*(WH+2)).fill(-2);
     bufLight(bufs.op,gl,gb,top,lc);bufLight(bufs.cut,gl,gb,top,lc);bufLight(bufs.wat,gl,gb,top,lc);
   }

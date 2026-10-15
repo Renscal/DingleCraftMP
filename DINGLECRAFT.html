@@ -88,6 +88,9 @@ select.mc-in{appearance:auto}
 #modal{z-index:20;background:rgba(0,0,0,.55)}
 #modal .panel{position:relative;max-width:min(calc(100% - 16px),600px)}
 #mclose{position:absolute;right:8px;top:8px;width:auto;margin:0;padding:3px 9px}
+#mlabel{position:absolute;top:8px;right:48px;width:30px;height:30px;box-sizing:border-box;padding:1px;cursor:pointer;background:#8b8b8b;border:2px solid;border-color:#373737 #fff #fff #373737}
+#mlabel[hidden]{display:none}
+#mlabel canvas{display:block;width:100%;height:100%;object-fit:contain;image-rendering:pixelated}
 .grow{display:flex}
 .slot{width:54px;height:54px;margin:1px;background:#8b8b8b;border:2px solid;
   border-color:#373737 #fff #fff #373737;display:flex;align-items:center;justify-content:center;cursor:pointer}
@@ -584,6 +587,7 @@ body.touch #cross{display:none}
 <div id="modal" class="ovl">
   <div class="panel">
     <button id="mclose" class="mc-btn small" onclick="closeModal()">✕</button>
+    <div id="mlabel" hidden title="Label: click with an item to show it on the chest"><canvas width="32" height="32"></canvas></div>
     <h2 id="mtitle">Inventory</h2>
     <div id="mbody"></div>
   </div>
@@ -921,6 +925,7 @@ body.touch #cross{display:none}
           <div class="krow"><b>Dragging</b> <span>drag left to share a stack out · drag right to place one each · double-click to gather · shift-drag to quick-move</span></div>
           <div class="krow"><b>Over a slot</b> <span>the wheel moves one item · <kbd data-k="hot1">1</kbd>–<kbd data-k="hot9">9</kbd> swaps with the hotbar · <kbd data-k="drop">Q</kbd> throws · click outside the window to throw</span></div>
           <div class="krow"><b>Creative</b> <span>middle click gives a full stack</span></div>
+          <div class="krow"><b>Chest label</b> <span>click the small slot beside a chest window's ✕ with an item to show it on the chest's sides (the item stays yours) · click it empty-handed, or right-click, to clear</span></div>
         </section>
         <section class="hsec" data-sec="ride" hidden>
           <h3>Vehicles &amp; mounts</h3>
@@ -1032,7 +1037,7 @@ THE SOFTWARE.
    ===================================================================== */
 'use strict';
 
-const GAME_VERSION = '6.62';
+const GAME_VERSION = '6.63';
 const RELEASE_LABEL = 'DingleCraft Multiplayer 2.0';   /* the public name of this game version (docs/RELEASING.md): GAME_VERSION stays the internal, monotonic number */
 var HIT_HOW=null,EXPL_BY=null;  /* damage attribution (PART 53) */
 var TP={id:'og',q:-1,qr:1,hr:false,busy:false,want:null,shadow:false,mods:[],live:[],og:null,ogR:null,ogF:null,ev:{},warm:null,devTexBase:null};  /* texture packs (PART 54) */
@@ -1960,12 +1965,12 @@ function faceVisible(id,nid){
 function newBuf(){return {p:[],n:[],u:[],c:[],ix:[],vc:0};}
 function addQuad(b,x,y,z,F,uvr,br,lower){
   const u0=uvr[0],v0=uvr[1],u1=uvr[2],v1=uvr[3];
-  const uvs=[[u0,v0],[u1,v0],[u1,v1],[u0,v1]];
+  /* corners 0..3 are (u0,v0) (u1,v0) (u1,v1) (u0,v1); 6.58: pushed straight, no arrays made per quad */
   for(let i=0;i<4;i++){
     const V=F.verts[i];
     b.p.push(x+V[0],y+V[1]-(V[1]===1?lower:0),z+V[2]);
     b.n.push(F.n[0],F.n[1],F.n[2]);
-    b.u.push(uvs[i][0],uvs[i][1]);
+    b.u.push(i===1||i===2?u1:u0,i>=2?v1:v0);
     b.c.push(br[i],br[i],br[i]);
   }
   const s=b.vc;
@@ -1978,12 +1983,12 @@ function addQuad(b,x,y,z,F,uvr,br,lower){
    of water is there when you look out of it. (A one-sided face is simply not drawn from behind.) */
 function addQuadBack(b,x,y,z,F,uvr,br,lower){
   const u0=uvr[0],v0=uvr[1],u1=uvr[2],v1=uvr[3];
-  const uvs=[[u0,v0],[u1,v0],[u1,v1],[u0,v1]];
+  /* corners 0..3 are (u0,v0) (u1,v0) (u1,v1) (u0,v1); 6.58: pushed straight, no arrays made per quad */
   for(let i=0;i<4;i++){
     const V=F.verts[i];
     b.p.push(x+V[0],y+V[1]-(V[1]===1?lower:0),z+V[2]);
     b.n.push(-F.n[0],-F.n[1],-F.n[2]);
-    b.u.push(uvs[i][0],uvs[i][1]);
+    b.u.push(i===1||i===2?u1:u0,i>=2?v1:v0);
     b.c.push(br[i],br[i],br[i]);
   }
   const s=b.vc;
@@ -2049,13 +2054,25 @@ function addCross(b,x,y,z,d,ti){
 function meshChunk(ch){
   const bl=ch.bl,mt=ch.mt,x0=ch.cx*CH,z0=ch.cz*CH;
   const bufs={op:newBuf(),cut:newBuf(),wat:newBuf()};
+  /* 6.58: the eight chunks round this one, looked up once. A face, its shading and its light reach at most one block
+     over the edge, and getBlock built a key and searched the map for every such block. The answers are the same. */
+  const nb=[];
+  for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++)nb.push(i||j?chunks.get(ckey(ch.cx+i,ch.cz+j))||null:ch);
   const gb=(x,y,z)=>{
     if(y<0)return B.BEDROCK;
     if(y>=WH)return B.AIR;
-    if(x>=0&&x<CH&&z>=0&&z<CH)return bl[bidx(x,y,z)];
-    return getBlock(x0+x,y,z0+z);
+    if(x>=0&&x<CH&&z>=0&&z<CH)return bl[(x*WH+y)*CH+z];
+    if(x<-CH||x>=2*CH||z<-CH||z>=2*CH)return getBlock(x0+x,y,z0+z);
+    const i=x<0?0:x>=CH?2:1,j=z<0?0:z>=CH?2:1,n=nb[i*3+j];
+    return n?n.bl[((x-(i-1)*CH)*WH+y)*CH+(z-(j-1)*CH)]:B.AIR;
   };
-  const gm=(x,y,z)=>(y<0||y>=WH)?0:((x>=0&&x<CH&&z>=0&&z<CH)?mt[bidx(x,y,z)]:getMeta(x0+x,y,z0+z));
+  const gm=(x,y,z)=>{
+    if(y<0||y>=WH)return 0;
+    if(x>=0&&x<CH&&z>=0&&z<CH)return mt[(x*WH+y)*CH+z];
+    if(x<-CH||x>=2*CH||z<-CH||z>=2*CH)return getMeta(x0+x,y,z0+z);
+    const i=x<0?0:x>=CH?2:1,j=z<0?0:z>=CH?2:1,n=nb[i*3+j];
+    return n?n.mt[((x-(i-1)*CH)*WH+y)*CH+(z-(j-1)*CH)]:0;
+  };
   for(let lx=0;lx<CH;lx++)for(let lz=0;lz<CH;lz++)for(let y=0;y<WH;y++){
     const id=bl[bidx(lx,y,lz)];
     if(id===B.AIR)continue;
@@ -2095,9 +2112,15 @@ function meshChunk(ch){
   /* 6.26: the block light at every vertex (world/p03e_light.js) */
   const lt=ch.lt;
   if(lt){
-    const gl=(x,y,z)=>(y<0||y>=WH)?0:((x>=0&&x<CH&&z>=0&&z<CH)?lt[bidx(x,y,z)]:getLight(x0+x,y,z0+z));
+    const gl=(x,y,z)=>{                                     /* 6.58: the neighbours from nb, as gb */
+      if(y<0||y>=WH)return 0;
+      if(x>=0&&x<CH&&z>=0&&z<CH)return lt[(x*WH+y)*CH+z];
+      if(x<-CH||x>=2*CH||z<-CH||z>=2*CH)return getLight(x0+x,y,z0+z);
+      const i=x<0?0:x>=CH?2:1,j=z<0?0:z>=CH?2:1,n=nb[i*3+j];
+      return n&&n.lt?n.lt[((x-(i-1)*CH)*WH+y)*CH+(z-(j-1)*CH)]:0;
+    };
     let top=ch.ltTop;
-    for(const o of [[1,0],[-1,0],[0,1],[0,-1]]){const nb=chunks.get(ckey(ch.cx+o[0],ch.cz+o[1]));if(nb&&nb.lt&&nb.ltTop>top)top=nb.ltTop;}
+    for(const k of [7,1,5,3]){const n=nb[k];if(n&&n.lt&&n.ltTop>top)top=n.ltTop;}   /* the four side neighbours (+x, -x, +z, -z) */
     const lc=new Int8Array((CH+2)*(CH+2)*(WH+2)).fill(-2);
     bufLight(bufs.op,gl,gb,top,lc);bufLight(bufs.cut,gl,gb,top,lc);bufLight(bufs.wat,gl,gb,top,lc);
   }
@@ -4615,6 +4638,7 @@ function openModal(kind,bek){
     addInvSlots(body);
   }
   M.style.display='flex';
+  chestLabelSlot();                                        /* 6.63: the label slot beside the X (chests only) */
   redrawModal();
 }
 function closeModal(skipLock){
@@ -4630,6 +4654,7 @@ function closeModal(skipLock){
   }
   if(DIM==='puppet'||(MODAL.be&&MODAL.be.t==='stash'))mpOnModalClose(MODAL.kind,MODAL.be,MODAL.bek);
   MODAL.kind=null;MODAL.slots=[];MODAL.grid=null;MODAL.be=null;
+  chestLabelSlot();
   imReset();IM.hover=null;
   $('modal').style.display='none';
   redrawHotbar();
@@ -6186,7 +6211,7 @@ function frame(t){
     updateDisaster(run?dt:0);
     if(playing&&run)updateStocks(dt);
     trickFrame(run?dt:0);
-    if(playing&&run){if(DIM==='over'){processVillages(dt);processParks(dt);processWD(dt);processCells(dt);tickTitans(dt);processRoosts(dt);tickMalg(dt);tickCompass(dt);}tickSpawners(dt);updateBossBar();updateXPHud();tickFlow(dt);updateArmorHud();tickDragons(dt);tickTrail(dt);tickBPass(dt);updateCut(dt);tickWin(dt);tickNuke(dt);tickMega(dt);tickTerr(dt);tickXray(dt);tickGadgets(dt);tickBig(dt);tickDisp(dt);tickLawns(dt);tickCine(dt);tickSnail(dt);tickScare(dt);tickHorror(dt);processNether(dt);processAether(dt);processPuppet(dt);tickPortal(dt);tickPCompass(dt);processCrea(dt);}
+    if(playing&&run){if(DIM==='over'){processVillages(dt);processParks(dt);processWD(dt);processCells(dt);tickTitans(dt);processRoosts(dt);tickMalg(dt);tickCompass(dt);}tickSpawners(dt);updateBossBar();updateXPHud();tickFlow(dt);updateArmorHud();tickDragons(dt);tickTrail(dt);tickBPass(dt);updateCut(dt);tickWin(dt);tickNuke(dt);tickMega(dt);tickTerr(dt);tickXray(dt);tickGadgets(dt);tickBig(dt);tickDisp(dt);tickChestLabels();tickLawns(dt);tickCine(dt);tickSnail(dt);tickScare(dt);tickHorror(dt);processNether(dt);processAether(dt);processPuppet(dt);tickPortal(dt);tickPCompass(dt);processCrea(dt);}
     const hideCur=playing&&!paused&&P&&!P.dead&&!modalOpen();
     if(hideCur!==curHidden){curHidden=hideCur;$('gl').style.cursor=hideCur?'none':'default';}
     engineSnd(!paused&&!!P.ride&&(P.ride.t==='car'||P.ride.t==='plane'),P.ride?P.ride.spd:0);
@@ -9007,7 +9032,7 @@ const ENCH_DEFS={
   steal:{name:'Lifesteal',max:3,cls:'sword'},
   knock:{name:'Knockback',max:3,cls:'sword'},
   eff:{name:'Efficiency',max:5,cls:'dig'},
-  fort:{name:'Fortune',max:3,cls:'dig'},
+  fort:{name:'Fortune',max:3,cls:['dig','hoe']},   /* 6.63: on a hoe, more from a ripe crop (cropYield) */
   power:{name:'Power',max:5,cls:'bow'},
   unb:{name:'Unbreaking',max:3,cls:'any'},
   viral:{name:'Viral',max:5,cls:'sub'},
@@ -9022,6 +9047,7 @@ function enchClassOf(st){
   if(d&&d.bow)return 'bow';
   if(d&&d.subbtn)return 'sub';
   if(d&&d.tool)return d.tool.type==='sword'?'sword':'dig';
+  if(d&&d.hoe)return 'hoe';                   /* 6.63: Unbreaking and Fortune */
   return null;
 }
 function enchName(st){
@@ -9038,7 +9064,7 @@ function rollOffers(st){
   if(!cls)return [];
   const pool=[];
   for(const [k,d] of Object.entries(ENCH_DEFS)){
-    if(d.cls!=='any'&&d.cls!==cls)continue;
+    const cs=[].concat(d.cls);if(!cs.includes('any')&&!cs.includes(cls))continue;
     const cur=(st.ench&&st.ench[k])||0;
     if(cur<d.max)pool.push(k);
   }
@@ -11392,7 +11418,16 @@ const SETTINGS_P=loadSettings();   /* the title (tmBoot) waits for it: the name 
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Travel light',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Faster all round',lines:[
+    '<b>FASTER ALL ROUND.</b> No new features. Just less waiting.',
+    '<b>Refreshing a server’s page.</b> Every time you pressed F5 on a server’s address, the server sent the whole game again, because it told your browser to check for a new copy but never gave it a way to tell it already had one. Now it does: a refresh that finds nothing new costs a few hundred bytes instead of the whole page. When the page does have to travel, it travels compressed, at about half its size.',
+    '<b>Building the world.</b> Turning blocks into something your graphics card can draw got a fifth faster. Each chunk used to ask about its neighbours one block at a time; now it looks them up once. Flying the plane at full speed or loading a world should stall a little less. The world looks exactly the same: we compared the new meshes with the old ones, chunk by chunk, and they are identical.',
+    '<b>Fairer harvests.</b> A ripe wheat now always gives at least one seed back (1 wheat and 1 to 3 seeds), so a farm can no longer starve itself on bad luck. Carrots give 2 or 3 instead of 2 to 4, and hemlock 2 or 3 roots instead of 1 to 3, so the two roots finally agree with each other. Break a crop before it is ripe and you still get one of its seed back.',
+    '<b>Chest labels.</b> Ten identical chests and one of them has your diamonds. Now there is a small slot beside the ✕ of every chest window: click it with an item on your cursor and the chest wears a picture of that item on all four of its sides, for everyone on the server to see. The item stays on your cursor (it is a picture, not a copy: nobody has ever duped anything with it). Click the slot with an empty hand to take the label off.',
+    '<b>Enchanted hoes.</b> Hoes go on the enchanting table at last, and they take two enchantments. <b>Unbreaking</b> makes one last longer, as it does on everything else. <b>Fortune</b> grows the harvest: Fortune I gives about a third more from every ripe crop, Fortune II about two thirds more, and Fortune III exactly doubles it, seeds included. It counts when the crop is broken with the hoe in your hand, and an unripe crop still gives just its one seed back.',
+    '<b>Behind the curtain.</b> The test run that guards every release takes about two thirds of the time it did. It now runs several suites at once, the longest first. Along the way it found a test that failed one time in seven because the game tidied away the chunks it was building in. The test was fixed, not the game, which was right all along.',
+  ]},
+ {v:'6.62',label:'DingleCraft Multiplayer 2.0',title:'Travel light',lines:[
     '<b>TRAVEL LIGHT.</b> The game used to arrive as one 42.7 MB file, 37 MB of which was Hyperreal art: every wrinkle, every pore, every damp brick, packed in whether you wanted to look at them or not. OG players carried all of it around and never once opened the suitcase. The game is now 5.9 MB.',
     '<b>Where the art went.</b> Next door. It lives in an art folder beside the game, and the game only fetches it the first time you switch to Hyperreal. Stay in OG and you never download it, never unpack it, and the game starts with a fifth of the memory it used to.',
     '<b>Hyperreal still looks exactly as cursed.</b> Same textures, same pixels: we put the old and new versions side by side and the only differences were the clouds, which move.',
@@ -16386,20 +16421,27 @@ const CROPS={
   [B.HEMLOCK]:{name:'hemlock',seed:IT.HROOT, pic:'hemlock'}};
 /* a crop's growth stage, 0 (just planted) to 7 (ripe), from its meta */
 function cropStage(meta){return 7-(meta&7);}
-/* what a crop gives when a player breaks it: [first stack, ...more stacks] (first is what breakBlock itself drops) */
-function cropYield(id,stage,rnd){
+/* what a crop gives when a player breaks it: [first stack, ...more stacks] (first is what breakBlock itself drops).
+   Ripe (6.63): wheat 1 and 1-3 seeds, carrots 2-3, hemlock 2-3 roots. Unripe: one of its seed.
+   fort: the Fortune level of the hoe that broke it (6.63): a ripe harvest is multiplied by 1 + fort/3 (Fortune III doubles
+   it), every stack, the fraction rounded up by chance so the average is exact. */
+function cropYield(id,stage,rnd,fort){
   const R=rnd||Math.random,ripe=stage>=7;
-  if(id===B.WHEAT)return ripe?[{id:IT.WHEAT,count:1},{id:IT.SEEDS,count:Math.floor(R()*4)}]:[{id:IT.SEEDS,count:1}];
-  if(id===B.CARROTS)return ripe?[{id:IT.CARROT,count:2+Math.floor(R()*3)}]:[{id:IT.CARROT,count:1}];
-  return ripe?[{id:IT.HROOT,count:1+Math.floor(R()*3)}]:[{id:IT.HROOT,count:1}];
+  const Y=id===B.WHEAT?(ripe?[{id:IT.WHEAT,count:1},{id:IT.SEEDS,count:1+Math.floor(R()*3)}]:[{id:IT.SEEDS,count:1}])
+    :id===B.CARROTS?(ripe?[{id:IT.CARROT,count:2+Math.floor(R()*2)}]:[{id:IT.CARROT,count:1}])
+    :(ripe?[{id:IT.HROOT,count:2+Math.floor(R()*2)}]:[{id:IT.HROOT,count:1}]);
+  const lv=Math.max(0,Math.min(3,fort|0));
+  if(ripe&&lv)for(const st of Y){const x=st.count*(1+lv/3),n=Math.floor(x+1e-9);st.count=n+(R()<x-n-1e-9?1:0);}
+  return Y;
 }
 /* breakBlock's drop for a crop. The block is already air: FARM.last (farmNote) says where it stood and how grown it was.
    A ripe one counts as a harvest for the farmland under it. */
-function cropDrop(){
+function cropDrop(held){
   const L=FARM.last;
   if(!L)return null;
   FARM.last=null;
-  const Y=cropYield(L.id,L.stage);
+  const h=held&&DEFS[held.id]&&DEFS[held.id].hoe?held:null;           /* 6.63: Fortune counts on a hoe only */
+  const Y=cropYield(L.id,L.stage,null,h&&h.ench?h.ench.fort|0:0);
   for(let i=1;i<Y.length;i++)if(Y[i].count>0)spawnDrop(L.x+0.5,L.y+0.4,L.z+0.5,Y[i],(Math.random()-0.5)*1.5,2.2,(Math.random()-0.5)*1.5);
   if(L.stage>=7)farmHarvest(L.x,L.y-1,L.z);
   return Y[0];
@@ -16940,6 +16982,88 @@ function catchIn(o,now){
 }
 /* forget everything (a new world) */
 function catchReset(){CATCH.clock=0;CATCH.seen.clear();CATCH.last=null;CATCH.due.clear();}
+/* ----- chest labels (6.63): a picture of an item on a chest's four sides -----
+   The chest window has a small slot beside its X. Clicked with an item on the cursor, the slot takes a picture of that
+   item (its id, as be.lbl on the chest's block entity) and the item stays on the cursor: a label is never an item, never
+   in be.inv, never dropped (scatterBE drops be.inv only), so it cannot duplicate anything. Clicked with an empty cursor,
+   or right-clicked, it clears. A label is saved and shared like the rest of the chest (the whole block entity travels).
+   In the world: four flat pictures, one centred on each side (not the lid or the bottom), drawn with the item's own
+   icon as a dropped item shows it, built within CHL_NEAR blocks of the player and rebuilt when the label changes. */
+const CHLM=new Map();                              /* block key -> {G: THREE.Group, id} */
+const CHL_MAT={};                                  /* item id -> the material all its pictures share */
+const CHL_NEAR=48,CHL_SIZE=0.5,CHL_OUT=0.502;
+/* the material for one item's picture: its icon, see-through where the icon is */
+function chlMat(id){
+  if(CHL_MAT[id])return CHL_MAT[id];
+  return CHL_MAT[id]=new THREE.MeshBasicMaterial({map:iconTex(id).map,transparent:true,alphaTest:0.5});
+}
+/* is this a label a chest may show? */
+const chlOK=id=>Number.isInteger(id)&&id>0&&!!DEFS[id];
+/* build (or take away) the pictures on the chest at x,y,z, from what its block entity says now */
+function chestLabelRefresh(x,y,z){
+  const k=bkey(x,y,z),cur=CHLM.get(k);
+  if(cur){scene.remove(cur.G);CHLM.delete(k);}
+  const be=blockEnts.get(k);
+  if(!be||be.t!=='chest'||!chlOK(be.lbl)||getBlock(x,y,z)!==B.CHEST)return;
+  const G=new THREE.Group(),geo=new THREE.PlaneGeometry(CHL_SIZE,CHL_SIZE),mat=chlMat(be.lbl);
+  for(let i=0;i<4;i++){                            /* +z, +x, -z, -x: each faces out of its side */
+    const m=new THREE.Mesh(geo,mat),a=i*Math.PI/2;
+    m.position.set(Math.sin(a)*CHL_OUT,0,Math.cos(a)*CHL_OUT);
+    m.lookAt(Math.sin(a)*2,0,Math.cos(a)*2);
+    G.add(m);
+  }
+  G.position.set(x+0.5,y+0.5,z+0.5);
+  G.name='chestLabel';
+  scene.add(G);
+  CHLM.set(k,{G,id:be.lbl});
+}
+/* every half second or so: pictures for the labelled chests near the player, none for the rest */
+function tickChestLabels(){
+  if(frameCount%30!==0)return;
+  for(const [k,be] of blockEnts){
+    if(be.t!=='chest')continue;
+    const p=dimP(k);
+    if(!p)continue;
+    const x=+p[0],y=+p[1],z=+p[2],near=Math.hypot(x+0.5-P.x,z+0.5-P.z)<CHL_NEAR,want=near&&chlOK(be.lbl)&&!!chunkAt(x,z);
+    const have=CHLM.get(k);
+    if(want&&(!have||have.id!==be.lbl||!have.G.parent))chestLabelRefresh(x,y,z);
+    else if(!want&&have){scene.remove(have.G);CHLM.delete(k);}   /* far, unlabelled or unloaded: just take them away */
+  }
+  for(const [k,h] of CHLM){                        /* the chest is gone, or in another dimension now */
+    const be=blockEnts.get(k),p=dimP(k);
+    if(!be||!p||be.t!=='chest'||getBlock(+p[0],+p[1],+p[2])!==B.CHEST){scene.remove(h.G);CHLM.delete(k);}
+  }
+}
+/* the slot beside the chest window's X: shown for a chest only, the X's own size, the label's picture in it */
+function chestLabelSlot(){
+  const el=$('mlabel');
+  if(!el)return;
+  const be=MODAL.kind==='chest'?MODAL.be:null;
+  el.hidden=!be;
+  if(!be)return;
+  const x=$('mclose'),w=(x&&x.offsetWidth)||30,h=(x&&x.offsetHeight)||30;   /* exactly the X's size, at any UI scale */
+  el.style.width=w+'px';el.style.height=h+'px';el.style.right=(8+w+4)+'px';
+  const cv=el.firstElementChild||el.firstChild;
+  if(cv&&cv.getContext){const g=cv.getContext('2d');g.imageSmoothingEnabled=false;g.clearRect(0,0,cv.width,cv.height);
+    if(chlOK(be.lbl)){const ic=getIcon(be.lbl);if(ic)g.drawImage(ic,0,0,cv.width,cv.height);}}
+  el.title=chlOK(be.lbl)?'Label: '+DEFS[be.lbl].name+' (click with an empty hand to clear)':'Label: click with an item to show it on the chest';
+}
+/* a click on that slot: an item on the cursor labels the chest with it (the item stays on the cursor); an empty cursor,
+   or the right button, clears the label */
+function chestLabelClick(right){
+  const be=MODAL.kind==='chest'?MODAL.be:null;
+  if(!be)return false;
+  if(!right&&cursorStack&&chlOK(cursorStack.id))be.lbl=cursorStack.id;else delete be.lbl;
+  const p=MODAL.bek&&dimP(MODAL.bek);
+  if(p)chestLabelRefresh(+p[0],+p[1],+p[2]);
+  chestLabelSlot();playS('click');
+  return true;
+}
+{
+  const el=$('mlabel');
+  if(el){el.addEventListener('pointerdown',ev=>{ev.preventDefault();ev.stopPropagation();chestLabelClick(ev.button===2);});
+    el.addEventListener('contextmenu',ev=>ev.preventDefault());}
+}
 /* ----- block light (6.26): every torch counts ----- */
 /* The six nearest torches used to be the only ones that lit anything (a pool of six point lights). Now light is a
    property of the world. Beside its blocks a chunk keeps a light value per cell (ch.lt, 0 to 15). A torch gives 14, lava
@@ -40595,7 +40719,7 @@ if(typeof window==='undefined'||typeof __VOXTEST!=='undefined'){
   window.__vox={...CREX,...PGEX,...MGEX,...TPEX,chatSubmit,CHAT,chatPush,sysMsg,openChat,closeChat,chatKey,renderChat,renderTab,tickChatHud,
     pcmpCycle,pcmpPlayers,tickPCompass,getPC:()=>P.pcmpT,FLOWER_IDS,bioFlower,primeTNT,getLASTDMG:()=>LASTDMG,mouseFilter,MF,
     DEFS,calcCraft,mkResult,takeCraft,invAddTo,invConsume,invCount,stackMax,canHarvest,blockDrop,RECIPES,GROUPS,FUELS,SMELT,terrainInfo,hashSeed,heldStack,damagePlayer,explode,TOUCH,startNewWorld,quitToTitle,saveToStorage,loadWorldByName,applySave,snapshot,
-    MINE,breakTime,toolId,raycastB,farmWild,FARM_WILD,SPAWN,spawnRoom,spawnDark,spawnClear,spawnOK,spawnTry,mobsTick,fireLaser,laserBeam,eyePos,lookDir,GR_DEF,GR_LABELS,isPaused:()=>paused,CATCH,catchTick,catchChunk,catchStamp,farmCatch,treeCatch,furnaceCatch,furnaceStep,catchIn,catchOut,catchClockIn,catchSteps,getSky,skyDarken,countMobs,spawnChunks,mobsDespawn,spawnOKP,TREE,TREE_KINDS,treeKindOf,treeShape,treeGrow,treeUse,treeTick,leafDrop,leafHeld,isLogId,isLeafId,skyOpen,stackName,PSN,psnDraw,psnSplit,psnMoved,psnAdd,psnCraft,psnHit,psnBite,spawnBullet,updateBullet,bulletPass,puSpawn,puUpdate,psnName,fxPoison,fxTick,fxPoisoned,breakBlock,genChunk,FARM,FARM_RECIPE_N,CROPS,cropStage,cropYield,farmUse,farmTick,farmHarvest,wcanUses,getMeta,setLastDmg:o=>{LASTDMG=o;},DIFF_NAMES,diffKey,diffLevel,diffCore,diffMobDmg,diffStarveFloor,diffSet,specStart,specStop,diffDeathUI,tgrDiff,grToggle,grFromCreate,respawn,die,armorPixels,armorMat,armorLayer,skinArm,SKINS,getHandG:()=>handG,ARM_M,ARMOR_TEX,ARMOR_GROW,skinModel,syncArmorModel,armorIcons,armorPts,updateArmorHud,drawStats,PIX,dimOn,dimEvict,dayRamp,dayLight,dayElev,sunUp,DAY_LEN,critNow,critFx,CRIT_MUL,doorId,toggleDoor,setPLock:v=>{usePLock=!!v;},meshChunk,chunkAt,dropSel,dropMe,DROP_WAIT,LGT,lightEmit,lightAt:getLight,lightEdit,lightChunk,lightFlood,lightTick,lightDay,bufLight,blightObc,blightPatch,getMats:()=>({op:matOp,cut:matCut,wat:matWat}),getTLIGHTS:()=>TLIGHTS,LIQ,isLiq,getMeta,liqAmt,liqHeight,liqTop,liqFlow,liqWake,liqCell,liqStep,liqDirs,liqCanEnter,lavaWaterCheck,liqRule,SKINS,SKIN_PX,SKIN_BOXES,skinFaces,skinCorners,skinBoxData,skinLegacyCopies,skinCheck,skinBytes,skinModel,skinSet,skinOwn,skinPaintDefault,skinBoot,mkPlayerModel,getPlModel:()=>plModel,syncArmorModel,IM,stackPart,imDown,imOver,imUp,imWheel,imOutside,imKey,imReset,imCollectAll,slotClick,quickMove,getCursor:()=>cursorStack,setCursor:v=>{cursorStack=v;},getMODAL:()=>MODAL,DBG,INHAB,dbgText,dbgSection,dbgFacing,dbgDifficulty,dbgMemory,dbgKeyDown,dbgKeyUp,dbgBoxes,dbgBorders,dbgTick,dbgSaveFields,dbgLoad,getWAGE:()=>WAGE,setWAGE:v=>{WAGE=+v;},getDebugOn:()=>debugOn,getScene:()=>scene,openModal,closeModal,respawn,ensureBE,spawnMob,spawnCar,spawnSkate,setBlock,getBlock,frameStep:t=>frame(t),startDisaster,endDisaster,igniteAt,getDIS:()=>DIS,getMKT:()=>MKT,STOX,stoxMigrate,getTRICK:()=>TRICK,vCell,openDlg,closeDlg,dlgPick,getDLG:()=>({open:dlgOpen,node:DLGN,opts:LASTOPTS.map(o=>o.t),e:DLGE}),getVSEEN:()=>VSEEN,pcBuy,pcSell,pcDeposit,pcWithdraw,openPC,closePC,pcPL,openCas,closeCas,casSpin,bjDeal,bjHit,bjStand,bjDouble,getBJ:()=>CASBJ,getCAS:()=>casOpen,pCell,spawnCart,colInfo,openDSel,closeDSel,dselPick,spawnXP,openEnch,closeEnch,enchApply,breakTime,damageHeld,enchName,hurtMob,spawnMob,blockEnts,MOBT,toolId,doSleep,spawnBoat,equipArmor,armorPts,armorAbsorb,armorId,sortInv,tickFlow,flowPush,getFLOWQ:()=>FLOWQ,pickMob,dragonFire,storeBuy,buyDB,givePlayer,openStore,closeStore,buildHat,powActive,powUnlock,powToggle,openPow,closePow,POW,fireLaser,rstCell,getRSEEN:()=>RSEEN,getTITQ:()=>TITQ,getDEMON:()=>DEMON,getCUT:()=>CUT,getWIN:()=>WIN,endCut,winHome,demonAY,cmpSelect,cmpFind,getCMP:()=>CMP,openCmp,closeCmp,nukeExplode,getSHAKE:()=>SHAKE,getNUKE:()=>NUKE,EGG_BASE:250,EGG_MOBS:()=>EGG_MOBS,GR,grToggle,setRD,getRD:()=>RD,saveSettings,loadSettings,setTime:t=>{timeOfDay=t;},getTime:()=>timeOfDay,wdCell,lsCell,getWDSEEN:()=>WDSEEN,getLSSEEN:()=>LSSEEN,setTime:t=>{timeOfDay=t;},getTime:()=>timeOfDay,getLight:()=>({amb:ambL?ambL.intensity:0,fb:fullbright}),setBright:b=>{fullbright=!!b;},sunUp,getENCH:()=>ENCHUI,getSPW:()=>SPW,dungeonBuild,rollOffers,enchCost,getEnchOpen:()=>enchOpen,getDSEL:()=>dselOpen,getPSEEN:()=>PSEEN,PATCH_NOTES,PATCH_LOG,openPatch,closePatch,renderPatch,openHelp,closeHelp,getHelp:()=>helpOpen,KB,KB_ACTS,KB_FIXED,kbEv,kbSet,kbReset,kbLoad,kbSaveVal,kbName,kbCode,kbRebuild,kbSec,kbRender,kbHelp,kbMouse,getRP:()=>RP,RIDE_SEATED,rideSeatPos,rideSeat,rideHeadYaw,updatePlane,setLock,getLock:()=>usePLock,toggleXray,xrayRefresh,getXR:()=>({on:XR.on,n:XR.g?XR.g.children.length:0}),setDim,getDim:()=>DIM,nCol,aCol,lavaWaterCheck,tryIgnitePortal,travelNether,travelAether,nfCell,asCell,getNSEEN:()=>NSEEN,getASEEN:()=>ASEEN,getINFKILL:()=>INFKILL,getVALKILL:()=>VALKILL,GADGET_IDS,randGadget,getGDG:()=>({...GDG}),getJET:()=>JETF,getGRAP:()=>GRAP?{...GRAP}:null,countBlockNear:(id,y0,y1)=>{let n=0;for(const [k,ch] of chunks){if(keyDim(k)!==DIM)continue;const bl=ch.bl;for(let i=0;i<bl.length;i++){if(bl[i]!==id)continue;const y=((i-(i%CH))/CH)%WH;if(y>=y0&&y<=y1)n++;}}return n;},getPatch:()=>patchOpen,modalOpen,GAME_VERSION,RELEASE_LABEL,TOOL3D,toolIdParts,mkTool3D,refreshHand,spawnDrop,getHand:()=>({kind:handKind,n:handG?handG.children.length:0,t3d:!!(handG&&handG.children[0]&&handG.children[0].isT3D)}),getArmTool:()=>plModel?(plModel._toolId||0):0,setCam:n=>{camMode=n;},WPN3D,b64bytes,gunIdParts,mkWpn3D,wpnRaw,draw3DIcon,setShaders,getSHD:()=>({on:SHD.on,ready:!!SHD.rt}),openSet,closeSet,getSet:()=>setOpen,getSnd:()=>soundOn,setSnd:v=>{soundOn=!!v;},getMus:()=>musicOn,setMus:v=>{musicOn=!!v;},getUG:()=>ugT,throwSubBtn,mkSkateMesh,applyShadows,getShadow:()=>(renderer&&renderer.shadowMap?!!renderer.shadowMap.enabled:false),STORE_CAT,pauseGame,resumeGame,getPaused:()=>!!paused,armorAccepts,syncArmorModel,getArmVis:()=>plModel&&plModel._arm?plModel._arm.map(g=>g[0].visible):null,openTerrAt:(x,y,z)=>{ensureBE(x,y,z,'terr');openTerr(bkey(x,y,z));},closeTerr,getTG:()=>({on:terrOpen,w:TG.w,h:TG.h,hp:TG.hp,px:TG.px,py:TG.py,hasT:!!TG.t}),terrTile:(x,y)=>TG.t?TG.t[y*TG.w+x]:-1,terrPoke:(x,y,v)=>{if(TG.t)TG.t[y*TG.w+x]=v;},saveTerr,terrCraft,TCRAFTS,terrGive:(k,n)=>{if(k==='ore')TG.ore+=n;else TG.binv[k]=(TG.binv[k]||0)+n;},terrWarp:(x,y)=>{TG.px=x;TG.py=y;TG.vx=TG.vy=0;TG.fallV=0;},b64enc,blockAliveRoll,blockComesAlive,getFISHB:()=>FISHB?{x:FISHB.x,y:FISHB.y,z:FISHB.z,inWater:FISHB.inWater,bite:FISHB.bite}:null,fishForceBite:()=>{if(FISHB){FISHB.bite=1.2;}},dispUse,setFigChance:v=>{FIG_CHANCE=v;},getDISPM:()=>DISPM.size,lawnCheck,getLWN:()=>LWN.size,stampCinema,openCine,closeCine,cineSelect,cineEnter,getCIN:()=>({on:cineOpen,mode:CIN.mode,m:CIN.m,res:CIN.res}),getM8:()=>M8LAST,getSNL:()=>SNL&&!SNL.dead?{x:SNL.x,y:SNL.y,z:SNL.z,on:SNL_ON}:{on:SNL_ON},snailReset:()=>{if(SNL)removeEnt(SNL);SNL=null;SNL_ON=false;},snailWarp:(x,y,z)=>{if(SNL&&!SNL.dead){SNL.x=x;SNL.y=y;SNL.z=z;SNL.vx=SNL.vy=SNL.vz=0;}},spawnPlane,megaNuke,nukeDrop,nukeSealed,forceChunksNear,surfaceTop,getNARM:()=>({t:NARM.t,armed:!!NARM.e}),setNARM:t=>{if(NARM.e)NARM.t=t;},getNUKES:()=>NUKES.map(n=>({x:n.x,y:n.y,z:n.z,d:n.d})),nukeSpawnBomb:(x,y,z)=>{spawnABomb(x,y,z,0,0);NARM.e=entities[entities.length-1];NARM.t=20;NARM.sir=0;},getSCARE:()=>({t:SCARE.t,kind:SCARE.kind}),setGhostChance:v=>{GHOST_CHANCE=v;},spawnGhost,setGameSpeed:v=>{GAMESPD=clamp(+v,0.1,1);},getGameSpeed:()=>GAMESPD,look,drainLook,getYaw:()=>P?P.yaw:0,getPitch:()=>P?P.pitch:0,getHorror:()=>({ghosts:entities.filter(e=>e.t==='ghost'&&!e.dead).length}),getTGX:()=>({binv:{...TG.binv},ore:TG.ore,pick:TG.pick,sword:TG.sword,won:!!TG.won,craft:!!TG.craft}),
+    MINE,breakTime,toolId,raycastB,farmWild,FARM_WILD,SPAWN,spawnRoom,spawnDark,spawnClear,spawnOK,spawnTry,mobsTick,fireLaser,laserBeam,eyePos,lookDir,GR_DEF,GR_LABELS,isPaused:()=>paused,CHLM,chestLabelRefresh,chestLabelClick,chestLabelSlot,tickChestLabels,autoSaveT:v=>{if(typeof v==='number')autoT=v;return autoT;},CATCH,catchTick,catchChunk,catchStamp,farmCatch,treeCatch,furnaceCatch,furnaceStep,catchIn,catchOut,catchClockIn,catchSteps,getSky,skyDarken,countMobs,spawnChunks,mobsDespawn,spawnOKP,TREE,TREE_KINDS,treeKindOf,treeShape,treeGrow,treeUse,treeTick,leafDrop,leafHeld,isLogId,isLeafId,skyOpen,stackName,PSN,psnDraw,psnSplit,psnMoved,psnAdd,psnCraft,psnHit,psnBite,spawnBullet,updateBullet,bulletPass,puSpawn,puUpdate,psnName,fxPoison,fxTick,fxPoisoned,breakBlock,genChunk,FARM,FARM_RECIPE_N,CROPS,cropStage,cropYield,farmUse,farmTick,farmHarvest,wcanUses,getMeta,setLastDmg:o=>{LASTDMG=o;},DIFF_NAMES,diffKey,diffLevel,diffCore,diffMobDmg,diffStarveFloor,diffSet,specStart,specStop,diffDeathUI,tgrDiff,grToggle,grFromCreate,respawn,die,armorPixels,armorMat,armorLayer,skinArm,SKINS,getHandG:()=>handG,ARM_M,ARMOR_TEX,ARMOR_GROW,skinModel,syncArmorModel,armorIcons,armorPts,updateArmorHud,drawStats,PIX,dimOn,dimEvict,dayRamp,dayLight,dayElev,sunUp,DAY_LEN,critNow,critFx,CRIT_MUL,doorId,toggleDoor,setPLock:v=>{usePLock=!!v;},meshChunk,chunkAt,dropSel,dropMe,DROP_WAIT,LGT,lightEmit,lightAt:getLight,lightEdit,lightChunk,lightFlood,lightTick,lightDay,bufLight,blightObc,blightPatch,getMats:()=>({op:matOp,cut:matCut,wat:matWat}),getTLIGHTS:()=>TLIGHTS,LIQ,isLiq,getMeta,liqAmt,liqHeight,liqTop,liqFlow,liqWake,liqCell,liqStep,liqDirs,liqCanEnter,lavaWaterCheck,liqRule,SKINS,SKIN_PX,SKIN_BOXES,skinFaces,skinCorners,skinBoxData,skinLegacyCopies,skinCheck,skinBytes,skinModel,skinSet,skinOwn,skinPaintDefault,skinBoot,mkPlayerModel,getPlModel:()=>plModel,syncArmorModel,IM,stackPart,imDown,imOver,imUp,imWheel,imOutside,imKey,imReset,imCollectAll,slotClick,quickMove,getCursor:()=>cursorStack,setCursor:v=>{cursorStack=v;},getMODAL:()=>MODAL,DBG,INHAB,dbgText,dbgSection,dbgFacing,dbgDifficulty,dbgMemory,dbgKeyDown,dbgKeyUp,dbgBoxes,dbgBorders,dbgTick,dbgSaveFields,dbgLoad,getWAGE:()=>WAGE,setWAGE:v=>{WAGE=+v;},getDebugOn:()=>debugOn,getScene:()=>scene,openModal,closeModal,respawn,ensureBE,spawnMob,spawnCar,spawnSkate,setBlock,getBlock,frameStep:t=>frame(t),startDisaster,endDisaster,igniteAt,getDIS:()=>DIS,getMKT:()=>MKT,STOX,stoxMigrate,getTRICK:()=>TRICK,vCell,openDlg,closeDlg,dlgPick,getDLG:()=>({open:dlgOpen,node:DLGN,opts:LASTOPTS.map(o=>o.t),e:DLGE}),getVSEEN:()=>VSEEN,pcBuy,pcSell,pcDeposit,pcWithdraw,openPC,closePC,pcPL,openCas,closeCas,casSpin,bjDeal,bjHit,bjStand,bjDouble,getBJ:()=>CASBJ,getCAS:()=>casOpen,pCell,spawnCart,colInfo,openDSel,closeDSel,dselPick,spawnXP,openEnch,closeEnch,enchApply,breakTime,damageHeld,enchName,hurtMob,spawnMob,blockEnts,MOBT,toolId,doSleep,spawnBoat,equipArmor,armorPts,armorAbsorb,armorId,sortInv,tickFlow,flowPush,getFLOWQ:()=>FLOWQ,pickMob,dragonFire,storeBuy,buyDB,givePlayer,openStore,closeStore,buildHat,powActive,powUnlock,powToggle,openPow,closePow,POW,fireLaser,rstCell,getRSEEN:()=>RSEEN,getTITQ:()=>TITQ,getDEMON:()=>DEMON,getCUT:()=>CUT,getWIN:()=>WIN,endCut,winHome,demonAY,cmpSelect,cmpFind,getCMP:()=>CMP,openCmp,closeCmp,nukeExplode,getSHAKE:()=>SHAKE,getNUKE:()=>NUKE,EGG_BASE:250,EGG_MOBS:()=>EGG_MOBS,GR,grToggle,setRD,getRD:()=>RD,saveSettings,loadSettings,setTime:t=>{timeOfDay=t;},getTime:()=>timeOfDay,wdCell,lsCell,getWDSEEN:()=>WDSEEN,getLSSEEN:()=>LSSEEN,setTime:t=>{timeOfDay=t;},getTime:()=>timeOfDay,getLight:()=>({amb:ambL?ambL.intensity:0,fb:fullbright}),setBright:b=>{fullbright=!!b;},sunUp,getENCH:()=>ENCHUI,getSPW:()=>SPW,dungeonBuild,rollOffers,enchCost,getEnchOpen:()=>enchOpen,getDSEL:()=>dselOpen,getPSEEN:()=>PSEEN,PATCH_NOTES,PATCH_LOG,openPatch,closePatch,renderPatch,openHelp,closeHelp,getHelp:()=>helpOpen,KB,KB_ACTS,KB_FIXED,kbEv,kbSet,kbReset,kbLoad,kbSaveVal,kbName,kbCode,kbRebuild,kbSec,kbRender,kbHelp,kbMouse,getRP:()=>RP,RIDE_SEATED,rideSeatPos,rideSeat,rideHeadYaw,updatePlane,setLock,getLock:()=>usePLock,toggleXray,xrayRefresh,getXR:()=>({on:XR.on,n:XR.g?XR.g.children.length:0}),setDim,getDim:()=>DIM,nCol,aCol,lavaWaterCheck,tryIgnitePortal,travelNether,travelAether,nfCell,asCell,getNSEEN:()=>NSEEN,getASEEN:()=>ASEEN,getINFKILL:()=>INFKILL,getVALKILL:()=>VALKILL,GADGET_IDS,randGadget,getGDG:()=>({...GDG}),getJET:()=>JETF,getGRAP:()=>GRAP?{...GRAP}:null,countBlockNear:(id,y0,y1)=>{let n=0;for(const [k,ch] of chunks){if(keyDim(k)!==DIM)continue;const bl=ch.bl;for(let i=0;i<bl.length;i++){if(bl[i]!==id)continue;const y=((i-(i%CH))/CH)%WH;if(y>=y0&&y<=y1)n++;}}return n;},getPatch:()=>patchOpen,modalOpen,GAME_VERSION,RELEASE_LABEL,TOOL3D,toolIdParts,mkTool3D,refreshHand,spawnDrop,getHand:()=>({kind:handKind,n:handG?handG.children.length:0,t3d:!!(handG&&handG.children[0]&&handG.children[0].isT3D)}),getArmTool:()=>plModel?(plModel._toolId||0):0,setCam:n=>{camMode=n;},WPN3D,b64bytes,gunIdParts,mkWpn3D,wpnRaw,draw3DIcon,setShaders,getSHD:()=>({on:SHD.on,ready:!!SHD.rt}),openSet,closeSet,getSet:()=>setOpen,getSnd:()=>soundOn,setSnd:v=>{soundOn=!!v;},getMus:()=>musicOn,setMus:v=>{musicOn=!!v;},getUG:()=>ugT,throwSubBtn,mkSkateMesh,applyShadows,getShadow:()=>(renderer&&renderer.shadowMap?!!renderer.shadowMap.enabled:false),STORE_CAT,pauseGame,resumeGame,getPaused:()=>!!paused,armorAccepts,syncArmorModel,getArmVis:()=>plModel&&plModel._arm?plModel._arm.map(g=>g[0].visible):null,openTerrAt:(x,y,z)=>{ensureBE(x,y,z,'terr');openTerr(bkey(x,y,z));},closeTerr,getTG:()=>({on:terrOpen,w:TG.w,h:TG.h,hp:TG.hp,px:TG.px,py:TG.py,hasT:!!TG.t}),terrTile:(x,y)=>TG.t?TG.t[y*TG.w+x]:-1,terrPoke:(x,y,v)=>{if(TG.t)TG.t[y*TG.w+x]=v;},saveTerr,terrCraft,TCRAFTS,terrGive:(k,n)=>{if(k==='ore')TG.ore+=n;else TG.binv[k]=(TG.binv[k]||0)+n;},terrWarp:(x,y)=>{TG.px=x;TG.py=y;TG.vx=TG.vy=0;TG.fallV=0;},b64enc,blockAliveRoll,blockComesAlive,getFISHB:()=>FISHB?{x:FISHB.x,y:FISHB.y,z:FISHB.z,inWater:FISHB.inWater,bite:FISHB.bite}:null,fishForceBite:()=>{if(FISHB){FISHB.bite=1.2;}},dispUse,setFigChance:v=>{FIG_CHANCE=v;},getDISPM:()=>DISPM.size,lawnCheck,getLWN:()=>LWN.size,stampCinema,openCine,closeCine,cineSelect,cineEnter,getCIN:()=>({on:cineOpen,mode:CIN.mode,m:CIN.m,res:CIN.res}),getM8:()=>M8LAST,getSNL:()=>SNL&&!SNL.dead?{x:SNL.x,y:SNL.y,z:SNL.z,on:SNL_ON}:{on:SNL_ON},snailReset:()=>{if(SNL)removeEnt(SNL);SNL=null;SNL_ON=false;},snailWarp:(x,y,z)=>{if(SNL&&!SNL.dead){SNL.x=x;SNL.y=y;SNL.z=z;SNL.vx=SNL.vy=SNL.vz=0;}},spawnPlane,megaNuke,nukeDrop,nukeSealed,forceChunksNear,surfaceTop,getNARM:()=>({t:NARM.t,armed:!!NARM.e}),setNARM:t=>{if(NARM.e)NARM.t=t;},getNUKES:()=>NUKES.map(n=>({x:n.x,y:n.y,z:n.z,d:n.d})),nukeSpawnBomb:(x,y,z)=>{spawnABomb(x,y,z,0,0);NARM.e=entities[entities.length-1];NARM.t=20;NARM.sir=0;},getSCARE:()=>({t:SCARE.t,kind:SCARE.kind}),setGhostChance:v=>{GHOST_CHANCE=v;},spawnGhost,setGameSpeed:v=>{GAMESPD=clamp(+v,0.1,1);},getGameSpeed:()=>GAMESPD,look,drainLook,getYaw:()=>P?P.yaw:0,getPitch:()=>P?P.pitch:0,getHorror:()=>({ghosts:entities.filter(e=>e.t==='ghost'&&!e.dead).length}),getTGX:()=>({binv:{...TG.binv},ore:TG.ore,pick:TG.pick,sword:TG.sword,won:!!TG.won,craft:!!TG.craft}),
     B,IT,KEY,MB,chunks,blockEnts,get P(){return P;},get entities(){return entities;},
     get playing(){return playing;},
     /* Release 1.0 seams: the menu music, the volume buses, the player's name */

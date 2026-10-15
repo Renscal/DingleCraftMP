@@ -8,8 +8,8 @@ prints `N passed, M failed`. Nothing touches the network and nothing makes a sou
 ## Running
 
 ```
-npm run test:quick         # about 45 s: build, the repo checks, every static suite, test.js, the UI suites, one og_trace session
-npm test                   # about 11 min: build, every suite once
+npm run test:quick         # about 8 min: build, the repo checks, every static suite, test.js, the UI suites, one og_trace session
+npm test                   # about 12 min since 6.63 (3 suites at once): build, every suite once
 npm run gate               # about 20 min: the release gate, smokes repeated (smoke.js x6, feature smokes x2)
 ```
 
@@ -32,7 +32,7 @@ Options (the header of `scripts/gate.mjs` has the full list):
 | `--group G[,G]` | only these groups: `repo`, `core`, `texpacks`, `purgatory`, `pilot`, `creativity`, `malgorath`, `og_trace` (CI runs one group per job) |
 | `--only NAME[,NAME]` | only these entries, by their gate name (for example `smoke.js,m4_hr.js`) |
 | `--keep-going` | report every failure instead of stopping at the first |
-| `--jobs N` | run up to N static and fake-clock suites at once; real-clock smokes always run alone, because CPU load changes what they see |
+| `--jobs N` | at most N suites at once (6.63: default 3, or one less than the CPUs). Real-clock smokes run one at a time on a lane of their own beside the others; the rest take the other lanes, longest first (`out/gate_times.json` remembers each suite's last time). `--jobs 1`: one after another. A failing run's whole output is kept in `out/gate_fail/<suite>.log` |
 | `--no-build` | test the existing build instead of building first |
 | `--list` | print what would run, and exit |
 
@@ -172,6 +172,10 @@ list.
 
 - **Chunks load lazily around the player.** `setBlock` silently does nothing in an unloaded chunk, and `getBlock` reads
   air there. After any teleport, settle 25-30 frames before building or asserting.
+- **Chunks far from the player are dropped** every 180 frames (`updateChunks`: farther than the view distance + 2).
+  `forceChunksNear` somewhere Dan is not, then stepping frames, then building there loses the building about one time
+  in seven. Force the chunks again right before the `setBlock`s, with no frame between, or move Dan there first (6.63:
+  the c0_smoke Big Dingle flake, `studio` in `tests/lib/c_boot.js`).
 - **Relocate between destructive tests** (`P.x+=60..120`, then settle): craters, floods and scorch marks from earlier
   tests contaminate old sites.
 - **Purge hostiles** before any damage-sensitive or stand-still phase (`hurtMob(e,999)` on everything hostile within
@@ -202,4 +206,10 @@ suspect line, for example `if(typeof __xProbe!=='undefined')__xProbe({x:P.x, hp:
 the test, run it, and read what is actually happening. Then remove every probe (grep for `Probe` and `/*DBG*/`) before
 you commit. This found sky-clicking, water in the shaft, a mis-inserted mob branch and the real spawn point.
 
-Remember that a build with a probe in it changes the bytes: never leave one in a shipped version.
+Remember that a build with a probe in it changes the bytes: never leave one in a shipped version. A probe can stay out of
+`src/` altogether: put it in, build to a scratch folder (`node scripts/build.mjs --out <dir> --dist <dir>`), take it out
+again, and run the suite with `DC_BUILD=<dir>/`.
+
+**Where the time goes.** `node --cpu-prof --cpu-prof-dir=out/prof <suite or script>`, then
+`node tools/prof/summary.mjs out/prof [--top 25] [--by self|file]`: the functions (or files) that took the time, by name
+and line (never source text). A failing gate run keeps its whole output in `out/gate_fail/<suite>.log` (6.63).

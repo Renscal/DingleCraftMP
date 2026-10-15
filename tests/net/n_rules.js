@@ -197,7 +197,7 @@ boot.run(async()=>{
     const old=adoptWorld({seed:1,drops:{x:{dim:'over',x:0,y:0,z:0,st:{id:1,count:1},born:1}},spawn:{x:1,y:2,z:'no'}},{name:'w'});
     ok('a world file from before: "born" becomes an age of 0 (nothing expires on load), a bad spawn is dropped',old.drops.x.age===0&&!('born' in old.drops.x)&&old.spawn===null);}
 
-  /* ===== 7. sleeping ===== */
+  /* ===== 7. sleeping (6.63: the clock runs on after morning, so a busy machine sees 0.05 and a tick: compared within 0.002) ===== */
   await a.pose(0,40,0);await bob.pose(3,40,0);
   S.setTime(0.25);a.clear();a.send({t:'sleep'});await until(()=>a.by('sys').length>0,1500);
   ok('by day: no vote',/only sleep at night/.test(a.last('sys').txt)&&W.time===0.25);
@@ -206,9 +206,9 @@ boot.run(async()=>{
   await a.pose(20,40,0);bob.clear();bob.send({t:'sleep'});await until(()=>bob.by('sys').length>0,1500);
   ok('a sleeper who walked away no longer counts',/Bob is sleeping \(1 of the 2/.test(bob.last('sys').txt)&&W.time===0.75);
   a.send({t:'sleep'});await until(()=>W.time<0.2,1500);
-  ok('both in bed: morning, for everyone',W.time===0.05&&bob.by('time').some(m=>m.slept===1&&m.v===0.05));
+  ok('both in bed: morning, for everyone',Math.abs(W.time-0.05)<0.002&&bob.by('time').some(m=>m.slept===1&&m.v===0.05));
   {S.opts.sleepPercent=50;S.setTime(0.75);await sleep(20);a.send({t:'sleep'});await until(()=>W.time<0.2,1500);
-    ok('sleepPercent 50: one of two is enough',W.time===0.05);S.opts.sleepPercent=100;}
+    ok('sleepPercent 50: one of two is enough',Math.abs(W.time-0.05)<0.002);S.opts.sleepPercent=100;}
 
   /* ===== 8. chests ===== */
   await a.pose(0,40,0);await bob.pose(3,40,0);
@@ -363,6 +363,7 @@ boot.run(async()=>{
     sc.send({t:'be',k:'4001,40,4001',v:{t:'chest',inv:[]}});await until(()=>'4001,40,4001' in W.be,1500);
     ok('...and from then on their chest writes there count',('4001,40,4001' in W.be));
     {const c=srv('Scout'),n0=c.sent.size;for(let i=1;i<=40;i++){c.pose.x=4000+i*400;c.sk='';sc.send({t:'pose',x:4000+i*400,y:40,z:4000,yaw:0,pitch:0,dim:'over',held:0,hp:20,fl:0});await sleep(28);}
+      await until(()=>c.sent.size>=n0,2000);   /* 6.63: under load the last pose is still being handled when the loop ends: wait for its ring of chunks */
       ok('the list of chunks a player has is trimmed as they travel ('+n0+' at the start, '+c.sent.size+' after 16000 blocks)',c.sent.size<n0*4&&c.sent.size>=n0);}
     await sc.pose(4000,40,4000);await sc.pose(4010,41,4020,{yaw:1.25});
     await sc.quit();

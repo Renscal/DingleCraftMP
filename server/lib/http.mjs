@@ -3,12 +3,16 @@
 //                 The page is the file byte for byte except for one line added at the top of its <head>, which tells the
 //                 game it is a server's (window.DC_SERVER = 1): that game has no worlds of its own, only this server's.
 //                 The same file opened from disk, or in the desktop client, is the whole game.
+//                 6.63: it carries an ETag, so a browser that already has this exact page is told "not modified" (304)
+//                 instead of fetching it again on every refresh, and it is sent compressed (br or gzip, whichever the
+//                 browser takes) once the server has compressed it, off the main thread, the first time it was asked for.
 //   GET /art/<file>   (6.62) the Hyperreal art: the files in the art/ folder next to the game html, which the game asks for
 //                 the first time Hyperreal is switched on. Their names carry their content's hash, so a browser keeps them.
 //   GET /status   a small JSON readout: name, version, who is online
 // Everything else is a 404. Nothing here can change the world.
 import fs from 'node:fs';
 import path from 'node:path';
+import zlib from 'node:zlib';
 import { PROTO, MIN_GAME } from './config.mjs';
 
 /* what /status says (also used by the suites) */
@@ -35,6 +39,33 @@ function headCut(file, size) {
   return at;
 }
 
+/* ---- 6.63: the page, compressed once ---- */
+/* the page's version: its size, when it changed, and whether it carries the served line */
+const etagOf = (st, at) => '"' + st.size.toString(36) + '-' + Math.round(st.mtimeMs).toString(36) + (at >= 0 ? '-s' : '-w') + '"';
+/* Z[enc]: { etag, buf } once compressed; busy[enc]: being compressed. Only the encodings browsers ask for are made. */
+const Z = { gzip: null, br: null }, busy = { gzip: '', br: '' };
+/* make the compressed page for one encoding, in the background (zlib's own threads): read, add the served line, compress */
+function compressPage(file, at, etag, enc) {
+  if (busy[enc] === etag || (Z[enc] && Z[enc].etag === etag)) return;
+  busy[enc] = etag;
+  fs.readFile(file, (err, raw) => {
+    if (err) { busy[enc] = ''; return; }
+    const body = at >= 0 ? Buffer.concat([raw.subarray(0, at), SERVED_TAG, raw.subarray(at)]) : raw;
+    const done = (e, z) => { if (busy[enc] === etag) busy[enc] = ''; if (!e) Z[enc] = { etag, buf: z }; };
+    if (enc === 'br') zlib.brotliCompress(body, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 5, [zlib.constants.BROTLI_PARAM_SIZE_HINT]: body.length } }, done);
+    else zlib.gzip(body, { level: 6 }, done);
+  });
+}
+/* the best encoding a request takes that is ready now (null: send it plain); any it would rather have is made meanwhile */
+function pickEncoding(req, file, at, etag) {
+  /* what the browser takes: "gzip, deflate, br", each perhaps with ;q=<weight> (0 means no) */
+  const take = new Set(String(req.headers['accept-encoding'] || '').split(',').map((t) => t.trim().split(';')).filter(([, q]) => !q || !/^\s*q\s*=\s*0(\.0*)?\s*$/i.test(q)).map(([e]) => e.trim().toLowerCase()));
+  const want = ['br', 'gzip'].filter((e) => take.has(e));
+  let pick = null;
+  for (const e of want) { if (Z[e] && Z[e].etag === etag) pick = pick || e; else compressPage(file, at, etag, e); }   /* a better one not made yet is made for next time */
+  return pick;
+}
+
 /* the request handler for http.createServer */
 export function pageHandler(S) {
   return (req, res) => {
@@ -52,9 +83,16 @@ export function pageHandler(S) {
       let st;
       try { st = fs.statSync(S.gameFile); } catch { res.writeHead(500); return res.end('game file missing'); }
       const at = S.o.singlePlayer === true ? -1 : headCut(S.gameFile, st.size);   // "singlePlayer": true hands out the whole game, worlds of its own included
-      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'content-length': st.size + (at >= 0 ? SERVED_TAG.length : 0), 'cache-control': 'no-cache' });
+      const etag = etagOf(st, at), inm = String(req.headers['if-none-match'] || '');
+      if (inm && inm.split(',').some((t) => t.trim().replace(/^W\//, '') === etag)) { res.writeHead(304, { etag, 'cache-control': 'no-cache' }); return res.end(); }
+      const enc = pickEncoding(req, S.gameFile, at, etag);
+      if (enc) {
+        res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'content-encoding': enc, 'content-length': Z[enc].buf.length, etag, vary: 'accept-encoding', 'cache-control': 'no-cache' });
+        return res.end(req.method === 'HEAD' ? undefined : Z[enc].buf);
+      }
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'content-length': st.size + (at >= 0 ? SERVED_TAG.length : 0), etag, vary: 'accept-encoding', 'cache-control': 'no-cache' });
       if (req.method === 'HEAD') return res.end();
-      if (at < 0) return fs.createReadStream(S.gameFile).pipe(res);    // 42 MB: streamed, never held in memory
+      if (at < 0) return fs.createReadStream(S.gameFile).pipe(res);    // streamed, never held in memory
       const top = fs.createReadStream(S.gameFile, { start: 0, end: at - 1 });
       top.on('error', () => res.destroy());
       top.on('end', () => { res.write(SERVED_TAG); fs.createReadStream(S.gameFile, { start: at }).on('error', () => res.destroy()).pipe(res); });

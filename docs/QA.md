@@ -31,6 +31,11 @@ browser and compare them with the Node render. Debug → "Malgorath: sounds" exi
   re-mutes after every evaluation, freezes `requestAnimationFrame` from the page's first line (so stepping frames with
   `__vox.frameStep` does not stack up animation loops), points `window.__DINGLE_BRAIN` at a dead port so no AI call is
   ever made, and has `restoreOG()`.
+- **No Chrome?** `tools/qa/lib/electron.mjs` (6.63) uses the desktop client's Electron (`npm install` in `client/`) instead:
+  `launchGame({port})` is an off-screen, muted page on its own debugging port with its own profile under `out/qa/` (connect
+  `cdp.mjs` to it as to Chrome), `launchServerWindow({port, setup})` the server window, made off-screen with no tray icon.
+  It refuses to start if it cannot promise all of that, and stops only its own process. `boot_check.mjs --launch --electron`
+  uses it.
 
 ## The quick check
 

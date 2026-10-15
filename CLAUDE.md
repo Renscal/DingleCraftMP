@@ -89,8 +89,9 @@ script) is still built for the suites. Build with `npm run build` (about 1 s). T
    object (`TPEX`, `PGEX`, `CREX`, `MGEX`).
 5. **Tests.** Statics and smokes for every feature, registered in `tests/gate.json` (section 6).
 6. **Run repeatedly.** `npm run test:quick` while iterating, the full suite before committing (the owner's choice:
-   `node scripts/gate.mjs --once --keep-going --jobs 3`, about 20 min; a timing check that fails is re-run alone before it
-   is believed), and repeat the relevant smokes
+   `node scripts/gate.mjs --once --keep-going`, about 12 min: since 6.63 it runs 3 suites at once by default, the
+   real-clock ones on a lane of their own; a timing check that fails is re-run alone before it is believed, and its whole
+   output is in `out/gate_fail/<suite>.log`), and repeat the relevant smokes
    4-6 times. Flakes are real and almost always rig bugs (`docs/TESTING.md`, the field manual). A red test stops the
    line.
 7. **HTML.** UI markup and CSS in `html/`; if it adds a key or a mouse action, a row in the right section of the Controls screen
@@ -236,7 +237,7 @@ shipped version that changed bytes also fails.
 - Smokes: `stepper(base)` with strictly increasing timestamps (40-60 ms gaps; base >= 700000 for Malgorath), ~160
   warm-up frames, settle >= 25 frames after any teleport, purge hostiles before damage-sensitive phases, assert item
   totals not entity counts, never cache `V.P`, `boot.detClock(V)` for long timing-sensitive runs, seed `Math.random`.
-- Commands: `npm run test:quick` (~6 min), `npm test` (~23 min one at a time; use `--jobs 3`), `npm run gate` (~20 min, run it in the background, never
+- Commands: `npm run test:quick` (~8 min), `npm test` (~12 min, 3 suites at once by default since 6.63), `npm run gate` (longer: smokes repeated; run it in the background, never
   two heavy gates at once), one suite: `npm run build && node tests/<group>/<suite>.js`.
 - og_trace compares the OG game with golden recordings; re-bless (`--bless <file> --reason "..."`) only for a deliberate
   OG change, after proving the divergence comes only from it (put the old behaviour back in a scratch copy of

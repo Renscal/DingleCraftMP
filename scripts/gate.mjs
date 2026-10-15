@@ -8,7 +8,9 @@
 //     --group       run only these groups (repo core texpacks purgatory pilot creativity malgorath og_trace); CI runs one per job
 //     --only        run only these entries (by gate name, e.g. smoke.js,m4_hr.js)
 //     --keep-going  report every failure instead of stopping at the first one (exit 1 at the end)
-//     --jobs N      run up to N static/fake-clock entries at once; real-clock smokes always run alone (they budget by wall time)
+//     --jobs N      at most N suites at once (default: 3, or one less than the CPUs if fewer). Real-clock smokes run one at a
+//                   time (they budget by wall time) on their own lane beside the rest; the others take the remaining N-1
+//                   lanes, longest first (out/gate_times.json remembers each suite's last time). --jobs 1: one after another.
 //     --no-build    test the existing build (default: scripts/build.mjs --strict first)
 //   env: DC_BUILD (build dir, default build/), DC_DIST (default dist/), DC_OUT_DIR (suite outputs, default out/)
 //
@@ -21,6 +23,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import os from 'node:os';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const argv = process.argv.slice(2);
@@ -35,7 +38,8 @@ if (has('--help')) { console.log(fs.readFileSync(fileURLToPath(import.meta.url),
 const ONCE = has('--once'), TIER = opt('--tier'), KEEP = has('--keep-going'), NOBUILD = has('--no-build');
 const GROUPS = opt('--group') ? opt('--group').split(',').map((s) => s.trim()).filter(Boolean) : null;
 const ONLY = opt('--only') ? opt('--only').split(',').map((s) => s.trim()).filter(Boolean) : null;
-const JOBS = Math.max(1, +(opt('--jobs') || 1) | 0);
+const CPUS = typeof os.availableParallelism === 'function' ? os.availableParallelism() : os.cpus().length;
+const JOBS = Math.max(1, (opt('--jobs') ? +opt('--jobs') : Math.min(3, CPUS - 1)) | 0);
 const FULL = !ONCE && !TIER && !GROUPS && !ONLY;
 
 const BUILD = path.resolve(process.env.DC_BUILD || path.join(REPO, 'build'));
@@ -124,6 +128,8 @@ function report(r) {
   if (r.failed) c.failed += r.failed;
   if (!r.ok) {
     console.log(r.lines.filter((l) => /FAIL|CRASH|Error|first divergence|^   /.test(l)).slice(0, 40).join('\n'));
+    /* the whole output, for the flake hunt: out/gate_fail/<name>.log (the suites print check names, never source) */
+    try { const d = path.join(OUT, 'gate_fail'); fs.mkdirSync(d, { recursive: true }); fs.writeFileSync(path.join(d, r.e.name + '.log'), `exit ${r.code} after ${r.s.toFixed(1)} s\n` + r.lines.join('\n') + '\n'); console.log(`(full output: ${rel(path.join(d, r.e.name + '.log'))})`); } catch { /* best effort */ }
     console.log(`${r.e.name}: ${r.last}`);
     console.log(`GATE FAILED at ${r.e.name}`);
     failed++;
@@ -131,13 +137,6 @@ function report(r) {
   }
   console.log(`${r.e.name}: ${r.last}`);
   return true;
-}
-async function pool(list, n) {
-  const res = []; let i = 0, stop = false;
-  await Promise.all(Array.from({ length: Math.min(n, list.length) }, async () => {
-    while (i < list.length && !stop) { const r = await runOne(list[i++]); res.push(r); if (!report(r) && !KEEP) stop = true; }
-  }));
-  return !stop;
 }
 const finish = () => {
   const secs = (Date.now() - T0) / 1000;
@@ -158,6 +157,11 @@ const finish = () => {
   process.exit(0);
 };
 
+/* the last time each suite took (s per run), to start the long ones first */
+const TIMES = path.join(OUT, 'gate_times.json');
+let times = {};
+try { times = JSON.parse(fs.readFileSync(TIMES, 'utf8')) || {}; } catch { /* first run: no times yet */ }
+const live = [];
 for (const g of G.groups) {
   const list = items.filter((e) => e.group === g);
   if (!list.length) continue;
@@ -167,14 +171,24 @@ for (const g of G.groups) {
     for (const e of skips) (byWhy[whenWhy(e)] = byWhy[whenWhy(e)] || []).push(e.name);
     for (const [why, n] of Object.entries(byWhy)) console.log(`SKIP ${n.join(', ')} (${why})`);
   }
-  const live = list.filter(whenOk);
-  const maxR = ONCE ? 1 : Math.max(...live.map((e) => e.repeat || 1), 1);
-  for (let k = 1; k <= maxR; k++) {
-    const pass = live.filter((e) => (ONCE ? 1 : e.repeat || 1) >= k);
-    if (JOBS > 1) {
-      if (!(await pool(pass.filter((e) => e.clock !== 'real'), JOBS)) && !KEEP) finish();
-      if (!(await pool(pass.filter((e) => e.clock === 'real'), 1)) && !KEEP) finish();
-    } else if (!(await pool(pass, 1)) && !KEEP) finish();
+  live.push(...list.filter(whenOk));
+}
+/* every run (a suite repeated r times is r runs) */
+const runs = live.flatMap((e) => Array.from({ length: ONCE ? 1 : e.repeat || 1 }, () => e));
+let stop = false;
+/* one lane: takes runs off a queue until it is empty or the gate stops */
+async function lane(queue) {
+  while (queue.length && !stop) {
+    const r = await runOne(queue.shift());
+    times[r.e.name] = +r.s.toFixed(1);
+    if (!report(r) && !KEEP) stop = true;
   }
 }
+if (JOBS === 1) await lane(runs);
+else {
+  const real = runs.filter((e) => e.clock === 'real');
+  const rest = runs.filter((e) => e.clock !== 'real').sort((x, y) => (times[y.name] ?? 1e9) - (times[x.name] ?? 1e9));   /* unknown first, then the longest */
+  await Promise.all([lane(real), ...Array.from({ length: Math.max(1, JOBS - (real.length ? 1 : 0)) }, () => lane(rest))]);
+}
+try { fs.writeFileSync(TIMES, JSON.stringify(times, null, 1) + '\n'); } catch { /* only a hint for next time */ }
 finish();

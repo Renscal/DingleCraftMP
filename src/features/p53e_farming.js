@@ -72,20 +72,27 @@ const CROPS={
   [B.HEMLOCK]:{name:'hemlock',seed:IT.HROOT, pic:'hemlock'}};
 /* a crop's growth stage, 0 (just planted) to 7 (ripe), from its meta */
 function cropStage(meta){return 7-(meta&7);}
-/* what a crop gives when a player breaks it: [first stack, ...more stacks] (first is what breakBlock itself drops) */
-function cropYield(id,stage,rnd){
+/* what a crop gives when a player breaks it: [first stack, ...more stacks] (first is what breakBlock itself drops).
+   Ripe (6.63): wheat 1 and 1-3 seeds, carrots 2-3, hemlock 2-3 roots. Unripe: one of its seed.
+   fort: the Fortune level of the hoe that broke it (6.63): a ripe harvest is multiplied by 1 + fort/3 (Fortune III doubles
+   it), every stack, the fraction rounded up by chance so the average is exact. */
+function cropYield(id,stage,rnd,fort){
   const R=rnd||Math.random,ripe=stage>=7;
-  if(id===B.WHEAT)return ripe?[{id:IT.WHEAT,count:1},{id:IT.SEEDS,count:Math.floor(R()*4)}]:[{id:IT.SEEDS,count:1}];
-  if(id===B.CARROTS)return ripe?[{id:IT.CARROT,count:2+Math.floor(R()*3)}]:[{id:IT.CARROT,count:1}];
-  return ripe?[{id:IT.HROOT,count:1+Math.floor(R()*3)}]:[{id:IT.HROOT,count:1}];
+  const Y=id===B.WHEAT?(ripe?[{id:IT.WHEAT,count:1},{id:IT.SEEDS,count:1+Math.floor(R()*3)}]:[{id:IT.SEEDS,count:1}])
+    :id===B.CARROTS?(ripe?[{id:IT.CARROT,count:2+Math.floor(R()*2)}]:[{id:IT.CARROT,count:1}])
+    :(ripe?[{id:IT.HROOT,count:2+Math.floor(R()*2)}]:[{id:IT.HROOT,count:1}]);
+  const lv=Math.max(0,Math.min(3,fort|0));
+  if(ripe&&lv)for(const st of Y){const x=st.count*(1+lv/3),n=Math.floor(x+1e-9);st.count=n+(R()<x-n-1e-9?1:0);}
+  return Y;
 }
 /* breakBlock's drop for a crop. The block is already air: FARM.last (farmNote) says where it stood and how grown it was.
    A ripe one counts as a harvest for the farmland under it. */
-function cropDrop(){
+function cropDrop(held){
   const L=FARM.last;
   if(!L)return null;
   FARM.last=null;
-  const Y=cropYield(L.id,L.stage);
+  const h=held&&DEFS[held.id]&&DEFS[held.id].hoe?held:null;           /* 6.63: Fortune counts on a hoe only */
+  const Y=cropYield(L.id,L.stage,null,h&&h.ench?h.ench.fort|0:0);
   for(let i=1;i<Y.length;i++)if(Y[i].count>0)spawnDrop(L.x+0.5,L.y+0.4,L.z+0.5,Y[i],(Math.random()-0.5)*1.5,2.2,(Math.random()-0.5)*1.5);
   if(L.stage>=7)farmHarvest(L.x,L.y-1,L.z);
   return Y[0];

@@ -21,6 +21,18 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## DingleCraft Multiplayer 2.0 — Faster all round
+
+*Game version 6.63, released 2026-10-15.*
+
+- **FASTER ALL ROUND.** No new features. Just less waiting.
+- **Refreshing a server’s page.** Every time you pressed F5 on a server’s address, the server sent the whole game again, because it told your browser to check for a new copy but never gave it a way to tell it already had one. Now it does: a refresh that finds nothing new costs a few hundred bytes instead of the whole page. When the page does have to travel, it travels compressed, at about half its size.
+- **Building the world.** Turning blocks into something your graphics card can draw got a fifth faster. Each chunk used to ask about its neighbours one block at a time; now it looks them up once. Flying the plane at full speed or loading a world should stall a little less. The world looks exactly the same: we compared the new meshes with the old ones, chunk by chunk, and they are identical.
+- **Fairer harvests.** A ripe wheat now always gives at least one seed back (1 wheat and 1 to 3 seeds), so a farm can no longer starve itself on bad luck. Carrots give 2 or 3 instead of 2 to 4, and hemlock 2 or 3 roots instead of 1 to 3, so the two roots finally agree with each other. Break a crop before it is ripe and you still get one of its seed back.
+- **Chest labels.** Ten identical chests and one of them has your diamonds. Now there is a small slot beside the ✕ of every chest window: click it with an item on your cursor and the chest wears a picture of that item on all four of its sides, for everyone on the server to see. The item stays on your cursor (it is a picture, not a copy: nobody has ever duped anything with it). Click the slot with an empty hand to take the label off.
+- **Enchanted hoes.** Hoes go on the enchanting table at last, and they take two enchantments. **Unbreaking** makes one last longer, as it does on everything else. **Fortune** grows the harvest: Fortune I gives about a third more from every ripe crop, Fortune II about two thirds more, and Fortune III exactly doubles it, seeds included. It counts when the crop is broken with the hoe in your hand, and an unripe crop still gives just its one seed back.
+- **Behind the curtain.** The test run that guards every release takes about two thirds of the time it did. It now runs several suites at once, the longest first. Along the way it found a test that failed one time in seven because the game tidied away the chunks it was building in. The test was fixed, not the game, which was right all along.
+
 ## DingleCraft Multiplayer 2.0 — Travel light
 
 *Game version 6.62, released 2026-10-15.*

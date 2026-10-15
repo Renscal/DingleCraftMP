@@ -6,7 +6,8 @@
      a file with no <head> goes out as it is
    2 the served game knows what it is; Create New World, Load World, Continue and Import are off its menu and switched off
    3 the functions behind them do nothing there: no world is created, loaded or imported
-   4 it still joins the server, plays, and comes back to a menu that still has no worlds of its own */
+   4 it still joins the server, plays, and comes back to a menu that still has no worlds of its own
+   (6.58, in 1) the page has an ETag (304 for a browser that has it) and goes out gzip or br once compressed, the same bytes */
 'use strict';
 const realFetch=global.fetch;
 global.DC_SERVER=1;                          /* what the server's line does, before the game loads */
@@ -27,15 +28,33 @@ boot.run(async()=>{
     const page='<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<title>x</title>\n</head>\n<body>'+'y'.repeat(200000)+'</body></html>\n',file=path.join(OUT,'dinglecraft_v'+V.GAME_VERSION+'.html');
     fs.writeFileSync(file,page);
     const S1=createServer({port:0,data:OUT,memory:true,world:'',simulate:false,quiet:true});await S1.listen();
-    const r=await realFetch('http://127.0.0.1:'+S1.port+'/'),body=await r.text(),tag='<script>window.DC_SERVER=1</script>\n';
+    const plainH={headers:{'accept-encoding':'identity'}};   /* 6.58: the length of the page itself, not of a compressed copy */
+    const r=await realFetch('http://127.0.0.1:'+S1.port+'/',plainH),body=await r.text(),tag='<script>window.DC_SERVER=1</script>\n';
     ok('the page a server hands out is the game file with one line added at the top of its head',body.startsWith('<!DOCTYPE html>\n<html lang="en">\n<head>\n'+tag+'<meta charset')&&body.replace(tag,'')===page&&body.split(tag).length===2);
-    ok('...and says how long it really is',+r.headers.get('content-length')===Buffer.byteLength(page)+tag.length&&+(await realFetch('http://127.0.0.1:'+S1.port+'/',{method:'HEAD'})).headers.get('content-length')===Buffer.byteLength(page)+tag.length);
+    ok('...and says how long it really is',+r.headers.get('content-length')===Buffer.byteLength(page)+tag.length&&+(await realFetch('http://127.0.0.1:'+S1.port+'/',{method:'HEAD',...plainH})).headers.get('content-length')===Buffer.byteLength(page)+tag.length);
     fs.writeFileSync(file,'<!doctype html><title>stand-in</title>');
     ok('a file with no head goes out exactly as it is',await realFetch('http://127.0.0.1:'+S1.port+'/').then(x=>x.text())==='<!doctype html><title>stand-in</title>');
     S1.opts.singlePlayer=true;fs.writeFileSync(file,page+' ');
     ok('"singlePlayer": true in the settings hands out the whole game: the file exactly as it is',await realFetch('http://127.0.0.1:'+S1.port+'/').then(x=>x.text())===page+' ');
     S1.opts.singlePlayer=false;fs.writeFileSync(file,'<!doctype html><title>stand-in</title>');
     ok('the file on disk is never touched',fs.readFileSync(file,'utf8')==='<!doctype html><title>stand-in</title>');
+    /* 6.58: a page a browser already has is "not modified"; the page goes out compressed once the server has made it */
+    {fs.writeFileSync(file,page);const want=Buffer.from(page.replace('<head>\n','<head>\n'+tag));
+     const get=(h,m)=>new Promise((res,rej)=>{const q=require('http').request({host:'127.0.0.1',port:S1.port,path:'/',method:m||'GET',headers:h||{}},r=>{const c=[];r.on('data',d=>c.push(d));r.on('end',()=>res({s:r.statusCode,h:r.headers,b:Buffer.concat(c)}));});q.on('error',rej);q.end();});
+     const a=await get(),et=a.h.etag;
+     ok('the page carries a version (ETag) and goes out plain to a browser that takes no compression ('+et+')',a.s===200&&/^"[0-9a-z]+-[0-9a-z]+-s"$/.test(et||'')&&!a.h['content-encoding']&&a.b.equals(want));
+     const n=await get({'if-none-match':et}),n2=await get({'if-none-match':'"other", W/'+et});
+     ok('asked again with that version: 304 Not Modified, nothing sent (a weak or listed match too)',n.s===304&&n.b.length===0&&n.h.etag===et&&n2.s===304&&(await get({'if-none-match':'"nope"'})).s===200);
+     const first=await get({'accept-encoding':'gzip, deflate'});
+     let g=first;for(let i=0;i<200&&!g.h['content-encoding'];i++){await sleep(25);g=await get({'accept-encoding':'gzip, deflate'});}
+     ok('gzip: the first ask goes out plain while the server compresses it, then compressed, the same bytes unpacked ('+g.b.length+' of '+want.length+' B)',!first.h['content-encoding']&&g.h['content-encoding']==='gzip'&&
+       require('zlib').gunzipSync(g.b).equals(want)&&+g.h['content-length']===g.b.length&&g.h.vary==='accept-encoding'&&g.h.etag===et&&g.b.length<want.length/10);
+     let b=await get({'accept-encoding':'gzip, deflate, br'});for(let i=0;i<200&&b.h['content-encoding']!=='br';i++){await sleep(25);b=await get({'accept-encoding':'gzip, deflate, br'});}
+     ok('br when the browser takes it; ;q=0 means no; HEAD sends no body',b.h['content-encoding']==='br'&&require('zlib').brotliDecompressSync(b.b).equals(want)&&
+       !(await get({'accept-encoding':'gzip;q=0, deflate'})).h['content-encoding']&&(await get({'accept-encoding':'gzip'},'HEAD')).b.length===0);
+     fs.writeFileSync(file,page+'<!-- new -->');const c=await get({'accept-encoding':'gzip','if-none-match':et});
+     ok('a new game file is a new version: the old one is no longer "not modified", and nothing stale is sent compressed',c.s===200&&c.h.etag!==et&&!c.h['content-encoding']&&c.b.toString().endsWith('<!-- new -->'));
+     fs.writeFileSync(file,'<!doctype html><title>stand-in</title>');}
     await S1.close();fs.rmSync(OUT,{recursive:true,force:true});}
 
   /* ===== 2. the menu ===== */

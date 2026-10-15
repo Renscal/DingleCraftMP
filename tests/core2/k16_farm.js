@@ -9,7 +9,9 @@
    7 growing: nothing on dry farmland; on watered farmland a crop is ripe in about a day (the random ticks stepped with a
      seeded generator); it stops when ripe
    8 harvests: a ripe crop counts, an unripe one does not; four ripe harvests leave the ground watered, the fifth dries it
-   9 the yields: wheat 1 + 0-3 seeds (unripe: 1 seed), carrots 2-4 (unripe: 1), hemlock 1-3 roots (unripe: 1)
+   9 the yields: wheat 1 + 1-3 seeds (unripe: 1 seed), carrots 2-3 (unripe: 1), hemlock 2-3 roots (unripe: 1) (6.63)
+   12 (6.63) hoes take Unbreaking and Fortune (nothing else); Fortune III doubles every stack of a ripe harvest, I and II in
+     between on average; unripe crops ignore it; only a hoe's Fortune counts; Unbreaking III wears a hoe about a quarter
    10 a crop whose farmland is dug out pops off as its seed; a solid block on farmland makes it dirt; farmland drops dirt
    11 tall grass gives seeds about one time in eight; three wheat in a row make bread, which is food
    12 a save keeps farmland's water and count and a crop's stage, and the crop goes on growing after loading; wild
@@ -108,7 +110,7 @@ boot.run(async()=>{
       m=harvest(B.HEMLOCK,7);R.h[0]=Math.min(R.h[0],m[IT.HROOT]||0);R.h[1]=Math.max(R.h[1],m[IT.HROOT]||0);if(Object.keys(m).length!==1)okU=false;}
     const u=[harvest(B.WHEAT,2),harvest(B.CARROTS,6),harvest(B.HEMLOCK,0)];
     ok('yields over 60 harvests: wheat 1 and '+R.w[0]+'-'+R.w[1]+' seeds, carrots '+R.c[0]+'-'+R.c[1]+', hemlock roots '+R.h[0]+'-'+R.h[1]+'; unripe: one seed, one carrot, one root',
-      okU&&R.w[0]===0&&R.w[1]===3&&R.c[0]===2&&R.c[1]===4&&R.h[0]===1&&R.h[1]===3&&JSON.stringify(u)===JSON.stringify([{[IT.SEEDS]:1},{[IT.CARROT]:1},{[IT.HROOT]:1}]));}
+      okU&&R.w[0]===1&&R.w[1]===3&&R.c[0]===2&&R.c[1]===3&&R.h[0]===2&&R.h[1]===3&&JSON.stringify(u)===JSON.stringify([{[IT.SEEDS]:1},{[IT.CARROT]:1},{[IT.HROOT]:1}]));}
   /* ===== 10 ===== */
   clear();V.setBlock(X,Y,Z,B.FARMLAND,13);V.setBlock(X,Y+1,Z,B.HEMLOCK,4);
   V.setBlock(X,Y,Z,B.AIR);step(2);
@@ -138,4 +140,31 @@ boot.run(async()=>{
     let wc=0,wh=0;for(let x=0;x<2000;x++)for(let z=0;z<2000;z++){const w=V.farmWild(x*3+7,z*3-11);if(w===B.CARROTS)wc++;else if(w===B.HEMLOCK)wh++;}
     ok('the world has wild carrots ('+wild[B.CARROTS]+') and wild hemlock ('+wild[B.HEMLOCK]+') in the 576 chunks nearby, ripe (a generated plant has meta 0); over 4,000,000 columns the rule gives '+wc+' carrots and '+wh+' hemlock (2400 and 1200 expected)',
       typeof G!=='function'||(wild[B.CARROTS]>3&&wild[B.HEMLOCK]>=1&&wild[B.HEMLOCK]<40&&n<2000&&V.cropStage(0)===7&&wc>2100&&wc<2700&&wh>1000&&wh<1400&&V.FARM_WILD.hemlock===0.0003));}
+  /* ===== 12. enchanted hoes (6.63): Unbreaking and Fortune; Fortune III doubles a ripe harvest, I and II in between ===== */
+  {const hoe=(e)=>Object.assign({id:IT.HOE+2,count:1},e?{ench:e}:{});
+    const seen=new Set();for(let i=0;i<60;i++)for(const k of V.rollOffers(hoe()))seen.add(k);
+    const pick=new Set();for(let i=0;i<60;i++)for(const k of V.rollOffers({id:V.toolId(2,0),count:1}))pick.add(k);
+    ok('a hoe can be enchanted with Unbreaking and Fortune, and nothing else ('+[...seen].sort().join(', ')+'); a pickaxe keeps its own ('+[...pick].sort().join(', ')+')',
+      [...seen].sort().join()==='fort,unb'&&pick.has('fort')&&pick.has('eff')&&V.enchName(hoe({fort:3,unb:2}))==='Fortune III, Unbreaking II');
+    const mul=(seed)=>{let a=seed>>>0;return()=>{a=(a+0x6D2B79F5)>>>0;let t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;};};
+    let dbl=true;const tot=[0,0,0,0];let edge=true;
+    for(let i=0;i<3000;i++)for(const id of [B.WHEAT,B.CARROTS,B.HEMLOCK]){
+      const base=V.cropYield(id,7,mul(i*7+id),0);
+      for(let lv=0;lv<=3;lv++){const y=V.cropYield(id,7,mul(i*7+id),lv);tot[lv]+=y.reduce((a,q)=>a+q.count,0);
+        y.forEach((q,j)=>{const x=base[j].count*(1+lv/3);if(q.id!==base[j].id||q.count<Math.floor(x+1e-9)||q.count>Math.ceil(x-1e-9))edge=false;});
+        if(lv===3&&y.some((q,j)=>q.count!==base[j].count*2))dbl=false;}}
+    const r1=tot[1]/tot[0],r2=tot[2]/tot[0];
+    ok('Fortune III doubles every stack of a ripe harvest, every time (9000 harvests)',dbl&&tot[3]===tot[0]*2);
+    ok('Fortune I and II land in between, on average x'+r1.toFixed(3)+' and x'+r2.toFixed(3)+' (each stack rounded to a neighbour of its exact share)',edge&&Math.abs(r1-4/3)<0.02&&Math.abs(r2-5/3)<0.02);
+    ok('an unripe crop gives one seed back whatever the Fortune',[B.WHEAT,B.CARROTS,B.HEMLOCK].every(id=>V.cropYield(id,3,null,3).length===1&&V.cropYield(id,3,null,3)[0].count===1));
+    const hv=(id,held)=>{for(const e of V.entities)if(e.t==='drop')e.dead=true;V.setBlock(X+1,Y,Z,B.FARMLAND,13);V.setBlock(X+1,Y+1,Z,id,0);
+      {const p=P();p.inv[0]=held;p.sel=0;V.refreshHand();p.x=o.x+0.5;p.z=o.z+0.5;p.y=o.y;}V.breakBlock(X+1,Y+1,Z,true);
+      let n=0;for(const e of V.entities)if(e.t==='drop'&&!e.dead){n+=e.st.count;e.dead=true;}return n;};
+    const withHoe=[],withPick=[];for(let i=0;i<30;i++){withHoe.push(hv(B.CARROTS,hoe({fort:3})));withPick.push(hv(B.CARROTS,{id:V.toolId(2,0),count:1,ench:{fort:3}}));}
+    ok('in the world: ripe carrots broken with a Fortune III hoe give 4 or 6 ('+[...new Set(withHoe)].sort().join(',')+'); a Fortune III pickaxe does not count ('+[...new Set(withPick)].sort().join(',')+')',
+      withHoe.every(n=>n===4||n===6)&&withPick.every(n=>n===2||n===3));
+    const wear=(e)=>{const p=P();p.mode='s';p.inv[0]=hoe(e);p.inv[0].dur=100000;p.sel=0;for(let i=0;i<2000;i++)V.damageHeld(1);return 100000-p.inv[0].dur;};
+    const w0=wear(null),w3=wear({unb:3});P().inv[0]=null;V.refreshHand();
+    ok('Unbreaking III on a hoe: 2000 uses wear it '+w3+' (a plain hoe '+w0+'), about a quarter',w0===2000&&w3>400&&w3<600);}
+
 });

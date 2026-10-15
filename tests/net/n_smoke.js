@@ -309,7 +309,7 @@ boot.run(async()=>{
     ok('nothing changes: nothing is sent ('+seen.size+' saves in two seconds)',seen.size===0);
     V.P.hp=13;V.P.armor=V.P.armor||[null,null,null,null];V.P.xp=(V.P.xp||0)+7;await run(30);await sleep(80);
     ok('health and experience count as changes too',rec().hp===13&&rec().xp===Math.round(V.P.xp));
-    V.P.hp=20;await run(30);await sleep(60);mark();const x0=V.P.x;V.P.x=x0+6;await run(60);await sleep(60);const early=seen.size;
+    V.P.hp=20;await run(30);await until(()=>rec().hp===20,3000);await sleep(60);V.autoSaveT(0);mark();const x0=V.P.x;   /* 6.63: the health save is on the server before counting starts, and the game's own autosave (every 60 s of game time, which online is a save too) is a minute away, not inside the window: it landed there about one run in twenty */V.P.x=x0+6;await run(60);await sleep(60);const early=seen.size;
     for(let i=0;i<8;i++){V.NET.acc+=1.3;await run(4);}await sleep(80);
     ok('standing somewhere new is not sent at once ('+early+'), but is within ten seconds ('+(rec().x||0).toFixed(1)+')',early===0&&Math.abs(rec().x-(x0+6))<0.6);
     V.P.x=x0;

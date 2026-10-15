@@ -542,6 +542,13 @@ An id collision once silently broke a gun for two versions. **Grep before you al
   wild plant is ripe). `farmNote` (from `setBlock`) keeps the list of growing crops; `farmTick` (from `tickFlow`) grows
   them where `ntSimHere`. A block whose look depends on meta gives `topM` or `crossM` in its def. The only free block
   id left is 249.
+  6.63: a ripe harvest is wheat 1 + 1-3 seeds, carrots 2-3, hemlock 2-3 (`cropYield`); a hoe has its own enchantment
+  class (`enchClassOf` -> 'hoe': Unbreaking, Fortune), and Fortune on the hoe that breaks a ripe crop multiplies every stack by
+  1 + level/3.
+- **Chest labels (6.63, `src/features/p53i_chest_labels.js`):** `be.lbl` on a chest is an item id, never an item (not in
+  `be.inv`, never dropped). The chest window's slot `#mlabel` (beside `#mclose`, the X's size, its own click handler, not
+  `mkSlot`) sets it from the cursor without taking the item, or clears it. `tickChestLabels` (every 30 frames) keeps four
+  pictures (`iconTex`) on the sides of each labelled chest within 48 blocks in `CHLM`. Saved and shared with the chest.
 - **Puppet Purgatory** (assigned only in `purgatory/p0_contract.js`, symbolic names `B.PG_*` / `IT.PG_*`): blocks 149-189,
   99, 117-119, 247 (never 212-219; 248 and 249 are spare); items 285-308, 310-338, 340-364 (309 and 339 spare). The
   atlas is 32×32 tiles (1024 slots); purgatory tiles are pinned at slots 222-284. Mob types `pg*` (`pmob:1`).

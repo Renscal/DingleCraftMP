@@ -93,7 +93,7 @@ const ENCH_DEFS={
   steal:{name:'Lifesteal',max:3,cls:'sword'},
   knock:{name:'Knockback',max:3,cls:'sword'},
   eff:{name:'Efficiency',max:5,cls:'dig'},
-  fort:{name:'Fortune',max:3,cls:'dig'},
+  fort:{name:'Fortune',max:3,cls:['dig','hoe']},   /* 6.63: on a hoe, more from a ripe crop (cropYield) */
   power:{name:'Power',max:5,cls:'bow'},
   unb:{name:'Unbreaking',max:3,cls:'any'},
   viral:{name:'Viral',max:5,cls:'sub'},
@@ -108,6 +108,7 @@ function enchClassOf(st){
   if(d&&d.bow)return 'bow';
   if(d&&d.subbtn)return 'sub';
   if(d&&d.tool)return d.tool.type==='sword'?'sword':'dig';
+  if(d&&d.hoe)return 'hoe';                   /* 6.63: Unbreaking and Fortune */
   return null;
 }
 function enchName(st){
@@ -124,7 +125,7 @@ function rollOffers(st){
   if(!cls)return [];
   const pool=[];
   for(const [k,d] of Object.entries(ENCH_DEFS)){
-    if(d.cls!=='any'&&d.cls!==cls)continue;
+    const cs=[].concat(d.cls);if(!cs.includes('any')&&!cs.includes(cls))continue;
     const cur=(st.ench&&st.ench[k])||0;
     if(cur<d.max)pool.push(k);
   }

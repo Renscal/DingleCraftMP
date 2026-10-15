@@ -22,7 +22,8 @@ function give(V,id,slot){const P=V.P,s=slot==null?0:slot;if(P.inv[s]){const e=P.
   P.inv[s]={id,count:1};P.sel=s;V.refreshHand();return P.inv[s];}
 function studio(V,step,o){o=o||{};if(!o.keep){V.startNewWorld(o.name||'crtest',String(o.seed||'1337'),o.mode||'s');V.GR.snail=false;V.GR.jsc=0;V.GR.mobSpawn=false;
   step(160);}const P=V.P,B=V.B;const x=Math.floor(P.x)+(o.dx||0),z=Math.floor(P.z)+(o.dz||0);
-  if(o.dx||o.dz){V.forceChunksNear(x,z);step(25);}
+  if(o.dx||o.dz){V.forceChunksNear(x,z);step(25);
+    V.forceChunksNear(x,z);}   /* 6.63: again, with no frame between it and the building: the game drops chunks this far from Dan every 180 frames (updateChunks), and a setBlock into a dropped chunk does nothing (the c0_smoke Big Dingle flake) */
   const y=Math.max(V.surfaceTop(x,z)+1,Math.floor(P.y));
   for(let dx=-2;dx<=6;dx++)for(let dz=-6;dz<=6;dz++){V.setBlock(x+dx,y-1,z+dz,B.STONE);
     for(let dy=0;dy<=6;dy++)V.setBlock(x+dx,y+dy,z+dz,(dx===6||dx===-2||dz===-6||dz===6)?B.STONE:B.AIR);}

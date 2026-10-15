@@ -272,6 +272,7 @@ function openModal(kind,bek){
     addInvSlots(body);
   }
   M.style.display='flex';
+  chestLabelSlot();                                        /* 6.63: the label slot beside the X (chests only) */
   redrawModal();
 }
 function closeModal(skipLock){
@@ -287,6 +288,7 @@ function closeModal(skipLock){
   }
   if(DIM==='puppet'||(MODAL.be&&MODAL.be.t==='stash'))mpOnModalClose(MODAL.kind,MODAL.be,MODAL.bek);
   MODAL.kind=null;MODAL.slots=[];MODAL.grid=null;MODAL.be=null;
+  chestLabelSlot();
   imReset();IM.hover=null;
   $('modal').style.display='none';
   redrawHotbar();
