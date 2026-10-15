@@ -1,5 +1,5 @@
 // renderer.js: the page. It knows nothing of Node: everything goes through window.dc (preload.js).
-// Layout: the servers down the left; on the right the one that is picked (S.id), a header of buttons and eight tabs.
+// Layout: the servers down the left; on the right the one that is picked (S.id), a header of buttons and nine tabs.
 'use strict';
 const $ = (id) => document.getElementById(id);
 const el = (tag, props, kids) => { const e = document.createElement(tag); Object.assign(e, props || {}); for (const k of kids || []) e.append(k); return e; };
@@ -134,6 +134,7 @@ function showTab(name) {
   if (!S.id) return;
   if (name === 'settings' || name === 'rules') loadSettings();
   if (name === 'worlds') loadWorlds();
+  if (name === 'files') loadFiles();
   if (name === 'backups') loadBackups();
   if (name === 'sched') paintTasks();
   if (name === 'console') $('log').scrollTop = $('log').scrollHeight;
@@ -349,6 +350,73 @@ $('newworld').onsubmit = async (e) => {
   await loadWorlds();
   $('worldmsg').textContent = r.ok ? 'The server will make that world when it next starts.' + (r.restart ? ' Restart it now to switch.' : '') : r.why;
 };
+
+/* ---- world files (1.2): the packed region and entity files of 6.60, listed, shown and searched ---- */
+const WF = { sid: null, world: '', files: [], open: '', tick: new Set(), busy: false };
+const fmtAt = (at) => (Array.isArray(at) ? at.map((v) => (typeof v === 'number' ? Math.round(v) : '?')).join(' ') : '');
+const sumText = (s) => (!s ? '' : 'chunks' in s ? s.chunks + ' chunk' + (s.chunks === 1 ? '' : 's') + ', ' + s.blocks + ' changed block' + (s.blocks === 1 ? '' : 's') + (s.blockEntities ? ', ' + s.blockEntities + ' chest' + (s.blockEntities === 1 ? '' : 's') + ' or furnace' + (s.blockEntities === 1 ? '' : 's') : '')
+  : [s.items && s.items + ' dropped item' + (s.items === 1 ? '' : 's'), s.mobs && s.mobs + ' mob' + (s.mobs === 1 ? '' : 's'), s.vehicles && s.vehicles + ' vehicle' + (s.vehicles === 1 ? '' : 's')].filter(Boolean).join(', ') || 'empty');
+async function loadFiles(world) {
+  if (WF.sid !== S.id) { WF.sid = S.id; WF.world = ''; }                       /* another server: its own current world */
+  $('wf_msg').textContent = 'Reading...';
+  const r = await window.dc.worldFiles(S.id, world || WF.world || '');
+  if (!r.ok) { $('wf_msg').textContent = r.why || ''; $('wf_list').replaceChildren(); $('wf_none').hidden = true; return; }
+  if (r.world !== WF.world) { WF.tick.clear(); WF.open = ''; $('wf_view').hidden = true; $('wf_found').replaceChildren(); }
+  WF.world = r.world; WF.files = r.files;
+  $('wf_world').replaceChildren(...r.worlds.map((n) => el('option', { value: n, textContent: n, selected: n === r.world })));
+  $('wf_save').hidden = !r.running;
+  const packed = r.files.filter((f) => f.form === 'packed').length, bytes = r.files.reduce((a, f) => a + f.bytes, 0);
+  $('wf_msg').textContent = r.files.length + ' file' + (r.files.length === 1 ? '' : 's') + ', ' + fmtB(bytes) + (packed < r.files.length ? ' (' + (r.files.length - packed) + ' from an older server: written packed the next time the server starts)' : '') + (r.players ? '; ' + r.players + ' player' + (r.players === 1 ? '' : 's') : '');
+  $('wf_none').hidden = r.files.length > 0;
+  const row = (rel, cells) => el('tr', { className: rel === WF.open ? 'open' : '' }, [el('td', {}, [el('input', { type: 'checkbox', checked: WF.tick.has(rel), onchange: (e) => { if (e.target.checked) WF.tick.add(rel); else WF.tick.delete(rel); } })]), ...cells]);
+  $('wf_list').replaceChildren(...r.files.map((f) => row(f.rel, [
+    el('td', { className: 'fname', textContent: f.rel, title: 'Show what is in it', onclick: () => openFile(f.rel) }),
+    el('td', { textContent: DIMS[f.dim] || f.dim }), el('td', { textContent: f.kind === 'region' || f.kind === 'entities' ? 'x ' + f.rx * 512 + ', z ' + f.rz * 512 : '' }),
+    el('td', { textContent: fmtB(f.bytes) + (f.form === 'packed' ? '' : ' (' + f.form + ')') }), el('td', { textContent: f.why ? 'cannot be read: ' + f.why : sumText(f.summary) }),
+  ])), ...(r.players ? [row('playerdata', [el('td', { textContent: 'playerdata/' }), el('td', { textContent: '' }), el('td', { textContent: '' }), el('td', { textContent: '' }), el('td', { textContent: r.players + ' player file' + (r.players === 1 ? '' : 's') + ' (searched for what they carry)' })])] : []));
+  $('wf_all').checked = false;
+}
+async function openFile(rel) {
+  const r = await window.dc.readWorldFile(S.id, WF.world, rel);
+  if (!r.ok) { $('wf_msg').textContent = r.why || ''; return; }
+  WF.open = rel;
+  for (const tr of $('wf_list').children) tr.classList.toggle('open', tr.querySelector('.fname') && tr.querySelector('.fname').textContent === rel);
+  $('wf_view').hidden = false;
+  $('wf_vtitle').textContent = rel + ': ' + (DIMS[r.dimension] || r.dimension) + ', region ' + (r.region || []).join(' ') + (r.form === 'packed' ? '' : ' (' + r.form + ', from an older server)');
+  $('wf_vmsg').textContent = sumText(r.summary) + (r.cut ? ' (the JSON is cut short here: save it to see all of it)' : '');
+  $('wf_tables').replaceChildren(...(r.tables.length ? r.tables.flatMap((t) => [el('h4', { textContent: t.title }), el('table', {}, [el('thead', {}, [el('tr', {}, t.head.map((h) => el('th', { textContent: h })))]), el('tbody', {}, t.rows.map((row) => el('tr', {}, row.map((c) => el('td', { textContent: String(c) })))))])]) : [el('p', { className: 'dim', textContent: 'Nothing in it.' })]));
+  $('wf_json').textContent = r.text;
+  $('wf_view').scrollIntoView({ block: 'start' });
+}
+const vtab = (json) => { $('wf_tables').hidden = json; $('wf_json').hidden = !json; $('wf_vtab_t').classList.toggle('on', !json); $('wf_vtab_j').classList.toggle('on', json); };
+$('wf_vtab_t').onclick = () => vtab(false);
+$('wf_vtab_j').onclick = () => vtab(true);
+$('wf_export').onclick = async () => { if (!WF.open) return; const r = await window.dc.exportWorldFile(S.id, WF.world, WF.open); $('wf_vmsg').textContent = r.ok ? 'Saved to ' + r.to : r.why || ''; };
+$('wf_world').onchange = () => loadFiles($('wf_world').value);
+$('wf_reload').onclick = () => loadFiles();
+$('wf_save').onclick = async () => { $('wf_msg').textContent = 'Saving...'; await window.dc.saveWorld(S.id); loadFiles(); };
+$('wf_all').onchange = (e) => { WF.tick = new Set(e.target.checked ? [...WF.files.map((f) => f.rel), 'playerdata'] : []); for (const c of $('wf_list').querySelectorAll('input[type=checkbox]')) c.checked = e.target.checked; };
+$('wf_find').onsubmit = async (e) => {
+  e.preventDefault();
+  const query = $('wf_q').value.trim();
+  if (!query || WF.busy) return;
+  if ($('wf_only').checked && !WF.tick.size) { $('wf_found').replaceChildren(el('p', { className: 'dim', textContent: 'Tick the files to search in the list below, or untick "Only ticked files".' })); return; }
+  WF.busy = true; $('wf_found').replaceChildren(el('p', { className: 'dim', textContent: 'Searching...' }));
+  const r = await window.dc.findInWorld(S.id, WF.world, { query, files: $('wf_only').checked ? [...WF.tick] : [], blocks: $('wf_k_blocks').checked, items: $('wf_k_items').checked, mobs: $('wf_k_mobs').checked, players: $('wf_k_players').checked });
+  WF.busy = false;
+  if (!r.ok) { $('wf_found').replaceChildren(el('p', { className: 'dim', textContent: r.why || 'The search failed.' })); return; }
+  const head = el('p', { className: 'dim', textContent: (r.hits.length ? r.hits.length + ' found' : 'Nothing matching "' + query + '"') + ' in ' + r.files + ' file' + (r.files === 1 ? '' : 's') + (r.truncated ? ' (stopped at ' + r.hits.length + ': search for something narrower)' : '') + (r.errors.length ? '; ' + r.errors.length + ' could not be read' : '') + '.' });
+  if (!r.hits.length) { $('wf_found').replaceChildren(head); return; }
+  $('wf_found').replaceChildren(head, el('table', {}, [
+    el('thead', {}, [el('tr', {}, ['What', 'How many', 'Where (x y z)', 'Dimension', 'In', 'File'].map((h) => el('th', { textContent: h })))]),
+    el('tbody', {}, r.hits.slice(0, 500).map((h) => el('tr', {}, [
+      el('td', { textContent: h.name + (h.id !== undefined ? ' #' + h.id : '') }), el('td', { textContent: String(h.count) }), el('td', { className: 'at', textContent: fmtAt(h.at) }),
+      el('td', { textContent: DIMS[h.dim] || h.dim || '' }), el('td', { textContent: h.in }),
+      el('td', h.rel && h.rel !== 'playerdata' && !h.rel.startsWith('playerdata/') ? { className: 'fname', textContent: h.rel, onclick: () => openFile(h.rel) } : { textContent: h.rel || '' }),
+    ]))),
+  ]), ...(r.hits.length > 500 ? [el('p', { className: 'dim', textContent: 'The first 500 are shown.' })] : []));
+};
+window.dc.on('wfind', (m) => { if (m.id === S.id && WF.busy) $('wf_found').replaceChildren(el('p', { className: 'dim', textContent: 'Searching... ' + m.done + ' of ' + m.total + ' files' })); });
 
 /* ---- backups ---- */
 async function loadBackups() {

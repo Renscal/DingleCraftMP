@@ -352,13 +352,15 @@ front door (and what tests import), `Start Server.bat` starts it on Windows, and
 | module | what | depends on |
 |---|---|---|
 | `config.mjs` | settings, limits, key regexes, the game rules (`RULES`), the command line, `findGame` | nothing |
-| `world.mjs` | the world as data: new, load, apply the settings file, atomic save, validators (`cleanStack`, `num`) | config |
+| `world.mjs` | the world as data: new, load, apply the settings file, atomic save, validators (`cleanStack`, `num`) | config, region |
+| `region.mjs` | (6.60) the packed region (`.dcr`) and entity (`.dce`) files: `encodeRegion`/`encodeEntities`, `decodeFile` (every form: packed, JSON, the Brotli of 6.53 to 6.59), `docText` (the JSON a person reads), `describeDoc`, `searchWorld`; the names of the ids from `names.json` (`npm run names`). The server window imports it from a server version | nothing |
+| `files.mjs` | (6.60) `view`, `unpack`, `pack`, `files`, `find` on the command line (`node dinglecraft-server.mjs find diamond`) | config, region |
 | `websocket.mjs` | the WebSocket wire format (handshake, frames) | nothing; knows nothing about the game |
 | `protocol.mjs` | what every game message means (`handleMessage`), the join sequence, the checks (reach, rights, chest locks), the once-a-second `worldTick` | config, world, commands; knows nothing about sockets |
 | `commands.mjs` | the slash commands, for operators in the game and for the server window (`runCommand`), `isOp`, spawn protection's radius; since 6.49 the accounts (`passOK`, `accountOf`, `locksOf`, `renameAccount`, `setSkin`, which `protocol.mjs` uses for logins) | config, world; knows nothing about sockets |
 | `http.mjs` | the game page at `/` and `/status` | config |
 | `server.mjs` | `createServer`: state, sending, connections, clocks | all of the above |
-| `cli.mjs` | the program: `server.json`, the banner, console commands | config, server |
+| `cli.mjs` | the program: `server.json`, the banner, console commands; hands `view`/`unpack`/`pack`/`files`/`find` to `files.mjs` | config, server, files |
 
 Its own [README](../server/README.md) covers running it. They speak JSON text frames over one WebSocket
 (`NT_PROTO` in the game, `PROTO` in the server; `n_static` checks they match).

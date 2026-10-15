@@ -86,7 +86,7 @@ export function cleanRules(r) {
 
 /* a fresh data/server.json (rules is filled in from the world on the first run: lib/cli.mjs) */
 export const DEFAULTS = { port: 40162, name: 'A DINGLECRAFT Server', motd: '', accounts: false, lockNames: false, lockPasswords: false, lockSkins: false, maxPlayers: 8, seed: '', mode: 's', pvp: true, world: 'world', game: '', rules: null,
-  ops: [], whitelist: false, allow: [], bans: [], spawnProtection: 16, sleepPercent: 100, viewChunks: 12, cert: '', key: '', origins: [], simulate: true, singlePlayer: false, pauseWhenEmpty: 60, stopWhenEmpty: 10, simulationDistance: 8, catchUpMax: 0, compressAfter: 7, compressPlayersAfter: 7 };
+  ops: [], whitelist: false, allow: [], bans: [], spawnProtection: 16, sleepPercent: 100, viewChunks: 12, cert: '', key: '', origins: [], simulate: true, singlePlayer: false, pauseWhenEmpty: 60, stopWhenEmpty: 10, simulationDistance: 8, catchUpMax: 0 };
 
 /* a list of player names (or addresses) from the settings: lower case, no blanks, no repeats */
 export function cleanList(v) {

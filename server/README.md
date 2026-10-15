@@ -83,8 +83,6 @@ The first run writes `data/server.json`. Edit it and restart, or pass the same t
 | `viewChunks` | | 12 | how far around a player the server sends block changes, chests and dropped items, for a game that does not say (the game asks for its own draw distance + 3) |
 | `cert`, `key` | `--cert`, `--key` | | a TLS certificate and its private key (PEM files, looked for in the data folder unless a full path). With both, the server is `https://` and `wss://` |
 | `simulate` | | `true` | the server runs the Overworld's mobs itself (see "The server runs the mobs"). `false`: the players' games do |
-| `compressAfter` | | `7` | days nobody has been near a region before its file is written compressed (`region/<dim>/r.<x>.<z>.json.br`, about 3% of the size). It is written plain again when someone comes near. `0`: never |
-| `compressPlayersAfter` | | `7` | days since a player last joined before their file is written compressed (`playerdata/<name>.json.br`); plain again when they join. Their password is then not readable in a text editor: the server window and `/account list` show it. `0`: never |
 | `simulationDistance` | | `8` | how far round each player, in chunks, the server's own game runs the world: it builds those chunks, spawns mobs in them (Minecraft's spawn range is 8, 128 blocks) and moves the mobs in them. Measured with 4 players apart: about 7% of a CPU core at 5, 15% at 8, 16% at 10 |
 | `stopWhenEmpty` | | `10` | minutes a paused Nether or Aether game waits before it is stopped, freeing its memory; the next player there starts it again. The Overworld's is never stopped (a crash restarts it after 5 s, at most 3 times in 10 minutes). `0`: never |
 | `catchUpMax` | | `0` | the most time, in minutes, that crops, saplings and furnaces catch up on at once when their land is run again (after the server was off, paused, or nobody was near). `0`: no limit |
@@ -161,7 +159,8 @@ world each time the server starts. Stop the server, edit the file, start it agai
 
 ## The world folder
 
-The world is a folder of JSON files a person can read and edit (with the server stopped), laid out like a Minecraft world:
+The world is a folder laid out like a Minecraft world. What fills it (the regions and the entities) is packed for size
+(6.60); everything else is JSON a person can read and edit (with the server stopped):
 
 ```
 data/
@@ -169,11 +168,11 @@ data/
   world/
     level.json                      the world itself: name, seed, mode, time of day, world spawn, game rules
     region/
-      over/r.0.0.json               the Overworld, region 0,0: changed blocks, chests and furnaces
-      over/r.-1.0.json
-      nether/r.0.0.json             one folder per dimension: over, nether, aether, puppet
+      over/r.0.0.dcr                the Overworld, region 0,0: changed blocks, chests and furnaces
+      over/r.-1.0.dcr
+      nether/r.0.0.dcr              one folder per dimension: over, nether, aether, puppet
     entities/
-      over/r.0.0.json               what lies, walks or is parked in that region: dropped items, mobs, vehicles
+      over/r.0.0.dce                what lies, walks or is parked in that region: dropped items, mobs, vehicles
     playerdata/
       dan.json                      one file per player who has ever joined
     data/
@@ -184,7 +183,7 @@ data/
 ```
 
 - **A region** is 32 x 32 chunks (512 x 512 blocks) and is named after its place in the world: `r.<x>.<z>`, so
-  `r.0.0` holds blocks 0 to 511 and `r.-1.0` holds -512 to -1 (`blocksFrom` in the file says where it starts). Inside,
+  `r.0.0` holds blocks 0 to 511 and `r.-1.0` holds -512 to -1 (`blocksFrom` in its JSON says where it starts). Inside,
   each chunk lists its changed `blocks` (`"x,y,z in the chunk": block id`; the untouched terrain is not stored, it comes
   from the seed; a number of 256 or more is flowing water or lava: the id is the remainder after dividing by 256, the
   level is the quotient) and its `blockEntities` (chests, furnaces, terrariums, display stands) by their place in the world.
@@ -200,6 +199,30 @@ data/
   content is gone is removed. A file that cannot be parsed stops the server with its name; it is never overwritten.
 - A world from before 6.12 (`data/world.vxw.json`) is converted to a folder on the first start. The old file is left
   where it was and is not used again: delete it once you are happy.
+- A world from 6.12 to 6.59 (`r.<x>.<z>.json` regions, and the `.json.br` files 6.53 to 6.59 compressed) is written in
+  the packed form on the first start of 6.60, and the old files are removed. Nothing is compressed any more.
+
+### Looking inside the files
+
+A region or entity file is the same JSON as before, packed: every number in as few bytes as it needs, a row of the same
+block written once, a chest's empty slots left out, a name or a key the file has seen before written as a reference to it.
+It is nothing but packing (no compression), so a file is read straight off the disk, and a built-up region takes about a
+tenth of its JSON. To read or search one, nothing has to be running:
+
+```
+node dinglecraft-server.mjs view data/world/region/over/r.0.0.dcr       the file as JSON
+node dinglecraft-server.mjs unpack data/world/region/over/r.0.0.dcr     the same, into r.0.0.json (here)
+node dinglecraft-server.mjs pack r.0.0.json                             back into r.0.0.dcr (next to it)
+node dinglecraft-server.mjs files                                       every file of the world, with what is in it
+node dinglecraft-server.mjs find diamond                                where a block, item or mob is
+```
+
+`find` takes a name or part of one (`oak log`), an id (`#31`) or a mob type (`zombie`), and looks in the changed blocks,
+the chests and furnaces, the dropped items, the mobs and vehicles and what each player carries; `--blocks`, `--items`,
+`--mobs` and `--players` narrow it, `--in region/over/r.0.0.dcr` searches one file, `--world` and `--data` pick another
+world, `--max` raises the 200 hits it stops at. To change a file by hand: stop the server, `unpack` it, edit the JSON,
+`pack` it, and put the packed file back in place of the old one. The server window has the same (its World files tab:
+every file with what is in it, a file as tables with names or as JSON, and a search over all of them or the ticked ones).
 
 ## Commands
 
@@ -211,7 +234,7 @@ The first operator is made from the server window (`op <name>`) or by adding the
 | `/help`, `/list` | everyone | what you may run; who is online |
 | `/msg <player> <text>` (or `/w`, `/tell`) | everyone | a whisper only the two of you see |
 | `/me <action>` | everyone | `* Dan waves` |
-| `/tp [who] <player \| x y z>` | operators | teleport yourself or someone else (within one dimension) |
+| `/tp [who] <player \| x y z>` | operators | teleport yourself or someone else: to a player wherever they are (not into or out of Puppet Purgatory), or to a place in your own dimension |
 | `/give <player> <item id> [count]` | operators | items by number: the server does not know their names |
 | `/gamemode <survival \| creative> [player]` | operators | one player's mode, remembered with the player |
 | `/defaultgamemode <survival \| creative>` | operators | what new players start in |

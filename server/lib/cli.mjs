@@ -7,6 +7,7 @@ import readline from 'node:readline';
 import { DEFAULTS, HELP, SERVER_DIR, parseArgs } from './config.mjs';
 import { createServer } from './server.mjs';
 import { attachAdmin } from './admin.mjs';
+import { FILE_COMMANDS, filesMain } from './files.mjs';
 
 /* this computer's addresses on the local network, for the "hand these out" list */
 function lanAddresses() {
@@ -56,6 +57,8 @@ function runCommand(S, line, stop) {
 
 /* the whole program: settings, one server, the banner, then console commands until it is stopped */
 export async function main() {
+  /* 6.60: view, unpack, pack, files and find work on the world's files and do not start a server (lib/files.mjs) */
+  if (FILE_COMMANDS.includes(process.argv[2])) process.exit(await filesMain(process.argv.slice(2)));
   let args;
   try { args = parseArgs(process.argv.slice(2)); } catch (e) { console.error('dinglecraft-server: ' + e.message + ' (try --help)'); process.exit(2); }
   if (args.help) { console.log(HELP); return; }
@@ -75,6 +78,7 @@ export async function main() {
     if (had) console.log('Server passwords are gone (6.49): this server had one, so it now uses accounts instead. Make one for each player: /account add <name> <password>');
   }
   delete cfg.password;
+  delete cfg.compressAfter; delete cfg.compressPlayersAfter;   // 6.60: nothing is compressed any more (the world's files are packed instead)
   if (args.passwordGone) { console.log('--password is gone (6.49): the server uses accounts. Make one for each player: /account add <name> <password>'); delete args.passwordGone; }
   /* server.json always shows the whole truth: every game rule and the mode the world is really running with. It is
      rewritten when it is new, when it is missing rules (an older file), and when a rule is changed from inside the game. */

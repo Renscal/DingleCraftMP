@@ -12,12 +12,19 @@
 // the game, running headless in a thread (lib/host.mjs), and the players' games only draw them. Everything else that
 // moves (projectiles, vehicles, water) is still each player's game; server/README.md has the full list.
 //
-// The world is a folder of readable JSON (level.json, region/, entities/, playerdata/: lib/world.mjs). --world also accepts
-// a world exported from the game's pause menu, and /export writes one file the game can import again.
+// The world is a folder (level.json, region/, entities/, playerdata/: lib/world.mjs). What fills it is packed (6.60:
+// lib/region.mjs); the rest is readable JSON. --world also accepts a world exported from the game's pause menu, and /export
+// writes one file the game can import again.
+//
+//   node server/dinglecraft-server.mjs view|unpack|pack|files|find ...   the world's files, without starting a server
+//                                                                        (lib/files.mjs: view <file> prints one as JSON,
+//                                                                        find diamond searches the world)
 //
 // This file is only the front door. The server itself is in lib/:
 //   lib/config.mjs      settings, limits, the game rules, the command line          (no state)
 //   lib/world.mjs       the world as data: new, load, apply settings, save, validate
+//   lib/region.mjs      the packed region and entity files, their readable form, and searching a world
+//   lib/files.mjs       view, unpack, pack, files and find, from the command line
 //   lib/websocket.mjs   the WebSocket wire format                                    (knows nothing about the game)
 //   lib/protocol.mjs    what every game message means                                (knows nothing about sockets)
 //   lib/commands.mjs    the slash commands, for operators and for the server window

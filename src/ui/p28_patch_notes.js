@@ -3,7 +3,17 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Log in with a click',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Every byte counts',lines:[
+    '<b>EVERY BYTE COUNTS.</b> The world’s region files used to be JSON written for people: every changed block spelled out as three numbers in quotes, every empty chest slot written down as null, the word count typed out once per stack. Lovely to read. Enormous to keep. Since 6.60 the server packs them instead.',
+    '<b>How small.</b> Every number takes as few bytes as it needs, a row of the same block is written once with its length, a chest only writes the slots that hold something, and a name or a set of keys the file has already seen is a two-byte reference. A built-up region (forty chunks of houses, tunnels and chests) went from 299 KB of JSON to 32 KB. The small files most worlds are made of come out under half the size the old compression managed.',
+    '<b>Nothing compressed.</b> The compression from 6.53 is gone, and so are its two settings. The packing is the whole trick, so a file is read straight off the disk: loading one is as quick as the JSON was.',
+    '<b>Your world converts itself.</b> Start a 6.60 server on an older world and every region, every entity file and every compressed player is rewritten in the new form at once, the old files removed. Same blocks, same chests, same mobs, same passwords. The server says how many files it converted.',
+    '<b>Still readable.</b> <i>node dinglecraft-server.mjs view</i> prints any region or entity file as the same JSON as before; <i>unpack</i> and <i>pack</i> turn one into JSON and back (byte for byte) for anyone who edits worlds by hand. <i>files</i> lists them with what is in them.',
+    '<b>Where did I leave my diamonds.</b> <i>node dinglecraft-server.mjs find diamond</i> searches the whole world: changed blocks, chests, furnaces, dropped items, mobs, vehicles and every player’s pockets, by name, part of a name, <i>#id</i> or mob type. It answers with coordinates.',
+    '<b>And in the server window (1.2).</b> A new World files tab: every file with its size and contents, a click shows one as tables with real names (what each chunk was changed to, what each chest holds, every mob and its health) or as JSON, and a search box over all of it or only the files you tick.',
+    '<b>For the server owner.</b> compressAfter and compressPlayersAfter are gone from server.json (the server takes them out by itself). Back up before the first start if you like to be careful: an older server cannot read the packed files.',
+  ]},
+ {v:'6.59',label:'DingleCraft Multiplayer 2.0',title:'Log in with a click',lines:[
     '<b>LOG IN WITH A CLICK.</b> On a server with accounts, the Log in button was greyed out the whole time the server was waiting for you to log in, which is the one time anybody wants to press it. Only Enter worked, and nothing said so.',
     '<b>Fixed.</b> The button works. While your login is on its way it waits for the answer, so a double click spends one of your five tries, not two, and a wrong password gives it straight back for the next go.',
     '<b>How it got past us.</b> The tests logged in the way Enter does and never pressed the button. They press the button now.',

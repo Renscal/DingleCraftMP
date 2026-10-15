@@ -21,6 +21,19 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## DingleCraft Multiplayer 2.0 — Every byte counts
+
+*Game version 6.60, released 2026-10-15.*
+
+- **EVERY BYTE COUNTS.** The world’s region files used to be JSON written for people: every changed block spelled out as three numbers in quotes, every empty chest slot written down as null, the word count typed out once per stack. Lovely to read. Enormous to keep. Since 6.60 the server packs them instead.
+- **How small.** Every number takes as few bytes as it needs, a row of the same block is written once with its length, a chest only writes the slots that hold something, and a name or a set of keys the file has already seen is a two-byte reference. A built-up region (forty chunks of houses, tunnels and chests) went from 299 KB of JSON to 32 KB. The small files most worlds are made of come out under half the size the old compression managed.
+- **Nothing compressed.** The compression from 6.53 is gone, and so are its two settings. The packing is the whole trick, so a file is read straight off the disk: loading one is as quick as the JSON was.
+- **Your world converts itself.** Start a 6.60 server on an older world and every region, every entity file and every compressed player is rewritten in the new form at once, the old files removed. Same blocks, same chests, same mobs, same passwords. The server says how many files it converted.
+- **Still readable.** *node dinglecraft-server.mjs view* prints any region or entity file as the same JSON as before; *unpack* and *pack* turn one into JSON and back (byte for byte) for anyone who edits worlds by hand. *files* lists them with what is in them.
+- **Where did I leave my diamonds.** *node dinglecraft-server.mjs find diamond* searches the whole world: changed blocks, chests, furnaces, dropped items, mobs, vehicles and every player’s pockets, by name, part of a name, *#id* or mob type. It answers with coordinates.
+- **And in the server window (1.2).** A new World files tab: every file with its size and contents, a click shows one as tables with real names (what each chunk was changed to, what each chest holds, every mob and its health) or as JSON, and a search box over all of it or only the files you tick.
+- **For the server owner.** compressAfter and compressPlayersAfter are gone from server.json (the server takes them out by itself). Back up before the first start if you like to be careful: an older server cannot read the packed files.
+
 ## DingleCraft Multiplayer 2.0 — Log in with a click
 
 *Game version 6.59, released 2026-10-14.*

@@ -7,7 +7,7 @@
      e.pup, which only PART 58 sets)
    5 the title markup: the Multiplayer button and the #tmp view, every id the code uses there once
    6 version, patch notes, the export seam
-   7 the server: its front door and nine lib/ modules plus the two files of its own game's thread (each commented, layered), no dependencies (node: built-ins only), the protocol number matches, the Windows launcher is CRLF and names the server
+   7 the server: its front door and its lib/ modules plus the two files of its own game's thread and names.json (each commented, layered), no dependencies (node: built-ins only), the protocol number matches, the Windows launcher is CRLF and names the server
    8 server/data/ is ignored by git */
 'use strict';
 const boot=require('../lib/c_boot.js'),{ok}=boot;
@@ -123,18 +123,19 @@ boot.run(async()=>{
 
   /* ---- 7. the server ---- */
   /* the server: the front door plus its modules in server/lib/ */
-  const SMODS=['admin.mjs','cli.mjs','commands.mjs','config.mjs','host.mjs','http.mjs','protocol.mjs','server.mjs','websocket.mjs','world.mjs'];
+  const SMODS=['admin.mjs','cli.mjs','commands.mjs','config.mjs','files.mjs','host.mjs','http.mjs','protocol.mjs','region.mjs','server.mjs','websocket.mjs','world.mjs'];   /* 6.60: files, region */
   const SHOST=['headless.cjs','host_worker.cjs'];   /* the server's own game runs in a thread: the hollow browser, and the thread's program */
   const SFILES=['dinglecraft-server.mjs',...SMODS.map(f=>'lib/'+f)],STXT=Object.fromEntries(SFILES.map(f=>[f,fs.readFileSync(path.join(REPO,'server',f),'utf8')]));
   const SV=SFILES.map(f=>STXT[f]).join('\n');
-  ok('server/lib/ holds exactly the ten modules (admin.mjs since 6.41) and the two files of the game thread',JSON.stringify(fs.readdirSync(path.join(REPO,'server','lib')).sort())===JSON.stringify([...SMODS,...SHOST].sort()));
+  ok('server/lib/ holds exactly the twelve modules (admin.mjs since 6.41, files and region since 6.60), the two files of the game thread and names.json',JSON.stringify(fs.readdirSync(path.join(REPO,'server','lib')).sort())===JSON.stringify([...SMODS,...SHOST,'names.json'].sort()));
   ok('the game thread\'s files open with a comment, load nothing but node: built-ins, each other and the game script, and never touch the network',SHOST.every(f=>{const t=fs.readFileSync(path.join(REPO,'server','lib',f),'utf8');
     return t.startsWith('/* '+f+':')&&[...t.matchAll(/require\((['"])([^'"]+)\1\)/g)].every(m=>m[2].startsWith('node:')||m[2]==='./headless.cjs')&&!/node:(http|https|net|dgram|child_process)/.test(t);}));
   ok('every server file opens with a comment saying what it is for, and the front door lists every module',SFILES.every(f=>/^(#![^\n]*\n)?\/\/ /.test(STXT[f]))&&SMODS.every(f=>STXT['dinglecraft-server.mjs'].includes('lib/'+f)));
   {const bare=[];for(const f of SFILES){const L=STXT[f].split('\n');L.forEach((l,i)=>{const m=/^(?:export )?(?:async )?function (\w+)\(/.exec(l);if(m&&!/^\s*(\/\/|\/\*|\*)|\*\/\s*$/.test(L[i-1]||''))bare.push(f+':'+m[1]);});}
     ok('every top-level server function has a comment above it'+(bare.length?' (bare: '+bare.join(', ')+')':''),bare.length===0);}
   ok('the layering holds: the wire format knows nothing of the game, the protocol nothing of sockets, config imports no other module',
-    !/from '\.\//.test(STXT['lib/websocket.mjs'])&&!/from '\.\//.test(STXT['lib/config.mjs'])&&!/websocket|node:http|node:net/.test(STXT['lib/protocol.mjs'].replace(/^\/\/.*$/gm,''))&&!/websocket|node:http|node:net|from '\.\/(server|cli|protocol)/.test(STXT['lib/commands.mjs'].replace(/^\/\/.*$/gm,''))&&!/from '\.\/(server|cli|protocol)/.test(STXT['lib/world.mjs']));
+    !/from '\.\//.test(STXT['lib/websocket.mjs'])&&!/from '\.\//.test(STXT['lib/config.mjs'])&&!/websocket|node:http|node:net/.test(STXT['lib/protocol.mjs'].replace(/^\/\/.*$/gm,''))&&!/websocket|node:http|node:net|from '\.\/(server|cli|protocol)/.test(STXT['lib/commands.mjs'].replace(/^\/\/.*$/gm,''))&&!/from '\.\/(server|cli|protocol)/.test(STXT['lib/world.mjs'])
+    &&!/from '\.\//.test(STXT['lib/region.mjs'])&&!/node:(http|https|net|child_process)|from '\.\/(server|cli|protocol|world|commands)/.test(STXT['lib/files.mjs']));   /* 6.60: the file format stands alone (the server window loads it) */
   ok('the front door still exports createServer, PROTO and RULES',/export \{ createServer \} from '\.\/lib\/server\.mjs';/.test(SV)&&/export \{ PROTO, RULES \} from '\.\/lib\/config\.mjs';/.test(SV));
   {const imps=[...SV.matchAll(/^import\s[^'"]*['"]([^'"]+)['"]/gm)].map(m=>m[1]).concat([...SV.matchAll(/import\(['"]([^'"]+)['"]\)/g)].map(m=>m[1]));
     ok('the server imports only node: built-ins and its own lib/ modules ('+imps.length+')',imps.length>=12&&imps.every(s=>s.startsWith('node:')||/^\.\/(lib\/)?[a-z]+\.mjs$/.test(s)));}

@@ -83,3 +83,16 @@ td.acts{white-space:nowrap;text-align:right}
 td.acts button{padding:3px 8px;margin-left:4px}
 td.acts input{width:150px}
 .acrow{display:flex;gap:8px;margin:6px 0}
+.frow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0}
+.frow label{color:var(--dim);font-size:13px;display:flex;align-items:center;gap:6px}
+.frow label.check{color:var(--text)}
+#wf_q{flex:1;min-width:240px}
+.wft td,.wft th{padding:4px 8px}
+.wft tr.open td{background:var(--panel)}
+.wft td.fname,#wf_found td.fname{cursor:pointer;color:var(--accent);font:12.5px ui-monospace,Consolas,monospace}
+.wft td.fname:hover,#wf_found td.fname:hover{text-decoration:underline}
+#wf_found table{margin-bottom:6px}
+#wf_found td.at{font:12.5px ui-monospace,Consolas,monospace;white-space:nowrap}
+#wf_view button.on{border-color:var(--accent)}
+#wf_tables h4{margin:14px 0 4px;font-size:13px}
+#wf_json{max-height:60vh;overflow:auto;padding:8px 10px;background:#0e1014;border:1px solid var(--line);border-radius:5px;font:12px/1.4 ui-monospace,Consolas,monospace;white-space:pre}

@@ -51,6 +51,7 @@
     <button data-tab="settings">Settings</button>
     <button data-tab="rules">Game rules</button>
     <button data-tab="worlds">Worlds</button>
+    <button data-tab="files">World files</button>
     <button data-tab="backups">Backups</button>
     <button data-tab="sched">Scheduler</button>
   </nav>
@@ -103,6 +104,33 @@
         <label>Difficulty <select name="difficulty"><option value="easy">Easy</option><option value="normal" selected>Normal</option><option value="hard">Hard</option><option value="dinglecore">DingleCore</option></select></label>
         <button>Create and switch to it</button>
       </form>
+    </section>
+    <section id="t_files" hidden>
+      <div class="frow">
+        <label>World <select id="wf_world"></select></label>
+        <button id="wf_reload" title="Read the files again">Reload</button>
+        <button id="wf_save" title="The files are the world as the server last saved it. This saves it now.">Save the world now</button>
+        <span id="wf_msg" class="dim"></span>
+      </div>
+      <form id="wf_find" class="frow">
+        <input id="wf_q" maxlength="80" autocomplete="off" spellcheck="false" placeholder="Find a block, item or mob: diamond, oak log, zombie, chest, #31">
+        <label class="check"><input type="checkbox" id="wf_k_blocks" checked> Blocks</label>
+        <label class="check"><input type="checkbox" id="wf_k_items" checked> Items</label>
+        <label class="check"><input type="checkbox" id="wf_k_mobs" checked> Mobs</label>
+        <label class="check"><input type="checkbox" id="wf_k_players" checked> Players</label>
+        <label class="check" title="Search only the files ticked in the list below"><input type="checkbox" id="wf_only"> Only ticked files</label>
+        <button>Search</button>
+      </form>
+      <div id="wf_found"></div>
+      <h3>Files</h3>
+      <table class="wft"><thead><tr><th><input type="checkbox" id="wf_all" title="Tick every file"></th><th>File</th><th>Dimension</th><th>Blocks from</th><th>Size</th><th>What is in it</th></tr></thead><tbody id="wf_list"></tbody></table>
+      <p id="wf_none" class="dim" hidden>Nothing is in this world's files yet: they fill as players change blocks and things move.</p>
+      <div id="wf_view" hidden>
+        <h3 id="wf_vtitle"></h3>
+        <div class="frow"><button id="wf_vtab_t" class="on">Contents</button><button id="wf_vtab_j">JSON</button><button id="wf_export">Save as JSON...</button><span id="wf_vmsg" class="dim"></span></div>
+        <div id="wf_tables"></div>
+        <pre id="wf_json" hidden></pre>
+      </div>
     </section>
     <section id="t_backups" hidden>
       <p><button id="b_backup">Back up now</button> <span id="backmsg" class="dim"></span></p>

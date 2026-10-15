@@ -269,15 +269,16 @@ boot.run(async()=>{
   const nSaved=W.mobs.filter(m=>!m.d).length;
   await S.close();
   {const dir=path.join(OUT,'world','entities','over'),files=fs.existsSync(dir)?fs.readdirSync(dir):[];
-    const all=files.flatMap(f=>JSON.parse(fs.readFileSync(path.join(dir,f),'utf8')).mobs||[]);
+    const RG=await import(pathToFileURL(path.join(REPO,'server','lib','region.mjs')).href),ej=(d,f)=>RG.decodeFile(fs.readFileSync(path.join(d,f)),f).doc;   /* 6.60: entity files are packed */
+    const all=files.flatMap(f=>ej(dir,f).mobs||[]);
     ok('the world folder lists the mobs under entities/, by region: type, place, health, a villager\'s name and spot ('+all.length+' mobs)',nSaved>0&&all.length===nSaved&&all.some(m=>m.type==='alien'&&m.name==='Zorp'&&Array.isArray(m.origin))&&all.every(m=>typeof m.type==='string'&&typeof m.health==='number'));
     const S2=createServer({port:0,data:OUT,world:'world',noGame:true,hostGame:GAME,quiet:true});await S2.listen();
     {const dj=f=>JSON.parse(fs.readFileSync(path.join(OUT,'world','data',f),'utf8')),lvl=JSON.parse(fs.readFileSync(path.join(OUT,'world','level.json'),'utf8'));
       ok('the world\'s own records are in data/, a file each, with a line saying what they are: structures, bosses, the market',dj('structures.json').vseen.includes('9,-9')&&typeof dj('structures.json').about==='string'&&dj('bosses.json').infkill.includes('3,4')&&
         Object.keys(dj('market.json').market.p).length>0&&!('vseen' in lvl)&&!('market' in lvl)&&!('infkill' in lvl)&&typeof lvl.seed==='number');}
 {const nd=path.join(OUT,'world','entities','nether'),nf=fs.existsSync(nd)?fs.readdirSync(nd):[];
-      ok('the Nether\'s mobs are saved under entities/nether, apart from the Overworld\'s',nf.length>0&&nf.flatMap(f=>JSON.parse(fs.readFileSync(path.join(nd,f),'utf8')).mobs).some(m=>m.type==='imp')&&!all.some(m=>m.type==='imp'));}
-    {const vs=files.flatMap(f=>JSON.parse(fs.readFileSync(path.join(dir,f),'utf8')).vehicles||[]);
+      ok('the Nether\'s mobs are saved under entities/nether, apart from the Overworld\'s',nf.length>0&&nf.flatMap(f=>ej(nd,f).mobs).some(m=>m.type==='imp')&&!all.some(m=>m.type==='imp'));}
+    {const vs=files.flatMap(f=>ej(dir,f).vehicles||[]);
       ok('...and the vehicles beside them',vs.some(v=>v.type==='boat'&&typeof v.health==='number')&&S2.world().vehicles.some(v=>v.t==='boat'));}
     ok('a restarted server reads them back',S2.world().mobs.filter(m=>!m.d).length===nSaved&&S2.world().mobs.some(m=>m.d==='nether')&&await until(()=>S2.host()&&S2.host().ready,20000));
     const b2=raw(S2.port,'Bea');await b2.open;await until(()=>!!b2.last('ready'));await b2.pose(sx,sy,sz);

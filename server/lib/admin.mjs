@@ -91,7 +91,7 @@ export function attachAdmin(S, { send, stop }) {
 
 /* ---- server.json, checked ---- */
 /* the settings that only take effect when the server is started again (everything a running server read once) */
-export const RESTART_KEYS = ['port', 'name', 'motd', 'accounts', 'maxPlayers', 'seed', 'mode', 'pvp', 'world', 'game', 'spawnProtection', 'sleepPercent', 'viewChunks', 'cert', 'key', 'origins', 'simulate', 'singlePlayer', 'pauseWhenEmpty', 'stopWhenEmpty', 'simulationDistance', 'catchUpMax', 'compressAfter', 'compressPlayersAfter'];
+export const RESTART_KEYS = ['port', 'name', 'motd', 'accounts', 'maxPlayers', 'seed', 'mode', 'pvp', 'world', 'game', 'spawnProtection', 'sleepPercent', 'viewChunks', 'cert', 'key', 'origins', 'simulate', 'singlePlayer', 'pauseWhenEmpty', 'stopWhenEmpty', 'simulationDistance', 'catchUpMax'];
 const isInt = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
 const NAME_RE = /^[\x21-\x7e][\x20-\x7e]{0,15}$/;           // a player name: printable ASCII, at most 16, not starting with a space
 /* Check a settings object (what server.json holds, or what the window's form produced). Returns
@@ -111,7 +111,6 @@ export function validateSettings(o, running) {
   if (!isInt(s.spawnProtection, 0, 256)) bad('spawnProtection', 'a whole number from 0 to 256');
   if (!isInt(s.sleepPercent, 1, 100)) bad('sleepPercent', 'a whole number from 1 to 100');
   if (!isInt(s.viewChunks, 4, 32)) bad('viewChunks', 'a whole number from 4 to 32');
-  for (const k of ['compressAfter', 'compressPlayersAfter']) if (!isInt(s[k], 0, 3650)) bad(k, 'a whole number of days from 0 (never) to 3650');
   if (!isInt(s.simulationDistance, 4, 12)) bad('simulationDistance', 'a whole number of chunks from 4 to 12');
   if (!isInt(s.stopWhenEmpty, 0, 1440)) bad('stopWhenEmpty', 'a whole number of minutes from 0 (never) to 1440');
   if (!isInt(s.catchUpMax, 0, 525600)) bad('catchUpMax', 'a whole number of minutes from 0 (no cap) to 525600 (a year)');
@@ -162,7 +161,6 @@ export const SETTINGS_FORM = [
   N('viewChunks', 'View distance sent to players (chunks)', 4, 32, 'World'), N('simulationDistance', 'How far round each player the server runs the world (chunks)', 4, 12, 'World'),
   B('simulate', 'The server runs the world itself (mobs, water, crops)', 'World'), N('pauseWhenEmpty', 'Pause a world nobody is in after (seconds; 0 never)', 0, 86400, 'World'),
   N('stopWhenEmpty', 'Stop a paused Nether or Aether after (minutes; 0 never)', 0, 1440, 'World'), N('catchUpMax', 'Most a crop or furnace catches up at once (minutes; 0 no limit)', 0, 525600, 'World'),
-  N('compressAfter', 'Compress land nobody has visited for (days; 0 never)', 0, 3650, 'World'), N('compressPlayersAfter', 'Compress players who have not joined for (days; 0 never)', 0, 3650, 'World'),
   B('singlePlayer', 'The served game may also play alone', 'World'),
   { key: 'cert', label: 'TLS certificate file, PEM (empty: plain http)', kind: 'text', group: 'Security' }, { key: 'key', label: 'TLS private key file, PEM', kind: 'text', group: 'Security' },
   { key: 'origins', label: 'Web pages allowed to connect (one address a line; empty: any)', kind: 'list', group: 'Security' },

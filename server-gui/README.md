@@ -43,6 +43,7 @@ The layout follows the server managers people already know: your servers down th
 - **Players:** who is online, where, and buttons to kick, ban, op or deop, and teleport one player to another.
 - **Settings** and **Game rules:** `server.json` as two forms, as the server's own version knows them: the settings and rules that version has, checked by that version before they are written, and the window says which changes need a restart. From game version 6.58 the server describes every setting and rule itself (`formSchema` in its `lib/admin.mjs`: label, kind, limits, group), so a setting or rule a later version adds appears with its own name and limits, in its own group, with no new window. An older server is shown with the window's own list, and anything a server has that nothing describes still appears, under its own name.
 - **Worlds:** the worlds in the data folder, switch world, make a new one (name, seed, mode, difficulty).
+- **World files (1.2):** the region and entity files of a world (6.60 packs them; older ones are JSON) with their size and what is in them: chunks, changed blocks, chests, dropped items, mobs, vehicles. Click one to see it as tables with names (what each chunk's blocks were changed to, what each chest holds, every mob with its place and health) or as the JSON it stands for, and **Save as JSON...** to keep a copy. **Search** finds a block, item or mob by name, part of a name, `#id` or mob type across every file, or only the ticked ones, including what each player carries; Blocks, Items, Mobs and Players narrow it, and a hit's file opens with a click. The files are read as the server last saved them: **Save the world now** (while it runs) saves first. Reading them needs a server version from 6.60 on in the library (the newest one there is used for a server on an older version).
 - **Backups:** Back up now (a running server saves first), and every dated copy under `backups/` with Restore (the world as it is now is kept as a backup first, so a restore can be undone) and Delete.
 - **Scheduler:** every so many minutes, back up the world (keeping the newest N), restart the server, or run a command. Tasks run while that server runs, counted from when it started.
 
@@ -56,7 +57,7 @@ Run from a checkout of the repository, the window also offers the checkout's own
 `main.js` starts each server from its version's folder as a child process with Electron's own Node (`ELECTRON_RUN_AS_NODE=1`) in its `--ipc` mode
 ([`server/lib/admin.mjs`](../server/lib/admin.mjs)): the server reports status, log lines and players over the fork
 channel and takes commands the same way. Nothing is read off its output. A server that crashes cannot take the window
-with it, and the window can start it again. Settings are checked with that version's own `lib/admin.mjs`. `lib/store.cjs` is the file
+with it, and the window can start it again. Settings are checked with that version's own `lib/admin.mjs`, and the World files tab reads with its `lib/region.mjs`. `lib/store.cjs` is the file
 handling (the server list, the versions library, settings, worlds, backups, scheduled tasks), kept apart from Electron so the test
 suites can run it; `lib/zip.cjs` reads a release zip.
 

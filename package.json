@@ -1,6 +1,6 @@
 {
   "name": "dinglecraft",
-  "version": "6.59.0",
+  "version": "6.60.0",
   "private": true,
   "description": "DINGLECRAFT: a fan-made voxel sandbox that ships as one HTML file.",
   "license": "SEE LICENSE IN LICENSE",
@@ -16,6 +16,7 @@
     "bump": "node scripts/bump.mjs",
     "release": "node scripts/release.mjs",
     "changelog": "node scripts/changelog.mjs",
+    "names": "node scripts/names.mjs",
     "package": "node scripts/package.mjs",
     "package:gui": "node scripts/package-gui.mjs",
     "repack": "node tools/assets/repack.mjs",

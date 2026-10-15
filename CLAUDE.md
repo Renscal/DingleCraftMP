@@ -57,8 +57,9 @@ tests/          core/ (frozen) lib/ (boot chain, paths.js) texpacks/ purgatory/ 
 tools/          art/ (packers, fal client: PAID) assets/ (unpack, repack) qa/ (muted browser rigs) hooks/ (git hooks)
                 scan_secrets.mjs scan_history.mjs grep-safe.sh lib/private_terms.cjs
 server/         the multiplayer server: dinglecraft-server.mjs (the front door) + lib/ (config, world, websocket, protocol,
-                commands, http, host, server, cli; headless.cjs + host_worker.cjs are the thread its own game runs in), no dependencies; Start Server.bat; its data/ is gitignored. The world on disk is a
-                folder (level.json, region/, entities/, playerdata/, data/; the layout is in lib/world.mjs and server/README.md)
+                commands, http, host, server, cli, region, files; headless.cjs + host_worker.cjs are the thread its own game runs in), no dependencies; Start Server.bat; its data/ is gitignored. The world on disk is a
+                folder (level.json, region/, entities/, playerdata/, data/; the layout is in lib/world.mjs and server/README.md;
+                the region and entity files are packed since 6.60: lib/region.mjs)
 client/         the desktop client: an Electron wrapper (main.js) around the same html; optional, nobody needs it to play
 server-gui/     the server as a window (Electron), one program for every server version (its own version and release:
                 npm run package:gui, tag server-gui-v<ver>): a library of imported Server zips (versions/<X.Y>/), each
@@ -195,8 +196,12 @@ Full map: `docs/ARCHITECTURE.md` (PART-to-file table, systems index, how each up
   - **The world clock (6.50):** `CATCH.clock` (`features/p53h_catchup.js`) runs with the land; the server keeps it in
     `level.json` with `savedAt`, runs it while empty, sends it as `{t:'clock'}`; crops, saplings and furnaces catch up
     on gaps. Use the clock, never `Date.now`, on a per-frame path (a save and a load each read `Date.now` once).
-  - **Cold files (6.53):** regions unvisited for `compressAfter` days and players unseen for `compressPlayersAfter` days
-    are written as `.json.br` (regions keep `runs` instead of `blocks`: `encodeRuns`/`decodeRuns` in `world.mjs`).
+  - **Packed world files (6.60, replacing the cold `.json.br` files of 6.53):** `region/<dim>/r.x.z.dcr` and
+    `entities/<dim>/r.x.z.dce` are the old JSON documents packed (`server/lib/region.mjs`: varints, runs, sparse chest
+    slots, repeated texts and key sets as references; no compression). Every older form is still read and rewritten packed
+    on the first start. Names come from `server/lib/names.json` (`npm run names` after a build; `n_files` fails when it
+    is stale). A new field in a region or entity document needs nothing: unknown values are kept as tagged values.
+    `node dinglecraft-server.mjs view|unpack|pack|files|find` (`lib/files.mjs`) and the window's World files tab read them.
   - **The server does not own inventories:** read ROADMAP step 6b before trying; it cannot be done one action at a time.
 
 **ID ledger** (`docs/ARCHITECTURE.md` section 7): grep before allocating. Next free at v6.43: **no block id is left**

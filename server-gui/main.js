@@ -1,7 +1,7 @@
 // DINGLECRAFT Server: the multiplayer server as a desktop program, a window instead of a terminal.
 // It manages a list of servers, each one a name and a data folder (its server.json and its worlds), shown down the left
 // of the window; the right side is the server that is picked: dashboard, console, players, settings, game rules,
-// worlds, backups, scheduler.
+// worlds, world files (1.2: the packed region and entity files of 6.60, shown and searched), backups, scheduler.
 // The server itself is not part of this program and does not run in this process. The window keeps a library of server
 // versions (each a server release, DINGLECRAFT-Server-v<X.Y>.zip, imported once: lib/store.cjs) and every server in the
 // list runs the version it is set to, so one window runs any mix of versions and does not change when the server does.
@@ -23,7 +23,7 @@ const store = require('./lib/store.cjs');
 const CHECKOUT = [path.join(__dirname, '..', 'server')].find((d) => fs.existsSync(path.join(d, 'dinglecraft-server.mjs')) && fs.existsSync(path.join(d, 'lib', 'admin.mjs'))) || null;
 
 /* G.list: the servers as servers.json has them. G.run: id -> what is known about each while the program is open. */
-const G = { win: null, tray: null, list: [], run: new Map(), quitting: false, admins: new Map(), timer: null, remote: { list: [], at: 0, why: '' }, dl: new Map() };
+const G = { win: null, tray: null, list: [], run: new Map(), quitting: false, admins: new Map(), regions: new Map(), timer: null, remote: { list: [], at: 0, why: '' }, dl: new Map() };
 const root = () => app.getPath('userData');
 const listFile = () => path.join(root(), 'servers.json');
 const saveList = () => store.writeServers(listFile(), G.list);
@@ -50,6 +50,23 @@ async function admin(e) {
   if (!dir) throw new Error(NO_VERSION);
   if (!G.admins.has(dir)) G.admins.set(dir, await import(pathToFileURL(path.join(dir, 'lib', 'admin.mjs')).href));
   return G.admins.get(dir);
+}
+/* 1.2: a version's reader of the world's files (lib/region.mjs, 6.60 and newer). It reads every form any version wrote, so
+   a server on an older version is read with the newest version in the library that has one. */
+async function regionLib(e) {
+  const has = (d) => !!d && fs.existsSync(path.join(d, 'lib', 'region.mjs')), own = dirOf(e && e.version);
+  const dir = has(own) ? own : (versions().find((v) => has(v.dir)) || {}).dir;
+  if (!dir) throw new Error('Showing the world files needs a server version from 6.60 on in the library. Import or download one under Server versions.');
+  if (!G.regions.has(dir)) G.regions.set(dir, await import(pathToFileURL(path.join(dir, 'lib', 'region.mjs')).href));
+  return G.regions.get(dir);
+}
+/* the folder of one of a server's worlds (its current one when none is named) */
+function worldDir(e, name) {
+  const w = name || store.readSettings(e.dataDir).world || 'world';
+  if (!store.goodWorldName(w)) throw new Error('not a world name');
+  const dir = path.join(e.dataDir, w);
+  if (!fs.existsSync(path.join(dir, 'level.json'))) throw new Error('There is no world called ' + w + ' yet: it is made the first time the server starts with it.');
+  return dir;
 }
 /* the settings on disk laid over the defaults, rule by rule (an older server.json lists fewer rules) */
 function formMerge(def, cur) { return { ...def, ...cur, rules: { ...def.rules, ...(cur.rules || {}) } }; }
@@ -84,6 +101,7 @@ function downloadVersion(v) {
     try {
       const out = store.importVersion(root(), tmp, (ver) => G.list.some((e) => rt(e.id).child && rt(e.id).version === ver));
       for (const [d] of G.admins) if (path.resolve(d) === path.resolve(out.dir)) G.admins.delete(d);
+      for (const [d] of G.regions) if (path.resolve(d) === path.resolve(out.dir)) G.regions.delete(d);
       fillAll(); changed();
       return out;
     } finally { fs.rmSync(tmp, { force: true }); }
@@ -255,6 +273,7 @@ function wire() {
     if (r.canceled || !r.filePaths[0]) return { ok: false, why: '' };
     const v = store.importVersion(root(), r.filePaths[0], (ver) => G.list.some((e) => rt(e.id).child && rt(e.id).version === ver));
     for (const [d] of G.admins) if (path.resolve(d) === path.resolve(v.dir)) G.admins.delete(d);   /* a re-import: read its settings check afresh */
+    for (const [d] of G.regions) if (path.resolve(d) === path.resolve(v.dir)) G.regions.delete(d);
     fillAll(); changed(); return { ok: true, version: v.version };
   });
   h('version:remove', (v) => { if (v === 'checkout') return { ok: false, why: 'The checkout\'s own server is not in the library.' }; store.removeVersion(root(), v, G.list); changed(); return { ok: true }; });
@@ -280,6 +299,37 @@ function wire() {
   h('worlds', (id) => { const d = entry(id).dataDir; return { ok: true, worlds: store.listWorlds(d), current: store.readSettings(d).world || 'world' }; });
   h('world:new', (id, w) => { const d = entry(id).dataDir, s = store.newWorld(d, store.readSettings(d), w); store.writeSettings(d, s); return { ok: true, restart: rt(id).running }; });
   h('world:use', (id, name) => { const d = entry(id).dataDir; if (!store.goodWorldName(name)) return { ok: false, why: 'not a world name' }; store.writeSettings(d, { ...store.readSettings(d), world: name }); return { ok: true, restart: rt(id).running }; });
+  /* ---- 1.2: the world's files. Read from disk as the server last saved them (a running server is asked to save first) ---- */
+  h('wfiles', async (id, w) => {
+    const e = entry(id), R = await regionLib(e), dir = worldDir(e, w), files = [];
+    for (const f of R.listWorldFiles(dir)) {
+      let sum = null, why = '';
+      try { const r = R.readWorldFile(dir, f.rel); sum = R.summary(r.kind, r.doc); } catch (err) { why = err.message; }
+      files.push({ ...f, summary: sum, why });
+    }
+    let players = 0;
+    try { players = fs.readdirSync(path.join(dir, 'playerdata')).filter((n) => /\.json(\.br)?$/.test(n)).length; } catch { /* none yet */ }
+    return { ok: true, world: path.basename(dir), worlds: store.listWorlds(e.dataDir).map((x) => x.name), files, players, running: !!rt(id).running };
+  });
+  h('wfile:read', async (id, w, rel) => {
+    const e = entry(id), R = await regionLib(e), dir = worldDir(e, w), r = R.readWorldFile(dir, String(rel || '')), text = R.docText(r.kind, r.doc);
+    return { ok: true, rel, kind: r.kind, form: r.form, dimension: r.doc.dimension, region: r.doc.region, summary: R.summary(r.kind, r.doc), tables: R.describeDoc(r.kind, r.doc),
+      text: text.length > 4e6 ? text.slice(0, 4e6) : text, cut: text.length > 4e6 };
+  });
+  h('wfile:export', async (id, w, rel) => {
+    const e = entry(id), R = await regionLib(e), dir = worldDir(e, w), r = R.readWorldFile(dir, String(rel || ''));
+    const out = await dialog.showSaveDialog(G.win, { title: 'Save this file as JSON', defaultPath: path.basename(String(rel)).replace(/\.(dcr|dce|json\.br|json)$/, '') + '.json', filters: [{ name: 'JSON', extensions: ['json'] }] });
+    if (out.canceled || !out.filePath) return { ok: false, why: '' };
+    fs.writeFileSync(out.filePath, R.docText(r.kind, r.doc));
+    return { ok: true, to: out.filePath };
+  });
+  h('wfind', async (id, w, o) => {
+    const e = entry(id), R = await regionLib(e), dir = worldDir(e, w), q = o && typeof o === 'object' ? o : {};
+    const r = await R.searchWorld(dir, { query: String(q.query || '').slice(0, 80), files: Array.isArray(q.files) ? q.files.map(String) : [], blocks: q.blocks !== false, items: q.items !== false, mobs: q.mobs !== false, players: q.players !== false,
+      limit: 2000, onFile: (rel, done, total) => tell('wfind', { id, done, total }) });
+    return { ok: true, ...r };
+  });
+  h('wsave', async (id) => { if (!rt(id).running) return { ok: true, text: '' }; return { ok: true, text: await sendCommand(id, 'save') }; });
   h('backups', (id) => ({ ok: true, backups: store.listBackups(entry(id).dataDir) }));
   h('backup:now', (id) => backupNow(id, 0));
   h('backup:restore', (id, name) => { if (rt(id).child) return { ok: false, why: 'Stop the server before restoring a backup.' }; const r = store.restoreBackup(entry(id).dataDir, name); addLog(id, 'restored ' + name + ' as "' + r.world + '"'); return { ok: true, ...r }; });

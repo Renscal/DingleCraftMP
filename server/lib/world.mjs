@@ -8,12 +8,14 @@
 //     vehicles [{t, x, y, z, yaw, hp}] (its cars, boats, planes, carts and skateboards, likewise),
 //     spawn {x, y, z} (where new players start), ...whatever else the save carried }
 //
-// On disk it is a folder, laid out like a Minecraft world and written as JSON a person can read and edit (6.12):
+// On disk it is a folder, laid out like a Minecraft world (6.12). What fills the world is packed for size (6.60, lib/region.mjs:
+// "node dinglecraft-server.mjs view <file>" prints one as JSON, the server window shows and searches them); the rest is JSON
+// a person can read and edit:
 //   <world>/
 //     level.json                        the world itself: name, seed, mode, time, spawn, rules, and whatever else a save carried
-//     region/<dimension>/r.<rx>.<rz>.json    the changed blocks and the chests and furnaces of one region: 32 x 32 chunks
+//     region/<dimension>/r.<rx>.<rz>.dcr     the changed blocks and the chests and furnaces of one region: 32 x 32 chunks
 //                                            (512 x 512 blocks), named after its place in the world
-//     entities/<dimension>/r.<rx>.<rz>.json  everything that lies or walks in that region: the dropped items and the mobs
+//     entities/<dimension>/r.<rx>.<rz>.dce   everything that lies or walks in that region: the dropped items and the mobs
 //     playerdata/<name>.json            one file per player who has ever joined: position, health, hunger, spawn point,
 //                                       inventory, armour, XP, game mode
 //     data/structures.json              which villages, dungeons, parks and roosts have been found (so each is populated
@@ -23,12 +25,14 @@
 //     data/market.json                  what the stocks cost
 // Only what changed since the last save is written (each file through a .tmp and a rename), and a file whose region
 // emptied out is removed. A world from before 6.12 (one world.vxw.json) is read once and written out as a folder; the old
-// file is left where it was. exportWorld turns the folder back into that one file, which the game can import.
+// file is left where it was. Region and entity files from before 6.60 (.json, and the .json.br of 6.53 to 6.59) and the
+// .json.br players of 6.53 to 6.59 are read, and written out in the new form at once. exportWorld turns the folder back into that one file, which the game can import.
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import zlib from 'node:zlib';
 import { RULES, DIM_PFX, LIMITS, cleanRules } from './config.mjs';
+import { encodeRegion, encodeEntities, decodeFile, listWorldFiles, fileName } from './region.mjs';
 
 /* the game's hashSeed (src/core/p07f_world_lifecycle.js): a number as typed, words hashed, blank = random */
 export function hashSeed(str) {
@@ -154,15 +158,9 @@ export function playerFile(key) {
 }
 
 const line = (v) => JSON.stringify(v);
-/* an object as one "key": value pair per line, each value on a single line: readable, diffable, and not a page per chest */
-function lines(obj, indent) {
-  const keys = Object.keys(obj);
-  return keys.length ? '{\n' + keys.map((k) => indent + '  ' + line(k) + ': ' + line(obj[k])).join(',\n') + '\n' + indent + '}' : '{}';
-}
 
 /* The world as files: a Map of path (relative to the world folder, forward slashes) -> text. */
-export function worldFiles(world, cold) {
-  const coldR = (cold && cold.regions) || new Set(), coldP = (cold && cold.players) || new Set();   // 6.51: what is written compressed
+export function worldFiles(world) {
   const out = new Map();
   const { edits, be, players, drops, mobs, vehicles, ...level } = world;
   /* data/<name>.json: the world's own records leave level.json for a file each (only the ones this world has) */
@@ -174,10 +172,10 @@ export function worldFiles(world, cold) {
   }
   out.set('level.json', JSON.stringify({ layout: LAYOUT, regionSize: REGION, chunkSize: CHUNK, ...level }, null, 2) + '\n');
 
-  /* region/<dim>/r.<rx>.<rz>.json: chunk by chunk, the changed blocks ("lx,y,lz": block id) and the block entities */
+  /* region/<dim>/r.<rx>.<rz>.dcr: chunk by chunk, the changed blocks ("lx,y,lz": block id) and the block entities */
   const regions = new Map();           // 'over/0.-1' -> { 'cx,cz': { blocks, blockEntities } }
   const chunkIn = (folder, cx, cz) => {
-    const rk = folder + '/' + regionOf(cx, cz);
+    const rk = folder + '/' + (Number.isFinite(cx) && Number.isFinite(cz) ? regionOf(cx, cz) : '0.0');   // a key that is no place: kept in r.0.0
     let r = regions.get(rk);
     if (!r) regions.set(rk, r = {});
     return r[cx + ',' + cz] || (r[cx + ',' + cz] = { blocks: null, blockEntities: null });
@@ -193,15 +191,12 @@ export function worldFiles(world, cold) {
     (ch.blockEntities || (ch.blockEntities = {}))[bk] = be[k];
   }
   for (const [rk, chunks] of regions) {
-    const [folder, r] = rk.split('/'), [rx, rz] = r.split('.').map(Number), isCold = coldR.has(rk);
-    const body = Object.keys(chunks).sort().map((ck) => {
-      const c = chunks[ck];
-      return '    ' + line(ck) + ': {\n      ' + (isCold ? '"runs": ' + line(encodeRuns(c.blocks || {})) : '"blocks": ' + line(c.blocks || {})) + ',\n      "blockEntities": ' + lines(c.blockEntities || {}, '      ') + '\n    }';
-    }).join(',\n');
-    (isCold ? (rel, text) => out.set(rel + '.br', brotli(text)) : (rel, text) => out.set(rel, text))(`region/${folder}/r.${r}.json`, `{\n  "dimension": ${line(folder)},\n  "region": [${rx}, ${rz}],\n  "blocksFrom": [${rx * REGION * CHUNK}, ${rz * REGION * CHUNK}],\n  "chunks": {\n${body}\n  }\n}\n`);
+    const [folder, r] = rk.split('/'), [rx, rz] = r.split('.').map(Number), doc = { dimension: folder, region: [rx, rz], blocksFrom: [rx * REGION * CHUNK, rz * REGION * CHUNK], chunks: {} };
+    for (const ck of Object.keys(chunks)) doc.chunks[ck] = { blocks: chunks[ck].blocks || {}, blockEntities: chunks[ck].blockEntities || {} };
+    out.set(`region/${folder}/${fileName('region', rx, rz)}`, encodeRegion(doc));
   }
 
-  /* entities/<dim>/r.<rx>.<rz>.json: what lies in that region */
+  /* entities/<dim>/r.<rx>.<rz>.dce: what lies in that region */
   const ents = new Map();            // 'over/0.-1' -> { items: {id: ...}, mobs: [...] }
   const entsIn = (folder, x, z) => { const rk = folder + '/' + blockRegion(x, z); let r = ents.get(rk); if (!r) ents.set(rk, r = { items: {}, mobs: [], vehicles: [] }); return r; };
   for (const id of Object.keys(drops)) {
@@ -219,8 +214,7 @@ export function worldFiles(world, cold) {
   for (const v of vehicles || []) entsIn(v.d || 'over', v.x, v.z).vehicles.push({ type: v.t, x: v.x, y: v.y, z: v.z, yaw: v.yaw, health: v.hp });
   for (const [rk, e] of ents) {
     const [folder, r] = rk.split('/'), [rx, rz] = r.split('.').map(Number);
-    const listText = (arr) => (arr.length ? '[\n' + arr.map((m) => '    ' + line(m)).join(',\n') + '\n  ]' : '[]');
-    out.set(`entities/${folder}/r.${r}.json`, `{\n  "dimension": ${line(folder)},\n  "region": [${rx}, ${rz}],\n  "items": ${lines(e.items, '  ')},\n  "mobs": ${listText(e.mobs)},\n  "vehicles": ${listText(e.vehicles)}\n}\n`);
+    out.set(`entities/${folder}/${fileName('entities', rx, rz)}`, encodeEntities({ dimension: folder, region: [rx, rz], ...e }));
   }
 
   /* playerdata/<name>.json */
@@ -232,50 +226,13 @@ export function worldFiles(world, cold) {
     const head = JSON.stringify({ player: key, ...(typeof password === 'string' ? { password } : {}), ...rest }, null, 2).replace(/\n}$/, '');
     const list = (name, arr) => (Array.isArray(arr) ? `,\n  ${line(name)}: [\n${arr.map((it) => '    ' + line(it)).join(',\n')}\n  ]` : '');
     const text = head + list('armor', armor) + list('inv', inv) + '\n}\n';
-    if (coldP.has(key)) out.set('playerdata/' + playerFile(key) + '.br', brotli(text)); else out.set('playerdata/' + playerFile(key), text);
+    out.set('playerdata/' + playerFile(key), text);
   }
   return out;
 }
 
 const md5 = (t) => crypto.createHash('md5').update(t).digest('hex');
-/* ----- cold files (6.51) -----
-   A region nobody has been near for compressAfter days, and a player who has not joined for compressPlayersAfter days, are
-   written compressed: r.<rx>.<rz>.json.br and <name>.json.br, Brotli (Node's own zlib). Inside, a cold region's chunks keep
-   their changed blocks as "runs" instead of "blocks": every changed cell by its index in the chunk (y * 256 + z * 16 + x),
-   in order, and a stretch of cells in a row with the same block written once, in base 36:
-     "<start>[+<length>]=<block>"   separated by spaces; the block is the id plus its meta << 8, as in "blocks"
-   so a dug-out chunk is a few bytes. Anyone can open one: brotli -d, or node -e "process.stdout.write(require('zlib')
-   .brotliDecompressSync(require('fs').readFileSync(process.argv[1])))" <file>. The server reads both forms, and writes a
-   file plain again as soon as its region is visited or its player joins. */
-export function encodeRuns(blocks) {
-  const a = [];
-  for (const lk of Object.keys(blocks || {})) {
-    const p = lk.split(',').map(Number), v = blocks[lk];
-    if (p.length === 3 && p.every(Number.isInteger) && Number.isInteger(v)) a.push([p[1] * 256 + p[2] * 16 + p[0], v]);
-  }
-  a.sort((x, y) => x[0] - y[0]);
-  const out = [];
-  for (let i = 0; i < a.length;) {
-    let j = i;
-    while (j + 1 < a.length && a[j + 1][0] === a[j][0] + 1 && a[j + 1][1] === a[i][1]) j++;
-    out.push(a[i][0].toString(36) + (j > i ? '+' + (j - i + 1).toString(36) : '') + '=' + a[i][1].toString(36));
-    i = j + 1;
-  }
-  return out.join(' ');
-}
-/* the runs back into {"lx,y,lz": block} (anything malformed is skipped) */
-export function decodeRuns(text) {
-  const out = {};
-  for (const r of String(text || '').split(' ')) {
-    const m = /^([0-9a-z]+)(?:\+([0-9a-z]+))?=([0-9a-z]+)$/.exec(r);
-    if (!m) continue;
-    const s = parseInt(m[1], 36), n = m[2] ? parseInt(m[2], 36) : 1, v = parseInt(m[3], 36);
-    for (let i = s; i < s + n && i < CHUNK * CHUNK * 256; i++) out[(i % CHUNK) + ',' + Math.floor(i / 256) + ',' + (Math.floor(i / CHUNK) % CHUNK)] = v;
-  }
-  return out;
-}
-const brotli = (text) => zlib.brotliCompressSync(Buffer.from(text, 'utf8'), { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 11 } });
-/* every .json file under a folder of the world, as paths relative to the world folder (and, since 6.51, .json.br) */
+/* every .json file under a folder of the world, as paths relative to the world folder (and the .json.br of 6.53 to 6.59) */
 function listJson(dir, sub) {
   const out = [];
   (function walk(rel) {
@@ -289,9 +246,10 @@ function listJson(dir, sub) {
   return out;
 }
 
-/* Read a world folder. Returns { world (not yet adopted), seen }: seen is path -> md5 of every file read, which
-   writeWorld uses to write only what changed and to remove a file whose content is gone. A file that cannot be parsed
-   is an error that names it. */
+/* Read a world folder. Returns { world (not yet adopted), seen, stale }: seen is path -> md5 of every file read, which
+   writeWorld uses to write only what changed and to remove a file whose content is gone; stale is how many files are in a
+   form from before 6.60 (the server writes them out in the new form at once). A file that cannot be read is an error that
+   names it. */
 export function readWorldDir(dir) {
   const seen = new Map();
   const read = (rel) => {
@@ -309,21 +267,29 @@ export function readWorldDir(dir) {
     if (!DATA_FILES[name] || !doc || typeof doc !== 'object') continue;
     for (const k of DATA_FILES[name].keys) if (doc[k] !== undefined) world[k] = doc[k];
   }
-  for (const rel of listJson(dir, 'region')) {
-    const pfx = dimPrefix(rel.split('/')[1]);
+  /* the regions and entities (lib/region.mjs reads every form). A place with a file in an older form beside its new one
+     (a conversion cut short) is read from the new one; the old one is in seen, so the next save removes it. */
+  let stale = 0;
+  const packed = (rel) => {
+    const raw = fs.readFileSync(path.join(dir, rel));
+    seen.set(rel, md5(raw));
+    return decodeFile(raw, path.join(dir, rel)).doc;
+  };
+  for (const f of listWorldFiles(dir, true)) {
+    if (f.form !== 'packed') stale++;
+    if (f.shadowed) { seen.set(f.rel, ''); continue; }
+    const pfx = dimPrefix(f.dim);
     if (pfx === null) continue;
-    const chunks = read(rel).chunks || {};
-    for (const ck of Object.keys(chunks)) {
-      const c = chunks[ck] || {};
-      const blocks = c.blocks || (typeof c.runs === 'string' ? decodeRuns(c.runs) : null);   // 6.51: a cold region keeps runs
-      if (blocks && Object.keys(blocks).length) world.edits[pfx + ck] = blocks;
-      for (const bk of Object.keys(c.blockEntities || {})) world.be[pfx + bk] = c.blockEntities[bk];
+    if (f.kind === 'region') {
+      const chunks = packed(f.rel).chunks || {};
+      for (const ck of Object.keys(chunks)) {
+        const c = chunks[ck] || {};
+        if (c.blocks && Object.keys(c.blocks).length) world.edits[pfx + ck] = c.blocks;
+        for (const bk of Object.keys(c.blockEntities || {})) world.be[pfx + bk] = c.blockEntities[bk];
+      }
+      continue;
     }
-  }
-  for (const rel of listJson(dir, 'entities')) {
-    const folder = rel.split('/')[1];
-    if (dimPrefix(folder) === null) continue;
-    const file = read(rel), items = file.items || {};
+    const folder = f.dim, file = packed(f.rel), items = file.items || {};
     for (const m of Array.isArray(file.mobs) ? file.mobs : []) {
       if (m && typeof m === 'object') world.mobs.push({ d: folder, t: m.type, x: m.x, y: m.y, z: m.z, yaw: m.yaw, hp: m.health, name: m.name, ...(Array.isArray(m.origin) ? { ox: m.origin[0], oz: m.origin[1] } : {}) });
     }
@@ -333,17 +299,18 @@ export function readWorldDir(dir) {
     for (const id of Object.keys(items)) { const it = items[id]; if (it && typeof it === 'object') world.drops[id] = { dim: folder, x: it.x, y: it.y, z: it.z, st: it.item, age: +it.ageSeconds || 0 }; }
   }
   for (const rel of listJson(dir, 'playerdata')) {
+    if (rel.endsWith('.br')) stale++;
     const { player, ...p } = read(rel);
     if (typeof player === 'string' && player) world.players[playerKey(player)] = p;
   }
-  return { world, seen };
+  return { world, seen, stale };
 }
 
 /* Write the world folder: only the files whose text changed since the last write (or the read), each through a .tmp and a
    rename so a crash never leaves half a file, and remove the ones whose content is gone. seen (path -> md5) is updated.
    Returns how many files were written or removed. */
-export function writeWorld(dir, world, seen, cold) {
-  const files = worldFiles(world, cold);
+export function writeWorld(dir, world, seen) {
+  const files = worldFiles(world);
   let n = 0;
   for (const [rel, text] of files) {
     const h = md5(text);
@@ -362,12 +329,6 @@ export function writeWorld(dir, world, seen, cold) {
   return n;
 }
 
-/* 6.51: the region a chunk is in, as worldFiles names it ("over/0.-1"), from a chunk key with its dimension prefix */
-export function regionKey(ck) {
-  const [pfx, k] = splitKey(ck), c = k.split(',');
-  return dimFolder(pfx) + '/' + regionOf(+c[0], +c[1]);
-}
-
 /* the world as the one file the game's Import World reads (and a server from before 6.12 used) */
 export function exportWorld(world) {
   const players = {};   // 6.49: the one file is for single player: accounts (passwords, locks) stay with the server
@@ -380,10 +341,10 @@ export function exportWorld(world) {
    disk". Anything that cannot be read is an error, never replaced: the host decides what to do with a damaged world. */
 export function openWorld(place, o, log) {
   if (!o.memory && place && fs.existsSync(path.join(place.dir, 'level.json'))) {
-    const { world: raw, seen } = readWorldDir(place.dir);
+    const { world: raw, seen, stale } = readWorldDir(place.dir);
     const world = adoptWorld(raw, o);
     log(`world: loaded ${place.dir} (seed ${world.seed}, ${Object.keys(world.edits).length} edited chunks, ${Object.keys(world.players).length} known players)`);
-    return { world, isNew: false, seen };
+    return { world, isNew: false, seen, stale };
   }
   if (!o.memory && place && fs.existsSync(place.legacy) && fs.statSync(place.legacy).isFile()) {
     let d;

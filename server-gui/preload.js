@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('dc', {
   state: call('state'), start: call('start'), stop: call('stop'), kill: call('kill'), restart: call('restart'), command: call('command'), setSkin: call('setskin'),
   readSettings: call('settings:read'), saveSettings: call('settings:save'),
   worlds: call('worlds'), newWorld: call('world:new'), useWorld: call('world:use'),
+  worldFiles: call('wfiles'), readWorldFile: call('wfile:read'), exportWorldFile: call('wfile:export'), findInWorld: call('wfind'), saveWorld: call('wsave'),
   backups: call('backups'), backupNow: call('backup:now'), restoreBackup: call('backup:restore'), deleteBackup: call('backup:delete'),
   saveTask: call('task:save'), deleteTask: call('task:delete'),
   importVersion: call('version:import'), removeVersion: call('version:remove'), setVersion: call('server:version'),
