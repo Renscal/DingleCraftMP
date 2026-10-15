@@ -1,7 +1,7 @@
 # CLAUDE.md: working on DINGLECRAFT
 
 You are working on **DINGLECRAFT**, an original fan-made Minecraft-style voxel sandbox that ships as **one HTML file**
-(three.js r128, no framework, no game dependencies). It has grown feature by feature for a long time under a strict
+(three.js r128, no framework, no game dependencies), with its Hyperreal art in an `art/` folder beside it since 6.62. It has grown feature by feature for a long time under a strict
 test-first, surgical-edit discipline. This file hands that discipline to you. Read it fully before touching code, then
 read the doc for the area you are working in.
 
@@ -14,8 +14,8 @@ original: no real characters, brands or trademarks in names, art or text (the IP
 
 ## 0. Hard rules (never break these)
 
-1. **Testing is always muted.** The owner may be at the machine. In any browser: your own headless Chrome with
-   `--mute-audio`, `vx_vox_settings` merged with `{snd:0,mus:0,tp:'og'}` before the page runs (merge, never wipe), and
+1. **Testing is always muted.** The owner may be at the machine. In any browser: your own off-screen browser (headless
+   Chrome, or where there is no Chrome the client's Electron through `tools/qa/lib/electron.mjs`) with `--mute-audio`, `vx_vox_settings` merged with `{snd:0,mus:0,tp:'og'}` before the page runs (merge, never wipe), and
    `soundOn=false; if(AC)AC.suspend()` after every load. Never turn sound on. Verify audio offline only. Put `tp:'og'`
    back when done. Details: `docs/QA.md`.
 2. **Secrets.** Never read, print, copy, create or commit a `.env` file or any key. Secret scans report `path:line` and a
@@ -43,7 +43,7 @@ original: no real characters, brands or trademarks in names, art or text (the IP
 ## 1. Layout
 
 ```
-src/            the game, about 190 files, joined in src/ORDER.txt order (the only source of order)
+src/            the game, about 200 files, joined in src/ORDER.txt order (the only source of order)
   core/ world/ entities/ ui/ features/   PARTs 1-52 (the original sandbox, every update's core hooks folded in)
   ui/p53_chat.js PART 53 (chat, the Tab list; the AI players it came with were removed in 6.10)
   texpacks/ PART 54 (+ models/, loaders/)      purgatory/ PART 55
@@ -52,11 +52,13 @@ src/            the game, about 190 files, joined in src/ORDER.txt order (the on
 html/           head.html in 18 pieces (html/ORDER.txt) + tail.html; css/ per system, dom/ by region
 assets/         logo.png, title/ (menu panorama), vendor/ (three.js r128, inlined), packed/{hr,mg}/ (429 WebP + sidecars +
                 manifests), pack-inputs/
-scripts/        build.mjs serve.mjs bump.mjs release.mjs package.mjs gate.mjs changelog.mjs guards.json lib/
-tests/          core/ (frozen) lib/ (boot chain, paths.js) texpacks/ purgatory/ pilot/ creativity/ malgorath/
-                ui/ repo/ fixtures/ gate.json
-tools/          art/ (packers, fal client: PAID) assets/ (unpack, repack) qa/ (muted browser rigs) hooks/ (git hooks)
-                scan_secrets.mjs scan_history.mjs grep-safe.sh lib/private_terms.cjs
+scripts/        build.mjs serve.mjs bump.mjs release.mjs package.mjs package-gui.mjs gate.mjs changelog.mjs names.mjs
+                guards.json lib/
+tests/          core/ (frozen) core2/ (the k* suites: later core features) net/ (the server and the multiplayer client)
+                lib/ (boot chain, paths.js) texpacks/ purgatory/ pilot/ creativity/ malgorath/ ui/ repo/ fixtures/ gate.json
+tools/          art/ (packers, fal client: PAID) assets/ (unpack, repack) qa/ (muted browser rigs; lib/electron.mjs where there
+                is no Chrome) prof/ (summary.mjs: a CPU profile as a table) hooks/ (git hooks) scan_secrets.mjs
+                scan_history.mjs grep-safe.sh lib/private_terms.cjs
 server/         the multiplayer server: dinglecraft-server.mjs (the front door) + lib/ (config, world, websocket, protocol,
                 commands, http, host, server, cli, region, files; headless.cjs + host_worker.cjs are the thread its own game runs in), no dependencies; Start Server.bat; its data/ is gitignored. The world on disk is a
                 folder (level.json, region/, entities/, playerdata/, data/; the layout is in lib/world.mjs and server/README.md;
@@ -69,6 +71,7 @@ server-gui/     the server as a window (Electron), one program for every server 
                 A new server setting (config DEFAULTS) or game rule (RULES) needs a line in SETTINGS_FORM / RULES_FORM in
                 server/lib/admin.mjs (label, kind, limits): the window builds its forms from it, and n_admin enforces it
 docs/           ARCHITECTURE BUILD TESTING QA ASSETS RELEASING PARITY ROADMAP LEGACY LANDMINES
+DINGLECRAFT.html, art/   the newest release (npm run release copies both: the page and its Hyperreal art)
 build/ dist/ out/   gitignored outputs
 ```
 
@@ -104,8 +107,12 @@ script) is still built for the suites. Build with `npm run build` (about 1 s). T
    **Every version gets a GitHub release**, cut from `Experimental`, with two downloads, a server zip and a client zip
    (`npm run package`, then the `gh release create` line it prints, with `-R <owner>/DingleCraftMP` added (the repository the `mp`
    remote points at): the `origin` remote is a different repository, and `gh` run from a worktree picks it; `docs/RELEASING.md` step 6). These are betas for
-   players to test: the owner releases them without the gate (`npm run release -- --no-gate`). The access token lives in the machine's git credentials, never in this file or any other repo file (hard
+   players to test: the owner releases them without the gate (`npm run release -- --no-gate`; the quick tier still runs,
+   about 4.5 min). The access token lives in the machine's git credentials, never in this file or any other repo file (hard
    rule 2: a token in a tracked file is published with the next push, and GitHub revokes it on sight).
+   **The server window** (`server-gui/`) is released only when it changes: raise its `package.json` version, `npm run
+   package:gui`, then build its Windows installer from that zip unpacked in a scratch folder (`npm install`, `npm run dist`;
+   Wine is installed here), check it (`file`: Nullsoft; its ProductVersion), and publish both on `server-gui-v<ver>`.
 10. **Announce** with playful per-feature patch notes, plus the test counts `npm run release` prints (the in-game
     patch-notes screen is retired; `PATCH_LOG` is the data behind `CHANGELOG.md`).
 
@@ -210,7 +217,7 @@ Full map: `docs/ARCHITECTURE.md` (PART-to-file table, systems index, how each up
     `node dinglecraft-server.mjs view|unpack|pack|files|find` (`lib/files.mjs`) and the window's World files tab read them.
   - **The server does not own inventories:** read ROADMAP step 6b before trying; it cannot be done one action at a time.
 
-**ID ledger** (`docs/ARCHITECTURE.md` section 7): grep before allocating. Next free at v6.43: **no block id is left**
+**ID ledger** (`docs/ARCHITECTURE.md` section 7): grep before allocating. Next free (unchanged through 6.64): **no block id is left**
 (212 stays undefined on purpose; farming took 217-219 and 248, saplings 249: new blocks must share an id and use meta); item ids 309, 339, then 382+. Purgatory ids are assigned only in
 `purgatory/p0_contract.js`, creativity's only in `c0_contract.js`, Malgorath's only in `m0_contract.js`.
 
@@ -237,7 +244,7 @@ shipped version that changed bytes also fails.
 - Smokes: `stepper(base)` with strictly increasing timestamps (40-60 ms gaps; base >= 700000 for Malgorath), ~160
   warm-up frames, settle >= 25 frames after any teleport, purge hostiles before damage-sensitive phases, assert item
   totals not entity counts, never cache `V.P`, `boot.detClock(V)` for long timing-sensitive runs, seed `Math.random`.
-- Commands: `npm run test:quick` (~8 min), `npm test` (~12 min, 3 suites at once by default since 6.63), `npm run gate` (longer: smokes repeated; run it in the background, never
+- Commands: `npm run test:quick` (~4.5 min), `npm test` (~12 min, 3 suites at once by default since 6.63), `npm run gate` (longer: smokes repeated; run it in the background, never
   two heavy gates at once), one suite: `npm run build && node tests/<group>/<suite>.js`.
 - og_trace compares the OG game with golden recordings; re-bless (`--bless <file> --reason "..."`) only for a deliberate
   OG change, after proving the divergence comes only from it (put the old behaviour back in a scratch copy of
@@ -246,6 +253,14 @@ shipped version that changed bytes also fails.
   a suite that may run beside a copy of itself writes to its own folder (`out/net/host_data_<pid>`); the server's
   `dirty` flag is internal, so a test changes something real (`S.setTime`) to make `saveWorld` write; the test THREE is
   a stand-in without 3D maths (load `assets/vendor/three.r128.min.js` for a real check).
+- Rig lessons from 6.63-6.64 (four flakes, all the rig's): the game drops chunks farther than the view distance + 2
+  every 180 frames, so force them again right before building somewhere Dan is not; the game autosaves every 60 s of
+  game time and online that is a `save` too (`V.autoSaveT(0)` before a window that counts saves); wait for the server
+  to have handled a message (`until(...)`), never a fixed sleep; light a room before clearing its monsters, or the game
+  spawns into the frames the clearing steps; the clock runs on, so compare times within a tolerance.
+- **Timing checks measure the machine** (`p1_smoke`'s chunk speed, anything in real ms): look at `/proc/loadavg` before
+  believing one. With the owner's video or browser running (load ~7 on 4 cores) they fail even alone: say so, re-run
+  later, never loosen the check to make it pass.
 
 **Debugging protocol:** instrument, do not theorise past two guesses. Insert a temporary probe
 (`if(typeof __xProbe!=='undefined')__xProbe({...});`), define `global.__xProbe` in the test, read the truth, then strip
@@ -259,6 +274,12 @@ every document, freezes rAF so `frameStep` does not stack loops). Quick check: `
 tools/qa/boot_check.mjs --launch --port <p>` (starts and stops its own Chrome and server). Verify WebGL2 first; built-in
 editor browser panes have none. Review frames as 5×6 contact sheets, not one image at a time. Put `tp:'og'` back at the
 end.
+**No Chrome on this machine:** `node tools/qa/boot_check.mjs --launch --electron --port <p>` uses the client's Electron
+(`npm install` in `client/`), off-screen, muted, its own profile under `out/qa/`. For anything else, a scratch Electron
+`main.js` in the scratchpad: `BrowserWindow({show:false, webPreferences:{offscreen:true}})`, `setAudioMuted(true)`, the
+settings merged before the page runs, `webContents.capturePage()` for screenshots, and `executeJavaScript` wrapped in a
+try/catch that returns the error (a bare one only says "Script failed to execute"). The server window can be driven the
+same way with `BrowserWindow` and `Tray` replaced before its `main.js` loads (no window, no tray icon on the desktop).
 
 ## 8. Landmines (the top of `docs/LANDMINES.md`)
 
@@ -281,6 +302,11 @@ end.
   shaped, so `colInfo` heights can be over a hole.
 - Shared chests open only when the server answers (`ntBeAsk`): anything a click does next must not assume the window is
   open (6.51: a held block was placed against it).
+- The Hyperreal art is not in the page (6.62): `hrAssets()` is null and `hrMgAssets()` empty until `hrArtLoad()` has
+  loaded `art/` (`tpEnable` waits for it). Never cache an art table before `hrArtReady()`. `hrart.js` must keep its first
+  line `/* PART 54 ASSETS - GENERATED`: `server/lib/host.mjs` cuts the game script out of the html there.
+- A chest label (`be.lbl`, 6.63) is an item id, never an item: never put it in `be.inv`, a slot or a drop. The label slot
+  (`#mlabel`) has its own click handler on purpose; built with `mkSlot` it would be reachable by shift-click and dragging.
 
 ## 9. Voice
 
