@@ -52,7 +52,7 @@ boot.run(async()=>{
   /* 6.49: a new server has accounts: the window makes Vera one first */
   const made=await cmd('account add Vera v3ra');await until(()=>(last('status').status.accountList||[]).some(a=>a.name==='Vera'),3000);
   {const st2=last('status').status,a=(st2.accountList||[]).find(x=>x.name==='Vera')||{};
-    ok('a new server has accounts on; one made from the window is in the next status, with its password for the window to show ('+made+')',st2.accounts===true&&a.password==='v3ra'&&a.online===false&&st2.locks&&st2.locks.skin===false);}
+    ok('a new server has accounts on; one made from the window is in the next status, its password blank (6.61: a hash nobody reads) ('+made+')',st2.accounts===true&&a.password===''&&!JSON.stringify(st2).includes('v3ra')&&a.online===false&&st2.locks&&st2.locks.skin===false);}
   const ws=new WebSocket('ws://127.0.0.1:'+st.port+'/');const inbox=[];
   await new Promise((res,rej)=>{ws.onopen=res;ws.onerror=()=>rej(new Error('no connection'));});
   ws.onmessage=e=>{try{inbox.push(JSON.parse(e.data));}catch(x){}};

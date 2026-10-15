@@ -15,6 +15,7 @@
 // Also here, because the window and the tests both need it: validateSettings, the check server.json's values must pass.
 import os from 'node:os';
 import { DEFAULTS, RULES, DIFFICULTIES, cleanRules } from './config.mjs';
+import { PASSWORD_LEVELS } from './commands.mjs';
 import { playerKey } from './world.mjs';
 
 /* this computer's addresses on the local network */
@@ -32,9 +33,10 @@ export function adminStatus(S, startedAt, heaps) {
     uptime: Math.round((Date.now() - startedAt) / 1000), memory: process.memoryUsage().rss,
     difficulty: S.world().gr.difficulty || 'normal', mode: S.world().mode || 's',
     hosts: ['over', 'nether', 'aether'].map((d) => { const h = S.host(d); return { dim: d, running: !!h, ready: !!(h && h.ready), paused: !!(h && h.paused), heap: (heaps && heaps[d]) || 0 }; }),
-    /* 6.49: every account on this server (the window is the owner's: it may show the password, which is plain text on disk anyway) */
+    /* 6.49: every account on this server. 6.61: passwords are hashes nobody can read, so password is always '' (it stays in
+       the message for windows from before: they show it blank) */
     accountList: Object.entries(S.world().players || {}).filter(([, r]) => r && typeof r.password === 'string').map(([k, r]) => ({ name: r.name || k, key: k,
-      online: S.players().some((c) => c.ready && !c.host && playerKey(c.name) === k), op: ops.has(k), password: r.password, skin: !!r.skin, locks: r.locks || {}, seen: r.seen || '' }))
+      online: S.players().some((c) => c.ready && !c.host && playerKey(c.name) === k), op: ops.has(k), password: '', skin: !!r.skin, locks: r.locks || {}, seen: r.seen || '' }))
       .sort((a, b) => a.key.localeCompare(b.key)),
     locks: { name: !!S.opts.lockNames, password: !!S.opts.lockPasswords, skin: !!S.opts.lockSkins },
     players: S.players().filter((c) => c.ready && !c.host).map((c) => ({ id: c.id, name: c.name, op: ops.has(playerKey(c.name)), gm: c.gm || '', ms: c.ms | 0,
@@ -91,7 +93,7 @@ export function attachAdmin(S, { send, stop }) {
 
 /* ---- server.json, checked ---- */
 /* the settings that only take effect when the server is started again (everything a running server read once) */
-export const RESTART_KEYS = ['port', 'name', 'motd', 'accounts', 'maxPlayers', 'seed', 'mode', 'pvp', 'world', 'game', 'spawnProtection', 'sleepPercent', 'viewChunks', 'cert', 'key', 'origins', 'simulate', 'singlePlayer', 'pauseWhenEmpty', 'stopWhenEmpty', 'simulationDistance', 'catchUpMax'];
+export const RESTART_KEYS = ['port', 'name', 'motd', 'accounts', 'maxPlayers', 'seed', 'mode', 'pvp', 'world', 'game', 'spawnProtection', 'sleepPercent', 'viewChunks', 'cert', 'key', 'origins', 'simulate', 'singlePlayer', 'pauseWhenEmpty', 'stopWhenEmpty', 'simulationDistance', 'catchUpMax', 'passwordSecurity'];
 const isInt = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
 const NAME_RE = /^[\x21-\x7e][\x20-\x7e]{0,15}$/;           // a player name: printable ASCII, at most 16, not starting with a space
 /* Check a settings object (what server.json holds, or what the window's form produced). Returns
@@ -115,6 +117,7 @@ export function validateSettings(o, running) {
   if (!isInt(s.stopWhenEmpty, 0, 1440)) bad('stopWhenEmpty', 'a whole number of minutes from 0 (never) to 1440');
   if (!isInt(s.catchUpMax, 0, 525600)) bad('catchUpMax', 'a whole number of minutes from 0 (no cap) to 525600 (a year)');
   if (!isInt(s.pauseWhenEmpty, 0, 86400)) bad('pauseWhenEmpty', 'a whole number of seconds from 0 (never) to 86400');
+  if (!PASSWORD_LEVELS.includes(s.passwordSecurity)) bad('passwordSecurity', 'one of ' + PASSWORD_LEVELS.join(', '));
   for (const k of ['ops', 'allow', 'bans']) {
     if (!Array.isArray(s[k])) { bad(k, 'a list of player names'); continue; }
     const wrong = s[k].find((n) => typeof n !== 'string' || !NAME_RE.test(n.trim()));
@@ -155,6 +158,7 @@ export const SETTINGS_FORM = [
   { key: 'mode', label: 'Mode for new players', kind: 'select', options: [['s', 'Survival'], ['c', 'Creative']], group: 'Players' },
   B('pvp', 'Players can hurt each other (PvP)', 'Players'), N('spawnProtection', 'Spawn protection (blocks; 0 for none)', 0, 256, 'Players'),
   N('sleepPercent', 'Players asleep to skip the night (%)', 1, 100, 'Players'),
+  { key: 'passwordSecurity', label: 'Enforce password security', kind: 'select', options: [['none', 'None: any password, even "1"'], ['medium', 'Medium: 7 characters, 1 number'], ['high', 'High: 14 characters, 2 numbers, 1 symbol']], group: 'Players' },
   B('lockNames', 'Nobody may change their own name', 'Players'), B('lockPasswords', 'Nobody may change their own password', 'Players'), B('lockSkins', 'Nobody may change their own skin', 'Players'),
   B('whitelist', 'Only listed players may join (whitelist)', 'Players'), { key: 'allow', label: 'Whitelist (one name a line)', kind: 'list', group: 'Players' },
   { key: 'ops', label: 'Operators (one name a line)', kind: 'list', group: 'Players' }, { key: 'bans', label: 'Banned (one name a line)', kind: 'list', group: 'Players' },

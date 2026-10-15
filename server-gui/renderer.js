@@ -174,27 +174,34 @@ function paintAccounts() {
   const st = S.cur && S.cur.status, list = (st && st.accountList) || [], G = (st && st.locks) || {};
   $('noaccounts').hidden = list.length > 0;
   $('acnote').textContent = !st ? 'Start the server to manage its accounts.' : st.accounts ? 'Players log in with an account made here.' : 'Accounts are off (Settings): anyone may join by name, but a name that has an account needs its password.';
-  const show = $('ac_show').checked, act = (label, line) => el('button', { textContent: label, onclick: () => run(line) });
+  const act = (label, line) => el('button', { textContent: label, onclick: () => acRun(line) });
   $('aclist').replaceChildren(...list.map((a) => {
     const inp = el('input', { maxLength: 64, placeholder: 'new password or name', spellcheck: false });
-    const lock = (k, word) => { const on = !!(a.locks && a.locks[k]); return el('button', { textContent: word + (on ? ': locked' : G[k] ? ': locked for all' : ': free'), onclick: () => run('account lock ' + a.name + ' ' + k + (on ? ' off' : ' on')) }); };
+    const lock = (k, word) => { const on = !!(a.locks && a.locks[k]); return el('button', { textContent: word + (on ? ': locked' : G[k] ? ': locked for all' : ': free'), onclick: () => acRun('account lock ' + a.name + ' ' + k + (on ? ' off' : ' on')) }); };
     return el('tr', {}, [
       el('td', {}, [a.name, ...(a.online ? [el('span', { className: 'tag', textContent: 'online' })] : []), ...(a.op ? [el('span', { className: 'tag', textContent: 'operator' })] : [])]),
-      el('td', { textContent: show ? a.password : '••••••' }),
       el('td', { className: 'acts' }, [lock('name', 'Name'), lock('password', 'Password'), lock('skin', 'Skin')]),
-      el('td', { className: 'acts' }, [inp, el('button', { textContent: 'Set password', onclick: () => { if (inp.value.trim()) run('account password ' + a.name + ' ' + inp.value.trim()); } }),
-        el('button', { textContent: 'Rename', onclick: () => { if (inp.value.trim()) run('account rename ' + a.name + ' ' + inp.value.trim()); } }),
+      el('td', { className: 'acts' }, [inp, el('button', { textContent: 'Set password', onclick: () => { if (inp.value.trim()) { acRun('account password ' + a.name + ' ' + inp.value.trim()); inp.value = ''; } } }),
+        el('button', { textContent: 'Rename', onclick: () => { if (inp.value.trim()) acRun('account rename ' + a.name + ' ' + inp.value.trim()); } }),
         el('button', { textContent: 'Set skin', onclick: () => { S.skinFor = a.name; $('ac_skinfile').value = ''; $('ac_skinfile').click(); } }),
         ...(a.skin ? [act('Reset skin', 'setskin ' + a.name + ' reset')] : []), act('Remove', 'account remove ' + a.name)]),
     ]);
   }));
 }
-$('ac_show').onchange = () => paintAccounts();
+/* an account command from this tab: its answer shows here as well as in the console, and a password typed for add or
+   password is shown in the console as **** (6.61: the server keeps only its hash; the window does not keep the text either) */
+async function acRun(line) {
+  if (!S.id) return;
+  const w = line.split(' '), shown = /^account (add|password)$/i.test(w.slice(0, 2).join(' ')) ? w.map((x, i) => (i === 3 ? '****' : x)).join(' ') : line;
+  say('> ' + shown);
+  const out = await window.dc.command(S.id, line);
+  say(out); $('acmsg').textContent = out || '';
+}
 $('acform').onsubmit = (e) => {
   e.preventDefault();
   const n = $('ac_name').value.trim(), p = $('ac_pass').value.trim();
   if (!n || !p) return;
-  run('account add ' + n + ' ' + p);
+  acRun('account add ' + n + ' ' + p);
   $('ac_name').value = ''; $('ac_pass').value = '';
 };
 $('ac_skinfile').onchange = () => {

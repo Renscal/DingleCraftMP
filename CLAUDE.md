@@ -186,8 +186,10 @@ Full map: `docs/ARCHITECTURE.md` (PART-to-file table, systems index, how each up
   and anything that hurts a mob through `hurtMob`, or it will not reach other players.
   **Since 6.46** (protocol 6 since 6.49):
   - **Accounts (6.49):** with `accounts` on, `hello` is answered with `login` until a username and password match a
-    playerdata record's `password` (plain text, the file's second line, never sent to a game, `/status` or `/export`; a
-    `save` cannot set it). The helpers (`passOK`, `accountOf`, `locksOf`, `renameAccount`, `setSkin`) live in
+    playerdata record's `password` (6.61: a scrypt hash, `scrypt$N$r$p$salt$hash`, checked off the main thread by
+    `checkPassword`, so `hello` runs again when it is done; plain text is still read and hashed on start; never sent to a
+    game, `/status`, `/export` or the window; a `save` cannot set it). `passwordSecurity` (none/medium/high,
+    `passwordProblem`) is checked wherever a password is set. The helpers (`checkPassword`, `hashPassword`, `passwordProblem`, `accountOf`, `locksOf`, `renameAccount`, `setSkin`) live in
     `commands.mjs`, because `commands.mjs` may not import `protocol.mjs` (the layering rule in `n_static`). Messages
     `login`, `acct`, `rename`. Locks `lockNames`/`lockPasswords`/`lockSkins`, global or per player.
   - **Pausing (6.46, 6.55):** a dimension's game nobody is in is paused after `pauseWhenEmpty` s (`{t:'pause'}` to its

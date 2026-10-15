@@ -50,7 +50,8 @@
       <div class="mlabel">Your account on this server</div>
       <div class="sacct"><input id="s_acname" class="mc-in" maxlength="16" autocomplete="off" spellcheck="false" aria-label="Your username"><button id="s_acname_go" class="mc-btn">Change name</button></div>
       <div class="sacct"><input id="s_acold" class="mc-in" type="password" maxlength="64" autocomplete="current-password" placeholder="Current password" aria-label="Current password"><input id="s_acnew" class="mc-in" type="password" maxlength="64" autocomplete="new-password" placeholder="New password" aria-label="New password"><button id="s_acpw_go" class="mc-btn">Change password</button></div>
-      <p class="twarn">The owner of this server can read your password in plain text. Do not use a password you use anywhere else.</p>
+      <div class="mlabel" id="s_acrule"></div>
+      <p class="twarn">The server keeps only a scrambled fingerprint of your password: nobody can read it, not even its owner, who can still set you a new one. Use one you do not use anywhere else all the same.</p>
       <div class="mlabel" id="s_aclock"></div>
       <div class="mlabel" id="s_acmsg" role="status"></div>
     </div>

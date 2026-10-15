@@ -33,12 +33,47 @@ function settingsChanged(S, net) {
   for (const p of S.clients.values()) if (p.ready) net.send(p, permOf(S, p));
 }
 
-/* ----- accounts (6.49): the helpers lib/protocol.mjs uses too ----- */
-/* does this password open this account? Compared as hashes in constant time, so it cannot be guessed a character at a time */
-export function passOK(rec, pass) {
-  if (!rec || typeof rec.password !== 'string' || typeof pass !== 'string') return false;
-  const h = (s) => crypto.createHash('sha256').update(String(s)).digest();
-  return crypto.timingSafeEqual(h(pass), h(rec.password));
+/* ----- accounts (6.49): the helpers lib/protocol.mjs uses too -----
+   6.61: a password is kept as a scrypt hash, "scrypt$N$r$p$<salt>$<hash>" (base64url), so nobody who reads the file, the owner
+   included, can tell what it is; anyone with the console can still set a new one. A password written into a file by hand
+   (plain text) still works: the server hashes it on its next start, and on that player's next login. */
+const SCRYPT = { N: 32768, r: 8, p: 1 };
+const HASH_RE = /^scrypt\$(\d{1,7})\$(\d{1,2})\$(\d)\$([A-Za-z0-9_-]{22})\$([A-Za-z0-9_-]{43})$/;
+const scryptOpts = (N, r, p) => ({ N, r, p, maxmem: 256 * N * r + (1 << 20) });
+/* is this stored password a hash (and not plain text from an older server or a hand-edited file)? */
+export const isHashed = (s) => typeof s === 'string' && HASH_RE.test(s);
+/* a new hash for a password (about a tenth of a second: for the console, the window and a start-up, never a login) */
+export function hashPassword(pass) {
+  const salt = crypto.randomBytes(16);
+  return ['scrypt', SCRYPT.N, SCRYPT.r, SCRYPT.p, salt.toString('base64url'), crypto.scryptSync(String(pass), salt, 32, scryptOpts(SCRYPT.N, SCRYPT.r, SCRYPT.p)).toString('base64url')].join('$');
+}
+/* the same, off the main thread (a player changing their own password while everyone else plays on) */
+export function hashPasswordLater(pass) {
+  const salt = crypto.randomBytes(16);
+  return new Promise((ok, no) => crypto.scrypt(String(pass), salt, 32, scryptOpts(SCRYPT.N, SCRYPT.r, SCRYPT.p), (e, k) => (e ? no(e) : ok(['scrypt', SCRYPT.N, SCRYPT.r, SCRYPT.p, salt.toString('base64url'), k.toString('base64url')].join('$')))));
+}
+/* does this password open this account? Worked out off the main thread (scrypt is slow on purpose; the game must not stall
+   while someone logs in) and compared in constant time. No account (rec null) still costs one hash, so the time it takes
+   does not tell anyone which names have accounts. A hash with costs out of bounds (a damaged file) opens nothing. */
+export function checkPassword(rec, pass) {
+  const stored = rec && typeof rec.password === 'string' ? rec.password : null;
+  if (typeof pass !== 'string') return Promise.resolve(false);
+  const m = stored && HASH_RE.exec(stored);
+  if (stored && !m) {                                      // plain text, from before 6.61 or written by hand
+    const h = (s) => crypto.createHash('sha256').update(String(s)).digest();
+    return Promise.resolve(crypto.timingSafeEqual(h(pass), h(stored)));
+  }
+  const N = m ? +m[1] : SCRYPT.N, r = m ? +m[2] : SCRYPT.r, p = m ? +m[3] : SCRYPT.p;
+  if (N < 1024 || N > 1 << 17 || (N & (N - 1)) || r < 1 || r > 8 || p < 1 || p > 2) return Promise.resolve(false);
+  const salt = m ? Buffer.from(m[4], 'base64url') : crypto.randomBytes(16);
+  return new Promise((ok) => crypto.scrypt(pass, salt, 32, scryptOpts(N, r, p), (e, k) => ok(!e && !!m && crypto.timingSafeEqual(k, Buffer.from(m[5], 'base64url')))));
+}
+/* every account still holding a plain-text password gets a hash instead; how many there were */
+export function hashStoredPasswords(S) {
+  let n = 0;
+  for (const rec of Object.values(S.world.players || {})) if (rec && typeof rec.password === 'string' && !isHashed(rec.password)) { rec.password = hashPassword(rec.password); n++; }
+  if (n) S.dirty = true;
+  return n;
 }
 /* the account of that name, or null */
 export function accountOf(S, name) {
@@ -50,8 +85,18 @@ export function locksOf(S, name) {
   const r = S.world.players[playerKey(name || '')], l = (r && r.locks) || {};
   return { name: !!(S.o.lockNames || l.name), password: !!(S.o.lockPasswords || l.password), skin: !!(S.o.lockSkins || l.skin) };
 }
-/* a password an account may have: 1 to 64 printable characters, no spaces (a command line splits on them) */
-export const passwordProblem = (p) => (typeof p === 'string' && /^[\x21-\x7e]{1,64}$/.test(p) ? '' : 'A password is 1 to 64 letters, digits or symbols, with no spaces.');
+/* 6.61: how good a password must be ("passwordSecurity" in server.json): none, medium or high */
+export const PASSWORD_LEVELS = ['none', 'medium', 'high'];
+/* what a level asks for, in words ('' for none) */
+export const passwordRule = (level) => (level === 'high' ? 'at least 14 characters, with at least 2 numbers and 1 symbol' : level === 'medium' ? 'at least 7 characters, with at least 1 number' : '');
+/* a password an account may have: 1 to 64 printable characters, no spaces (a command line splits on them), and since 6.61
+   what the server's level asks for. '' when it is fine, else why not. */
+export function passwordProblem(p, level) {
+  if (!(typeof p === 'string' && /^[\x21-\x7e]{1,64}$/.test(p))) return 'A password is 1 to 64 letters, digits or symbols, with no spaces.';
+  const digits = (p.match(/[0-9]/g) || []).length, symbols = (p.match(/[^A-Za-z0-9]/g) || []).length;
+  const weak = level === 'high' ? p.length < 14 || digits < 2 || symbols < 1 : level === 'medium' ? p.length < 7 || digits < 1 : false;
+  return weak ? 'This server asks for passwords of ' + passwordRule(level) + '.' : '';
+}
 /* an operator dresses a player: the skin is kept with them, and everyone (them too) sees it at once. Returns the reply. */
 export function setSkin(S, net, name, png) {
   const k = playerKey(name), rec = S.world.players[k];
@@ -267,7 +312,7 @@ const COMMANDS = {
     try { file = S.exportWorld ? S.exportWorld() : null; } catch (e) { return 'Export failed: ' + e.message; }
     return file ? 'The world was written as one file the game can import: ' + file : 'This server keeps no world on disk.';
   } },
-  /* 6.49: accounts. The password is plain text in the player's file, and the console (the owner) is shown it */
+  /* 6.49: accounts. 6.61: the password is a hash in the player's file; nobody is shown it, the console may set a new one */
   account: { op: true, use: '/account <add | password | remove | rename | lock | list> ...', run: ({ S, net, c, a }) => {
     const sub = (a[0] || '').toLowerCase(), name = a[1] || '', k = playerKey(name), rec = k ? S.world.players[k] : null;
     if (sub === 'list') {
@@ -275,24 +320,24 @@ const COMMANDS = {
       if (!L.length) return 'No accounts yet. Make one: /account add <name> <password>';
       const lk = (x) => { const l = (S.world.players[x].locks) || {}; const on = ['name', 'password', 'skin'].filter((y) => l[y]); return on.length ? ' [locked: ' + on.join(', ') + ']' : ''; };
       return L.length + ' account' + (L.length === 1 ? '' : 's') + (S.o.accounts ? '' : ' (accounts are off: anyone may also join by name)') + ': ' +
-        L.map((x) => (S.world.players[x].name || x) + (c ? '' : ' (password: ' + S.world.players[x].password + ')') + lk(x)).join(', ');
+        L.map((x) => (S.world.players[x].name || x) + lk(x)).join(', ');
     }
     if (sub === 'add') {
       const nm = cleanName(name), pw = a[2];
       if (!nm) return 'Usage: /account add <name> <password>';
-      const bad = a.length > 3 ? passwordProblem(' ') : passwordProblem(pw);   // the line was split on spaces: more words is a password with a space
+      const bad = a.length > 3 ? passwordProblem(' ') : passwordProblem(pw, S.o.passwordSecurity);   // the line was split on spaces: more words is a password with a space
       if (bad) return bad;
       if (accountOf(S, nm)) return nm + ' already has an account (/account password ' + nm + ' <new> sets a new password)';
-      const old = S.world.players[playerKey(nm)];
-      if (old && typeof old === 'object') old.password = pw; else S.world.players[playerKey(nm)] = { name: nm, password: pw };
+      const old = S.world.players[playerKey(nm)], hash = hashPassword(pw);
+      if (old && typeof old === 'object') old.password = hash; else S.world.players[playerKey(nm)] = { name: nm, password: hash };
       S.dirty = true;
       return 'Account ' + nm + ' made' + (old ? ' (for the player who has played here before: everything they had is theirs)' : '') + '. They log in with that name and password.';
     }
     if (sub === 'password') {
       if (!accountOf(S, name)) return 'Usage: /account password <account> <new password>';
-      const bad = a.length > 3 ? passwordProblem(' ') : passwordProblem(a[2]);
+      const bad = a.length > 3 ? passwordProblem(' ') : passwordProblem(a[2], S.o.passwordSecurity);
       if (bad) return bad;
-      rec.password = a[2]; S.dirty = true;
+      rec.password = hashPassword(a[2]); S.dirty = true;
       return 'New password set for ' + (rec.name || name);
     }
     if (sub === 'remove') {

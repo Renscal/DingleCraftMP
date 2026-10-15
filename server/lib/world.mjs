@@ -222,7 +222,7 @@ export function worldFiles(world) {
     const p = players[key];
     if (!p || typeof p !== 'object') continue;
     const { inv, armor, password, ...rest } = p;
-    /* 6.49: an account's password is the file's second line, in plain text (the owner can read it: the game says so) */
+    /* 6.49: an account's password is the file's second line. 6.61: its scrypt hash (lib/commands.mjs), which nobody can read back */
     const head = JSON.stringify({ player: key, ...(typeof password === 'string' ? { password } : {}), ...rest }, null, 2).replace(/\n}$/, '');
     const list = (name, arr) => (Array.isArray(arr) ? `,\n  ${line(name)}: [\n${arr.map((it) => '    ' + line(it)).join(',\n')}\n  ]` : '');
     const text = head + list('armor', armor) + list('inv', inv) + '\n}\n';

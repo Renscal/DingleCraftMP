@@ -66,6 +66,7 @@ The first run writes `data/server.json`. Edit it and restart, or pass the same t
 | `name` | `--name` | A DINGLECRAFT Server | shown to players when they join |
 | `motd` | `--motd` | | one line shown in chat on joining |
 | `accounts` | | `true` for a new server | players log in with an account an operator made (see "Accounts" below). `false`: anyone joins by name, as before 6.49, except as a name that is an account. A `server.json` from before 6.49 gets `true` if it had a `password` (gone in 6.49) and `false` if players have already played on it |
+| `passwordSecurity` | | `none` | how good a new password must be: `none` (anything, even `1`), `medium` (at least 7 characters, at least 1 number) or `high` (at least 14 characters, at least 2 numbers and 1 symbol). Checked whenever a password is set (by an operator, the window or the player); passwords set before keep working. Read at start |
 | `lockNames`, `lockPasswords`, `lockSkins` | | `false` | nobody may change their own name, password or skin (an operator still can). The same locks can be set for one player: `/account lock` |
 | `maxPlayers` | `--max` | 8 | |
 | `seed` | `--seed` | random | only for a new world |
@@ -250,7 +251,7 @@ The first operator is made from the server window (`op <name>`) or by adding the
 | `/account password <name> <password>`, `/account rename <name> <new name>` | operators | |
 | `/account remove <name>` | operators | the login goes; what they had is kept |
 | `/account lock <name \| *> <name \| password \| skin> [on \| off]` | operators | stop one player (or, with `*`, everyone) changing their own name, password or skin |
-| `/account list` | operators | every account; the server window and console are also shown the passwords |
+| `/account list` | operators | every account and its locks (nobody is shown a password: they are hashes) |
 | `/setskin <player> reset` | operators | back to the default skin. From the console: `/setskin <player> <file.png>` (a path from the data folder). The server window has a Set skin button |
 | `stop` | the server window only | saves and stops |
 
@@ -265,9 +266,11 @@ Since 6.49 each server keeps its own accounts. Nothing is central: whoever runs 
 2. The player opens Multiplayer and joins. The server asks for the username and password before they spawn. Five wrong
    tries and the connection is closed; one try a second. The game remembers the username per server, and the password
    only if the player ticks "Remember the password" (in that browser).
-3. The account is the player's record: `playerdata/<name>.json`. The password is its second line, **in plain text**, so the
-   owner can read it. The game says so where the player changes it (Settings, while online). Players should not reuse a
-   password they use anywhere else.
+3. The account is the player's record: `playerdata/<name>.json`. The password is its second line as a **hash** (6.61:
+   scrypt, with a salt of its own), so nobody can read it, the owner included. The owner can still set a new one
+   (`/account password`, or Set password on the window's Players tab). A plain-text password, from a server before 6.61
+   or typed into the file by hand, still works and is hashed when the server starts; old backups keep whatever they held.
+   A login is checked off the server's main thread, so a game never stalls while somebody logs in.
 4. Logging in to an account that is already online closes the older connection ("logged in from another location").
 5. Operators are names on a list, so with accounts on an operator's rights can no longer be taken by typing their name.
 

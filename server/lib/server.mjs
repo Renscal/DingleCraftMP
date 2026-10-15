@@ -26,7 +26,7 @@ import { DEFAULTS, LIMITS, SERVER_DIR, cleanRules, cleanList, findGame } from '.
 import { openWorld, applySettings, writeWorld, worldPlace, exportWorld } from './world.mjs';
 import { acceptUpgrade, newConn, textFrame, readFrames, PING, CLOSE } from './websocket.mjs';
 import { handleMessage, worldTick, forget, playerKey, setSkin } from './protocol.mjs';
-import { runCommand } from './commands.mjs';
+import { runCommand, hashStoredPasswords } from './commands.mjs';
 import { pageHandler, statusOf } from './http.mjs';
 import { startHost, gameScript } from './host.mjs';
 
@@ -96,6 +96,9 @@ export function createServer(opts = {}) {
   };
   if (isNew && worldDir) saveWorld('new world: ' + worldDir);   // on disk before anyone joins
   else if (stale && worldDir) saveWorld(`${stale} file${stale === 1 ? '' : 's'} from an older server written in the 6.60 form`);
+  /* 6.61: passwords are kept as hashes. Plain ones (from before 6.61, or written into a file by hand) are hashed now and saved
+     at once, so the plain text leaves the disk the moment the server starts */
+  { const n = hashStoredPasswords(S); if (n) { log(`${n} password${n === 1 ? '' : 's'} kept as plain text until now: hashed (nobody can read them any more)`); saveWorld('passwords hashed'); } }
 
   /* ---- sending ---- */
   function sendRaw(c, buf) {

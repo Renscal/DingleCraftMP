@@ -21,6 +21,17 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## DingleCraft Multiplayer 2.0 — Nobody reads your password
+
+*Game version 6.61, released 2026-10-15.*
+
+- **NOBODY READS YOUR PASSWORD.** Since accounts arrived in 6.49, the server kept every password as plain text in the player’s file, and the game said so with a warning that was honest and slightly alarming. Not any more. The server now keeps only a scrambled fingerprint (scrypt, with a pinch of salt of its own for every account), which nobody can turn back into the password. Not a curious friend with the files, not the owner, not us.
+- **The owner still holds the keys.** Forgot your password? The owner can set you a new one, from the console or with Set password in the server window. They just cannot see the old one.
+- **Your old passwords keep working.** Start a 6.61 server and every plain-text password is hashed on the spot and saved at once, so the text leaves the disk the moment the server is up. Everyone logs in exactly as before. (Old backups still hold whatever they held: delete the ones you do not need.)
+- **Enforce password security.** A new setting with three answers. **None**: anything goes, and “1” is a perfectly legal password, for servers where the only threat is your little brother. **Medium**: at least 7 characters with a number. **High**: at least 14 characters, 2 numbers and a symbol, for the paranoid and the correct. It applies whenever a password is set, by a player, an operator or the window, and the game shows the rule right by the password box.
+- **Logins do not stall the world.** Checking a fingerprint takes a tenth of a second on purpose (it is what makes guessing slow), so it happens off to the side: five people logging in at once and the mobs never miss a step. An unknown name takes just as long as a wrong password, so the clock tells nobody who has an account.
+- **In the server window (1.2.1).** The Show passwords box is gone, because there is nothing to show. A password you type for a new account or a reset appears as \*\*\*\* in the console, and the answer (made, set, or too weak and why) shows right under the accounts.
+
 ## DingleCraft Multiplayer 2.0 — Every byte counts
 
 *Game version 6.60, released 2026-10-15.*

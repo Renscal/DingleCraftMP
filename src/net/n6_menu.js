@@ -109,6 +109,7 @@ function ntAcctSync(){
   dis('s_acname',L.name);dis('s_acname_go',L.name);dis('s_acold',L.password);dis('s_acnew',L.password);dis('s_acpw_go',L.password);
   const sk=NET.on&&NET.acct&&NET.acct.locks&&NET.acct.locks.skin;dis('s_skin',sk);dis('s_skinreset',sk);
   const ln=$('s_aclock');if(ln){const on=['name','password','skin'].filter(k=>L[k]);ln.textContent=on.length?'Locked by the server: your '+on.join(', ')+'.':'';}
+  const ru=$('s_acrule');if(ru)ru.textContent=A&&typeof A.rule==='string'&&A.rule&&!L.password?'A new password here needs '+A.rule+'.':'';   /* 6.61: the server's password security */
 }
 /* The game a server hands out is that server's game: Create New World, Load World and Continue are taken off its menu
    (the functions behind them do nothing there either), which leaves Multiplayer as the one way to play. A copy of the

@@ -7,9 +7,9 @@
      goes straight in; the same account again throws the older connection out
    3 the password never leaves the server: not in welcome, not in /status, not in the export, not in the log of a command;
      a game cannot give itself a password or take its locks off with a save, and a save keeps the account an account
-   4 on disk: the password is the second line of playerdata/<name>.json, in plain text
+   4 on disk: the password is the second line of playerdata/<name>.json (6.61: its hash; n_passwords has the rest)
    5 a player changes their own password (the old one first) and their own name (the ops list follows, everyone is told);
-     the three locks, for one player and for everyone, refuse; /account remove; /account list shows the console the passwords
+     the three locks, for one player and for everyone, refuse; /account remove; /account list shows the names (6.61: no passwords, not even to the console)
    6 skins: an operator dresses a player (everyone sees it, them too, and they get it back on joining); a locked skin cannot
      be changed by the player's game
    7 accounts off (open): anyone joins by name, but a name that is an account needs its password
@@ -33,6 +33,7 @@ boot.run(async()=>{
   const lib=f=>import(pathToFileURL(path.join(REPO,'server',f)).href);
   const {createServer}=await lib('dinglecraft-server.mjs');
   const {exportWorld}=await lib('lib/world.mjs');
+  const {checkPassword}=await lib('lib/commands.mjs'),is=(rec,p)=>checkPassword(rec,p);   /* 6.61: passwords are hashes */
   const OUT=path.join(outDir('net'),'accounts');fs.rmSync(OUT,{recursive:true,force:true});
   const logs=[];
   const S=createServer({port:0,data:OUT,world:'world',noGame:true,quiet:true,seed:'49',accounts:true,maxPlayers:6,onLog:l=>logs.push(l)});
@@ -64,7 +65,7 @@ boot.run(async()=>{
 
   /* ===== 2. an account ===== */
   const made=S.command('account add Bea s3cret!');
-  ok('/account add from the console makes the account ('+made+')',/Account Bea made/.test(made)&&W.players.bea&&W.players.bea.password==='s3cret!');
+  ok('/account add from the console makes the account ('+made+')',/Account Bea made/.test(made)&&W.players.bea&&await is(W.players.bea,'s3cret!'));
   ok('...and refuses a password with a space, or a second account of one name',/no spaces/.test(S.command('account add Cal my pass'))&&/already has an account/.test(S.command('account add bea other')));
   const bea=await conn('whoever');
   ok('a login with the right password, the name typed in any case: in, as the account\'s own name',await bea.login('bEA','s3cret!')&&bea.as==='Bea');
@@ -83,18 +84,18 @@ boot.run(async()=>{
   {logs.length=0;const rep=await B2.cmd('/account add Dee hunter2');
     ok('an operator makes an account in the game ('+rep+'), and the log shows the command with the password hidden',/Account Dee made/.test(rep)&&logs.some(l=>/ran \/account add Dee \*\*\*\*/.test(l))&&!logs.some(l=>l.includes('hunter2')));}
   B2.send({t:'save',player:{x:1,y:40,z:1,inv:[],password:'mine',locks:{}}});await sleep(60);
-  ok('a game cannot give itself a password with a save, and the save keeps the account an account',W.players.bea.password==='s3cret!'&&W.players.bea.x===1);
+  ok('a game cannot give itself a password with a save, and the save keeps the account an account',await is(W.players.bea,'s3cret!')&&!await is(W.players.bea,'mine')&&W.players.bea.x===1);
 
   /* ===== 4. on disk ===== */
   S.saveWorld('test');
   {const t=fs.readFileSync(path.join(OUT,'world','playerdata','bea.json'),'utf8').split('\n');
-    ok('playerdata/bea.json: the password is its second line, in plain text',t[0]==='{'&&/^  "player": "bea",$/.test(t[1])&&t[2]==='  "password": "s3cret!",');}
+    ok('playerdata/bea.json: the password is its second line, as a hash (6.61), never the text',t[0]==='{'&&/^  "player": "bea",$/.test(t[1])&&/^  "password": "scrypt\$/.test(t[2])&&!t.join('\n').includes('s3cret!'));}
 
   /* ===== 5. changing things ===== */
   {B2.clear();B2.send({t:'acct',old:'wrong',pass:'n3w'});await until(()=>!!B2.last('acct'));
-    ok('changing the password needs the old one',B2.last('acct').ok===false&&W.players.bea.password==='s3cret!');
+    ok('changing the password needs the old one',B2.last('acct').ok===false&&await is(W.players.bea,'s3cret!'));
     await sleep(600);B2.clear();B2.send({t:'acct',old:'s3cret!',pass:'n3w'});await until(()=>!!B2.last('acct'));
-    ok('...with it, it changes',B2.last('acct').ok===true&&W.players.bea.password==='n3w');}
+    ok('...with it, it changes',B2.last('acct').ok===true&&await is(W.players.bea,'n3w')&&!await is(W.players.bea,'s3cret!'));}
   const cal=await conn('Cal');S.command('account add Cal pw');await cal.login('Cal','pw');
   {B2.clear();cal.clear();await sleep(600);B2.send({t:'acct',name:'Beatrix'});await until(()=>!!B2.last('rename'));
     ok('changing one\'s name: the record moves, everyone (them too) is told, and the ops list follows',!!W.players.beatrix&&!W.players.bea&&W.players.beatrix.name==='Beatrix'&&
@@ -107,10 +108,10 @@ boot.run(async()=>{
     cal.clear();cal.send({t:'acct',name:'Calvin'});await until(()=>!!cal.last('acct'));
     ok('...and the change is refused',cal.last('acct').ok===false&&/locked/.test(cal.last('acct').why)&&!!W.players.cal);
     S.command('account lock * password on');await sleep(1100);cal.clear();cal.send({t:'acct',old:'pw',pass:'x'});await until(()=>!!cal.last('acct'));
-    ok('/account lock * password: nobody may change their password',S.opts.lockPasswords===true&&cal.last('acct').ok===false&&W.players.cal.password==='pw');
+    ok('/account lock * password: nobody may change their password',S.opts.lockPasswords===true&&cal.last('acct').ok===false&&await is(W.players.cal,'pw'));
     S.command('account lock * password off');S.command('account lock Cal name off');}
   {const l=S.command('account list');
-    ok('/account list shows the console every account, with its password ('+l.slice(0,60)+'…)',/Beatrix \(password: n3w\)/.test(l)&&/Cal \(password: pw\)/.test(l)&&/Dee \(password: hunter2\)/.test(l));
+    ok('/account list shows the console every account, and no password (6.61) ('+l.slice(0,60)+'…)',/Beatrix/.test(l)&&/Cal/.test(l)&&/Dee/.test(l)&&!/password:|n3w|hunter2|scrypt/.test(l));
     const fromGame=await B2.cmd('/account list');
     ok('...an operator in the game sees the names but not the passwords',/Cal/.test(fromGame)&&!/pw\)/.test(fromGame)&&!fromGame.includes('hunter2'));}
   {const r=S.command('account remove Dee');
@@ -157,7 +158,7 @@ boot.run(async()=>{
   /* ===== 9. the game ===== */
   {const HH=fs.readFileSync(path.join(REPO,'build','head.html'),'utf8'),has=id=>HH.split('id="'+id+'"').length===2;
     ok('the Multiplayer screen has no server password any more, and a login box: username, password, remember',!HH.includes('id="t_mp_pw"')&&['t_mp_login','t_mp_user','t_mp_pass','t_mp_keep'].every(has)&&/<input id="t_mp_pass"[^>]*type="password"/.test(HH));
-    ok('Settings has the account box, with the plain-text warning',['s_acct','s_acname','s_acname_go','s_acold','s_acnew','s_acpw_go','s_acmsg'].every(has)&&HH.includes('can read your password in plain text'));
+    ok('Settings has the account box, saying nobody can read the password (6.61), and a line for the server\'s rule',['s_acct','s_acname','s_acname_go','s_acold','s_acnew','s_acpw_go','s_acmsg','s_acrule'].every(has)&&HH.includes('nobody can read it')&&!HH.includes('plain text'));
     const N=V.NET,sent=[];N.ws={readyState:1,send:t=>sent.push(JSON.parse(t)),close(){}};N.st='connecting';N.addr='127.0.0.1:1';N.cred=null;
     V.ntOpenMenu();V.ntMsg({t:'login',user:'Bea',why:'',accounts:true});
     const box=global.document.getElementById('t_mp_login'),go=global.document.getElementById('t_mp_go');

@@ -33,7 +33,7 @@ function oldRuns(blocks){const a=[];for(const lk of Object.keys(blocks)){const p
 boot.run(async()=>{
   const lib=f=>import(pathToFileURL(path.join(REPO,'server',f)).href);
   const R=await lib('lib/region.mjs'),{createServer}=await lib('dinglecraft-server.mjs'),{filesMain}=await lib('lib/files.mjs');
-  const C=await lib('lib/config.mjs'),A=await lib('lib/admin.mjs');
+  const C=await lib('lib/config.mjs'),A=await lib('lib/admin.mjs'),{checkPassword}=await lib('lib/commands.mjs');
   const OUT=path.join(outDir('net'),'files_'+process.pid);fs.rmSync(OUT,{recursive:true,force:true});fs.mkdirSync(OUT,{recursive:true});
 
   /* ===== 1. the format ===== */
@@ -96,8 +96,8 @@ boot.run(async()=>{
   const mobs=list=>list.map(m=>norm(m)).sort();   /* mobs come back region by region, in another order */
   const before=norm({e:W.edits,be:W.be,d:W.drops,m:mobs(W.mobs)});
   ok('a new world writes packed regions only ('+ls('region/over').join(' ')+'; nether: '+ls('region/nether').join(' ')+')',ls('region/over').length===2&&ls('region/over').every(f=>/^r\.-?\d+\.-?\d+\.dcr$/.test(f))&&ls('region/nether').join()==='r.0.0.dcr');
-  ok('...and packed entity files ('+ls('entities/over').join(' ')+'), players stay JSON with the password on line two',ls('entities/over').length>=1&&ls('entities/over').every(f=>f.endsWith('.dce'))&&
-    ls('playerdata').join()==='gus.json'&&fs.readFileSync(path.join(WD,'playerdata','gus.json'),'utf8').split('\n')[2].includes('"password": "pw"'));
+  ok('...and packed entity files ('+ls('entities/over').join(' ')+'), players stay JSON with the password (its hash, 6.61) on line two',ls('entities/over').length>=1&&ls('entities/over').every(f=>f.endsWith('.dce'))&&
+    ls('playerdata').join()==='gus.json'&&fs.readFileSync(path.join(WD,'playerdata','gus.json'),'utf8').split('\n')[2].includes('"password": "scrypt$'));
   ok('level.json has no region dates any more',!('rvisit' in JSON.parse(fs.readFileSync(path.join(WD,'level.json'),'utf8'))));
   await S.close();
   {const reg=path.join(WD,'region','over','r.0.0.dcr'),t0=fs.statSync(reg).mtimeMs;
@@ -124,7 +124,7 @@ boot.run(async()=>{
     ok('...the old files are gone ('+rd.join(' ')+' | '+ed.join(' ')+' | '+pd.join(' ')+')',rd.join()==='r.0.0.dcr,r.1.0.dcr,r.5.5.dcr'&&ed.join()==='r.0.0.dce'&&pd.join()==='ivy.json');
     ok('...the same world: blocks with their liquid level, a chest, a cold region\'s runs, a drop, a pig',W.edits['1,1']['2,41,3']===(22|(2<<8))&&W.be['18,40,19'].inv[1].id===20&&
       Object.keys(W.edits['33,0']).length===4&&W.edits['33,0']['5,31,5']===4&&W.drops.d9&&W.drops.d9.st.count===5&&W.mobs.some(m=>m.t==='pig'));
-    ok('...a compressed player is plain again with their password, and level.json lost its region dates',fs.readFileSync(path.join(OW,'playerdata','ivy.json'),'utf8').split('\n')[2].includes('"password": "secret"')&&
+    ok('...a compressed player is plain JSON again, their password kept (as a hash since 6.61), and level.json lost its region dates',fs.readFileSync(path.join(OW,'playerdata','ivy.json'),'utf8').split('\n')[2].includes('"password": "scrypt$')&&await checkPassword(W.players.ivy,'secret')&&
       !('rvisit' in JSON.parse(fs.readFileSync(path.join(OW,'level.json'),'utf8')))&&!('rvisit' in W));
     ok('where a region had both forms, the packed one was read and the other removed',W.edits['160,160']['0,50,0']===2);
     await S.close();}
@@ -194,7 +194,7 @@ boot.run(async()=>{
     ok('the window: a World files tab, its five calls wired from the page to the program, and the reader taken from a 6.60 server version',
       /data-tab="files"/.test(html)&&/id="t_files"/.test(html)&&['wfiles','wfile:read','wfile:export','wfind','wsave'].every(c=>main.includes("h('"+c+"'")&&pre.includes("call('"+c+"')"))&&
       /lib', 'region\.mjs'/.test(main)&&/loadFiles\(\)/.test(ren));
-    ok('the window is version 1.2.0',JSON.parse(G('package.json')).version==='1.2.0');}
+    ok('the window is version 1.2.0 or later',C.cmpVer(JSON.parse(G('package.json')).version,'1.2.0')>=0);}
 
   fs.rmSync(OUT,{recursive:true,force:true});
 });

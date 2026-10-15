@@ -76,7 +76,7 @@
 // filled the same chest with loot of its own, is sent the server's copy back. Loot is rolled once.
 import { PROTO, DAY_LEN, MIN_GAME, LIMITS, RATE, RULES, CK_RE, LK_RE, BK_RE, DROP_ID_RE, DIMS, DIM_PFX, cleanRules, cmpVer } from './config.mjs';
 import { num, cleanName, cleanText, cleanStack, cleanMobs, cleanSkin, playerKey } from './world.mjs';
-import { runCommand, isOp, protRadius, permOf, renameAccount, passOK, accountOf, locksOf, passwordProblem, setSkin } from './commands.mjs';
+import { runCommand, isOp, protRadius, permOf, renameAccount, checkPassword, isHashed, hashPassword, hashPasswordLater, passwordRule, accountOf, locksOf, passwordProblem, setSkin } from './commands.mjs';
 
 export { playerKey, setSkin };
 
@@ -89,7 +89,7 @@ function uniqueName(S, want) {
 }
 
 /* ----- accounts (6.49) -----
-   An account is a player record (playerdata/<name>.json) with a password in it, in plain text, made by an operator
+   An account is a player record (playerdata/<name>.json) with a password in it (6.61: its scrypt hash), made by an operator
    (/account add, lib/commands.mjs, or the server window). With "accounts" on, nobody joins without one; with it off anyone
    may join by name as before, except as a name that is an account. */
 /* a player record as their own game may see it: never the password or the locks */
@@ -203,13 +203,22 @@ function hello(S, net, c, m) {
      is an account, which needs its password all the same. No answer yet, or a wrong one: ask (login), up to 5 times. */
   const user = cleanName(S.o.accounts ? m.user : (m.user || m.name)), acct = accountOf(S, user);
   if (S.o.accounts || acct) {
-    if (!acct || !passOK(acct, m.pass)) {
-      const tried = typeof m.pass === 'string' && m.pass !== '';
+    const tried = typeof m.pass === 'string' && m.pass !== '';
+    /* 6.61: the password is checked off the main thread, then hello runs again with the answer (for that same record: one
+       renamed or removed meanwhile is a wrong login). One check at a time per connection. */
+    if (tried && !m.checked) {
+      if (c.checking) return;
+      c.checking = true;
+      checkPassword(acct, m.pass).then((ok) => { c.checking = false; if (!c.closed && !c.id) hello(S, net, c, { ...m, checked: { rec: acct, ok } }); });
+      return;
+    }
+    if (!acct || !m.checked || m.checked.rec !== acct || !m.checked.ok) {
       if (tried) { c.loginN = (c.loginN || 0) + 1; S.log(`  ${c.addr}: wrong login (${user || 'no name'})`); }
       if (c.loginN >= 5) return net.drop(c, 'Too many wrong logins. Ask the server\'s owner if you have forgotten yours.', true);
-      c.helloM = { ...m, user: undefined, pass: undefined };
+      c.helloM = { ...m, user: undefined, pass: undefined, checked: undefined };
       return net.send(c, { t: 'login', user: user || '', why: tried ? 'Wrong username or password.' : '', accounts: !!S.o.accounts });
     }
+    if (!isHashed(acct.password)) { acct.password = hashPassword(m.pass); S.dirty = true; }   // a plain one written into the file by hand
   }
   const want = acct ? cleanName(acct.name) || user : user, key = playerKey(want || 'Player');
   if (o.bans.includes(key) || o.bans.includes(String(c.addr).toLowerCase())) { S.log(`  ${c.addr}: banned (${want})`); return net.drop(c, 'You are banned from this server.', true); }
@@ -222,7 +231,7 @@ function hello(S, net, c, m) {
   if (S.clients.size >= o.maxPlayers) return net.drop(c, 'The server is full.', true);
   if (!S.gameVersion) { S.gameVersion = m.v; S.log(`game version pinned to ${m.v} (the first player's)`); }
   c.name = acct ? want : uniqueName(S, want);
-  delete c.helloM;
+  delete c.helloM; delete c.checking;
   c.id = S.nextId++;
   c.rd = Math.round(num(m.rd, 4, 32, 0)) || o.viewChunks;
   S.clients.set(c.id, c);
@@ -232,7 +241,7 @@ function hello(S, net, c, m) {
   const { edits, be, players, drops, spawn, ...meta } = world;   // meta: seed, mode, time, rules and whatever else the save carried
   net.send(c, { t: 'welcome', proto: PROTO, id: c.id, name: c.name, server: o.name, motd: o.motd, pvp: !!o.pvp, host: S.hdims.length > 0, hdims: S.hdims,
     world: { ...meta, mode: c.gm || world.mode }, player: ownView(saved),
-    acct: { accounts: !!S.o.accounts, account: !!acct, locks: locksOf(S, c.name), skin: c.skin },
+    acct: { accounts: !!S.o.accounts, account: !!acct, locks: locksOf(S, c.name), skin: c.skin, rule: passwordRule(S.o.passwordSecurity) },   // 6.61: what a new password needs
     players: [...S.clients.values()].filter((p) => p !== c && p.ready).map((p) => ({ id: p.id, name: p.name, pose: p.pose, ...(p.skin ? { skin: p.skin } : {}) })) });
   net.send(c, permOf(S, c));
   /* where they will appear: their saved place, else the world spawn. Without either (the very first player of a world that
@@ -662,12 +671,22 @@ export function handleMessage(S, net, c, m, size) {
       }
       if (typeof m.pass === 'string') {
         if (L.password) return net.send(c, { t: 'acct', ok: false, why: 'Password changes are locked on this server.' });
-        if (!passOK(rec, m.old)) return net.send(c, { t: 'acct', ok: false, why: 'Your current password is not right.' });
-        const bad = passwordProblem(m.pass);
+        const bad = passwordProblem(m.pass, S.o.passwordSecurity);
         if (bad) return net.send(c, { t: 'acct', ok: false, why: bad });
-        rec.password = m.pass; S.dirty = true;
-        S.log(`${c.name} changed their password`);
-        return net.send(c, { t: 'acct', ok: true, why: 'Password changed.' });
+        if (c.checking) return net.send(c, { t: 'acct', ok: false, why: 'One moment: the last change is still being checked.' });
+        /* 6.61: checked and hashed off the main thread; the record must still be theirs when it is done */
+        c.checking = true;
+        const done = (msg) => { c.checking = false; if (!c.closed) net.send(c, msg); };
+        checkPassword(rec, m.old).then((ok) => {
+          if (!ok) return done({ t: 'acct', ok: false, why: 'Your current password is not right.' });
+          return hashPasswordLater(m.pass).then((h) => {
+            if (accountOf(S, c.name) !== rec) return done({ t: 'acct', ok: false, why: 'Your account changed meanwhile. Try again.' });
+            rec.password = h; S.dirty = true;
+            S.log(`${c.name} changed their password`);
+            done({ t: 'acct', ok: true, why: 'Password changed.' });
+          });
+        }).catch(() => done({ t: 'acct', ok: false, why: 'The password could not be changed. Try again.' }));
+        return;
       }
       return;
     }

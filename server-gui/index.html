@@ -80,8 +80,9 @@
       <h3>Accounts</h3>
       <p id="acnote" class="dim"></p>
       <form id="acform" class="acrow"><input id="ac_name" maxlength="16" autocomplete="off" spellcheck="false" placeholder="username"><input id="ac_pass" maxlength="64" autocomplete="off" spellcheck="false" placeholder="password"><button>Add account</button></form>
-      <label class="dim"><input type="checkbox" id="ac_show"> Show passwords (they are kept in plain text in each player's file)</label>
-      <table><thead><tr><th>Account</th><th>Password</th><th>Locked</th><th></th></tr></thead><tbody id="aclist"></tbody></table>
+      <p id="acmsg" class="dim" role="status"></p>
+      <p class="dim">Passwords are kept as hashes (server 6.61 and newer): nobody can read them, but you can set a new one here.</p>
+      <table><thead><tr><th>Account</th><th>Locked</th><th></th></tr></thead><tbody id="aclist"></tbody></table>
       <p id="noaccounts" class="dim">No accounts yet.</p>
       <input type="file" id="ac_skinfile" accept=".png,image/png" hidden>
     </section>
