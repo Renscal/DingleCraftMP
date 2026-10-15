@@ -33,7 +33,7 @@ function hrMgCl(x,a,b){return x<a?a:(x>b?b:x);}
 function hrMgSetLin(c,h){const v=hrMgLin(h);if(c&&c.setRGB)c.setRGB(v[0],v[1],v[2]);return c;}
 
 /* ---- the art: embedded fal maps (pack_mg.py), decoded once, one THREE.Texture per key, shared by every instance ---- */
-function hrMgAssetTable(){if(HR_MG.A)return HR_MG.A;
+function hrMgAssetTable(){if(HR_MG.A&&(typeof hrArtReady!=='function'||hrArtReady()))return HR_MG.A;   /* 6.62: never keep the empty table from before the art arrived */
   try{HR_MG.A=typeof hrMgAssets==='function'?(hrMgAssets()||{}):{};}catch(err){HR_MG.A={};hrMgFail('assets',err);}
   return HR_MG.A;}
 function hrMgHasArt(id){const A=hrMgAssetTable();return !!A['m:'+id+'|b'];}

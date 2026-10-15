@@ -58,12 +58,28 @@ const built = path.join(tmp, info.html.file);
 if (fs.existsSync(distFile)) {
   if (md5(fs.readFileSync(distFile)) !== info.html.md5) die(`${rel(distFile)} already exists with other bytes: rebuild it (npm run build) or move it away first`);
 } else { fs.mkdirSync(distDir, { recursive: true }); fs.copyFileSync(built, distFile); }
+/* 6.62: the Hyperreal art beside the page (build.json art: the files it asks for), in dist/art/ and in art/ at the top of
+   the repo beside DINGLECRAFT.html, written before the page so nobody ever finds a page without its art. art/ at the top
+   holds only the newest release's files: a file the new page does not ask for is removed. */
+const artFiles = info.art || [];
+for (const a of artFiles) {
+  const from = path.join(tmp, a.file), name = path.basename(a.file);
+  if (md5(fs.readFileSync(from)) !== a.md5) die(`${a.file}: the build wrote other bytes than build.json says`);
+  for (const dir of [path.join(distDir, 'art'), path.join(REPO, 'art')]) {
+    const to = path.join(dir, name);
+    if (fs.existsSync(to) && md5(fs.readFileSync(to)) === a.md5) continue;
+    fs.mkdirSync(dir, { recursive: true }); fs.copyFileSync(from, to + '.tmp'); fs.renameSync(to + '.tmp', to);
+  }
+}
+{ const keep = new Set(artFiles.map((a) => path.basename(a.file))), top = path.join(REPO, 'art');
+  if (fs.existsSync(top)) for (const n of fs.readdirSync(top)) if (/\.js$/.test(n) && !keep.has(n)) fs.rmSync(path.join(top, n)); }
+if (artFiles.length) console.log(`copied ${artFiles.length} art file${artFiles.length === 1 ? '' : 's'} to art/ (beside DINGLECRAFT.html) and dist/art/`);
 const playFile = path.join(REPO, 'DINGLECRAFT.html');   /* the play file players download from the repo: always the newest release */
 fs.copyFileSync(built, playFile + '.tmp'); fs.renameSync(playFile + '.tmp', playFile);
 console.log(`copied v${VER} to DINGLECRAFT.html (the download at the top of the repo)`);
 fs.rmSync(tmp, { recursive: true, force: true });
 
-shipped[VER] = { label: LABEL, bytes: info.html.bytes, md5: info.html.md5, date: new Date().toISOString().slice(0, 10), parts: info.parts, assets: info.assets };
+shipped[VER] = { label: LABEL, bytes: info.html.bytes, md5: info.html.md5, date: new Date().toISOString().slice(0, 10), parts: info.parts, assets: info.assets, ...(info.art ? { art: info.art } : {}) };
 shippedDoc.shipped = shipped;
 fs.writeFileSync(SHIPPED_FILE, JSON.stringify(shippedDoc, null, 2) + '\n');
 console.log(`recorded v${VER} (${LABEL}) in tests/fixtures/shipped.json: ${info.html.bytes} B md5 ${info.html.md5} (frozen from now on)`);

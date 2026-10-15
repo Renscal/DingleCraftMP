@@ -3,9 +3,12 @@
 //                 The page is the file byte for byte except for one line added at the top of its <head>, which tells the
 //                 game it is a server's (window.DC_SERVER = 1): that game has no worlds of its own, only this server's.
 //                 The same file opened from disk, or in the desktop client, is the whole game.
+//   GET /art/<file>   (6.62) the Hyperreal art: the files in the art/ folder next to the game html, which the game asks for
+//                 the first time Hyperreal is switched on. Their names carry their content's hash, so a browser keeps them.
 //   GET /status   a small JSON readout: name, version, who is online
 // Everything else is a 404. Nothing here can change the world.
 import fs from 'node:fs';
+import path from 'node:path';
 import { PROTO, MIN_GAME } from './config.mjs';
 
 /* what /status says (also used by the suites) */
@@ -56,6 +59,18 @@ export function pageHandler(S) {
       top.on('error', () => res.destroy());
       top.on('end', () => { res.write(SERVED_TAG); fs.createReadStream(S.gameFile, { start: at }).on('error', () => res.destroy()).pipe(res); });
       return top.pipe(res, { end: false });
+    }
+    /* 6.62: one art file, by its plain name, from the art/ folder beside the game file and nowhere else */
+    const art = /^\/art\/([A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*\.js)$/.exec(url);
+    if (art && S.gameFile) {
+      const file = path.join(path.dirname(S.gameFile), 'art', art[1]);
+      let st = null;
+      try { st = fs.statSync(file); } catch { /* not there: 404 below */ }
+      if (st && st.isFile()) {
+        res.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8', 'content-length': st.size, 'cache-control': 'public, max-age=31536000, immutable' });
+        if (req.method === 'HEAD') return res.end();
+        return fs.createReadStream(file).on('error', () => res.destroy()).pipe(res);
+      }
     }
     res.writeHead(404, { 'content-type': 'text/plain' }); res.end('not found');
   };

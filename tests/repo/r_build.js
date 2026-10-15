@@ -44,19 +44,19 @@ function build(dir) {
   }
   const info = JSON.parse(fs.readFileSync(path.join(A, 'build.json'), 'utf8'));
   const P = (f) => fs.readFileSync(path.join(A, f));
-  const head = P('head.html'), game = P('game.js'), hrassets = P('hrassets.js'), tail = P('tail.html');
+  const head = P('head.html'), game = P('game.js'), hrassets = P('hrassets.js'), hrart = P('hrart.js'), tail = P('tail.html');
   const hrGen = P('hr_assets.gen.js'), mgGen = P('mg_assets.gen.js');
   const html = P(info.html.file);
   ok('build.json version is GAME_VERSION', info.version === VER);
   ok('html file is dinglecraft_v<VER>.html', info.html.file === `dinglecraft_v${VER}.html`);
-  ok('html = head + game + hrassets + tail', html.equals(Buffer.concat([head, game, hrassets, tail])));
+  ok('html = head + game + hrart + tail (6.62: the art is files beside it)', html.equals(Buffer.concat([head, game, hrart, tail])));
   ok('hrassets = hr_assets.gen.js + mg_assets.gen.js', hrassets.equals(Buffer.concat([hrGen, mgGen])));
   ok('build.json md5s match the written files', info.html.md5 === md5(html) && info.parts.game.md5 === md5(game) && info.parts.head.md5 === md5(head));
   if (shipped[VER]) {
     const s = shipped[VER];
     ok(`FROZEN v${VER}: html byte-identical to the shipped file`, html.length === s.bytes && md5(html) === s.md5);
     ok(`FROZEN v${VER}: build reports frozen=match`, info.frozen === 'match');
-    if (s.parts) for (const k of ['head', 'game', 'hrassets', 'tail']) ok(`FROZEN v${VER}: ${k} md5 equals the shipped part`, md5({ head, game, hrassets, tail }[k]) === s.parts[k].md5);
+    if (s.parts) for (const k of Object.keys(s.parts)) ok(`FROZEN v${VER}: ${k} md5 equals the shipped part`, !!{ head, game, hrassets, hrart, tail }[k] && md5({ head, game, hrassets, hrart, tail }[k]) === s.parts[k].md5);
     if (s.assets) {
       ok(`FROZEN v${VER}: hr_assets.gen.js sha1 equals the shipped asset`, sha1(hrGen) === s.assets['hr_assets.gen.js'].sha1);
       ok(`FROZEN v${VER}: mg_assets.gen.js sha1 equals the shipped asset`, sha1(mgGen) === s.assets['mg_assets.gen.js'].sha1);
@@ -85,12 +85,14 @@ function build(dir) {
   const gattr = read('.gitattributes').toString('utf8');
   ok('.gitattributes: "* -text" (no EOL normalisation)', gattr.split('\n').includes('* -text'));
   const noDiff = gattr.split('\n').filter((l) => /\s-diff\b/.test(l) && !l.startsWith('#'));
-  ok('.gitattributes hides no source file from diffs (-diff only on the generated og_trace fixtures and the play file)' + (noDiff.length > 2 ? ' (' + noDiff.join(', ') + ')' : ''),
-    noDiff.length === 2 && noDiff[0] === 'tests/fixtures/og_trace/*.json -diff' && noDiff[1] === 'DINGLECRAFT.html -diff linguist-generated');
+  ok('.gitattributes hides no source file from diffs (-diff only on the generated og_trace fixtures, the play file and its art)' + (noDiff.length > 3 ? ' (' + noDiff.join(', ') + ')' : ''),
+    noDiff.length === 3 && noDiff[0] === 'tests/fixtures/og_trace/*.json -diff' && noDiff[1] === 'DINGLECRAFT.html -diff linguist-generated' && noDiff[2] === 'art/*.js -diff linguist-generated');
   // ---- the play file (DINGLECRAFT.html): the newest release, byte for byte (npm run release copies it in)
   { const pc = require('../lib/repo_files.js').playCheck();
     ok('DINGLECRAFT.html is the newest release, byte for byte (' + (pc.present ? (pc.version ? 'v' + pc.version : 'not a shipped build') + ', newest v' + pc.newest : 'missing') + ')',
-      pc.present && pc.version !== null && pc.version === pc.newest); }
+      pc.present && pc.version !== null && pc.version === pc.newest);
+    const pa = require('../lib/repo_files.js').playArtCheck();
+    ok('art/ beside it is that release\'s art, byte for byte, and nothing else (' + (pa.want ? pa.files.length + ' files' : 'that release has its art inside') + ')', pa.same); }
 
   // ---- boundary contract
   const gt = game.toString('utf8'), ht = head.toString('utf8');

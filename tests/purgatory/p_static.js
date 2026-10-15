@@ -114,7 +114,7 @@ boot.run(async()=>{
   else skip('PURG_GUIDE size','P5 on its stub');
   {const paF=boot.P.TOOLS+'art/texpacks/pack_assets.py',pa=fs.existsSync(paF)?fs.readFileSync(paF,'utf8'):'',ts=fs.readFileSync(path.join(__dirname,'..','texpacks','tA_static.js'),'utf8');
    const g55=GUARDS.sections.find(s=>s.name==='PART 55');   /* split repo: scripts/guards.json is the build's (and the gate's) cap table */
-   ok('the three HTML/asset caps are equal (scripts/guards.json html_cap, pack_assets.py std, tA_static std = 45 MB)',GUARDS.html_cap===45000000&&/'std':.*cap=45_000_000/.test(pa)&&/std:45e6/.test(ts));
+   ok('the art caps are equal (pack_assets.py std, tA_static std = 45 MB) and the page has its own since 6.62, the art beside it (guards html_cap 12 MB, art_file_cap 25 MB)',GUARDS.html_cap===12000000&&GUARDS.art_file_cap===25000000&&/'std':.*cap=45_000_000/.test(pa)&&/std:45e6/.test(ts));
    ok('the gate guards PART 55 at 950,000 B (scripts/guards.json)',!!g55&&g55.cap===950000&&g55.from==='/* ---- PART 55: '&&g55.to==='/* ---- PART 54: t0_contract.js ---- */');}
 
   /* ---- spoilers (plan 8.1, audit A12) ---- */

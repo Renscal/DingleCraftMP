@@ -40,13 +40,21 @@ and no packages. It takes about a second.
    on the win screen: `LABEL_SITES` in `scripts/lib/version.mjs`) must equal `RELEASE_LABEL`.
 7. **Assets.** Assembles `hr_assets.gen.js` and `mg_assets.gen.js` from `assets/packed/` ([ASSETS.md](ASSETS.md)). Each
    must be pure ASCII, contain no `<`, end with `\n`, contain its functions, and hash (sha1) to the value its manifest
-   records. `hrassets.js` = the two joined.
+   records. `hrassets.js` = the two joined (the art as one script: what the suites load; never shipped since 6.62).
+   **6.62:** `assembleArt` splits the same payloads (hr in key order, then mg in `order.json` order) into files of at most
+   `ART_SPLIT` (20,000,000) bytes, `art/hyperreal-<n>-<sha1 of its content, 10 hex>.js`, each
+   `hrArtArrived("<its name>",{hr…},{mg…});`, and writes `hrart.js`: the page's stand-in for the art (`hrAssetMeta`
+   verbatim, `hrAssets`, `hrMgAssets`, `hrArtReady`, `hrArtLoad`, the file list). It starts with the line
+   `/* PART 54 ASSETS - GENERATED`, where `server/lib/host.mjs` cuts the game script out of the html.
 8. **tail.** `html/tail.html` must begin with `</script>`.
 9. **Write** (each file to a temp name, then renamed into place):
-   - `build/`: `head.html`, `game.js`, `hr_assets.gen.js`, `mg_assets.gen.js`, `hrassets.js`, `tail.html`, `build.json`;
-   - `dist/dinglecraft_v<VER>.html` = head + game + hrassets + tail.
-10. **Syntax.** `node --check` on `build/game.js`, `build/hrassets.js`, and the script extracted from the html.
-11. **Cap.** The html must stay under `html_cap` in `scripts/guards.json` (45,000,000 bytes).
+   - `build/`: `head.html`, `game.js`, `hr_assets.gen.js`, `mg_assets.gen.js`, `hrassets.js`, `hrart.js`, `tail.html`,
+     `build.json`, and `art/` (this build's art files and nothing else);
+   - `dist/dinglecraft_v<VER>.html` = head + game + hrart + tail, and `dist/art/` beside it (older versions' art files
+     stay, so an older html there still finds its own).
+10. **Syntax.** `node --check` on `build/game.js`, `build/hrassets.js`, every art file, and the script extracted from the html.
+11. **Cap.** The html must stay under `html_cap` (12,000,000 bytes since 6.62) and each art file under `art_file_cap`
+    (25,000,000) in `scripts/guards.json`. The art can grow: it is cut into more files.
 12. **Frozen check.** If `GAME_VERSION` is listed in `tests/fixtures/shipped.json`, the html's md5 must match the shipped
     one. A match prints `FROZEN v<VER>: byte-identical to the shipped file`. A mismatch prints a loud warning telling you to
     bump the version, writes the html **only** to the `--out` folder (a shipped file in `dist/` is never overwritten),
@@ -65,7 +73,8 @@ and `npm run release` read it.
 | PART 56 | the first `/* ---- PART 56: ` | `/* ---- PART 55: p0_contract.js ---- */` (must be adjacent) | 450,000 | 139,146 |
 | PART 57 | `/* ---- PART 57: m0_contract.js ---- */` | `/* ---- PART 56: c0_contract.js ---- */` (must be adjacent) | 600,000 | 433,458 |
 | PART 57 HR block | the first `/* ---- PART 57 HR: ` | the comment that opens the Hyperreal cast (must be adjacent) | 700,000 | 68,204 |
-| the html | | | 45,000,000 | 42,986,086 |
+| the html | | | 12,000,000 (45,000,000 before 6.62) | 42,986,086 (5.9 MB at 6.62) |
+| each art file | | | 25,000,000 (`art_file_cap`, 6.62) | 19.9 MB and 16.9 MB at 6.62 |
 
 At v6.3 the html had about 2 MB of headroom; Release 1.0's preview (game 6.4, 40.0 MB after its repack dropped the
 removed textures) had about 5 MB. Game 6.7 is 42.5 MB: the bundled three.js (about 0.6 MB) and the title panorama (about

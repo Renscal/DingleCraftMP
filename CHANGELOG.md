@@ -21,6 +21,17 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## DingleCraft Multiplayer 2.0 — Travel light
+
+*Game version 6.62, released 2026-10-15.*
+
+- **TRAVEL LIGHT.** The game used to arrive as one 42.7 MB file, 37 MB of which was Hyperreal art: every wrinkle, every pore, every damp brick, packed in whether you wanted to look at them or not. OG players carried all of it around and never once opened the suitcase. The game is now 5.9 MB.
+- **Where the art went.** Next door. It lives in an art folder beside the game, and the game only fetches it the first time you switch to Hyperreal. Stay in OG and you never download it, never unpack it, and the game starts with a fifth of the memory it used to.
+- **Hyperreal still looks exactly as cursed.** Same textures, same pixels: we put the old and new versions side by side and the only differences were the clouds, which move.
+- **Everywhere you play.** Opened from your disk, handed out by a multiplayer server, or in the desktop client: all three find the art folder by themselves. The server and client downloads already have it in the right place.
+- **Just the html?** Still plays, in glorious OG. Switch to Hyperreal without the art folder and the game says what is missing instead of pretending nothing happened. Put the folder next to the file and it works.
+- **Room to grow.** The game had about 2 MB of room left before it hit the size limit, which meant no new Hyperreal art, ever. Now the art comes in pieces of at most 20 MB, so it can grow as much as it likes.
+
 ## DingleCraft Multiplayer 2.0 — Nobody reads your password
 
 *Game version 6.61, released 2026-10-15.*

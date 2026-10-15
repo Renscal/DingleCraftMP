@@ -3,7 +3,15 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Nobody reads your password',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Travel light',lines:[
+    '<b>TRAVEL LIGHT.</b> The game used to arrive as one 42.7 MB file, 37 MB of which was Hyperreal art: every wrinkle, every pore, every damp brick, packed in whether you wanted to look at them or not. OG players carried all of it around and never once opened the suitcase. The game is now 5.9 MB.',
+    '<b>Where the art went.</b> Next door. It lives in an art folder beside the game, and the game only fetches it the first time you switch to Hyperreal. Stay in OG and you never download it, never unpack it, and the game starts with a fifth of the memory it used to.',
+    '<b>Hyperreal still looks exactly as cursed.</b> Same textures, same pixels: we put the old and new versions side by side and the only differences were the clouds, which move.',
+    '<b>Everywhere you play.</b> Opened from your disk, handed out by a multiplayer server, or in the desktop client: all three find the art folder by themselves. The server and client downloads already have it in the right place.',
+    '<b>Just the html?</b> Still plays, in glorious OG. Switch to Hyperreal without the art folder and the game says what is missing instead of pretending nothing happened. Put the folder next to the file and it works.',
+    '<b>Room to grow.</b> The game had about 2 MB of room left before it hit the size limit, which meant no new Hyperreal art, ever. Now the art comes in pieces of at most 20 MB, so it can grow as much as it likes.',
+  ]},
+ {v:'6.61',label:'DingleCraft Multiplayer 2.0',title:'Nobody reads your password',lines:[
     '<b>NOBODY READS YOUR PASSWORD.</b> Since accounts arrived in 6.49, the server kept every password as plain text in the player’s file, and the game said so with a warning that was honest and slightly alarming. Not any more. The server now keeps only a scrambled fingerprint (scrypt, with a pinch of salt of its own for every account), which nobody can turn back into the password. Not a curious friend with the files, not the owner, not us.',
     '<b>The owner still holds the keys.</b> Forgot your password? The owner can set you a new one, from the console or with Set password in the server window. They just cannot see the old one.',
     '<b>Your old passwords keep working.</b> Start a 6.61 server and every plain-text password is hashed on the spot and saved at once, so the text leaves the disk the moment the server is up. Everyone logs in exactly as before. (Old backups still hold whatever they held: delete the ones you do not need.)',

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// DINGLECRAFT build: src/ + html/ + assets/ -> build/{head.html,game.js,hrassets.js,...} and dist/dinglecraft_v<VER>.html.
+// DINGLECRAFT build: src/ + html/ + assets/ -> build/{head.html,game.js,hrart.js,hrassets.js,art/,...} and dist/dinglecraft_v<VER>.html
+// with dist/art/ beside it (6.62: the Hyperreal art is files of its own, loaded when Hyperreal is switched on).
 // Node only, no dependencies. The build is plain concatenation: it adds and changes nothing (docs/BUILD.md).
 //
 //   node scripts/build.mjs [--out DIR] [--dist DIR] [--no-check] [--strict] [--quiet]
@@ -16,7 +17,7 @@ import { REPO, SRC, HTML, ASSETS, FIX, rel } from './lib/paths.mjs';
 import { readOrder, validateOrder, markerLint } from './lib/order.mjs';
 import { loadGuards, runSectionGuards } from './lib/guards.mjs';
 import { readVersion, checkSites } from './lib/version.mjs';
-import { assembleAssets } from './lib/assets.mjs';
+import { assembleAssets, assembleArt, checkAssetText, ART_DIR } from './lib/assets.mjs';
 import { nodeCheck } from './lib/syntax.mjs';
 
 const T0 = Date.now();
@@ -101,14 +102,19 @@ let A;
 try { A = assembleAssets(REPO); } catch (e) { fail([e.message]); }
 step(A.problems);
 const hrBuf = Buffer.from(A.hr, 'latin1'), mgBuf = Buffer.from(A.mg, 'latin1');
-const hrassets = Buffer.concat([hrBuf, mgBuf]);
+const hrassets = Buffer.concat([hrBuf, mgBuf]);   // the art as one script: what the suites load (tests/lib/hr_boot.js), never shipped since 6.62
+/* 6.62: the page carries hrart.js (the stand-in that loads the art) and the art is files beside it */
+const ART = assembleArt(REPO);
+step(checkAssetText('hrart.js', ART.stub, ['function hrAssetMeta(', 'function hrAssets(', 'function hrMgAssets(', 'function hrArtLoad(']));
+const hrart = Buffer.from(ART.stub, 'latin1');
+const artBufs = ART.files.map((f) => ({ name: f.name, buf: Buffer.from(f.text, 'latin1') }));
 
 // 7. tail ------------------------------------------------------------------------------------------
 const tail = fs.readFileSync(path.join(HTML, 'tail.html'));
 if (!tail.toString('utf8').startsWith('</script>')) fail(['html/tail.html must begin with "</script>"']);
 
 // 8. write -----------------------------------------------------------------------------------------
-const html = Buffer.concat([head, game, hrassets, tail]);
+const html = Buffer.concat([head, game, hrart, tail]);
 const htmlName = `dinglecraft_v${VER}.html`;
 const shipped = JSON.parse(fs.readFileSync(path.join(FIX, 'shipped.json'), 'utf8')).shipped || {};
 const frozen = shipped[VER] ? (md5(html) === shipped[VER].md5 && html.length === shipped[VER].bytes ? 'match' : 'mismatch') : 'not-shipped';
@@ -122,7 +128,9 @@ const partInfo = (b) => ({ bytes: b.length, md5: md5(b) });
 const info = {
   version: VER,
   html: { file: htmlName, ...partInfo(html) },
-  parts: { head: partInfo(head), game: partInfo(game), hrassets: partInfo(hrassets), tail: partInfo(tail) },
+  parts: { head: partInfo(head), game: partInfo(game), hrart: partInfo(hrart), tail: partInfo(tail) },
+  art: artBufs.map((a) => ({ file: ART_DIR + '/' + a.name, ...partInfo(a.buf) })),
+  hrassets: partInfo(hrassets),
   assets: { 'hr_assets.gen.js': { ...partInfo(hrBuf), sha1: sha1(hrBuf) }, 'mg_assets.gen.js': { ...partInfo(mgBuf), sha1: sha1(mgBuf) } },
   frozen,
   sections: Object.fromEntries(sections.map((s) => [s.name, s.bytes])),
@@ -134,6 +142,11 @@ writeAtomic(OUT, 'game.js', game);
 writeAtomic(OUT, 'hr_assets.gen.js', hrBuf);
 writeAtomic(OUT, 'mg_assets.gen.js', mgBuf);
 writeAtomic(OUT, 'hrassets.js', hrassets);
+writeAtomic(OUT, 'hrart.js', hrart);
+/* the art folder: this build's files, and nothing else in build/art (dist/art keeps older versions' files too: a dist html
+   from an earlier version still finds its own) */
+fs.rmSync(path.join(OUT, ART_DIR), { recursive: true, force: true });
+for (const a of artBufs) { writeAtomic(path.join(OUT, ART_DIR), a.name, a.buf); if (!fs.existsSync(path.join(DIST, ART_DIR, a.name))) writeAtomic(path.join(DIST, ART_DIR), a.name, a.buf); }
 writeAtomic(OUT, 'tail.html', tail);
 // A shipped version whose bytes changed is never written to dist/ (the shipped file there stays intact); it goes to the
 // build dir instead so it can be inspected.
@@ -150,6 +163,7 @@ if (CHECK) {
   const res = await Promise.all([
     nodeCheck(path.join(OUT, 'game.js'), { name: 'game.js' }),
     nodeCheck(path.join(OUT, 'hrassets.js'), { name: 'hrassets.js', hideSource: true }),
+    ...artBufs.map((a) => nodeCheck(path.join(OUT, ART_DIR, a.name), { name: ART_DIR + '/' + a.name, hideSource: true })),
     nodeCheck(bodyFile, { name: 'html script body' }),
   ]);
   fs.rmSync(bodyFile, { force: true });
@@ -158,6 +172,7 @@ if (CHECK) {
 
 // 10. cap ------------------------------------------------------------------------------------------
 if (html.length >= guards.html_cap) fail([`html too big: ${html.length} >= ${guards.html_cap}`]);
+for (const a of artBufs) if (a.buf.length >= guards.art_file_cap) fail([`${ART_DIR}/${a.name} too big: ${a.buf.length} >= ${guards.art_file_cap} (lower ART_SPLIT in scripts/lib/assets.mjs)`]);
 
 // 11. frozen check + build.json ----------------------------------------------------------------------
 writeAtomic(OUT, 'build.json', Buffer.from(JSON.stringify(info, null, 2) + '\n'));
@@ -165,10 +180,10 @@ writeAtomic(OUT, 'build.json', Buffer.from(JSON.stringify(info, null, 2) + '\n')
 // 12. report ---------------------------------------------------------------------------------------
 const pad = (s, n) => (s + ' '.repeat(n)).slice(0, n);
 log(`DINGLECRAFT v${VER}: ${srcOrder.length} src files (${lint.checked} markers OK), ${htmlOrder.length} html files, ${A.info.hrKeys}+${A.info.mgKeys} packed payloads`);
-for (const [n, b] of [['head.html', head], ['game.js', game], ['hr_assets.gen.js', hrBuf], ['mg_assets.gen.js', mgBuf], ['hrassets.js', hrassets], ['tail.html', tail], [htmlName, html]])
+for (const [n, b] of [['head.html', head], ['game.js', game], ['hr_assets.gen.js', hrBuf], ['mg_assets.gen.js', mgBuf], ['hrassets.js', hrassets], ['hrart.js', hrart], ['tail.html', tail], [htmlName, html], ...artBufs.map((a) => [ART_DIR + '/' + a.name, a.buf])])
   log(`  ${pad(n, 24)} ${String(b.length).padStart(10)} B  md5 ${md5(b)}`);
-log(`  sections: ${sections.map((s) => s.name + ' ' + s.bytes).join(', ')}; html cap ${guards.html_cap}`);
-log(`  ${CHECK ? 'syntax OK (game.js, hrassets.js, html script body)' : 'syntax check skipped (--no-check)'}; out ${rel(OUT)}/, dist ${rel(DIST)}/; ${((Date.now() - T0) / 1000).toFixed(2)} s`);
+log(`  sections: ${sections.map((s) => s.name + ' ' + s.bytes).join(', ')}; html cap ${guards.html_cap}, art file cap ${guards.art_file_cap}`);
+log(`  ${CHECK ? 'syntax OK (game.js, hrassets.js, the art files, html script body)' : 'syntax check skipped (--no-check)'}; out ${rel(OUT)}/, dist ${rel(DIST)}/; ${((Date.now() - T0) / 1000).toFixed(2)} s`);
 if (frozen === 'match') log(`FROZEN v${VER}: byte-identical to the shipped file`);
 else if (frozen === 'mismatch') {
   console.error('');

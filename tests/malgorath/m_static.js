@@ -133,8 +133,8 @@ boot.run(async()=>{
      tests/fixtures/shipped.json; the nomalg parity session is retired (golden digests) */
   {const GJ=JSON.parse(fs.readFileSync(ROOT+'tests/gate.json','utf8')),GU=JSON.parse(fs.readFileSync(boot.P.SCRIPTS+'guards.json','utf8')),SH=JSON.parse(fs.readFileSync(boot.FIX+'shipped.json','utf8')).shipped;
    const s57=GU.sections.find(s=>s.name==='PART 57'),sH=GU.sections.find(s=>s.name==='PART 57 HR block'),E=GJ.entries||[],has=n=>E.some(e=>e.suite==='tests/malgorath/'+n+'.js');
-   ok('the gate refuses v6.2 and older (frozen: '+Object.keys(SH).join(',')+'), guards PART 57 at 600,000 B and its HR block at 700,000 B, keeps the 45 MB cap',['5.9','6.0','6.1','6.2'].every(v=>SH[v]&&/^[0-9a-f]{32}$/.test(SH[v].md5))&&
-     !!s57&&s57.cap===600000&&s57.lastIndexOf==='/* ---- PART 57: '&&!!sH&&sH.cap===700000&&GU.html_cap===45000000);
+   ok('the gate refuses v6.2 and older (frozen: '+Object.keys(SH).join(',')+'), guards PART 57 at 600,000 B and its HR block at 700,000 B, and the 12 MB page cap (6.62: 45 MB before the art moved beside it)',['5.9','6.0','6.1','6.2'].every(v=>SH[v]&&/^[0-9a-f]{32}$/.test(SH[v].md5))&&
+     !!s57&&s57.cap===600000&&s57.lastIndexOf==='/* ---- PART 57: '&&!!sH&&sH.cap===700000&&GU.html_cap===12000000);
    ok('the gate runs the Malgorath suites (smokes twice) and the malg og_trace session (golden digest)',['m_static','m1_static','m2_static','m3_static','m0_smoke','m1_smoke','m2_smoke','m3_smoke','m_harness','m2_fight','m2_audio','m3_model','m4_hr'].every(has)&&
      E.filter(e=>/^tests\/malgorath\/m\d_smoke\.js$/.test(e.suite)).every(e=>e.repeat===2)&&E.some(e=>/og_trace\.js$/.test(e.suite)&&(e.args||[]).join(' ').includes('og_trace/malg.json'))&&fs.existsSync(boot.FIX+'og_trace/malg.json'));}
 });

@@ -9,7 +9,8 @@
    6 without a parent listening (no --ipc) the same program prints its banner and takes commands from stdin as ever
    7 the settings check: good settings pass; bad ports, names, world folders, lists and rules are each named; what needs
      a restart is listed
-   8 the window's file handling (server-gui/lib/store.cjs); npm run package (Server and Client) and npm run package:gui
+   8 the window's file handling (server-gui/lib/store.cjs); npm run package (Server and Client, each with the art/ folder
+     since 6.62) and npm run package:gui
      (the window on its own version, with no server in it)
    9 server versions: a Server zip or folder imports into the window's library, the bad ones are refused saying why,
      nothing escapes the zip, a running version is not replaced, servers carry a version (the newest by default), a
@@ -164,6 +165,10 @@ boot.run(async()=>{
       r.status===0&&rel.join()===['DINGLECRAFT-Client-v'+V.GAME_VERSION+'.zip','DINGLECRAFT-Server-v'+V.GAME_VERSION+'.zip','notes.md'].sort().join()&&
       snames.includes('DINGLECRAFT-Server/lib/admin.mjs')&&snames.includes('DINGLECRAFT-Server/dinglecraft_v'+V.GAME_VERSION+'.html')&&!/ServerGUI-v/.test(r.stdout)&&
       /Server window/.test(fs.readFileSync(path.join(PK,'release','notes.md'),'utf8')));
+    /* 6.62: the Hyperreal art goes beside the html in both downloads, byte for byte the build's */
+    {const art=(JSON.parse(fs.readFileSync(path.join(REPO,'build','build.json'),'utf8')).art||[]),zipOf=n=>{const zf=path.join(PK,'release','DINGLECRAFT-'+n+'-v'+V.GAME_VERSION+'.zip');return fs.existsSync(zf)?Z.readZip(fs.readFileSync(zf)):[];};
+      const same=n=>{const Zs=zipOf(n);return art.length>0&&art.every(a=>{const e=Zs.find(x=>x.name==='DINGLECRAFT-'+n+'/'+a.file);return !!e&&require('crypto').createHash('md5').update(e.data).digest('hex')===a.md5;});};
+      ok('...and both carry the Hyperreal art folder beside the html, as built ('+art.map(a=>a.file).join(', ')+')',same('Server')&&same('Client'));}
     const rg=cp.spawnSync(process.execPath,[path.join(REPO,'scripts','package-gui.mjs')],{env:{...process.env,DC_OUT_DIR:PK},encoding:'utf8'});
     const gver=JSON.parse(fs.readFileSync(path.join(REPO,'server-gui','package.json'),'utf8')).version,zf=path.join(PK,'release-gui','DINGLECRAFT-ServerGUI-v'+gver+'.zip');
     const names=fs.existsSync(zf)?Z.readZip(fs.readFileSync(zf)).map(e=>e.name):[];

@@ -2,9 +2,10 @@
 // Package a version for its GitHub release: npm run package   (after npm run release, or npm run build for a dry run)
 //   --beta   the notes end with a line saying this is a beta that was released without the full test run
 // Writes into out/release/ (gitignored):
-//   DINGLECRAFT-Server-v<X.Y>.zip   server/ (front door, lib/, launchers, README) with the game html beside it, so the
+//   DINGLECRAFT-Server-v<X.Y>.zip   server/ (front door, lib/, launchers, README) with the game html and its art/ folder
+//                                   (6.62: the Hyperreal art, the files the page names) beside it, so the
 //                                   server hands the game out at its own address: players only need a browser
-//   DINGLECRAFT-Client-v<X.Y>.zip   client/ (the Electron wrapper) with the same html beside main.js
+//   DINGLECRAFT-Client-v<X.Y>.zip   client/ (the Electron wrapper) with the same html and art/ folder beside main.js
 //   (the server window, server-gui/, is not part of a game release since its 1.0: it runs any server version and has its
 //   own version and release, npm run package:gui, scripts/package-gui.mjs; a player imports this Server zip into it)
 //   notes.md                        the version's patch notes as Markdown, for the release page
@@ -29,6 +30,15 @@ const html = fs.readFileSync(htmlFile);
 const shipped = (JSON.parse(fs.readFileSync(path.join(FIX, 'shipped.json'), 'utf8')).shipped || {})[VER];
 const RELEASED = !!shipped;
 if (RELEASED && shipped.md5 !== md5(html)) die(`${rel(htmlFile)} is not the released v${VER} (md5 differs from tests/fixtures/shipped.json): run npm run build`);
+/* 6.62: the Hyperreal art beside the html, exactly the files the page asks for (its HRART list) */
+const artList = (() => { const m = /var HRART=\{files:(\[[^\]]*\])/.exec(html.toString('latin1')); return m ? JSON.parse(m[1]) : []; })();
+const art = artList.map((p) => {
+  const file = path.join(path.dirname(htmlFile), p);
+  if (!/^art\/[A-Za-z0-9_.-]+\.js$/.test(p) || !fs.existsSync(file)) die(`${rel(file)} missing (the page asks for ${p}): run npm run build`);
+  const data = fs.readFileSync(file), want = RELEASED && (shipped.art || []).find((a) => a.file === p);
+  if (want && want.md5 !== md5(data)) die(`${rel(file)} is not the released v${VER}'s (md5 differs from tests/fixtures/shipped.json)`);
+  return { path: p, data };
+});
 
 /* every file under a repo folder, as zip entries below `top/` (never data/, node_modules/ or a dropped game html) */
 function tree(dir, top) {
@@ -45,7 +55,7 @@ function tree(dir, top) {
 }
 
 const server = tree(path.join(REPO, 'server'), 'DINGLECRAFT-Server');
-server.push({ name: 'DINGLECRAFT-Server/' + HTML_NAME, data: html, mode: 0o644 });
+server.push({ name: 'DINGLECRAFT-Server/' + HTML_NAME, data: html, mode: 0o644 }, ...art.map((a) => ({ name: 'DINGLECRAFT-Server/' + a.path, data: a.data, mode: 0o644 })));
 const client = tree(path.join(REPO, 'client'), 'DINGLECRAFT-Client');
 { /* the packaged client carries the game version */
   const pj = client.find((e) => e.name === 'DINGLECRAFT-Client/package.json');
@@ -53,7 +63,7 @@ const client = tree(path.join(REPO, 'client'), 'DINGLECRAFT-Client');
   const doc = JSON.parse(pj.data.toString('utf8')); doc.version = VER + '.0';
   pj.data = Buffer.from(JSON.stringify(doc, null, 2) + '\n');
 }
-client.push({ name: 'DINGLECRAFT-Client/' + HTML_NAME, data: html, mode: 0o644 });
+client.push({ name: 'DINGLECRAFT-Client/' + HTML_NAME, data: html, mode: 0o644 }, ...art.map((a) => ({ name: 'DINGLECRAFT-Client/' + a.path, data: a.data, mode: 0o644 })));
 for (const need of ['DINGLECRAFT-Server/dinglecraft-server.mjs', 'DINGLECRAFT-Server/lib/server.mjs', 'DINGLECRAFT-Server/lib/admin.mjs', 'DINGLECRAFT-Server/Start Server.bat', 'DINGLECRAFT-Server/start-server.sh'])
   if (!server.some((e) => e.name === need)) die('the server package would miss ' + need);
 if (!client.some((e) => e.name === 'DINGLECRAFT-Client/main.js')) die('the client package would miss main.js');

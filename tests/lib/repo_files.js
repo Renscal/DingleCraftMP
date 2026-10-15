@@ -9,6 +9,9 @@
    R.BIN_EXT           -> extensions read as binary without looking (images, audio, fonts, archives)
    R.PLAY_FILE         -> 'DINGLECRAFT.html': the newest released build, committed at the repo root so players can download it
                           (scripts/release.mjs copies it there)
+   R.PLAY_ART          -> (6.62) the art files beside it, art/hyperreal-<n>-<hash>.js (release copies the newest release's)
+   R.playArtCheck()    -> {files, want, same}: the art/ files at the top, the newest release's (shipped.json art), and whether
+                          they are exactly those, byte for byte (true when that release has no art list: before 6.62)
    R.playCheck()       -> {present, md5, version, newest}: version is the shipped.json version whose md5 the play file carries,
                           counted only for a public build (game 6.4 or later: older builds held private paths), else null
    The walk never follows symlinks and never reads a file; callers decide what to open. */
@@ -42,4 +45,10 @@ function playCheck(){const abs=path.join(P.REPO,PLAY_FILE);if(!fs.existsSync(abs
   const sh=JSON.parse(fs.readFileSync(path.join(P.FIX,'shipped.json'),'utf8')).shipped||{},vs=Object.keys(sh).sort(vcmp);
   const version=vs.find(v=>vcmp(v,FIRST_PUBLIC.join('.'))>=0&&sh[v].md5===md5)||null;
   return {present:true,md5,version,newest:vs[vs.length-1]||null};}
-module.exports={list,isBinary,BIN_EXT,PLAY_FILE,playCheck};
+const PLAY_ART=/^art\/hyperreal-\d+-[0-9a-f]{10}\.js$/;
+function playArtCheck(){const dir=path.join(P.REPO,'art');let files=[];try{files=fs.readdirSync(dir).filter(n=>!n.startsWith('.')).map(n=>'art/'+n).sort();}catch(e){files=[];}
+  const sh=JSON.parse(fs.readFileSync(path.join(P.FIX,'shipped.json'),'utf8')).shipped||{},vs=Object.keys(sh).sort(vcmp),want=(sh[vs[vs.length-1]]||{}).art||null;
+  if(!want)return {files,want:null,same:true};
+  const md5=f=>require('crypto').createHash('md5').update(fs.readFileSync(path.join(P.REPO,f))).digest('hex');
+  return {files,want:want.map(a=>a.file),same:JSON.stringify(files)===JSON.stringify(want.map(a=>a.file).sort())&&want.every(a=>md5(a.file)===a.md5)};}
+module.exports={list,isBinary,BIN_EXT,PLAY_FILE,PLAY_ART,playCheck,playArtCheck};

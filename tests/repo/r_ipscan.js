@@ -91,6 +91,7 @@ for (const rel of files) {
   if (R.BIN_EXT.test(rel)) { nBin++; continue; }
   if (rel.startsWith('assets/vendor/')) continue;          /* third-party libraries, verbatim (THIRD_PARTY.md): three.js lists CSS colour names */
   if (rel === R.PLAY_FILE) continue;                       /* the released build, scanned part by part below and at its gate (check: play file) */
+  if (R.PLAY_ART.test(rel)) continue;                      /* 6.62: its art, the same payloads as hrassets.js, scanned below (keys and metadata) */
   const buf = fs.readFileSync(path.join(P.REPO, rel));
   if (R.isBinary(buf)) { nBin++; continue; }
   nText++;

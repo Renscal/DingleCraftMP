@@ -13,7 +13,8 @@ npm install     # once: downloads Electron
 npm start
 ```
 
-It opens the newest `dinglecraft_v<version>.html` next to `main.js` (the release zip ships one there). In a checkout of
+It opens the newest `dinglecraft_v<version>.html` next to `main.js` (the release zip ships one there, with the `art/`
+folder of Hyperreal art beside it since 6.62). In a checkout of
 the repository it falls back to the newest build in `dist/`, so `npm run build` at the top of the repo is enough.
 `npm start -- --game <file>` opens any other build.
 

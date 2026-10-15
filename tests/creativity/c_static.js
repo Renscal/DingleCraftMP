@@ -113,8 +113,8 @@ boot.run(async()=>{
      tests/fixtures/shipped.json (the build refuses to change its bytes); the nocrea parity session is retired (golden digests) */
   {const GJ=JSON.parse(fs.readFileSync(ROOT+'tests/gate.json','utf8')),GU=JSON.parse(fs.readFileSync(boot.P.SCRIPTS+'guards.json','utf8')),SH=JSON.parse(fs.readFileSync(boot.FIX+'shipped.json','utf8')).shipped;
    const s56=GU.sections.find(s=>s.name==='PART 56'),E=GJ.entries||[],has=n=>E.some(e=>e.suite==='tests/creativity/'+n+'.js');
-   ok('the gate refuses v6.1 and older (frozen: '+Object.keys(SH).join(',')+'), guards PART 56 at 450,000 B and keeps the 45 MB cap',['5.9','6.0','6.1'].every(v=>SH[v]&&/^[0-9a-f]{32}$/.test(SH[v].md5))&&
-     !!s56&&s56.cap===450000&&s56.mode==='required'&&s56.to==='/* ---- PART 55: p0_contract.js ---- */'&&GU.html_cap===45000000);
+   ok('the gate refuses v6.1 and older (frozen: '+Object.keys(SH).join(',')+'), guards PART 56 at 450,000 B and the 12 MB page cap (6.62: 45 MB before the art moved beside it)',['5.9','6.0','6.1'].every(v=>SH[v]&&/^[0-9a-f]{32}$/.test(SH[v].md5))&&
+     !!s56&&s56.cap===450000&&s56.mode==='required'&&s56.to==='/* ---- PART 55: p0_contract.js ---- */'&&GU.html_cap===12000000);
    ok('the gate runs the creativity suites and the crea og_trace session (golden digest)',['c_static','c1_static','c2_static','c0_smoke','c1_smoke','c2_smoke','c2_audio'].every(has)&&
      E.some(e=>/og_trace\.js$/.test(e.suite)&&(e.args||[]).join(' ').includes('og_trace/crea.json'))&&fs.existsSync(boot.FIX+'og_trace/crea.json'));}
 });

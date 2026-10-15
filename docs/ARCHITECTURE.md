@@ -8,27 +8,29 @@ into the original sandbox. The ID ledger and the persistence rules are at the en
 
 ## 1. One file, one script
 
-The shipped game is one HTML file, built by plain concatenation:
+The shipped game is one HTML file, built by plain concatenation, and since 6.62 an `art/` folder beside it:
 
 ```
-dinglecraft_v<VER>.html = head.html + game.js + hrassets.js + tail.html
+dinglecraft_v<VER>.html = head.html + game.js + hrart.js + tail.html
+art/hyperreal-<n>-<hash>.js        the Hyperreal art, loaded the first time Hyperreal is switched on
 ```
 
 | part | built from | what it is |
 |---|---|---|
 | `head.html` | `html/` (18 pieces, `html/ORDER.txt`) + `assets/logo.png`, `assets/title/` (the menu panorama) and `assets/vendor/three.r128.min.js` | doctype, all CSS, every UI panel, the help screen, the title panorama as JSON, three.js r128 inlined, and an opening `<script>` |
 | `game.js` | `src/` (192 pieces, `src/ORDER.txt`) | the entire game, about 41,000 lines |
-| `hrassets.js` | `assets/packed/` | the Hyperreal art: 429 WebP images as base64 data URIs inside two functions, `hrAssets()` and `hrMgAssets()` |
+| `hrart.js` | `assets/packed/` (6.62) | the art's stand-in: `hrAssetMeta()`, and `hrAssets()` / `hrMgAssets()` that answer once `hrArtLoad()` has added the `art/` files as script tags (`tpEnable` asks; they load from `file://` too). Before that they answer null / `{}` |
+| (`art/`, beside the page) | `assets/packed/` | the Hyperreal art: 429 WebP images as base64 data URIs, in files of at most 20 MB, each `hrArtArrived(name, hr, mg)`. The suites load `build/hrassets.js`, the same payloads as one script with the old `hrAssets()` / `hrMgAssets()` |
 | `tail.html` | `html/tail.html` | `</script></body></html>` (26 bytes) |
 
-`game.js` and `hrassets.js` share **one classic `<script>` element**. That single fact explains most of the rules in
+`game.js` and `hrart.js` share **one classic `<script>` element** (the art files are scripts of their own). That single fact explains most of the rules in
 this document:
 
 - `'use strict'` on line 15 of `src/core/p01a_prologue.js` covers everything, including the asset functions.
 - Every top-level `function`, `const`, `let` and `var` in every file is in **one shared scope**. There are about 3,500
   of them, and no name is declared twice.
 - Function declarations are hoisted across the whole script. `boot()` runs from `src/boot/export_boot.js`, before
-  `hrassets.js` has been read, and it still finds `hrAssets()`.
+  `hrart.js` has been read, and it still finds `hrAssets()`.
 - **Never load `src/` files as separate `<script>` tags**, not even for a quick experiment. Later files would lose
   strict mode, and four load-time export tables that read functions declared in later files would throw.
 
@@ -270,7 +272,7 @@ Settings → Texture pack **OG | Hyperreal**, with quality Auto/Low/Medium/High/
 supported, prepare, enable, disable, setQuality, frame})`). Three modules: `world` (`tA_*`: the art as two texture arrays,
 the chunk shader, material swap, cube drops), `light` (`tB_*`: sun and moon shadows, torch and lava lights, sky, presets
 per dimension, the bloom/SSAO/tone-mapping chain), `ents` (`tC_*`: the cast models for eight mobs, Dan, the fist and
-and corpses). The art comes from `hrAssets()` in `hrassets.js`.
+and corpses). The art comes from `hrAssets()` (the `art/` files, 6.62; `hrassets.js` in the suites).
 
 In the core, every hook is guarded (`TP.hr`, `HRW.on`, `HRL.on`, `HRE.on`, `e.hrM`...) and its OG branch is the original
 code, character for character: mesher (`tpEmit`), drops (`tpCubeDrop`), mob meshes and ticks (`hrMobMesh`, `hrMobTick`,

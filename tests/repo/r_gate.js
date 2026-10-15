@@ -87,8 +87,8 @@ ok('.gitattributes keeps the goldens out of diffs', /^tests\/fixtures\/og_trace\
 // ---- caps come from scripts/guards.json only
 const GU = JSON.parse(read('scripts/guards.json'));
 const caps = Object.fromEntries((GU.sections || []).map((s) => [s.name, s.cap]));
-ok('scripts/guards.json keeps the legacy caps (html 45,000,000; PART 55 950,000; PART 56 450,000; PART 57 600,000; HR block 700,000)',
-  GU.html_cap === 45000000 && caps['PART 55'] === 950000 && caps['PART 56'] === 450000 && caps['PART 57'] === 600000 && caps['PART 57 HR block'] === 700000);
+ok('scripts/guards.json keeps the legacy section caps and the 6.62 page caps (html 12,000,000, art file 25,000,000; PART 55 950,000; PART 56 450,000; PART 57 600,000; HR block 700,000)',
+  GU.html_cap === 12000000 && GU.art_file_cap === 25000000 && caps['PART 55'] === 950000 && caps['PART 56'] === 450000 && caps['PART 57'] === 600000 && caps['PART 57 HR block'] === 700000);
 const gm = read('scripts/gate.mjs');
 ok('scripts/gate.mjs hard-codes no cap (the build applies scripts/guards.json) and builds with --strict', !/45000000|950000|450000|600000|700000/.test(gm) && /'--strict'/.test(gm));
 ok('the converted gate-rule checks read guards.json, gate.json and shipped.json (p_static, c_static, m_static)',
@@ -111,8 +111,8 @@ for (const f of JS) read(f).split('\n').forEach((l, i) => {
 });
 ok('no suite reaches for the legacy layout (dev/..., splice.py, gate.sh, hooks files, _stub/, ../../ requires)' + (legacyLook.length ? ' (' + legacyLook.slice(0, 6).join(' ') + ')' : ''), legacyLook.length === 0);
 const writers = JS.filter((f) => /\bwriteFileSync\(|\bappendFileSync\(|\bcreateWriteStream\(/.test(read(f)));
-ok('only the outputs-to-out/ suites write files (p4_boss, speedrun, n_smoke, n_host, n_served, n_accounts, n_files and n_passwords: the server files on disk) plus og_trace --bless (' + writers.join(', ') + ')',
-  writers.every((f) => ['tests/purgatory/p4_boss.js', 'tests/pilot/speedrun.js', 'tests/texpacks/og_trace.js', 'tests/net/n_smoke.js', 'tests/net/n_host.js', 'tests/net/n_served.js', 'tests/net/n_admin.js', 'tests/net/n_accounts.js', 'tests/net/n_files.js', 'tests/net/n_passwords.js'].includes(f)) &&
+ok('only the outputs-to-out/ suites write files (p4_boss, speedrun, n_smoke, n_host, n_served, n_accounts, n_files, n_passwords and tA_lazy: the server files on disk) plus og_trace --bless (' + writers.join(', ') + ')',
+  writers.every((f) => ['tests/purgatory/p4_boss.js', 'tests/pilot/speedrun.js', 'tests/texpacks/og_trace.js', 'tests/net/n_smoke.js', 'tests/net/n_host.js', 'tests/net/n_served.js', 'tests/net/n_admin.js', 'tests/net/n_accounts.js', 'tests/net/n_files.js', 'tests/net/n_passwords.js', 'tests/texpacks/tA_lazy.js'].includes(f)) &&
   /outDir\('net'\)/.test(read('tests/net/n_smoke.js')) && /outDir\('net'\)/.test(read('tests/net/n_host.js')) && /outDir\('net'\)/.test(read('tests/net/n_accounts.js')) && /outDir\('net'\)/.test(read('tests/net/n_files.js')) &&
   /outDir\('purgatory'\)/.test(read('tests/purgatory/p4_boss.js')) && /outDir\('pilot'\)/.test(read('tests/pilot/speedrun.js')));
 ok('tests/lib/paths.js computes every path from its own place or the environment', !/['"]\//.test(read('tests/lib/paths.js').replace(/\/\*[\s\S]*?\*\//g, '').replace(/'\/'/g, '')));

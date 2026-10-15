@@ -91,6 +91,10 @@ async function tpEnable(opt){
   const use=mods.filter(m=>!m.supported||m.supported());
   if(!use.length){tpNote('Hyperreal unavailable: '+(mods[0].why?mods[0].why():mods[0].name),opt.quiet);return false;}
   TP.qr=TP.q<0?tpAutoQ():TP.q;
+  /* 6.62: the art is files beside the page (art/), fetched the first time Hyperreal is switched on; a page without hrArtLoad
+     (the suites, which load hrassets.js) has it already */
+  if(typeof hrArtLoad==='function'&&!(typeof hrArtReady==='function'&&hrArtReady())){if(opt.progress)try{opt.progress(0);}catch(e){}
+    if(!(await hrArtLoad())){tpNote('Hyperreal could not start: its art is missing (the art folder next to the game)',opt.quiet);return false;}}
   for(const m of use)if(m.prepare)await m.prepare(TP.qr,opt.progress||null);
   TP.ogR=tpSnapR();TP.ogF=tpSnapF();const xr=XR.on;if(xr){XR.on=false;xrayApply();}
   TP.live=[];

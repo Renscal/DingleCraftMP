@@ -29,7 +29,9 @@ The window prints the addresses to hand out. Stop it with `stop` or Ctrl+C; the 
   `<your address>:40162`.
 
 The server looks for a game file named `dinglecraft_v<version>.html` (6.10 or newer) in `data/`, next to the server, and
-in the repo's `dist/` (so `npm run build` is enough in a checkout). `--game <file>` names one directly.
+in the repo's `dist/` (so `npm run build` is enough in a checkout). `--game <file>` names one directly. Since 6.62 the
+Hyperreal art is an `art/` folder beside that file (the release zip has it there); the server hands its files out at
+`/art/<file>` when a player switches Hyperreal on. Without the folder the game still plays, in OG.
 
 Friends on the same network use your local address (the window lists it). Friends elsewhere need your public address and
 TCP port 40162 forwarded to your computer on your router.

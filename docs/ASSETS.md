@@ -57,7 +57,9 @@ Three details make or break byte identity (they are why the files look the way t
 3. mg entries are **not sorted**: their order is written down in `order.json`.
 
 Each assembled script's sha1 must equal the one in its manifest, or the build stops. Never print the generated scripts
-(`build/*.gen.js`, `build/hrassets.js`): single lines run to megabytes.
+(`build/*.gen.js`, `build/hrassets.js`, and since 6.62 the art files `art/`, `build/art/`, `dist/art/`): single lines run
+to megabytes. The game ships the art as those files beside the page (`assembleArt` in `scripts/lib/assets.mjs`,
+[BUILD.md](BUILD.md) step 7); the packing below is unchanged.
 
 ## Where the source art lives (not in git)
 

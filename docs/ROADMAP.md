@@ -30,7 +30,13 @@ Small things that v6.3's byte freeze would not let us touch. Release 1.0 (game v
 - Optional: make the gate parallel by default once flake rates are measured, and a runtime "texture packs inert" switch if
   a true compiled-out baseline is wanted again for og_trace.
 
-## 1. Lazy external textures (step 3)
+## 1. Lazy external textures (step 3): done in 6.62
+
+**Done (game 6.62).** The page is 5.9 MB; the Hyperreal art is `art/hyperreal-<n>-<hash>.js` beside it, loaded by
+`hrArtLoad` the first time Hyperreal is switched on. Script files rather than `.webp` files, so one build works opened
+from disk (Chrome refuses `file://` images to WebGL, but not `file://` scripts), from the multiplayer server (`GET /art/`)
+and in the desktop client: no second build profile was needed. Not moved: the title panorama (1.9 MB, shown at once in
+both packs), `TOOL3D`, `WPN3D` and the logo. The plan as it was:
 
 **Why.** The html is 42.5 MB (game 6.7), of which about 37 MB is the Hyperreal art as base64, and the cap is 45 MB:
 there is about 2.5 MB of headroom left. Every page load parses all of it, even in OG, and the art cannot grow.

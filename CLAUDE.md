@@ -30,7 +30,8 @@ original: no real characters, brands or trademarks in names, art or text (the IP
    (Three owner-made exceptions: 6.8 removed `smoke.js`'s Watcher check with the Watcher, 6.10 deleted `botsmoke.js`
    with the AI players it tested, and 6.57 turned `smoke.js`'s "the plane flies where you look" into a check of the new
    plane controls; `r_gate.js` pins the bytes of what is left.)
-6. **Never print big generated text**: `build/hrassets.js`, `build/*.gen.js`, `dist/*.html`, `DINGLECRAFT.html`, `assets/packed/**`. Their
+6. **Never print big generated text**: `build/hrassets.js`, `build/*.gen.js`, `dist/*.html`, `DINGLECRAFT.html`, the art files
+   (`art/`, `build/art/`, `dist/art/`: `hyperreal-*.js`), `assets/packed/**`. Their
    lines run to megabytes. Search with `tools/grep-safe.sh <pattern> [paths]`, which skips build output, generated
    asset scripts and `.env` files, rather than a raw recursive grep over the repo.
 7. **Public-repo hygiene.** No absolute paths, usernames, machine names, private folder or company names, or email
@@ -71,9 +72,11 @@ docs/           ARCHITECTURE BUILD TESTING QA ASSETS RELEASING PARITY ROADMAP LE
 build/ dist/ out/   gitignored outputs
 ```
 
-`dist/dinglecraft_v<VER>.html` = `build/head.html + game.js + hrassets.js + tail.html`. Build with `npm run build` (about
-1 s). The split is byte-exact: head ends with `<script>\n`, game.js and hrassets.js end with `\n`, tail begins with
-`</script>`.
+`dist/dinglecraft_v<VER>.html` = `build/head.html + game.js + hrart.js + tail.html`, and since 6.62 the Hyperreal art is
+files beside it, `dist/art/hyperreal-<n>-<hash>.js`, which the page loads the first time Hyperreal is switched on
+(`hrArtLoad`; `art/` beside `DINGLECRAFT.html` and in the server and client zips). `build/hrassets.js` (the art as one
+script) is still built for the suites. Build with `npm run build` (about 1 s). The split is byte-exact: head ends with
+`<script>\n`, game.js and hrart.js end with `\n`, tail begins with `</script>`.
 
 ## 2. The golden workflow (per feature)
 
@@ -218,7 +221,8 @@ must always load.
 
 `docs/BUILD.md` has the contract. The build fails on: an orphan, missing or duplicate ORDER entry; a bad marker line;
 `\r`, `</script` or `<!--` in JS; a section over its guard; mismatched version strings; an asset hash mismatch; a syntax
-error; an html over 45,000,000 bytes (about 2.5 MB of headroom left at game 6.7). Under `--strict` (gate, release) a
+error; an html over 12,000,000 bytes (about 6 MB since 6.62) or an art file over 25,000,000 (`scripts/guards.json`;
+`ART_SPLIT` in `scripts/lib/assets.mjs` cuts the art into files of at most 20 MB, so the art can grow). Under `--strict` (gate, release) a
 shipped version that changed bytes also fails.
 
 ## 6. Testing
