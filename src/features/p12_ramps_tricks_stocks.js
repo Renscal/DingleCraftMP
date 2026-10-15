@@ -123,6 +123,10 @@ const STOX=['DIRTCO','PORKBL','LAVAINC','DIAMND','BOOMCO','WOOLLY','TORCHY','CAC
 const STOX_OLD=Object.freeze({AAPL:'DIRTCO',MSFT:'PORKBL',NVDA:'LAVAINC',TSLA:'DIAMND',AMZN:'BOOMCO',GOOG:'WOOLLY',META:'TORCHY',NFLX:'CACTUS'});
 function stoxMigrate(o){const r={};for(const k in (o||{})){const n=STOX_OLD[k]||k;if(r[n]==null||!STOX_OLD[k])r[n]=o[k];}return r;}
 const MKT={t:0,acc:0,p:{},mu:{},h:{}};
+/* 6.64: a market that goes a little up. Every price drifts up 2% a game day (MKT_TREND per half-second step) and its swings
+   are a tenth of what they were (MKT_CALM), so money spread over all eight ends a day up about 85 times in 100, typically
+   +2%; one stock alone still moves about -7% to +11% a day. A trend from an older save is brought into the new range. */
+const MKT_TREND=Math.log(1.02)/(DAY_LEN*2),MKT_CALM=0.1,MKT_SIG=0.011*MKT_CALM,MKT_MU=0.0011*MKT_CALM;
 function gauss(){
   let u=0,v=0;
   while(u===0)u=Math.random();
@@ -133,7 +137,7 @@ function initMarket(){
   MKT.t=0;MKT.acc=0;
   for(const s of STOX){
     MKT.p[s]=40+Math.random()*260;
-    MKT.mu[s]=(Math.random()-0.5)*0.0018;
+    MKT.mu[s]=(Math.random()-0.5)*0.0018*MKT_CALM;
     MKT.h[s]=[MKT.p[s]];
   }
 }
@@ -145,8 +149,9 @@ function updateStocks(dt){
   while(MKT.acc>=0.5){
     MKT.acc-=0.5;MKT.t+=0.5;moved=true;
     for(const s of STOX){
-      if(Math.random()<0.012)MKT.mu[s]=(Math.random()-0.5)*0.0022;
-      MKT.p[s]=Math.max(0.5,MKT.p[s]*Math.exp(MKT.mu[s]+gauss()*0.011));
+      if(Math.random()<0.012)MKT.mu[s]=(Math.random()-0.5)*0.0022*MKT_CALM;
+      MKT.mu[s]=Math.max(-MKT_MU,Math.min(MKT_MU,MKT.mu[s]||0));
+      MKT.p[s]=Math.max(0.5,MKT.p[s]*Math.exp(MKT_TREND+MKT.mu[s]+gauss()*MKT_SIG));
       const h=MKT.h[s];h.push(MKT.p[s]);if(h.length>64)h.shift();
     }
   }

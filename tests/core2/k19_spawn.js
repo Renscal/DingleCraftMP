@@ -104,8 +104,9 @@ boot.run(async()=>{
     const sane=all.every(e=>{const x=Math.floor(e.x),y=Math.round(e.y),z=Math.floor(e.z);return V.spawnRoom(e.mt,x,y,z)&&V.lightAt(x,y,z)===0&&V.getSky(x,y,z)<15;})&&M.every(e=>Math.round(e.y)===HY);
     ok(ticks+' ticks at noon with Dan 30 above the dark hall: '+M.length+' monsters in the hall, on its floor ('+elsewhere+' elsewhere, in caves), every one in a dark cell with room for it, never past the cap of '+cap+' (most '+most+')',
       M.length>=3&&sane&&most<=cap&&new Set(all.map(e=>e.mt)).size>=2);
-    kill();
+    /* 6.63: light it first, then clear it: kill() steps two frames, and in a still-dark hall the game could spawn into them */
     for(const [dx,dz] of [[-3,-3],[3,-3],[-3,3],[3,3],[0,0],[0,-4],[0,4],[-4,0],[4,0]])V.setBlock(HX+dx,HY+3,HZ+dz,B.GLOWSTONE);step(2);
+    kill();
     for(let i=0;i<400;i++){V.mobsTick(0.05);for(const e of V.entities)if(e.mob&&e.hostile&&!e.dead&&!(Math.abs(e.x-HX-0.5)<=R+0.6&&Math.abs(e.z-HZ-0.5)<=R+0.6))e.dead=true;}
     ok('the same hall lit by glowstone in its ceiling: 400 ticks, '+hallMobs().length+' monsters in it',hallMobs().length===0);
     for(const [dx,dz] of [[-3,-3],[3,-3],[-3,3],[3,3],[0,0],[0,-4],[0,4],[-4,0],[4,0]])V.setBlock(HX+dx,HY+3,HZ+dz,B.AIR);

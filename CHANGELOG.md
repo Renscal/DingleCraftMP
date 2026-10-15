@@ -21,6 +21,14 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## DingleCraft Multiplayer 2.0 — Slow and steady
+
+*Game version 6.64, released 2026-10-15.*
+
+- **SLOW AND STEADY.** The DingleCraft stock market used to be a casino with a ticker: any one of the eight could halve or double in twenty minutes, and a careful investor had as much fun as a cow at a rodeo. It has calmed down and found religion.
+- **Up, on average.** Every stock now drifts up about 2% a game day, and the swings are a tenth of what they were. Spread your diamonds over all eight and you end the day ahead about 85 times in 100, typically by around 2%. Over a week that is roughly +17%: not a fortune, but the honest kind of money.
+- **Still a market.** One stock alone still moves both ways, about -6% to +12% a day, so picking well beats picking badly. The old saves keep their prices; their wilder trends calm down the moment the market next moves.
+
 ## DingleCraft Multiplayer 2.0 — Faster all round
 
 *Game version 6.63, released 2026-10-15.*

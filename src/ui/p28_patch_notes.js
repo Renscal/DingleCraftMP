@@ -3,7 +3,12 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Faster all round',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Slow and steady',lines:[
+    '<b>SLOW AND STEADY.</b> The DingleCraft stock market used to be a casino with a ticker: any one of the eight could halve or double in twenty minutes, and a careful investor had as much fun as a cow at a rodeo. It has calmed down and found religion.',
+    '<b>Up, on average.</b> Every stock now drifts up about 2% a game day, and the swings are a tenth of what they were. Spread your diamonds over all eight and you end the day ahead about 85 times in 100, typically by around 2%. Over a week that is roughly +17%: not a fortune, but the honest kind of money.',
+    '<b>Still a market.</b> One stock alone still moves both ways, about -6% to +12% a day, so picking well beats picking badly. The old saves keep their prices; their wilder trends calm down the moment the market next moves.',
+  ]},
+ {v:'6.63',label:'DingleCraft Multiplayer 2.0',title:'Faster all round',lines:[
     '<b>FASTER ALL ROUND.</b> No new features. Just less waiting.',
     '<b>Refreshing a server’s page.</b> Every time you pressed F5 on a server’s address, the server sent the whole game again, because it told your browser to check for a new copy but never gave it a way to tell it already had one. Now it does: a refresh that finds nothing new costs a few hundred bytes instead of the whole page. When the page does have to travel, it travels compressed, at about half its size.',
     '<b>Building the world.</b> Turning blocks into something your graphics card can draw got a fifth faster. Each chunk used to ask about its neighbours one block at a time; now it looks them up once. Flying the plane at full speed or loading a world should stall a little less. The world looks exactly the same: we compared the new meshes with the old ones, chunk by chunk, and they are identical.',

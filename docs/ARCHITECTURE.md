@@ -454,7 +454,9 @@ the last agreed one once a second and sends additions (`wd`; removals only for `
 world, stores them under `data/` and passes them on, and `ntWdIn` writes them into the game's own sets. Joining players
 get them inside `welcome.world`, which `applySave` already reads. The host runs the spawners (`tickSpawners` returns
 on a hosted player's game) and the stock market (`updateStocks` returns where `NET.hosted`; the host sends `mkt` every
-2 s). Four save fields are the player's and ride in `save`: `snl`, `mg`, `demon`, `cr`.
+2 s; since 6.64 every price carries a +2% a game day trend, `MKT_TREND`, with swings scaled by `MKT_CALM` = 0.1, so a
+spread portfolio ends most game days up; `tests/core2/k27_market.js`). Four save fields are the player's and ride in `save`: `snl`,
+`mg`, `demon`, `cr`.
 
 **One host per dimension (6.17).** A game holds one dimension (`DIM`, the chunk keys, the entity list), so the server
 runs one worker per hosted dimension: `S.hosts` maps `over` / `nether` / `aether` to a host, each started by
