@@ -89,9 +89,9 @@ function setBlock(x,y,z,id,meta){
 function surfaceTop(x,z){
   const ch=chunkAt(x,z);
   if(!ch)return DIM==='puppet'?mpSurf(x,z):colInfo(x,z).h;
-  const lx=x-ch.cx*CH,lz=z-ch.cz*CH;
-  for(let y=WH-1;y>=0;y--){
-    const id=ch.bl[bidx(lx,y,lz)];
+  const bl=ch.bl;
+  for(let y=WH-1,i=bidx(x-ch.cx*CH,y,z-ch.cz*CH);y>=0;y--,i-=CH){   /* 6.65: a column's cells are CH apart */
+    const id=bl[i];
     if(id!==B.AIR&&DEFS[id].solid!==false)return y;
   }
   return 0;

@@ -34,7 +34,9 @@ Grep for names with `tools/grep-safe.sh`.
 - **Block light (6.26):** `__vox.getLight` is the old sky-light getter; the block light is `__vox.lightAt`. Light is
   recomputed, never saved: do not add it to `snapshot`. `bufLight` trusts vertex normals to find the open side of a
   face, so a custom mesher must give its vertices honest normals. `updateTorchLights`'s first two lines are pinned by
-  `tB_static`. Anything that swaps `ch.bl` wholesale must call `lightChunk(ch)` again.
+  `tB_static`. Anything that swaps `ch.bl` wholesale must call `lightChunk(ch)` again. `lightCh` remembers two chunks
+  (6.65): anything that lets chunks go (`chunks.delete`, `chunks.clear`) sets `LGT.ch=null` on the same line, which
+  forgets both (`k28_lightmem` reads the source for it).
 - **Liquids (6.25):** a block edit may be `id | meta << 8`. Compare ids with `& 255`; never write an edit value straight
   into `ch.bl`. A source hung in mid-air in a test runs off: clear `LIQ.w` / `LIQ.l` (or build a floor) before looking
   at it. `liqFlow` is zero at a source on purpose: the frozen smoke stands the player in one. `applySave` makes a new

@@ -9,7 +9,7 @@
    side of the face) into an attribute, blight, and the world's materials add it as a warm glow that shows at night and
    stands back by day (blightObc; the amount is a uniform, so nothing is re-meshed as the sun moves). Mobs take the glow
    of the cell they stand in. Purgatory keeps its own lights. */
-const LGT={q:[],rq:[],dirty:new Set(),E:null,U:null,day:1,cap:20000,cx:0,cz:0,ch:null};
+const LGT={q:[],rq:[],dirty:new Set(),E:null,U:null,day:1,cap:20000,cx:0,cz:0,ch:null,cx2:0,cz2:0,ch2:null};
 const LGT_N=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
 /* how much light a block gives off, 0 to 15 (the table is made on first use, once every block is defined) */
 function lightEmit(id){
@@ -23,12 +23,18 @@ function lightEmit(id){
   }
   return LGT.E[id&255];
 }
-/* the chunk a column is in, remembering the last one asked for (a flood asks for the same few thousands of times; the
-   memory is dropped at the start of every job, so it never outlives a chunk) */
+/* the chunk a column is in, remembering the last two asked for (a flood asks for the same few thousands of times, and
+   along a chunk's edge it goes back and forth between two: 6.65, with only one remembered nearly half of building a
+   chunk was making keys and looking them up). The memory is dropped at the start of every job and whenever chunks are
+   let go (LGT.ch=null: the second is only asked while the first is there), so it never outlives a chunk. */
 function lightCh(x,z){
-  const cx=Math.floor(x/CH),cz=Math.floor(z/CH);
-  if(LGT.ch&&cx===LGT.cx&&cz===LGT.cz)return LGT.ch;
-  LGT.cx=cx;LGT.cz=cz;
+  const cx=Math.floor(x/CH),cz=Math.floor(z/CH),a=LGT.ch;
+  if(a){
+    if(cx===LGT.cx&&cz===LGT.cz)return a;
+    const b=LGT.ch2,bx=LGT.cx2,bz=LGT.cz2;
+    LGT.ch2=a;LGT.cx2=LGT.cx;LGT.cz2=LGT.cz;LGT.cx=cx;LGT.cz=cz;
+    if(b&&cx===bx&&cz===bz)return LGT.ch=b;
+  }else{LGT.ch2=null;LGT.cx=cx;LGT.cz=cz;}
   return LGT.ch=chunks.get(ckey(cx,cz))||null;
 }
 /* the light at a cell (0 outside the world, in an unbuilt chunk, and on the server's own game) */

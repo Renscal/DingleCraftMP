@@ -3,7 +3,13 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Slow and steady',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Light work',lines:[
+    '<b>LIGHT WORK.</b> No new features again. The game found out it had been spending half its time lighting the world by checking, one block at a time, which chunk it was standing in. It now remembers.',
+    '<b>Lighting a new chunk, twice as fast.</b> Every new piece of land works out where the sunlight and the torchlight reach. Along the border between two chunks that sum went back and forth between them, and the game only remembered one, so at every step it forgot the other and looked it up again by name. It remembers two now: lighting a chunk takes about 1.6 ms instead of 3.6 ms here, and building one about a quarter less overall. Flying the plane at full speed, loading a world and a server with many players spread out all build land, and all of it gets the time back.',
+    '<b>Exactly the same light.</b> Not one block is lit differently: the light of 64 new chunks adds up to the same number as it did in 6.64, block for block, sun and torch. A change of dimension and every chunk let go also wipe the memory now, so the Nether can never borrow the Overworld’s sunshine.',
+    '<b>The monster spawner reads faster.</b> Finding the ground under a spot (the spawner does it constantly, on the server too) walks down the column without working out each block’s address from scratch. Same ground, less arithmetic.',
+  ]},
+ {v:'6.64',label:'DingleCraft Multiplayer 2.0',title:'Slow and steady',lines:[
     '<b>SLOW AND STEADY.</b> The DingleCraft stock market used to be a casino with a ticker: any one of the eight could halve or double in twenty minutes, and a careful investor had as much fun as a cow at a rodeo. It has calmed down and found religion.',
     '<b>Up, on average.</b> Every stock now drifts up about 2% a game day, and the swings are a tenth of what they were. Spread your diamonds over all eight and you end the day ahead about 85 times in 100, typically by around 2%. Over a week that is roughly +17%: not a fortune, but the honest kind of money.',
     '<b>Still a market.</b> One stock alone still moves both ways, about -6% to +12% a day, so picking well beats picking badly. The old saves keep their prices; their wilder trends calm down the moment the market next moves.',

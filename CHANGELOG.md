@@ -21,6 +21,15 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## DingleCraft Multiplayer 2.0 — Light work
+
+*Game version 6.65, released 2026-10-16.*
+
+- **LIGHT WORK.** No new features again. The game found out it had been spending half its time lighting the world by checking, one block at a time, which chunk it was standing in. It now remembers.
+- **Lighting a new chunk, twice as fast.** Every new piece of land works out where the sunlight and the torchlight reach. Along the border between two chunks that sum went back and forth between them, and the game only remembered one, so at every step it forgot the other and looked it up again by name. It remembers two now: lighting a chunk takes about 1.6 ms instead of 3.6 ms here, and building one about a quarter less overall. Flying the plane at full speed, loading a world and a server with many players spread out all build land, and all of it gets the time back.
+- **Exactly the same light.** Not one block is lit differently: the light of 64 new chunks adds up to the same number as it did in 6.64, block for block, sun and torch. A change of dimension and every chunk let go also wipe the memory now, so the Nether can never borrow the Overworld’s sunshine.
+- **The monster spawner reads faster.** Finding the ground under a spot (the spawner does it constantly, on the server too) walks down the column without working out each block’s address from scratch. Same ground, less arithmetic.
+
 ## DingleCraft Multiplayer 2.0 — Slow and steady
 
 *Game version 6.64, released 2026-10-15.*

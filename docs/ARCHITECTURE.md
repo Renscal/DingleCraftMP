@@ -482,6 +482,7 @@ and the push on the player, mobs and drops. On a hosted dimension only the host 
 **Block light (6.26, `src/world/p03e_light.js`).** Each chunk has a light map `ch.lt` (0 to 15 a cell): emitters from
 `lightEmit` (torches and `light:true` blocks 14, lava and glowstone 15), spreading through non-opaque cells losing 1 a
 block. `lightChunk` (from `createChunk`) floods a new chunk from its own emitters and its neighbours' edges;
+the floods find a cell's chunk through `lightCh`, which remembers the last two (6.65; `tests/core2/k28_lightmem.js`);
 `lightEdit` (from `setBlock`) un-floods what a changed cell gave and re-floods from what is left (`LGT.rq`, `LGT.q`), at
 most `LGT.cap` cells a call, the rest in `lightTick` (from `updateChunks`). `bufLight` runs over a finished mesh
 buffer and writes `b.l`: for each vertex, the average light of the non-opaque cells meeting at it on the face's open
