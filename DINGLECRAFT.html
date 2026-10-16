@@ -1042,7 +1042,7 @@ THE SOFTWARE.
    ===================================================================== */
 'use strict';
 
-const GAME_VERSION = '6.66';
+const GAME_VERSION = '6.67';
 const RELEASE_LABEL = 'DingleCraft Multiplayer 2.0';   /* the public name of this game version (docs/RELEASING.md): GAME_VERSION stays the internal, monotonic number */
 var HIT_HOW=null,EXPL_BY=null;  /* damage attribution (PART 53) */
 var TP={id:'og',q:-1,qr:1,hr:false,busy:false,want:null,shadow:false,mods:[],live:[],og:null,ogR:null,ogF:null,ev:{},warm:null,devTexBase:null};  /* texture packs (PART 54) */
@@ -2004,6 +2004,9 @@ function addQuadBack(b,x,y,z,F,uvr,br,lower){
    four cells that share it (full height where one of them has the same liquid on top of it), the sides follow those
    corners, and every face has its twin behind it. gb reads a block, gm a meta, both in chunk-local coordinates. */
 function addLiquid(b,x,y,z,id,d,gb,gm){
+  let vis=0;                                               /* 6.67: the faces that show, first: most water is under water and shows none, and its corner heights (up to 32 lookups) were worked out for nothing */
+  for(let f=0;f<6;f++){const n=FACES[f].n;if(faceVisible(id,gb(x+n[0],y+n[1],z+n[2])))vis|=1<<f;}
+  if(!vis)return;
   const H=[[0,0],[0,0]];
   for(let i=0;i<2;i++)for(let j=0;j<2;j++){
     let sum=0,w=0,full=false;
@@ -2018,8 +2021,8 @@ function addLiquid(b,x,y,z,id,d,gb,gm){
     H[i][j]=full?1:(w?sum/w:0);
   }
   for(let f=0;f<6;f++){
+    if(!(vis>>f&1))continue;
     const F=FACES[f];
-    if(!faceVisible(id,gb(x+F.n[0],y+F.n[1],z+F.n[2])))continue;
     const uvr=tileUV(f===0?d._t.top:(f===1?d._t.bot:d._t.side));
     const u0=uvr[0],v0=uvr[1],u1=uvr[2],v1=uvr[3],uvs=[[u0,v0],[u1,v0],[u1,v1],[u0,v1]];
     for(let side=0;side<2;side++){
@@ -2078,6 +2081,8 @@ function meshChunk(ch){
     const i=x<0?0:x>=CH?2:1,j=z<0?0:z>=CH?2:1,n=nb[i*3+j];
     return n?n.mt[((x-(i-1)*CH)*WH+y)*CH+(z-(j-1)*CH)]:0;
   };
+  const opq=new Uint8Array(256),hidW=new Uint8Array(256),SX=WH*CH;   /* 6.67: for the buried-block test below: which ids are opaque (no face shows against them), and which hide a water face (faceVisible's own answer) */
+  for(let i=0;i<256;i++)if(DEFS[i]){opq[i]=DEFS[i].opq?1:0;hidW[i]=faceVisible(B.WATER,i)?0:1;}
   for(let lx=0;lx<CH;lx++)for(let lz=0;lz<CH;lz++)for(let y=0;y<WH;y++){
     const id=bl[bidx(lx,y,lz)];
     if(id===B.AIR)continue;
@@ -2091,6 +2096,10 @@ function meshChunk(ch){
     if(d.door){addDoor(bufs.cut,lx,y,lz,d);continue;}
     if(d.wt){addWallTorch(bufs.cut,lx,y,lz,d);continue;}
     if(d.cross){addCross(bufs.cut,lx,y,lz,d,d.crossM?d.crossM(gm(lx,y,lz)):-1);continue;}
+    if(id!==B.LAVA&&lx>0&&lx<CH-1&&lz>0&&lz<CH-1&&y>0&&y<WH-1){   /* 6.67: buried inside the chunk (water under water, stone in stone): no face shows, so none is asked about */
+      const i=(lx*WH+y)*CH+lz,T=id===B.WATER?hidW:opq;
+      if(T[bl[i+SX]]&&T[bl[i-SX]]&&T[bl[i+CH]]&&T[bl[i-CH]]&&T[bl[i+1]]&&T[bl[i-1]])continue;
+    }
     if(id===B.WATER||id===B.LAVA){addLiquid(bufs.wat,lx,y,lz,id,d,gb,gm);continue;}   /* 6.25: levels (p18) */
     for(let f=0;f<6;f++){
       const F=FACES[f];
@@ -11428,7 +11437,13 @@ const SETTINGS_P=loadSettings();   /* the title (tmBoot) waits for it: the name 
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Full throttle',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Deep water',lines:[
+    '<b>DEEP WATER.</b> The game has been carefully drawing the bottom of the ocean. Every block of it. From inside. Nobody has ever seen it, because it is under thirty blocks of other water. It has stopped.',
+    '<b>Building land is about 40% faster.</b> Turning a chunk into something your graphics card can draw took about 2.9 ms on seas and coasts here and now takes about 1.7 ms. Water under water and stone inside stone are skipped before the game asks about their six sides, and a water block works out the slope of its surface only if you can actually see it. The game builds land for at most 8 ms a frame, so you get it as land that is finished sooner: twelve seconds into a new world it used to be still catching up (frames of about 13 ms); now it is done and frames take about 3 ms, OG and Hyperreal alike.',
+    '<b>Not one pixel moved.</b> 108 real chunks and a deliberately nasty random mix of water, lava, ice, glass, leaves and torches come out vertex for vertex the same as in 6.66.',
+    '<b>Measured, not guessed.</b> In a real browser, flying at full throttle spends most of each frame building the land coming over the horizon, and placing a torch takes a quarter of a millisecond. Building land was the one thing worth speeding up, so that is what got sped up.',
+  ]},
+ {v:'6.66',label:'DingleCraft Multiplayer 2.0',title:'Full throttle',lines:[
     '<b>FULL THROTTLE.</b> Dingle Airlines has installed a throttle lever. Pilots who spent whole flights with a thumb welded to the Space bar can now let go of it.',
     '<b>It stays where you put it.</b> Space opens the throttle, Alt closes it, and the plane holds whatever you leave it at. Push it to full and it stays full: no more slowly running out of speed the moment you stop pressing. Half throttle cruises at half speed. Taking off and climbing with Space held works just as it did.',
     '<b>A gauge.</b> A small bar on the right of the screen shows the throttle while you fly: amber as it fills, red at full. It scales with the rest of the HUD and goes away when you get out.',

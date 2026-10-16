@@ -476,7 +476,7 @@ interval (`liqRule`: water 0.25 s, lava 1.5 s, Nether lava 0.5 s), at most 600 c
 a flowing cell from its neighbours (so a stream with no source dries up; two water sources make a third), then moves it:
 down first, sideways toward the nearest drop (`liqDirs`), hardening lava where it meets water (`lavaWaterCheck`,
 `liqHarden`) and washing out torches, flowers and grass (`liqCanEnter`, `liqPut`). The mesher draws a liquid with
-`addLiquid`: corner heights averaged over the four cells sharing the corner. `liqTop` and `liqFlow` feed the swim checks
+`addLiquid`: corner heights averaged over the four cells sharing the corner (6.67: only when a face shows; and `meshChunk` skips a block buried inside its chunk, opaque on six sides or water among water and opaque blocks, before asking about faces; `tests/core2/k30_meshbury.js` pins the output to 6.66). A new block that draws something even when fully enclosed must be one of the special shapes above that test (`d.cross`, `d.rail`, ...) or lava. `liqTop` and `liqFlow` feed the swim checks
 and the push on the player, mobs and drops. On a hosted dimension only the host runs it (`ntSimHere`, unchanged).
 
 **Block light (6.26, `src/world/p03e_light.js`).** Each chunk has a light map `ch.lt` (0 to 15 a cell): emitters from

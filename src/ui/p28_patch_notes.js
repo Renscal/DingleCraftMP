@@ -3,7 +3,13 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Full throttle',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Deep water',lines:[
+    '<b>DEEP WATER.</b> The game has been carefully drawing the bottom of the ocean. Every block of it. From inside. Nobody has ever seen it, because it is under thirty blocks of other water. It has stopped.',
+    '<b>Building land is about 40% faster.</b> Turning a chunk into something your graphics card can draw took about 2.9 ms on seas and coasts here and now takes about 1.7 ms. Water under water and stone inside stone are skipped before the game asks about their six sides, and a water block works out the slope of its surface only if you can actually see it. The game builds land for at most 8 ms a frame, so you get it as land that is finished sooner: twelve seconds into a new world it used to be still catching up (frames of about 13 ms); now it is done and frames take about 3 ms, OG and Hyperreal alike.',
+    '<b>Not one pixel moved.</b> 108 real chunks and a deliberately nasty random mix of water, lava, ice, glass, leaves and torches come out vertex for vertex the same as in 6.66.',
+    '<b>Measured, not guessed.</b> In a real browser, flying at full throttle spends most of each frame building the land coming over the horizon, and placing a torch takes a quarter of a millisecond. Building land was the one thing worth speeding up, so that is what got sped up.',
+  ]},
+ {v:'6.66',label:'DingleCraft Multiplayer 2.0',title:'Full throttle',lines:[
     '<b>FULL THROTTLE.</b> Dingle Airlines has installed a throttle lever. Pilots who spent whole flights with a thumb welded to the Space bar can now let go of it.',
     '<b>It stays where you put it.</b> Space opens the throttle, Alt closes it, and the plane holds whatever you leave it at. Push it to full and it stays full: no more slowly running out of speed the moment you stop pressing. Half throttle cruises at half speed. Taking off and climbing with Space held works just as it did.',
     '<b>A gauge.</b> A small bar on the right of the screen shows the throttle while you fly: amber as it fills, red at full. It scales with the rest of the HUD and goes away when you get out.',

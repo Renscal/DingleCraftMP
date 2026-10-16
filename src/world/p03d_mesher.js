@@ -71,6 +71,9 @@ function addQuadBack(b,x,y,z,F,uvr,br,lower){
    four cells that share it (full height where one of them has the same liquid on top of it), the sides follow those
    corners, and every face has its twin behind it. gb reads a block, gm a meta, both in chunk-local coordinates. */
 function addLiquid(b,x,y,z,id,d,gb,gm){
+  let vis=0;                                               /* 6.67: the faces that show, first: most water is under water and shows none, and its corner heights (up to 32 lookups) were worked out for nothing */
+  for(let f=0;f<6;f++){const n=FACES[f].n;if(faceVisible(id,gb(x+n[0],y+n[1],z+n[2])))vis|=1<<f;}
+  if(!vis)return;
   const H=[[0,0],[0,0]];
   for(let i=0;i<2;i++)for(let j=0;j<2;j++){
     let sum=0,w=0,full=false;
@@ -85,8 +88,8 @@ function addLiquid(b,x,y,z,id,d,gb,gm){
     H[i][j]=full?1:(w?sum/w:0);
   }
   for(let f=0;f<6;f++){
+    if(!(vis>>f&1))continue;
     const F=FACES[f];
-    if(!faceVisible(id,gb(x+F.n[0],y+F.n[1],z+F.n[2])))continue;
     const uvr=tileUV(f===0?d._t.top:(f===1?d._t.bot:d._t.side));
     const u0=uvr[0],v0=uvr[1],u1=uvr[2],v1=uvr[3],uvs=[[u0,v0],[u1,v0],[u1,v1],[u0,v1]];
     for(let side=0;side<2;side++){
@@ -145,6 +148,8 @@ function meshChunk(ch){
     const i=x<0?0:x>=CH?2:1,j=z<0?0:z>=CH?2:1,n=nb[i*3+j];
     return n?n.mt[((x-(i-1)*CH)*WH+y)*CH+(z-(j-1)*CH)]:0;
   };
+  const opq=new Uint8Array(256),hidW=new Uint8Array(256),SX=WH*CH;   /* 6.67: for the buried-block test below: which ids are opaque (no face shows against them), and which hide a water face (faceVisible's own answer) */
+  for(let i=0;i<256;i++)if(DEFS[i]){opq[i]=DEFS[i].opq?1:0;hidW[i]=faceVisible(B.WATER,i)?0:1;}
   for(let lx=0;lx<CH;lx++)for(let lz=0;lz<CH;lz++)for(let y=0;y<WH;y++){
     const id=bl[bidx(lx,y,lz)];
     if(id===B.AIR)continue;
@@ -158,6 +163,10 @@ function meshChunk(ch){
     if(d.door){addDoor(bufs.cut,lx,y,lz,d);continue;}
     if(d.wt){addWallTorch(bufs.cut,lx,y,lz,d);continue;}
     if(d.cross){addCross(bufs.cut,lx,y,lz,d,d.crossM?d.crossM(gm(lx,y,lz)):-1);continue;}
+    if(id!==B.LAVA&&lx>0&&lx<CH-1&&lz>0&&lz<CH-1&&y>0&&y<WH-1){   /* 6.67: buried inside the chunk (water under water, stone in stone): no face shows, so none is asked about */
+      const i=(lx*WH+y)*CH+lz,T=id===B.WATER?hidW:opq;
+      if(T[bl[i+SX]]&&T[bl[i-SX]]&&T[bl[i+CH]]&&T[bl[i-CH]]&&T[bl[i+1]]&&T[bl[i-1]])continue;
+    }
     if(id===B.WATER||id===B.LAVA){addLiquid(bufs.wat,lx,y,lz,id,d,gb,gm);continue;}   /* 6.25: levels (p18) */
     for(let f=0;f<6;f++){
       const F=FACES[f];

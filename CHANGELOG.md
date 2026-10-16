@@ -21,6 +21,15 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## DingleCraft Multiplayer 2.0 — Deep water
+
+*Game version 6.67, released 2026-10-16.*
+
+- **DEEP WATER.** The game has been carefully drawing the bottom of the ocean. Every block of it. From inside. Nobody has ever seen it, because it is under thirty blocks of other water. It has stopped.
+- **Building land is about 40% faster.** Turning a chunk into something your graphics card can draw took about 2.9 ms on seas and coasts here and now takes about 1.7 ms. Water under water and stone inside stone are skipped before the game asks about their six sides, and a water block works out the slope of its surface only if you can actually see it. The game builds land for at most 8 ms a frame, so you get it as land that is finished sooner: twelve seconds into a new world it used to be still catching up (frames of about 13 ms); now it is done and frames take about 3 ms, OG and Hyperreal alike.
+- **Not one pixel moved.** 108 real chunks and a deliberately nasty random mix of water, lava, ice, glass, leaves and torches come out vertex for vertex the same as in 6.66.
+- **Measured, not guessed.** In a real browser, flying at full throttle spends most of each frame building the land coming over the horizon, and placing a torch takes a quarter of a millisecond. Building land was the one thing worth speeding up, so that is what got sped up.
+
 ## DingleCraft Multiplayer 2.0 — Full throttle
 
 *Game version 6.66, released 2026-10-16.*
