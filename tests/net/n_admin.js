@@ -155,6 +155,16 @@ boot.run(async()=>{
       const gone=store.pruneBackups(OUT,'world',2),left=store.listBackups(OUT).map(b=>b.name);
       store.deleteBackup(OUT,left[1]);let bad='';try{store.deleteBackup(OUT,'../world');}catch(e){bad=e.message;}try{store.restoreBackup(OUT,'world');}catch(e){bad+='|'+e.message;}
       ok('keeping the newest two removes the older '+gone+'; one can be deleted by name; a name that is not a backup is refused',gone===2&&left.join()==='world-20261015-090000.zip,world-20261014-090000.zip'&&store.listBackups(OUT).length===1&&/not a backup name\|not a backup name/.test(bad)&&fs.existsSync(path.join(OUT,'world','level.json')));}
+    /* 1.4: upgrading a server to a newer version */
+    {const nv=store.newerVersions;
+      ok('the versions newer than a server\'s own, newest first: library and GitHub alike, no duplicates, never the checkout',JSON.stringify(nv('6.72',['6.70','6.73','checkout','6.73','6.80','x','6.72']))==='["6.80","6.73"]'&&nv('6.9',['6.10','6.8']).join()==='6.10');
+      ok('...none for a server on the checkout or with no version',nv('checkout',['6.80']).length===0&&nv('',['6.80']).length===0&&nv('6.80',['6.73']).length===0);
+      const mj=fs.readFileSync(path.join(REPO,'server-gui','main.js'),'utf8'),a=mj.indexOf("h('server:upgrade',"),body=a>0?mj.slice(a,mj.indexOf("\n  });",a)):'';
+      const at=w=>body.indexOf(w);
+      ok('Upgrade: downloads a version that is not here, stops a running server, backs the world up, then switches, then starts it again, in that order',
+        a>0&&at('downloadVersion(v)')>0&&at('downloadVersion(v)')<at('stopServer(id)')&&at('stopServer(id)')<at('store.backupWorld(')&&at('store.backupWorld(')<at('e.version = v')&&at('e.version = v')<at('startServer(id)')&&/cmpVersion\(v, e\.version\) <= 0/.test(body));
+      const pre=fs.readFileSync(path.join(REPO,'server-gui','preload.js'),'utf8'),ht=fs.readFileSync(path.join(REPO,'server-gui','index.html'),'utf8');
+      ok('...reached from the window: an Upgrade button and a check-for-updates button beside the version, through the preload bridge',/upgrades: call\('server:upgrades'\), upgrade: call\('server:upgrade'\)/.test(pre)&&/id="b_upgrade"/.test(ht)&&/id="b_upcheck"/.test(ht)&&/h\('server:upgrades',/.test(mj));}
     /* the list of servers */
     {const ROOT=path.join(OUT,'gui');let L=[];const a1=store.addServer(L,ROOT,{name:'My DINGLECRAFT Server'});L=a1.list;const a2=store.addServer(L,ROOT,{name:'My DINGLECRAFT Server'});L=a2.list;const a3=store.addServer(L,ROOT,{name:'Old one',dataDir:OUT});L=a3.list;
       let dup='';try{store.addServer(L,ROOT,{name:'again',dataDir:OUT});}catch(e){dup=e.message;}

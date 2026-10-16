@@ -10,7 +10,7 @@ contextBridge.exposeInMainWorld('dc', {
   worldFiles: call('wfiles'), readWorldFile: call('wfile:read'), exportWorldFile: call('wfile:export'), findInWorld: call('wfind'), saveWorld: call('wsave'),
   backups: call('backups'), backupNow: call('backup:now'), restoreBackup: call('backup:restore'), deleteBackup: call('backup:delete'),
   saveTask: call('task:save'), deleteTask: call('task:delete'),
-  importVersion: call('version:import'), removeVersion: call('version:remove'), setVersion: call('server:version'),
+  importVersion: call('version:import'), removeVersion: call('version:remove'), setVersion: call('server:version'), upgrades: call('server:upgrades'), upgrade: call('server:upgrade'),
   remoteVersions: call('remote:list'), downloadVersion: call('version:download'),
   openData: call('open:data'), openBrowser: call('open:browser'), copy: call('copy'),
   on: (what, fn) => ipcRenderer.on(what, (_e, v) => fn(v)),

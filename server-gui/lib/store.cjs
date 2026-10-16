@@ -150,6 +150,12 @@ function cmpVersion(a, b) {
   const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number);
   return (x[0] - y[0]) || (x[1] - y[1]);
 }
+/* 1.4: the versions newer than a server's own, newest first (no duplicates, never "checkout", only X.Y) */
+function newerVersions(current, candidates) {
+  const ok = (v) => typeof v === 'string' && /^\d{1,3}\.\d{1,3}$/.test(v);
+  if (!ok(current)) return [];
+  return [...new Set(candidates.filter((v) => ok(v) && cmpVersion(v, current) > 0))].sort((a, b) => cmpVersion(b, a));
+}
 /* the version a server folder holds, or throws saying why it is not one the window can run */
 function versionOfDir(dir) {
   if (!fs.existsSync(path.join(dir, 'dinglecraft-server.mjs'))) throw new Error('That is not a DINGLECRAFT server: there is no dinglecraft-server.mjs in it.');
@@ -327,5 +333,5 @@ function dueTasks(tasks, last, now, since) {
   return (tasks || []).filter((t) => t.on !== false && now - (last[t.id] === undefined ? since : last[t.id]) >= t.every * 60000);
 }
 
-module.exports = { RELEASES_REPO, releasesUrl, releaseVersions, releaseName, versionLabel, digestOK, cmpVersion, versionOfDir, listVersions, importVersion, removeVersion, fillVersions, readSettings, writeSettings, listWorlds, backupWorld, newWorld, goodWorldName, fmtUptime, fmtBytes,
+module.exports = { newerVersions, RELEASES_REPO, releasesUrl, releaseVersions, releaseName, versionLabel, digestOK, cmpVersion, versionOfDir, listVersions, importVersion, removeVersion, fillVersions, readSettings, writeSettings, listWorlds, backupWorld, newWorld, goodWorldName, fmtUptime, fmtBytes,
   listBackups, restoreBackup, deleteBackup, pruneBackups, readServers, writeServers, addServer, removeServer, portOf, cleanTask, dueTasks };

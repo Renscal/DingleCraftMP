@@ -35,6 +35,28 @@ function paintVersions() {
   sel.disabled = !c || c.running || c.starting;
   sel.title = c && (c.running || c.starting) ? 'Stop the server to change its version' : 'The server version this server runs';
 }
+/* ---- 1.4: upgrading a server to a newer version ---- */
+/* show the button when a newer version is here (or, after a check, on GitHub) */
+async function paintUpgrade(online) {
+  const b = $('b_upgrade'), id = S.id;
+  if (!id || !S.cur || !S.cur.version || S.cur.version === 'checkout') { b.hidden = true; $('upmsg').textContent = ''; return; }
+  const r = await window.dc.upgrades(id, !!online);
+  if (id !== S.id || !r || r.ok === false) return;
+  S.newest = r.newest;
+  b.hidden = !r.newest; b.textContent = r.newest ? 'Upgrade to ' + vName(r.newest) : '';
+  b.title = r.newest ? (r.have ? 'v' + r.newest + ' is in the library' : 'v' + r.newest + ' is downloaded from GitHub first') + ': the world is backed up, then the server runs the new version' : '';
+  if (online) $('upmsg').textContent = r.why ? r.why : r.newest ? '' : 'This server runs the newest version (' + vName(r.current) + ').';
+}
+$('b_upcheck').onclick = async () => { $('upmsg').textContent = 'Checking GitHub...'; $('b_upcheck').disabled = true; try { await paintUpgrade(true); } finally { $('b_upcheck').disabled = false; } };
+$('b_upgrade').onclick = async () => {
+  const c = S.cur, v = S.newest; if (!c || !v) return;
+  if (!window.confirm('Upgrade "' + c.name + '" from ' + vName(c.version) + ' to ' + vName(v) + '?\n\n' + (c.running || c.starting ? 'The server is stopped (it saves first), ' : '') + 'the world is backed up, then ' + (c.running || c.starting ? 'it starts again on ' : 'it runs ') + vName(v) + '. The backup is under Backups if you ever need to go back.')) return;
+  S.upgrading = v; $('b_upgrade').disabled = true; $('upmsg').textContent = 'Upgrading to ' + vName(v) + '...';
+  try {
+    const r = await window.dc.upgrade(c.id, v);
+    $('upmsg').textContent = r.ok ? 'Upgraded to ' + vName(r.version) + (r.backup ? ' (backup: ' + r.backup + ')' : '') + '.' : r.why || 'The upgrade did not finish.';
+  } finally { S.upgrading = ''; $('b_upgrade').disabled = false; paintUpgrade(false); }
+};
 $('sver').onchange = async () => {
   const v = $('sver').value; if (!S.id || !v) return;
   let r = await window.dc.setVersion(S.id, v, false);
@@ -58,11 +80,13 @@ async function pick(id) {
   S.cur = st;
   for (const l of st.log) say(l);
   paintList(); paint(); showTab(S.tab);
+  $('upmsg').textContent = ''; paintUpgrade(false);
 }
 function takeServers(o) {
   S.servers = o.servers; S.versions = o.versions || []; paintVersions(); if (!$('newserver').hidden) nsOptions();
   if (!S.servers.some((s) => s.id === S.id)) { S.id = null; S.cur = null; if (S.servers[0]) return pick(S.servers[0].id); }
   paintList(); if (!S.id) paint();
+  if (S.id && !S.upgrading) paintUpgrade(false);           /* 1.4: a version just imported may be newer */
 }
 /* ---- a new server: a name and a version. The versions are the ones here and (1.1) the ones on GitHub; one that is not
    here yet is downloaded and imported when the server is created. The refresh button asks GitHub again. ---- */
@@ -119,6 +143,7 @@ $('newserver').onsubmit = async (e) => {
   } finally { $('ns_go').disabled = false; }
 };
 window.dc.on('dl', (m) => {
+  if (S.upgrading && m.version === S.upgrading) $('upmsg').textContent = m.got !== undefined ? 'Downloading ' + vName(m.version) + ': ' + mb(m.got) + (m.total ? ' of ' + mb(m.total) : '') : m.failed ? m.failed : 'Downloaded ' + vName(m.version) + '.';
   if (m.got !== undefined) $('ns_msg').textContent = 'Downloading ' + vName(m.version) + ': ' + mb(m.got) + (m.total ? ' of ' + mb(m.total) : '');
   else if (m.done) $('ns_msg').textContent = 'Downloaded ' + vName(m.version) + '.';
   else if (m.failed) $('ns_msg').textContent = m.failed;

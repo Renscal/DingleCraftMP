@@ -285,6 +285,37 @@ function wire() {
     if (!force && v !== 'checkout' && e.ran && store.cmpVersion(v, e.ran) < 0) return { ok: false, ask: 'This server\'s world was last run by version ' + e.ran + '. An older version may not read everything a newer one wrote, and what it does not know it can lose. Run it on ' + v + ' anyway? (A backup first is a good idea.)' };
     e.version = v; saveList(); changed(id); return { ok: true };
   });
+  /* 1.4: the newer versions this server could move up to: the ones in the library, and (online, only when asked) the ones on GitHub */
+  h('server:upgrades', async (id, online) => {
+    const e = entry(id), here = versions().map((v) => v.version);
+    let remote = [], why = '';
+    if (online) { const R = await remoteList(true); why = R.why || ''; remote = (R.list || []).map((x) => x.version); }
+    const newer = store.newerVersions(e.version, [...here, ...remote]);
+    return { ok: true, current: e.version || '', newest: newer[0] || '', have: !!newer[0] && here.includes(newer[0]), why };
+  });
+  /* 1.4: upgrade a server to version v in one go: download it if it is not here, stop the server if it runs (it saves), back
+     the world up (a new version may convert it once, and a backup makes that undoable), switch, and start it again if it was
+     running. Each step is in the server's log. */
+  h('server:upgrade', async (id, v) => {
+    const e = entry(id), r = rt(id);
+    if (!e.version || e.version === 'checkout' || typeof v !== 'string' || store.cmpVersion(v, e.version) <= 0) return { ok: false, why: 'v' + v + ' is not newer than this server\'s v' + e.version + '.' };
+    if (r.upgrading) return { ok: false, why: 'This server is already being upgraded.' };
+    r.upgrading = true;
+    try {
+      if (!dirOf(v)) { addLog(id, '--- downloading version ' + v + ' for the upgrade ---'); await downloadVersion(v); }
+      if (!dirOf(v)) return { ok: false, why: 'Version ' + v + ' could not be added to the library.' };
+      const was = !!r.child;
+      if (was) { addLog(id, '--- stopping to upgrade to version ' + v + ' ---'); await stopServer(id); }
+      const world = store.readSettings(e.dataDir).world || 'world';
+      let kept = '';
+      if (fs.existsSync(path.join(e.dataDir, world, 'level.json'))) { kept = path.basename(store.backupWorld(e.dataDir, world)); addLog(id, 'backed up "' + world + '" to ' + kept + ' before the upgrade'); }
+      const from = e.version;
+      e.version = v; saveList(); changed(id);
+      addLog(id, '--- upgraded from version ' + from + ' to ' + v + ' ---');
+      if (was) startServer(id);
+      return { ok: true, from, version: v, backup: kept, restarted: was };
+    } finally { r.upgrading = false; }
+  });
   /* the settings as that version knows them, and (6.58 and newer) its own description of every setting and rule (formSchema) */
   h('settings:read', async (id) => { const e = entry(id), A = await admin(e); return { ok: true, settings: formMerge(A.formDefaults(), store.readSettings(e.dataDir)), schema: typeof A.formSchema === 'function' ? A.formSchema() : null }; });
   h('settings:save', async (id, o) => {
