@@ -9,7 +9,9 @@
    6 without a parent listening (no --ipc) the same program prints its banner and takes commands from stdin as ever
    7 the settings check: good settings pass; bad ports, names, world folders, lists and rules are each named; what needs
      a restart is listed
-   8 the window's file handling (server-gui/lib/store.cjs); npm run package (Server and Client, each with the art/ folder
+   8 the window's file handling (server-gui/lib/store.cjs: since 1.3.0 a backup is one zip, deflate level 9, restored
+     byte for byte; the folder backups of older windows still work; nothing in a zip may land outside its world, and a
+     damaged one leaves the world as it was); npm run package (Server and Client, each with the art/ folder
      since 6.62) and npm run package:gui
      (the window on its own version, with no server in it)
    9 server versions: a Server zip or folder imports into the window's library, the bad ones are refused saying why,
@@ -96,10 +98,38 @@ boot.run(async()=>{
   {const store=require(path.join(REPO,'server-gui','lib','store.cjs'));
     const W=store.listWorlds(OUT),w=W.find(x=>x.name==='world')||{};
     ok('the worlds in a data folder are listed with seed, mode, difficulty and size ('+W.map(x=>x.name).join()+': seed '+w.seed+', '+w.difficulty+', '+w.bytes+' B)',W.length===1&&w.seed==='41'&&w.mode==='s'&&w.difficulty==='hard'&&w.bytes>100);
+    const zip=require(path.join(REPO,'server-gui','lib','zip.cjs'));
     const to=store.backupWorld(OUT,'world',new Date(2026,9,13,8,5,9)),to2=store.backupWorld(OUT,'world',new Date(2026,9,13,8,5,9));
-    ok('Back up now copies the whole world folder to backups/world-20261013-080509 (a second one in the same second gets its own name), and a backup is not listed as a world',
-      path.basename(to)==='world-20261013-080509'&&path.basename(to2)==='world-20261013-080509-2'&&fs.readFileSync(path.join(to,'level.json'),'utf8')===fs.readFileSync(path.join(OUT,'world','level.json'),'utf8')&&
-      fs.existsSync(path.join(to,'playerdata','vera.json'))&&store.listWorlds(OUT).length===1);
+    const BZ=zip.readZip(fs.readFileSync(to)),bzf=n=>(BZ.find(e=>e.name===n)||{}).data;
+    ok('Back up now packs the whole world into one file, backups/world-20261013-080509.zip (a second one in the same second gets its own name), and a backup is not listed as a world',
+      path.basename(to)==='world-20261013-080509.zip'&&path.basename(to2)==='world-20261013-080509-2.zip'&&fs.statSync(to).isFile()&&String(bzf('level.json'))===fs.readFileSync(path.join(OUT,'world','level.json'),'utf8')&&
+      !!bzf('playerdata/vera.json')&&store.listWorlds(OUT).length===1&&!fs.readdirSync(path.join(OUT,'backups')).some(n=>n.endsWith('.part')));
+    /* 1.3.0: as small as it goes, and back byte for byte */
+    {const W2=path.join(OUT,'zipworld'),rnd=n=>{let a=1300;const b=Buffer.alloc(n);for(let i=0;i<n;i++){a=(Math.imul(a,1103515245)+12345)>>>0;b[i]=a>>>24;}return b;};
+      fs.rmSync(W2,{recursive:true,force:true});fs.mkdirSync(path.join(W2,'region','over'),{recursive:true});fs.mkdirSync(path.join(W2,'playerdata'),{recursive:true});
+      fs.writeFileSync(path.join(W2,'level.json'),JSON.stringify({seed:'7',note:'x'.repeat(5000)}));fs.writeFileSync(path.join(W2,'region','over','r.0.0.dcr'),Buffer.concat([Buffer.alloc(40000,7),rnd(3000)]));
+      fs.writeFileSync(path.join(W2,'region','over','r.-1.0.dcr'),rnd(20000));fs.writeFileSync(path.join(W2,'playerdata','Zoë.json'),'{"hp":20}');fs.writeFileSync(path.join(W2,'empty.txt'),'');
+      const files=d=>{const o=[];for(const e of fs.readdirSync(d,{withFileTypes:true})){const p=path.join(d,e.name);if(e.isDirectory())o.push(...files(p).map(x=>e.name+'/'+x));else o.push(e.name);}return o.sort();};
+      const before=files(W2).map(n=>n+':'+require('crypto').createHash('md5').update(fs.readFileSync(path.join(W2,...n.split('/')))).digest('hex'));
+      const raw=files(W2).reduce((a,n)=>a+fs.statSync(path.join(W2,...n.split('/'))).size,0);
+      const zb=store.backupWorld(OUT,'zipworld',new Date(2026,9,16,10,0,0)),L=store.listBackups(OUT).find(b=>b.name===path.basename(zb));
+      fs.writeFileSync(path.join(W2,'level.json'),'{"seed":"changed"}');fs.writeFileSync(path.join(W2,'stray.txt'),'not in the backup');
+      const r=store.restoreBackup(OUT,path.basename(zb),new Date(2026,9,16,10,0,1));
+      const after=files(W2).map(n=>n+':'+require('crypto').createHash('md5').update(fs.readFileSync(path.join(W2,...n.split('/')))).digest('hex'));
+      ok('a backup is listed with its compressed size ('+(L&&L.bytes)+' B for '+raw+' B of world), packed at deflate level 9',!!L&&L.zip===true&&L.bytes===fs.statSync(zb).size&&L.bytes<raw*0.6);
+      ok('restoring a zip puts back every file byte for byte (nested folders, a non-ASCII name, an empty file), and only those',before.length===5&&after.join()===before.join()&&r.world==='zipworld'&&!!r.kept);
+      /* a zip that would write outside its world, and a damaged one: refused, and the world is left as it was */
+      const mk=(at,patch)=>{const b=fs.readFileSync(zb);patch(b);fs.writeFileSync(path.join(OUT,'backups',at),b);return at;};
+      const nm=Buffer.from('empty.txt'),evil=Buffer.from('../evil.t'),swap=b=>{for(let p=b.indexOf(nm);p>=0;p=b.indexOf(nm,p+1))evil.copy(b,p);};
+      const e1=mk('zipworld-20261016-110000.zip',swap),e2=mk('zipworld-20261016-120000.zip',b=>{const p=b.indexOf(Buffer.from('r.-1.0.dcr'))+40;b[p]^=0xff;});
+      fs.writeFileSync(path.join(W2,'marker.txt'),'still here');
+      let m1='',m2='';try{store.restoreBackup(OUT,e1);}catch(e){m1=e.message;}try{store.restoreBackup(OUT,e2);}catch(e){m2=e.message;}
+      ok('a zip with a name that climbs out of its world is refused whole, and writes nothing anywhere ('+m1.slice(0,60)+')',/outside its world/.test(m1)&&!fs.existsSync(path.join(OUT,'backups','evil.t'))&&!fs.existsSync(path.join(OUT,'evil.t'))&&fs.existsSync(path.join(W2,'marker.txt')));
+      ok('a damaged zip is refused and the world stays as it was ('+m2.slice(0,40)+')',/damaged|invalid|incorrect|CRC/i.test(m2)&&fs.readFileSync(path.join(W2,'marker.txt'),'utf8')==='still here'&&!fs.existsSync(path.join(OUT,'backups','.restoring-zipworld')));
+      fs.writeFileSync(path.join(OUT,'backups','zipworld-20261016-130000.zip.part'),'cut short');
+      ok('a backup cut short (.part) is not listed',!store.listBackups(OUT).some(b=>/\.part$/.test(b.name)));
+      for(const n of fs.readdirSync(path.join(OUT,'backups')))if(n.startsWith('zipworld'))fs.rmSync(path.join(OUT,'backups',n),{recursive:true,force:true});
+      fs.rmSync(W2,{recursive:true,force:true});}
     let e1='',e2='',e3='';try{store.backupWorld(OUT,'../x');}catch(e){e1=e.message;}try{store.backupWorld(OUT,'nope');}catch(e){e2=e.message;}try{store.newWorld(OUT,{},{name:'world'});}catch(e){e3=e.message;}
     const cur=store.readSettings(OUT),nw=store.newWorld(OUT,cur,{name:'Second World',seed:'abc',mode:'c',difficulty:'dinglecore'});
     ok('a new world: its name, seed, mode and difficulty go into the settings (the rest is kept); a taken name, a bad name and a missing world are refused',
@@ -108,15 +138,23 @@ boot.run(async()=>{
     ok('settings are written as readable JSON and read back the same; uptime and sizes read like a person wrote them',JSON.stringify(store.readSettings(OUT))===JSON.stringify(nw)&&fs.readFileSync(path.join(OUT,'server.json'),'utf8').split('\n').length>10&&
       store.fmtUptime(59)==='59 s'&&store.fmtUptime(200)==='3 min 20 s'&&store.fmtUptime(7500)==='2 h 05 min'&&store.fmtBytes(5*1048576)==='5 MB'&&store.fmtBytes(900)==='900 B');
     /* backups: listed newest first, restored (the world as it was is kept), deleted, pruned */
+    {fs.cpSync(path.join(OUT,'world'),path.join(OUT,'backups','world-20261001-120000'),{recursive:true});   /* a folder backup, as windows before 1.3.0 made them */
+      const old=store.listBackups(OUT).find(b=>b.name==='world-20261001-120000');
+      ok('an old folder backup is still listed, as a folder, with the size of its files',!!old&&old.zip===false&&old.bytes>100);
+      fs.writeFileSync(path.join(OUT,'world','marker.txt'),'before the old one');
+      const ro=store.restoreBackup(OUT,'world-20261001-120000',new Date(2026,9,13,9,0,0));
+      ok('...and restored (the world as it was is kept, as a zip)',ro.world==='world'&&!fs.existsSync(path.join(OUT,'world','marker.txt'))&&/world-20261013-090000\.zip$/.test(ro.kept)&&fs.existsSync(path.join(OUT,'world','level.json')));
+      store.deleteBackup(OUT,path.basename(ro.kept));
+      ok('...and deleted',store.deleteBackup(OUT,'world-20261001-120000')&&!fs.existsSync(path.join(OUT,'backups','world-20261001-120000'))&&!store.listBackups(OUT).some(b=>!b.zip));}
     {const B0=store.listBackups(OUT);const t3=store.backupWorld(OUT,'world',new Date(2026,9,14,9,0,0));
       fs.writeFileSync(path.join(OUT,'world','marker.txt'),'after the backups');
       const B1=store.listBackups(OUT),r=store.restoreBackup(OUT,path.basename(t3),new Date(2026,9,15,9,0,0));
-      ok('backups are listed newest first with their world and size ('+B1.map(b=>b.name).join(', ')+')',B0.length===2&&B1.length===3&&B1[0].name==='world-20261014-090000'&&B1.every(b=>b.world==='world'&&b.bytes>100));
-      ok('restoring one puts the world back as it was then, and first keeps the world as it is now as a backup of its own',r.world==='world'&&path.basename(r.kept)==='world-20261015-090000'&&!fs.existsSync(path.join(OUT,'world','marker.txt'))&&
-        fs.existsSync(path.join(r.kept,'marker.txt'))&&fs.existsSync(path.join(OUT,'world','level.json'))&&store.listBackups(OUT).length===4);
+      ok('backups are listed newest first with their world and size ('+B1.map(b=>b.name).join(', ')+')',B0.length===2&&B1.length===3&&B1.map(b=>b.name).join()==='world-20261014-090000.zip,world-20261013-080509-2.zip,world-20261013-080509.zip'&&B1.every(b=>b.world==='world'&&b.bytes>100));
+      ok('restoring one puts the world back as it was then, and first keeps the world as it is now as a backup of its own',r.world==='world'&&path.basename(r.kept)==='world-20261015-090000.zip'&&!fs.existsSync(path.join(OUT,'world','marker.txt'))&&
+        zip.readZip(fs.readFileSync(r.kept)).some(e=>e.name==='marker.txt')&&fs.existsSync(path.join(OUT,'world','level.json'))&&store.listBackups(OUT).length===4);
       const gone=store.pruneBackups(OUT,'world',2),left=store.listBackups(OUT).map(b=>b.name);
       store.deleteBackup(OUT,left[1]);let bad='';try{store.deleteBackup(OUT,'../world');}catch(e){bad=e.message;}try{store.restoreBackup(OUT,'world');}catch(e){bad+='|'+e.message;}
-      ok('keeping the newest two removes the older '+gone+'; one can be deleted by name; a name that is not a backup is refused',gone===2&&left.join()==='world-20261015-090000,world-20261014-090000'&&store.listBackups(OUT).length===1&&/not a backup name\|not a backup name/.test(bad)&&fs.existsSync(path.join(OUT,'world','level.json')));}
+      ok('keeping the newest two removes the older '+gone+'; one can be deleted by name; a name that is not a backup is refused',gone===2&&left.join()==='world-20261015-090000.zip,world-20261014-090000.zip'&&store.listBackups(OUT).length===1&&/not a backup name\|not a backup name/.test(bad)&&fs.existsSync(path.join(OUT,'world','level.json')));}
     /* the list of servers */
     {const ROOT=path.join(OUT,'gui');let L=[];const a1=store.addServer(L,ROOT,{name:'My DINGLECRAFT Server'});L=a1.list;const a2=store.addServer(L,ROOT,{name:'My DINGLECRAFT Server'});L=a2.list;const a3=store.addServer(L,ROOT,{name:'Old one',dataDir:OUT});L=a3.list;
       let dup='';try{store.addServer(L,ROOT,{name:'again',dataDir:OUT});}catch(e){dup=e.message;}

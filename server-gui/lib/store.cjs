@@ -1,11 +1,12 @@
 // store.cjs: what the server window does with files, kept apart from Electron so the test suites can run it.
 // A data folder holds server.json and the world folders (each with a level.json), exactly as the terminal server's
-// data/ does; backups/ beside them holds dated copies.
+// data/ does; backups/ beside them holds dated copies: since 1.3.0 one zip each (backups/<world>-<date>.zip, deflate at
+// its highest level); the folder copies older windows made are still listed, restored, pruned and deleted.
 'use strict';
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { readZip } = require('./zip.cjs');
+const { readZip, zipFolder, unzipTo } = require('./zip.cjs');
 
 /* server.json as an object ({} when there is none; throws on a file that is not one JSON object) */
 function readSettings(dataDir) {
@@ -41,17 +42,27 @@ function folderBytes(dir) {
 }
 const WORLD_RE = /^[A-Za-z0-9_][A-Za-z0-9_. -]{0,39}$/;
 function goodWorldName(n) { return typeof n === 'string' && WORLD_RE.test(n) && !n.includes('..') && n !== 'backups'; }
-/* copy a world folder to backups/<name>-<YYYYMMDD-HHMMSS>; returns the new folder. when: a Date (tests pass one) */
+/* Pack a world folder into backups/<name>-<YYYYMMDD-HHMMSS>.zip (1.3.0; a folder copy before); returns the new file.
+   when: a Date (tests pass one). The zip is written as <file>.part and renamed when it is complete, so a backup cut
+   short is never listed. A world too big for a zip (4 GB) is copied as a folder, as before. */
 function backupWorld(dataDir, name, when) {
   if (!goodWorldName(name)) throw new Error('not a world name');
   const from = path.join(dataDir, name);
   if (!fs.existsSync(path.join(from, 'level.json'))) throw new Error('no such world: ' + name);
   const d = when || new Date(), p = (v) => String(v).padStart(2, '0');
   const stamp = d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds());
-  let to = path.join(dataDir, 'backups', name + '-' + stamp);
-  for (let i = 2; fs.existsSync(to); i++) to = path.join(dataDir, 'backups', name + '-' + stamp + '-' + i);
-  fs.mkdirSync(path.dirname(to), { recursive: true });
-  fs.cpSync(from, to, { recursive: true });
+  const dir = path.join(dataDir, 'backups'), taken = (b) => fs.existsSync(path.join(dir, b)) || fs.existsSync(path.join(dir, b + '.zip'));
+  let base = name + '-' + stamp;
+  for (let i = 2; taken(base); i++) base = name + '-' + stamp + '-' + i;
+  fs.mkdirSync(dir, { recursive: true });
+  const to = path.join(dir, base + '.zip'), part = to + '.part';
+  try { zipFolder(from, part, d); } catch (e) {
+    if (!/too big for a zip/.test(e.message)) throw e;
+    const folder = path.join(dir, base);
+    fs.cpSync(from, folder, { recursive: true });
+    return folder;
+  }
+  fs.renameSync(part, to);
   return to;
 }
 /* point the settings at a new world: its name, seed, mode and difficulty. The server makes the folder when it starts.
@@ -71,30 +82,49 @@ function fmtUptime(s) {
 function fmtBytes(n) { return n >= 1073741824 ? (n / 1073741824).toFixed(1) + ' GB' : n >= 1048576 ? (n / 1048576).toFixed(0) + ' MB' : n >= 1024 ? (n / 1024).toFixed(0) + ' KB' : (n | 0) + ' B'; }
 
 /* ---- backups ---- */
-/* the dated copies under backups/: [{ name, world, bytes, made }], newest first */
+/* the dated backups under backups/: [{ name, world, bytes, made, zip }], newest first. A zip's bytes are its size on
+   disk (the compressed size); an old folder copy's are the sum of its files. */
+const STAMP_RE = /^(.*)-(\d{8}-\d{6})(?:-(\d+))?(\.zip)?$/;
 function listBackups(dataDir) {
   const dir = path.join(dataDir, 'backups');
   let names = [];
   try { names = fs.readdirSync(dir); } catch { return []; }
   const out = [];
   for (const n of names) {
-    const p = path.join(dir, n), m = /^(.*)-\d{8}-\d{6}(?:-\d+)?$/.exec(n);
-    if (!m || !fs.existsSync(path.join(p, 'level.json'))) continue;
-    out.push({ name: n, world: m[1], bytes: folderBytes(p), made: fs.statSync(p).mtimeMs });
+    const p = path.join(dir, n), m = STAMP_RE.exec(n);
+    if (!m) continue;
+    if (m[4]) { const st = fs.statSync(p); if (st.isFile()) out.push({ name: n, world: m[1], bytes: st.size, made: st.mtimeMs, zip: true, key: [m[2], +(m[3] || 1)] }); continue; }
+    if (!fs.existsSync(path.join(p, 'level.json'))) continue;
+    out.push({ name: n, world: m[1], bytes: folderBytes(p), made: fs.statSync(p).mtimeMs, zip: false, key: [m[2], +(m[3] || 1)] });
   }
-  return out.sort((x, y) => (y.name < x.name ? -1 : y.name > x.name ? 1 : 0));
+  /* newest first: by the date in the name, then the -2, -3 of a second backup in the same second (zip or folder alike) */
+  out.sort((x, y) => (x.key[0] !== y.key[0] ? (y.key[0] < x.key[0] ? -1 : 1) : y.key[1] - x.key[1] || (y.name < x.name ? -1 : y.name > x.name ? 1 : 0)));
+  for (const b of out) delete b.key;
+  return out;
 }
-const BACKUP_RE = /^[A-Za-z0-9_][A-Za-z0-9_. -]{0,39}-\d{8}-\d{6}(?:-\d+)?$/;
-/* put a backup back as its world. The world as it is now is backed up first, so a restore can itself be undone. */
+const BACKUP_RE = /^[A-Za-z0-9_][A-Za-z0-9_. -]{0,39}-\d{8}-\d{6}(?:-\d+)?(?:\.zip)?$/;
+/* Put a backup back as its world. The world as it is now is backed up first, so a restore can itself be undone. A zip
+   is unpacked (every name checked, nothing may land outside the world) into backups/.restoring-<world> first, and only
+   a complete world with its level.json takes the old one's place: a damaged backup leaves the world as it was. */
 function restoreBackup(dataDir, name, when) {
   if (!BACKUP_RE.test(name) || name.includes('..')) throw new Error('not a backup name');
-  const from = path.join(dataDir, 'backups', name);
-  if (!fs.existsSync(path.join(from, 'level.json'))) throw new Error('no such backup: ' + name);
-  const world = /^(.*)-\d{8}-\d{6}(?:-\d+)?$/.exec(name)[1], to = path.join(dataDir, world);
+  const from = path.join(dataDir, 'backups', name), zip = name.endsWith('.zip');
+  if (zip ? !fs.existsSync(from) : !fs.existsSync(path.join(from, 'level.json'))) throw new Error('no such backup: ' + name);
+  const world = STAMP_RE.exec(name)[1], to = path.join(dataDir, world);
+  let tmp = null;
+  if (zip) {
+    tmp = path.join(dataDir, 'backups', '.restoring-' + world);
+    fs.rmSync(tmp, { recursive: true, force: true });
+    try {
+      unzipTo(from, tmp);
+      if (!fs.existsSync(path.join(tmp, 'level.json'))) throw new Error('This backup has no level.json: it is not a world.');
+    } catch (e) { fs.rmSync(tmp, { recursive: true, force: true }); throw e; }
+  }
   let kept = null;
   if (fs.existsSync(path.join(to, 'level.json'))) kept = backupWorld(dataDir, world, when);
   fs.rmSync(to, { recursive: true, force: true });
-  fs.cpSync(from, to, { recursive: true });
+  if (zip) fs.renameSync(tmp, to);
+  else fs.cpSync(from, to, { recursive: true });
   return { world, kept };
 }
 function deleteBackup(dataDir, name) {

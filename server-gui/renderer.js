@@ -438,7 +438,7 @@ async function loadBackups() {
     ]),
   ])));
 }
-$('b_backup').onclick = async () => { $('backmsg').textContent = 'Backing up...'; const r = await window.dc.backupNow(S.id); $('backmsg').textContent = r.ok ? 'Copied to ' + r.to : 'Backup failed: ' + r.why; loadBackups(); };
+$('b_backup').onclick = async () => { $('backmsg').textContent = 'Backing up...'; const r = await window.dc.backupNow(S.id); $('backmsg').textContent = r.ok ? 'Saved as ' + r.to : 'Backup failed: ' + r.why; loadBackups(); };
 
 /* ---- scheduler ---- */
 function paintTasks() {
