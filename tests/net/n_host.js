@@ -373,5 +373,27 @@ boot.run(async()=>{
       ok('...and fills its chest: the server holds it with '+items.length+' stacks, and the player is sent it',!!be&&be.t==='chest'&&items.length>0&&b.by('be').some(m=>m.k===ck&&m.v&&m.v.t==='chest'));
       ok('...once: one chest copy, sent by the server\'s game alone (this raw player sent none)',b.by('be').filter(m=>m.k===ck).length>=1&&JSON.stringify(b.by('be').filter(m=>m.k===ck).pop().v.inv)===JSON.stringify(be.inv));
       await S9.close();}}
+  /* ===== 18. Nether fortresses (6.71): the server's game raises them, one boss and one set of chests for everyone ===== */
+  {let fc=null;for(let r=0;r<4&&!fc;r++)for(let gx=-r;gx<=r&&!fc;gx++)for(let gz=-r;gz<=r&&!fc;gz++){const c=V.nfCell(gx,gz);if(c)fc=c;}
+    ok('a Nether fortress to visit ('+(fc?fc.id+' at '+fc.cx+','+fc.cz:'none')+')',!!fc);
+    if(fc){const S10=createServer({port:0,memory:true,world:'',noGame:true,hostGame:GAME,quiet:true,seed:'4242',pauseWhenEmpty:0,rules:{snail:false,mobSpawn:false}});await S10.listen();
+      await until(()=>S10.host()&&S10.host().ready,20000);
+      const b=raw(S10.port,'Bea');await b.open;await until(()=>!!b.last('ready'));
+      const at=()=>b.pose(fc.cx+6.5,30,fc.cz+0.5,{dim:'nether'}),k1='n;'+fc.cx+',28,'+fc.cz,k2='n;'+(fc.cx+3)+',28,'+(fc.cz+3);
+      const infs=()=>[...b.mobs().values()].filter(a=>a[1]==='infernis');
+      await at();await until(()=>S10.host('nether')&&S10.host('nether').ready,20000);
+      for(let i=0;i<300&&!(S10.world().be[k1]&&infs().length);i++)await at();
+      const W10=S10.world(),full=k=>{const c=W10.be[k];return !!c&&c.t==='chest'&&c.inv.filter(Boolean).length>0;};
+      ok('a player near a fortress nobody has seen: the server\'s Nether game marks it seen, for everyone',(W10.nseen||[]).includes(fc.id)&&b.by('wd').some(m=>m.k==='nseen'&&(m.add||[]).includes(fc.id)));
+      ok('...fills both its chests (the server holds them, the player is sent them)',full(k1)&&full(k2)&&b.by('be').some(m=>m.k===k1)&&b.by('be').some(m=>m.k===k2));
+      for(let i=0;i<60;i++)await at();
+      ok('...and raises one Infernis, shared (everyone sees the server\'s, '+infs().length+'), with its three imps',infs().length===1&&[...b.mobs().values()].filter(a=>a[1]==='imp').length>=3);
+      for(let i=0;i<200&&!(S10.world().mobs||[]).some(o=>o.t==='infernis');i++)await at();
+      const saved=(S10.world().mobs||[]).find(o=>o.t==='infernis');
+      ok('the server saves it knowing its fortress (so a restart brings back this one, not a second)',!!saved&&saved.ci===fc.id&&saved.d==='nether');
+      await S10.close();}
+    const {cleanMobs}=await import(pathToFileURL(path.join(REPO,'server','lib','world.mjs')).href);
+    const cm=cleanMobs([{t:'infernis',x:1,y:2,z:3,ci:'3,-4'},{t:'valkyra',x:1,y:2,z:3,ci:'x'.repeat(40)},{t:'imp',x:1,y:2,z:3,ci:{}}]);
+    ok('the server keeps a fortress id in a saved mob, and nothing else in its place',cm[0].ci==='3,-4'&&!('ci' in cm[1])&&!('ci' in cm[2]));}
   fs.rmSync(OUT,{recursive:true,force:true});
 });

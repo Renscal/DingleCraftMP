@@ -62,6 +62,7 @@ function ntHostRestore(o){
   if(typeof o.yaw==='number')e.yaw=o.yaw;
   if(typeof o.name==='string'&&o.name)e.name=o.name;
   if(typeof o.ox==='number'&&typeof o.oz==='number'){e.ox=o.ox;e.oz=o.oz;if(o.t==='alien'){e.hx=o.ox;e.hz=o.oz;}}
+  if(typeof o.ci==='string'&&o.ci)e.cellId=o.ci;
   ntHostDress(e);
   return true;
 }
@@ -77,6 +78,7 @@ function ntHostSnap(){
     const o={t:e.mt,x:+e.x.toFixed(2),y:+e.y.toFixed(2),z:+e.z.toFixed(2),yaw:+(e.yaw||0).toFixed(2),hp:Math.round(e.hp*10)/10};
     if(e.name)o.name=(''+e.name).slice(0,24);
     if(e.ox!=null){o.ox=e.ox;o.oz=e.oz;}
+    if(e.cellId)o.ci=(''+e.cellId).slice(0,24);           /* 6.71: a fortress boss knows its fortress after a restart (or a second one rises) */
     out.push(o);
   }
   return out;
@@ -209,6 +211,10 @@ function ntHostTick(dt){
     updateFires(dt);
     try{P=pl[NET.hrr%pl.length];tickSpawners(dt);}finally{P=NET.hp0;}   /* spawners (6.16); since 6.48 each looks at every player itself */
     if(DIM==='over'){processWD(dt);processCells(dt);}      /* 6.69: the buried dungeons and spawner vaults in the chunks built round the players: their chests are filled here, not by whichever player came first */
+    else if((DIM==='nether'||DIM==='aether')&&NET.acc-(NET.fortT||0)>=1){   /* 6.71: the fortresses and shrines near each player, once a second: one boss and one set of chests for everyone */
+      NET.fortT=NET.acc;
+      for(const q of pl){try{P=q;if(DIM==='nether')processNether(1);else processAether(1);}finally{P=NET.hp0;}}
+    }
   }
   if(NET.peers.size&&NET.hprim){updateStocks(dt);ntHostMkt();}   /* one market for everyone */
   ntWdTick();

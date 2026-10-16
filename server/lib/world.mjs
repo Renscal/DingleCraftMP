@@ -83,6 +83,7 @@ export function cleanMobs(list) {
     const o = { t: m.t, x: m.x, y: m.y, z: m.z, yaw: num(m.yaw, -1e4, 1e4, 0), hp: num(m.hp, 0, 1e6, 1) };
     if (typeof m.name === 'string' && m.name) o.name = cleanText(m.name, 24);
     if (Number.isFinite(m.ox) && Number.isFinite(m.oz)) { o.ox = m.ox; o.oz = m.oz; }
+    if (typeof m.ci === 'string' && /^-?\d{1,7},-?\d{1,7}$/.test(m.ci)) o.ci = m.ci;   // 6.71: the fortress a Nether or Aether boss guards
     if (typeof m.d === 'string' && m.d !== 'over' && m.d in DIM_PFX) o.d = m.d;   // which dimension (the Overworld is not spelled out)
     out.push(o);
     if (out.length >= 4000) break;

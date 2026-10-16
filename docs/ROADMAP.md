@@ -153,10 +153,11 @@ Smaller, independent, any order.
 
 - **Projectiles as server entities.** They are owned by the shooter's game and only announced. Make the server's game
   own them once 6b lets it trust where a player is aiming.
-- **Fortress bosses** (Nether, Aether) and their guards carry a `cellId` and are excluded from sharing: still each
-  player's own, though their deaths are shared.
-- **Structure chests**: done in 6.69 for the buried dungeons and spawner vaults (the only generated structures with
-  chests): on a dimension the server runs, its game processes them (`ntHostTick`) and players' games do not.
+- **Fortress bosses**: done in 6.71. Where the server runs the Nether or Aether, its game runs `processNether` /
+  `processAether` once a second for each player there: one Infernis or Valkyra (shared: `ntMobShared` lets a `cellId`
+  through on the server's game, saved with `ci`), its guards and its chests for everyone; players' games skip them.
+- **Structure chests**: done. 6.69 the buried dungeons and spawner vaults, 6.71 the Nether fortresses and Aether
+  shrines: on a dimension the server runs, its game processes them (`ntHostTick`) and players' games do not.
 - **Creativity works** are saved per player; a work handed to another player does not show. Needs world-wide numbering.
 - **Disasters and the Snail** start in one player's game.
 - **A boss fights one player**: done in 6.70. On the server's game a boss goes for whoever hit it last (15 s, `e.aggro`,

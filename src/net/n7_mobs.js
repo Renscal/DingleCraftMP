@@ -24,7 +24,7 @@ const NT_MOBS={pig:1,cow:1,sheep:1,zombie:1,skel:1,boomer:1,spider:1,imp:1,hellh
 const NT_UNIQ={alien:1,boss:1,titan:1,infernis:1,valkyra:1};
 /* ----- shared mobs ----- */
 /* does this entity travel? */
-function ntMobShared(e){return e.t==='mob'&&!e.pkeep&&!e.cellId&&NT_MOBS[e.mt]===1;}
+function ntMobShared(e){return e.t==='mob'&&!e.pkeep&&(!e.cellId||NET.host)&&NT_MOBS[e.mt]===1;}   /* 6.71: a fortress boss (cellId) is shared when the server's game raised it */
 /* a mob as it goes on the wire: [id, type, x, y, z, yaw, hp, flags, name, ox, oz] (flags: 1 just hurt, 2 a fuse is burning;
    name: a villager's; ox oz: where it was spawned, for the kinds in NT_UNIQ) */
 function ntMobState(e){

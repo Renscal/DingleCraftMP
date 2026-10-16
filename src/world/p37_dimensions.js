@@ -243,6 +243,7 @@ function dimLoot(x,y,z,aeth){
   }
   if(Math.random()<0.75)be.inv[(Math.random()*27)|0]={id:randGadget(),count:1};
   if(typeof crFoundRoll==='function')crFoundRoll(be,x,y,z);   /* Release 1.0: Nether and Aether chests can hold a rare found work too */
+  if(NET.host)ntSend({t:'be',v:be,k:bkey(x,y,z)});   /* PART 58 (6.71): the server's game filled it: the server and every player hear of it */
 }
 const INFKILL=new Set(),VALKILL=new Set();
 function bossAlive(mt,cellId){
@@ -251,7 +252,8 @@ function bossAlive(mt,cellId){
   return false;
 }
 function processNether(dt){
-  if(DIM!=='nether'||!P||P.dead||frameCount%30!==0)return;
+  if(NET.on&&ntHosted())return;   /* PART 58 (6.71): where the server runs the Nether, its game raises the fortress, its chests and Infernis, once for everyone */
+  if(DIM!=='nether'||!P||P.dead||(!NET.host&&frameCount%30!==0))return;   /* (the server's game calls it once a second itself, for each player there) */
   const gx=Math.floor(P.x/176),gz=Math.floor(P.z/176);
   for(let ix=gx-1;ix<=gx+1;ix++)for(let iz=gz-1;iz<=gz+1;iz++){
     const fc=nfCell(ix,iz);
@@ -272,7 +274,8 @@ function processNether(dt){
   }
 }
 function processAether(dt){
-  if(DIM!=='aether'||!P||P.dead||frameCount%30!==0)return;
+  if(NET.on&&ntHosted())return;   /* PART 58 (6.71): where the server runs the Aether, its game raises the shrine, its chest and Valkyra */
+  if(DIM!=='aether'||!P||P.dead||(!NET.host&&frameCount%30!==0))return;
   const gx=Math.floor(P.x/144),gz=Math.floor(P.z/144);
   for(let ix=gx-1;ix<=gx+1;ix++)for(let iz=gz-1;iz<=gz+1;iz++){
     const sc=asCell(ix,iz);

@@ -3,7 +3,13 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Everybody gets a turn',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Under new management',lines:[
+    '<b>UNDER NEW MANAGEMENT.</b> On a server, every player who walked up to a Nether fortress used to get a private Infernis of their own. Two friends, two bosses, one keep: a very crowded throne room that only each of you could see. The fortresses have consolidated.',
+    '<b>One boss for everyone.</b> Where the server runs the Nether and the Aether, its own game now raises each fortress and shrine: one Infernis or Valkyra, with its guards, that every player sees and fights together. Kill it and it stays dead for everybody, as before.',
+    '<b>And their treasure.</b> Fortress and shrine chests are now filled by the server too, like the dungeon and vault chests in 6.69 (which, it turns out, were not the only generated chests after all: these were the rest).',
+    '<b>Remembered.</b> A boss the server saves remembers which fortress it guards, so restarting the server brings back that boss, not a second one beside it.',
+  ]},
+ {v:'6.70',label:'DingleCraft Multiplayer 2.0',title:'Everybody gets a turn',lines:[
     '<b>EVERYBODY GETS A TURN.</b> On a server, a boss used to fight whoever stood nearest and nobody else. Stand at the back with a bow and you could empty a quiver into the Stone Titan while your friend took every punch. Bosses have read the room.',
     '<b>Bosses hold a grudge.</b> Hit a boss and it comes for you, even past a nearer player, for fifteen seconds after your last hit. Stop hitting it and it goes back to whoever is closest. Ordinary monsters are not that petty.',
     '<b>The slam is for everyone.</b> When the Stone Titan slams the ground, every player standing in the shockwave takes the hit and gets thrown back, not just the one it was looking at.',

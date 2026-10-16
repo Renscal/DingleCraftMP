@@ -509,7 +509,9 @@ those itself. Fire, falling blocks and structure processing also still run on ev
 ordinary edits and converge on the last writer. Since 6.69 the buried dungeons and spawner vaults are the exception on a
 dimension the server runs: a player's game empties `WDPEND`/`LSPEND` unprocessed, and the server's game runs `processWD`
 and `processCells` in `ntHostTick`, so it marks them seen, fills their chests (`lootFill` sends each one) and spawns
-their mobs and boss itself (`n_host` section 17).
+their mobs and boss itself (`n_host` section 17). 6.71 does the same for the Nether fortresses and Aether shrines
+(`processNether`/`processAether`, run by the Nether's and Aether's server games once a second for each player there):
+one boss for everyone, shared, saved with its fortress (`ci`), and their chests (`n_host` section 18).
 
 In the core: `setBlock` (`ntEdit`), `saveToStorage` (`ntSave`), `quitToTitle` (`ntLeave`), the frame (`ntFrame`, which
 also runs while paused), `doMine` (`ntMelee`), `die` (`ntDied`), `chatSubmit` (`ntChat`), `renderTab` (`ntTabRows`),

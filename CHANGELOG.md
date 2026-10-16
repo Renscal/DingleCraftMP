@@ -21,6 +21,15 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## DingleCraft Multiplayer 2.0 — Under new management
+
+*Game version 6.71, released 2026-10-16.*
+
+- **UNDER NEW MANAGEMENT.** On a server, every player who walked up to a Nether fortress used to get a private Infernis of their own. Two friends, two bosses, one keep: a very crowded throne room that only each of you could see. The fortresses have consolidated.
+- **One boss for everyone.** Where the server runs the Nether and the Aether, its own game now raises each fortress and shrine: one Infernis or Valkyra, with its guards, that every player sees and fights together. Kill it and it stays dead for everybody, as before.
+- **And their treasure.** Fortress and shrine chests are now filled by the server too, like the dungeon and vault chests in 6.69 (which, it turns out, were not the only generated chests after all: these were the rest).
+- **Remembered.** A boss the server saves remembers which fortress it guards, so restarting the server brings back that boss, not a second one beside it.
+
 ## DingleCraft Multiplayer 2.0 — Everybody gets a turn
 
 *Game version 6.70, released 2026-10-16.*
