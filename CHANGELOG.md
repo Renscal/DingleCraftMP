@@ -21,6 +21,15 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## DingleCraft Multiplayer 2.0 — Weather for everyone
+
+*Game version 6.72, released 2026-10-16.*
+
+- **WEATHER FOR EVERYONE.** On a server, a Disaster Sphere used to be a deeply personal experience. You set off a tornado, and your friends watched trees vanish one at a time for no visible reason. Now it is a shared one.
+- **Everyone near it gets the full show.** Every player within 160 blocks sees the same disaster: its countdown, its wind, and for a tornado the funnel itself, wandering exactly where the real one goes and pulling them in just as hard.
+- **It burns everybody.** A volcano’s lava bombs now burn whoever they land beside, not only the player who woke it. Fire rain already fell for everyone; now so does the trouble.
+- **One storm, not five.** Only the starter’s game actually changes the world, so nothing gets flooded, built or shredded twice. Walk out of range, or have the starter leave, and the storm quietly passes for you. The Eternal Snail, on the other hand, remains strictly personal: everyone gets their own.
+
 ## DingleCraft Multiplayer 2.0 — Under new management
 
 *Game version 6.71, released 2026-10-16.*

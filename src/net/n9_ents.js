@@ -97,6 +97,11 @@ function ntFxPup(e,dt){
       else{e.x=nx;e.y=ny;e.z=nz;}
     }else{
       moveBody(e,e.vx*dt,e.vy*dt,e.vz*dt,false);
+      if(k==='lavab'&&e.onGround){                         /* 6.72: another player's volcano: its bombs still burn whoever they land beside here (the lava they leave arrives as an edit) */
+        burstParticles(e.x,e.y+0.5,e.z,B.LAVA,10,0.8);playS('sizzle');
+        if(P&&!P.dead&&Math.hypot(P.x-e.x,P.y-e.y,P.z-e.z)<4)damagePlayer(6);
+        NET.fx.delete(e.fxid);removeEnt(e);return;
+      }
       if(e.onGround){e.vx*=Math.exp(-dt*6);e.vz*=Math.exp(-dt*6);}
     }
   }
@@ -145,6 +150,53 @@ function ntHostBeScan(){
     if(!first)ntSend({t:'be',k,v:{...b,ct:+CATCH.clock.toFixed(2)}});
   }
   for(const k of NET.beS.keys())if(!blockEnts.has(k))NET.beS.delete(k);
+}
+
+/* ----- disasters (6.72) ----- */
+/* A disaster runs in the game of the player who started it; its blocks travel as their edits. The players near it watch
+   the same one: twice a second the starter's game says what is raging, where, how long it has run and where its tornado
+   is ({t:'dis'}, and k:'' once it is over), and the watchers' games show its timer and wind, follow its tornado with a copy
+   that pulls them in as the real one does (and shreds nothing), and let its lava bombs burn them (ntFxPup). */
+const NT_DIS={tornado:180,tsunami:90,volcano:182.5,fire:180};
+/* from ntFrame: this game's own disaster, as the others hear of it */
+function ntDisOut(){
+  if(DIS.kind&&!DIS.remote){
+    if(NET.acc-(NET.disT||0)<0.5)return;
+    NET.disT=NET.acc;NET.disOn=true;
+    const m={t:'dis',k:DIS.kind,x:DIS.cx,z:DIS.cz,gy:DIS.gy,at:+DIS.t.toFixed(1)},te=DIS.data&&DIS.data.te;
+    if(te&&!te.dead)m.tw=[+te.x.toFixed(1),+te.z.toFixed(1)];
+    ntSend(m);
+  }else if(NET.disOn){NET.disOn=false;NET.disT=0;ntSend({t:'dis',k:''});}
+}
+/* {t:'dis'}: another player's disaster, near here */
+function ntDisIn(m){
+  if(!playing||!P||NET.host)return;
+  if(DIS.kind&&!DIS.remote)return;                         /* this game's own disaster comes first */
+  const k=typeof m.k==='string'?m.k:'';
+  if(!k){if(DIS.remote&&DIS.from===m.from)endDisaster(false);return;}
+  if(!NT_DIS[k])return;
+  if(!DIS.remote||DIS.kind!==k||DIS.from!==m.from){
+    if(DIS.kind)endDisaster(true);
+    DIS.kind=k;DIS.remote=true;DIS.from=m.from;DIS.dur=NT_DIS[k];
+    DIS.cx=Math.floor(+m.x||0);DIS.cz=Math.floor(+m.z||0);DIS.gy=typeof m.gy==='number'?m.gy:heightAt(DIS.cx,DIS.cz);
+    DIS.data={};
+    if(k==='tornado'){const s=Array.isArray(m.tw)?m.tw:[DIS.cx,DIS.cz],te=mkTwister(+s[0]||DIS.cx,DIS.gy,+s[1]||DIS.cz);te.remote=true;DIS.data.te=te;}
+    showToast(ntShown(m.name||'Someone')+(k==='tornado'?' set loose a tornado!':k==='tsunami'?' raised the sea!':k==='volcano'?' woke a volcano!':' set the sky on fire!'));
+    playS('dsph');
+  }
+  DIS.t=Math.max(0,+m.at||0);DIS.seen=NET.acc;
+  const te=DIS.data&&DIS.data.te;
+  if(te&&Array.isArray(m.tw)){te.tx=+m.tw[0]||te.x;te.tz=+m.tw[1]||te.z;}
+}
+/* the updateDisaster hook: a watched disaster's timer, wind and fires; it ends with its own end, at its time, or quietly
+   when its player has not been heard of for 3 s (gone, or out of range) */
+function ntDisWatch(dt){
+  if(dt>0)DIS.t+=dt;
+  if(NET.acc-(DIS.seen||0)>3||DIS.t>=DIS.dur){endDisaster(DIS.t<DIS.dur);return;}
+  const k=DIS.kind,left=DIS.dur-DIS.t;
+  if(k==='volcano'&&DIS.t<62.5){setWind(0.15);disHud('VOLCANO \u2014 eruption in '+fmtT(Math.ceil(62.5-DIS.t)));}
+  else{setWind(k==='tornado'?0.85:k==='tsunami'?0.3:k==='volcano'?0.4:0.3);disHud(DISNAME[k]+' \u2014 '+fmtT(left));}
+  if(dt>0)updateFires(dt);
 }
 
 /* ----- what you ride ----- */

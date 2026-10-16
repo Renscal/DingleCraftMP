@@ -509,7 +509,10 @@ those itself. Fire, falling blocks and structure processing also still run on ev
 ordinary edits and converge on the last writer. Since 6.69 the buried dungeons and spawner vaults are the exception on a
 dimension the server runs: a player's game empties `WDPEND`/`LSPEND` unprocessed, and the server's game runs `processWD`
 and `processCells` in `ntHostTick`, so it marks them seen, fills their chests (`lootFill` sends each one) and spawns
-their mobs and boss itself (`n_host` section 17). 6.71 does the same for the Nether fortresses and Aether shrines
+their mobs and boss itself (`n_host` section 17). A disaster (6.72) runs in the game of the player who started it;
+`ntDisOut` announces it twice a second (`{t:'dis'}`: kind, centre, time, its tornado) and the players within 160 blocks
+watch it (`DIS.remote`, `ntDisIn`, `ntDisWatch`): timer and wind, a twister copy (`e.remote`) that follows and pulls but
+shreds nothing, and `lavab` copies that burn (`n_disaster`). 6.71 does the same for the Nether fortresses and Aether shrines
 (`processNether`/`processAether`, run by the Nether's and Aether's server games once a second for each player there):
 one boss for everyone, shared, saved with its fortress (`ci`), and their chests (`n_host` section 18).
 

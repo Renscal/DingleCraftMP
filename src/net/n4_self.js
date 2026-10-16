@@ -114,6 +114,6 @@ function ntFrame(dt){
   /* a jump in the clock that the server did not send (a bed, the debug menu) is this player's doing: tell everyone */
   if(Math.abs(timeOfDay-NET.tPrev)>0.01)ntSend({t:'time',v:((timeOfDay%1)+1)%1});
   NET.tPrev=timeOfDay;
-  if(!NET.host){ntMobsTick(dt);ntFxTick();ntVehTick();}
+  if(!NET.host){ntMobsTick(dt);ntFxTick();ntVehTick();ntDisOut();}
   ntPeersTick(dt);
 }

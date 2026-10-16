@@ -3,7 +3,13 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Under new management',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Weather for everyone',lines:[
+    '<b>WEATHER FOR EVERYONE.</b> On a server, a Disaster Sphere used to be a deeply personal experience. You set off a tornado, and your friends watched trees vanish one at a time for no visible reason. Now it is a shared one.',
+    '<b>Everyone near it gets the full show.</b> Every player within 160 blocks sees the same disaster: its countdown, its wind, and for a tornado the funnel itself, wandering exactly where the real one goes and pulling them in just as hard.',
+    '<b>It burns everybody.</b> A volcano’s lava bombs now burn whoever they land beside, not only the player who woke it. Fire rain already fell for everyone; now so does the trouble.',
+    '<b>One storm, not five.</b> Only the starter’s game actually changes the world, so nothing gets flooded, built or shredded twice. Walk out of range, or have the starter leave, and the storm quietly passes for you. The Eternal Snail, on the other hand, remains strictly personal: everyone gets their own.',
+  ]},
+ {v:'6.71',label:'DingleCraft Multiplayer 2.0',title:'Under new management',lines:[
     '<b>UNDER NEW MANAGEMENT.</b> On a server, every player who walked up to a Nether fortress used to get a private Infernis of their own. Two friends, two bosses, one keep: a very crowded throne room that only each of you could see. The fortresses have consolidated.',
     '<b>One boss for everyone.</b> Where the server runs the Nether and the Aether, its own game now raises each fortress and shrine: one Infernis or Valkyra, with its guards, that every player sees and fights together. Kill it and it stays dead for everybody, as before.',
     '<b>And their treasure.</b> Fortress and shrine chests are now filled by the server too, like the dungeon and vault chests in 6.69 (which, it turns out, were not the only generated chests after all: these were the rest).',

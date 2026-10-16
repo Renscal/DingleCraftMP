@@ -159,7 +159,9 @@ Smaller, independent, any order.
 - **Structure chests**: done. 6.69 the buried dungeons and spawner vaults, 6.71 the Nether fortresses and Aether
   shrines: on a dimension the server runs, its game processes them (`ntHostTick`) and players' games do not.
 - **Creativity works** are saved per player; a work handed to another player does not show. Needs world-wide numbering.
-- **Disasters and the Snail** start in one player's game.
+- **Disasters**: done in 6.72 (the starter's game runs one and announces it, `dis`; the players within 160 blocks watch
+  the same one: timer, wind, a tornado copy that pulls them in, lava bombs that burn them; blocks travel as the starter's
+  edits). **The Snail** stays each player's own by design: everyone has their own, saved with them (`snl`).
 - **A boss fights one player**: done in 6.70. On the server's game a boss goes for whoever hit it last (15 s, `e.aggro`,
   `ntHostAim`), and the Stone Titan's slam hits every player in it (`ntHostArea`). The dungeon boss is spawned once by the
   server's game since 6.69 (the dungeon's seen-mark is its record); a Titan is summoned, so it needs none.

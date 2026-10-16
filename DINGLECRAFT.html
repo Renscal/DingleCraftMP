@@ -1042,7 +1042,7 @@ THE SOFTWARE.
    ===================================================================== */
 'use strict';
 
-const GAME_VERSION = '6.71';
+const GAME_VERSION = '6.72';
 const RELEASE_LABEL = 'DingleCraft Multiplayer 2.0';   /* the public name of this game version (docs/RELEASING.md): GAME_VERSION stays the internal, monotonic number */
 var HIT_HOW=null,EXPL_BY=null;  /* damage attribution (PART 53) */
 var TP={id:'og',q:-1,qr:1,hr:false,busy:false,want:null,shadow:false,mods:[],live:[],og:null,ogR:null,ogF:null,ev:{},warm:null,devTexBase:null};  /* texture packs (PART 54) */
@@ -7262,15 +7262,7 @@ function startDisaster(kind,px,pz){
   playS('dsph');
   if(kind==='tornado'){
     DIS.dur=180;
-    const G=new THREE.Group(),mats=[];
-    for(let i=0;i<12;i++){
-      const r=0.5+i*0.34,m=new THREE.Mesh(new THREE.BoxGeometry(r*2,0.8,r*2),
-        new THREE.MeshLambertMaterial({color:0x4a4650,transparent:true,opacity:0.55}));
-      m.position.y=i*0.85+0.4;m.rotation.y=i*0.7;G.add(m);mats.push(m);
-    }
-    scene.add(G);
-    const te={t:'twister',x:px,y:DIS.gy,z:pz,vx:0,vz:0,wT:3,tx:px,tz:pz,scanT:0,mesh:G,parts:mats,deb:0};
-    entities.push(te);
+    const te=mkTwister(px,DIS.gy,pz);
     DIS.data={te};
     showToast('A tornado touches down!');
   }else if(kind==='tsunami'){
@@ -7305,6 +7297,19 @@ function startDisaster(kind,px,pz){
     showToast('The sky burns — fire rain!');
   }
 }
+/* the tornado itself: the funnel and its entity (6.72: also a copy following another player's, PART 58) */
+function mkTwister(px,py,pz){
+  const G=new THREE.Group(),mats=[];
+  for(let i=0;i<12;i++){
+    const r=0.5+i*0.34,m=new THREE.Mesh(new THREE.BoxGeometry(r*2,0.8,r*2),
+      new THREE.MeshLambertMaterial({color:0x4a4650,transparent:true,opacity:0.55}));
+    m.position.y=i*0.85+0.4;m.rotation.y=i*0.7;G.add(m);mats.push(m);
+  }
+  scene.add(G);
+  const te={t:'twister',x:px,y:py,z:pz,vx:0,vz:0,wT:3,tx:px,tz:pz,scanT:0,mesh:G,parts:mats,deb:0};
+  entities.push(te);
+  return te;
+}
 function endDisaster(force){
   if(!DIS.kind)return;
   const k=DIS.kind,d=DIS.data;
@@ -7320,15 +7325,16 @@ function endDisaster(force){
     fires.clear();
     for(const e of entities)if(e.t==='fireb'&&!e.dead)removeEnt(e);
   }
-  DIS.kind=null;DIS.data=null;
+  DIS.kind=null;DIS.data=null;DIS.remote=false;
   setWind(0);disHud('');
   if(!force)showToast(DISNAME[k]+' has passed.');
 }
 function disasterHardReset(){
-  DIS.kind=null;DIS.data=null;fires.clear();setWind(0);disHud('');
+  DIS.kind=null;DIS.data=null;DIS.remote=false;fires.clear();setWind(0);disHud('');
 }
 function updateDisaster(dt){
   if(!playing||!DIS.kind){setWind(0);return;}
+  if(DIS.remote){ntDisWatch(dt);return;}                   /* PART 58 (6.72): another player's disaster, watched: its blocks arrive as their edits */
   if(dt>0)DIS.t+=dt;
   const d=DIS.data,left=DIS.dur-DIS.t;
   if(DIS.kind==='tornado'){
@@ -7455,14 +7461,17 @@ function updateDisaster(dt){
 }
 /* tornado pieces */
 function updateTwister(e,dt){
-  e.wT-=dt;
-  if(e.wT<=0){
-    e.wT=2.5+Math.random()*2.5;
-    const a=Math.random()*6.28,r=Math.random()*50;
-    e.tx=DIS.cx+Math.sin(a)*r;e.tz=DIS.cz+Math.cos(a)*r;
+  if(!e.remote){                                           /* 6.72: a copy (e.remote, PART 58) goes where the real one was last seen */
+    e.wT-=dt;
+    if(e.wT<=0){
+      e.wT=2.5+Math.random()*2.5;
+      const a=Math.random()*6.28,r=Math.random()*50;
+      e.tx=DIS.cx+Math.sin(a)*r;e.tz=DIS.cz+Math.cos(a)*r;
+    }
   }
   const dx=e.tx-e.x,dz=e.tz-e.z,dd=Math.hypot(dx,dz)||1;
-  e.x+=dx/dd*3.4*dt;e.z+=dz/dd*3.4*dt;
+  if(e.remote){const st=Math.min(dd,Math.max(3.4,dd*2)*dt);e.x+=dx/dd*st;e.z+=dz/dd*st;}
+  else{e.x+=dx/dd*3.4*dt;e.z+=dz/dd*3.4*dt;}
   if(((e.x*7)|0)!==e._lx||((e.z*7)|0)!==e._lz){
     e._lx=(e.x*7)|0;e._lz=(e.z*7)|0;
     e.y=heightAt(Math.floor(e.x),Math.floor(e.z));
@@ -7471,7 +7480,7 @@ function updateTwister(e,dt){
   e.mesh.rotation.y+=dt*7;
   /* shred trees */
   e.scanT-=dt;
-  if(e.scanT<=0){
+  if(e.scanT<=0&&!e.remote){                               /* a copy shreds nothing: the real one's blocks arrive as edits */
     e.scanT=0.1;
     const bx=Math.floor(e.x),bz=Math.floor(e.z),by=Math.floor(e.y);
     for(let i=0;i<40;i++){
@@ -11441,7 +11450,13 @@ const SETTINGS_P=loadSettings();   /* the title (tmBoot) waits for it: the name 
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Under new management',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Weather for everyone',lines:[
+    '<b>WEATHER FOR EVERYONE.</b> On a server, a Disaster Sphere used to be a deeply personal experience. You set off a tornado, and your friends watched trees vanish one at a time for no visible reason. Now it is a shared one.',
+    '<b>Everyone near it gets the full show.</b> Every player within 160 blocks sees the same disaster: its countdown, its wind, and for a tornado the funnel itself, wandering exactly where the real one goes and pulling them in just as hard.',
+    '<b>It burns everybody.</b> A volcano’s lava bombs now burn whoever they land beside, not only the player who woke it. Fire rain already fell for everyone; now so does the trouble.',
+    '<b>One storm, not five.</b> Only the starter’s game actually changes the world, so nothing gets flooded, built or shredded twice. Walk out of range, or have the starter leave, and the storm quietly passes for you. The Eternal Snail, on the other hand, remains strictly personal: everyone gets their own.',
+  ]},
+ {v:'6.71',label:'DingleCraft Multiplayer 2.0',title:'Under new management',lines:[
     '<b>UNDER NEW MANAGEMENT.</b> On a server, every player who walked up to a Nether fortress used to get a private Infernis of their own. Two friends, two bosses, one keep: a very crowded throne room that only each of you could see. The fortresses have consolidated.',
     '<b>One boss for everyone.</b> Where the server runs the Nether and the Aether, its own game now raises each fortress and shrine: one Infernis or Valkyra, with its guards, that every player sees and fights together. Kill it and it stays dead for everybody, as before.',
     '<b>And their treasure.</b> Fortress and shrine chests are now filled by the server too, like the dungeon and vault chests in 6.69 (which, it turns out, were not the only generated chests after all: these were the rest).',
@@ -17624,7 +17639,7 @@ const NET={on:false,st:'off',ws:null,id:0,name:'',server:'',pvp:true,ap:false,pe
 
 /* everything the suites reach, spread into window.__vox by src/boot/export_boot.js */
 
-const NTEX={NET,NT_PROTO,ntTagAlpha,ntTagSeen,ntTagTick,ntCrit,ntSaveSig,ntSaveWatch,ntBye,NT_PORT,ntUrl,ntConnect,ntLeave,ntDown,ntMsg,ntSend,ntEnter,ntEdit,ntFlush,ntApplyEdit,ntApplyBE,ntHostArea,ntBeScan,ntBeSig,
+const NTEX={NET,NT_PROTO,ntTagAlpha,ntTagSeen,ntTagTick,ntCrit,ntSaveSig,ntSaveWatch,ntBye,NT_PORT,ntUrl,ntConnect,ntLeave,ntDown,ntMsg,ntSend,ntEnter,ntEdit,ntFlush,ntApplyEdit,ntApplyBE,ntHostArea,ntDisOut,ntDisIn,ntDisWatch,ntBeScan,ntBeSig,
   ntSave,ntPoseNow,ntFrame,ntPeerAdd,ntPeerDel,ntPeersTick,ntMelee,ntTabRows,ntOpenMenu,ntHash,ntHostHere,ntDropSpawned,ntDropTake,ntDropsScan,ntDropIn,ntDropGone,ntDropTook,
   ntCmd,ntSleep,ntBeAsk,ntLockMsg,ntLockTick,ntGuard,ntSaveSoon,ntSimHere,ntShot,ntMobShared,ntMobsTick,ntMobsIn,ntMobsGone,ntMobTaken,ntMobHurt,ntMobHit,ntMobPup,ntBoom,ntBoomIn,
   ntRetry,ntRetryStop,ntPing,ntMobAdopt,ntPeerArmor,ntPeerRide,ntMobState,ntMobTwin,
@@ -17766,6 +17781,7 @@ function ntMsg(m){
     case 'fire':if(NET.on&&!NET.host)ntFireIn(m);return;
     case 'ign':if(NET.host&&Array.isArray(m.c))for(const c of m.c)if(Array.isArray(c))igniteAt(c[0]|0,c[1]|0,c[2]|0);return;   /* only the server's game is sent these */
     case 'fx':if(NET.on)ntFxIn(m);return;
+    case 'dis':if(NET.on)ntDisIn(m);return;
     case 'clock':if(NET.host)catchClockIn(m.v,m.max);return;   /* 6.50: only the server's game is sent these */
     case 'fxgone':if(NET.on)ntFxGone(m);return;
     case 'vehs':if(NET.on)ntVehsIn(m);return;
@@ -18256,7 +18272,7 @@ function ntFrame(dt){
   /* a jump in the clock that the server did not send (a bed, the debug menu) is this player's doing: tell everyone */
   if(Math.abs(timeOfDay-NET.tPrev)>0.01)ntSend({t:'time',v:((timeOfDay%1)+1)%1});
   NET.tPrev=timeOfDay;
-  if(!NET.host){ntMobsTick(dt);ntFxTick();ntVehTick();}
+  if(!NET.host){ntMobsTick(dt);ntFxTick();ntVehTick();ntDisOut();}
   ntPeersTick(dt);
 }
 /* ---- PART 58: n5_players.js ---- */
@@ -19254,6 +19270,11 @@ function ntFxPup(e,dt){
       else{e.x=nx;e.y=ny;e.z=nz;}
     }else{
       moveBody(e,e.vx*dt,e.vy*dt,e.vz*dt,false);
+      if(k==='lavab'&&e.onGround){                         /* 6.72: another player's volcano: its bombs still burn whoever they land beside here (the lava they leave arrives as an edit) */
+        burstParticles(e.x,e.y+0.5,e.z,B.LAVA,10,0.8);playS('sizzle');
+        if(P&&!P.dead&&Math.hypot(P.x-e.x,P.y-e.y,P.z-e.z)<4)damagePlayer(6);
+        NET.fx.delete(e.fxid);removeEnt(e);return;
+      }
       if(e.onGround){e.vx*=Math.exp(-dt*6);e.vz*=Math.exp(-dt*6);}
     }
   }
@@ -19302,6 +19323,53 @@ function ntHostBeScan(){
     if(!first)ntSend({t:'be',k,v:{...b,ct:+CATCH.clock.toFixed(2)}});
   }
   for(const k of NET.beS.keys())if(!blockEnts.has(k))NET.beS.delete(k);
+}
+
+/* ----- disasters (6.72) ----- */
+/* A disaster runs in the game of the player who started it; its blocks travel as their edits. The players near it watch
+   the same one: twice a second the starter's game says what is raging, where, how long it has run and where its tornado
+   is ({t:'dis'}, and k:'' once it is over), and the watchers' games show its timer and wind, follow its tornado with a copy
+   that pulls them in as the real one does (and shreds nothing), and let its lava bombs burn them (ntFxPup). */
+const NT_DIS={tornado:180,tsunami:90,volcano:182.5,fire:180};
+/* from ntFrame: this game's own disaster, as the others hear of it */
+function ntDisOut(){
+  if(DIS.kind&&!DIS.remote){
+    if(NET.acc-(NET.disT||0)<0.5)return;
+    NET.disT=NET.acc;NET.disOn=true;
+    const m={t:'dis',k:DIS.kind,x:DIS.cx,z:DIS.cz,gy:DIS.gy,at:+DIS.t.toFixed(1)},te=DIS.data&&DIS.data.te;
+    if(te&&!te.dead)m.tw=[+te.x.toFixed(1),+te.z.toFixed(1)];
+    ntSend(m);
+  }else if(NET.disOn){NET.disOn=false;NET.disT=0;ntSend({t:'dis',k:''});}
+}
+/* {t:'dis'}: another player's disaster, near here */
+function ntDisIn(m){
+  if(!playing||!P||NET.host)return;
+  if(DIS.kind&&!DIS.remote)return;                         /* this game's own disaster comes first */
+  const k=typeof m.k==='string'?m.k:'';
+  if(!k){if(DIS.remote&&DIS.from===m.from)endDisaster(false);return;}
+  if(!NT_DIS[k])return;
+  if(!DIS.remote||DIS.kind!==k||DIS.from!==m.from){
+    if(DIS.kind)endDisaster(true);
+    DIS.kind=k;DIS.remote=true;DIS.from=m.from;DIS.dur=NT_DIS[k];
+    DIS.cx=Math.floor(+m.x||0);DIS.cz=Math.floor(+m.z||0);DIS.gy=typeof m.gy==='number'?m.gy:heightAt(DIS.cx,DIS.cz);
+    DIS.data={};
+    if(k==='tornado'){const s=Array.isArray(m.tw)?m.tw:[DIS.cx,DIS.cz],te=mkTwister(+s[0]||DIS.cx,DIS.gy,+s[1]||DIS.cz);te.remote=true;DIS.data.te=te;}
+    showToast(ntShown(m.name||'Someone')+(k==='tornado'?' set loose a tornado!':k==='tsunami'?' raised the sea!':k==='volcano'?' woke a volcano!':' set the sky on fire!'));
+    playS('dsph');
+  }
+  DIS.t=Math.max(0,+m.at||0);DIS.seen=NET.acc;
+  const te=DIS.data&&DIS.data.te;
+  if(te&&Array.isArray(m.tw)){te.tx=+m.tw[0]||te.x;te.tz=+m.tw[1]||te.z;}
+}
+/* the updateDisaster hook: a watched disaster's timer, wind and fires; it ends with its own end, at its time, or quietly
+   when its player has not been heard of for 3 s (gone, or out of range) */
+function ntDisWatch(dt){
+  if(dt>0)DIS.t+=dt;
+  if(NET.acc-(DIS.seen||0)>3||DIS.t>=DIS.dur){endDisaster(DIS.t<DIS.dur);return;}
+  const k=DIS.kind,left=DIS.dur-DIS.t;
+  if(k==='volcano'&&DIS.t<62.5){setWind(0.15);disHud('VOLCANO \u2014 eruption in '+fmtT(Math.ceil(62.5-DIS.t)));}
+  else{setWind(k==='tornado'?0.85:k==='tsunami'?0.3:k==='volcano'?0.4:0.3);disHud(DISNAME[k]+' \u2014 '+fmtT(left));}
+  if(dt>0)updateFires(dt);
 }
 
 /* ----- what you ride ----- */

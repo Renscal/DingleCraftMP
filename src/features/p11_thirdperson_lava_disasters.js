@@ -114,15 +114,7 @@ function startDisaster(kind,px,pz){
   playS('dsph');
   if(kind==='tornado'){
     DIS.dur=180;
-    const G=new THREE.Group(),mats=[];
-    for(let i=0;i<12;i++){
-      const r=0.5+i*0.34,m=new THREE.Mesh(new THREE.BoxGeometry(r*2,0.8,r*2),
-        new THREE.MeshLambertMaterial({color:0x4a4650,transparent:true,opacity:0.55}));
-      m.position.y=i*0.85+0.4;m.rotation.y=i*0.7;G.add(m);mats.push(m);
-    }
-    scene.add(G);
-    const te={t:'twister',x:px,y:DIS.gy,z:pz,vx:0,vz:0,wT:3,tx:px,tz:pz,scanT:0,mesh:G,parts:mats,deb:0};
-    entities.push(te);
+    const te=mkTwister(px,DIS.gy,pz);
     DIS.data={te};
     showToast('A tornado touches down!');
   }else if(kind==='tsunami'){
@@ -157,6 +149,19 @@ function startDisaster(kind,px,pz){
     showToast('The sky burns — fire rain!');
   }
 }
+/* the tornado itself: the funnel and its entity (6.72: also a copy following another player's, PART 58) */
+function mkTwister(px,py,pz){
+  const G=new THREE.Group(),mats=[];
+  for(let i=0;i<12;i++){
+    const r=0.5+i*0.34,m=new THREE.Mesh(new THREE.BoxGeometry(r*2,0.8,r*2),
+      new THREE.MeshLambertMaterial({color:0x4a4650,transparent:true,opacity:0.55}));
+    m.position.y=i*0.85+0.4;m.rotation.y=i*0.7;G.add(m);mats.push(m);
+  }
+  scene.add(G);
+  const te={t:'twister',x:px,y:py,z:pz,vx:0,vz:0,wT:3,tx:px,tz:pz,scanT:0,mesh:G,parts:mats,deb:0};
+  entities.push(te);
+  return te;
+}
 function endDisaster(force){
   if(!DIS.kind)return;
   const k=DIS.kind,d=DIS.data;
@@ -172,15 +177,16 @@ function endDisaster(force){
     fires.clear();
     for(const e of entities)if(e.t==='fireb'&&!e.dead)removeEnt(e);
   }
-  DIS.kind=null;DIS.data=null;
+  DIS.kind=null;DIS.data=null;DIS.remote=false;
   setWind(0);disHud('');
   if(!force)showToast(DISNAME[k]+' has passed.');
 }
 function disasterHardReset(){
-  DIS.kind=null;DIS.data=null;fires.clear();setWind(0);disHud('');
+  DIS.kind=null;DIS.data=null;DIS.remote=false;fires.clear();setWind(0);disHud('');
 }
 function updateDisaster(dt){
   if(!playing||!DIS.kind){setWind(0);return;}
+  if(DIS.remote){ntDisWatch(dt);return;}                   /* PART 58 (6.72): another player's disaster, watched: its blocks arrive as their edits */
   if(dt>0)DIS.t+=dt;
   const d=DIS.data,left=DIS.dur-DIS.t;
   if(DIS.kind==='tornado'){
@@ -307,14 +313,17 @@ function updateDisaster(dt){
 }
 /* tornado pieces */
 function updateTwister(e,dt){
-  e.wT-=dt;
-  if(e.wT<=0){
-    e.wT=2.5+Math.random()*2.5;
-    const a=Math.random()*6.28,r=Math.random()*50;
-    e.tx=DIS.cx+Math.sin(a)*r;e.tz=DIS.cz+Math.cos(a)*r;
+  if(!e.remote){                                           /* 6.72: a copy (e.remote, PART 58) goes where the real one was last seen */
+    e.wT-=dt;
+    if(e.wT<=0){
+      e.wT=2.5+Math.random()*2.5;
+      const a=Math.random()*6.28,r=Math.random()*50;
+      e.tx=DIS.cx+Math.sin(a)*r;e.tz=DIS.cz+Math.cos(a)*r;
+    }
   }
   const dx=e.tx-e.x,dz=e.tz-e.z,dd=Math.hypot(dx,dz)||1;
-  e.x+=dx/dd*3.4*dt;e.z+=dz/dd*3.4*dt;
+  if(e.remote){const st=Math.min(dd,Math.max(3.4,dd*2)*dt);e.x+=dx/dd*st;e.z+=dz/dd*st;}
+  else{e.x+=dx/dd*3.4*dt;e.z+=dz/dd*3.4*dt;}
   if(((e.x*7)|0)!==e._lx||((e.z*7)|0)!==e._lz){
     e._lx=(e.x*7)|0;e._lz=(e.z*7)|0;
     e.y=heightAt(Math.floor(e.x),Math.floor(e.z));
@@ -323,7 +332,7 @@ function updateTwister(e,dt){
   e.mesh.rotation.y+=dt*7;
   /* shred trees */
   e.scanT-=dt;
-  if(e.scanT<=0){
+  if(e.scanT<=0&&!e.remote){                               /* a copy shreds nothing: the real one's blocks arrive as edits */
     e.scanT=0.1;
     const bx=Math.floor(e.x),bz=Math.floor(e.z),by=Math.floor(e.y);
     for(let i=0;i<40;i++){
