@@ -47,8 +47,8 @@ boot.run(async()=>{
   ok('the source data is frozen all the way down, the credit is Dan Dingle and the rate is 1 chest in 40',Object.isFrozen(F)&&F.every(f=>Object.isFrozen(f)&&
     (typeof f.d==='string'||(Object.isFrozen(f.d)&&Object.isFrozen(f.d.tr)&&f.d.tr.every(t=>Object.isFrozen(t)))))&&V.CRFC.BY==='Dan Dingle'&&V.CRFC.RATE===40);
   {const p16=boot.readSrc('features/p16_xp_enchanting_dungeon.js'),a=p16.indexOf('function lootFill('),b=p16.indexOf('\nfunction ',a+1),lf=a>=0&&b>a?p16.slice(a,b):'';
-   ok('lootFill calls crFoundRoll(be,x,y,z) once, as its last statement (after the gun roll, which may overwrite any slot)',
-     p16.split('crFoundRoll(').length===2&&/\n  crFoundRoll\(be,x,y,z\);[^\n]*\n\}$/.test(lf));
+   ok('lootFill calls crFoundRoll(be,x,y,z) once, as its last statement (after the gun roll, which may overwrite any slot; 6.69: only the server\'s game sending the finished chest may follow it)',
+     p16.split('crFoundRoll(').length===2&&/\n  crFoundRoll\(be,x,y,z\);[^\n]*\n(  if\(NET\.host\)ntSend\(\{t:'be',k:bkey\(x,y,z\),v:be\}\);[^\n]*\n)?\}$/.test(lf));
    const ord=boot.readSrc('ORDER.txt').split('\n').map(s=>s.trim()).filter(s=>s&&s[0]!=='#'),i=ord.indexOf('creativity/c3_found.js');
    ok('src/ORDER.txt lists creativity/c3_found.js once, right after the last creativity file (before PART 55)',
      i>0&&ord.lastIndexOf('creativity/c3_found.js')===i&&ord[i-1]==='creativity/c2_ui.js'&&ord[i+1]==='purgatory/p0_contract.js');}

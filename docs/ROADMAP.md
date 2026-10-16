@@ -158,7 +158,10 @@ Smaller, independent, any order.
   through on the server's game, saved with `ci`), its guards and its chests for everyone; players' games skip them.
 - **Structure chests**: done. 6.69 the buried dungeons and spawner vaults, 6.71 the Nether fortresses and Aether
   shrines: on a dimension the server runs, its game processes them (`ntHostTick`) and players' games do not.
-- **Creativity works** are saved per player; a work handed to another player does not show. Needs world-wide numbering.
+- **Creativity works**: done in 6.73. The world keeps them (`crw` in `data/works.json`, numbered once for everyone:
+  each game holds three numbers ahead of need, `crres`), every change travels (`crw`), easels, record players, jukeboxes
+  and paintings are shared block entities, and the first 6.73 start moves each player's own works into the world
+  (`migrateWorks`; tests/net/n_works.js).
 - **Disasters**: done in 6.72 (the starter's game runs one and announces it, `dis`; the players within 160 blocks watch
   the same one: timer, wind, a tornado copy that pulls them in, lava bombs that burn them; blocks travel as the starter's
   edits). **The Snail** stays each player's own by design: everyone has their own, saved with them (`snl`).

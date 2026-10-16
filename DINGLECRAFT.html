@@ -1042,7 +1042,7 @@ THE SOFTWARE.
    ===================================================================== */
 'use strict';
 
-const GAME_VERSION = '6.72';
+const GAME_VERSION = '6.73';
 const RELEASE_LABEL = 'DingleCraft Multiplayer 2.0';   /* the public name of this game version (docs/RELEASING.md): GAME_VERSION stays the internal, monotonic number */
 var HIT_HOW=null,EXPL_BY=null;  /* damage attribution (PART 53) */
 var TP={id:'og',q:-1,qr:1,hr:false,busy:false,want:null,shadow:false,mods:[],live:[],og:null,ogR:null,ogF:null,ev:{},warm:null,devTexBase:null};  /* texture packs (PART 54) */
@@ -11450,7 +11450,14 @@ const SETTINGS_P=loadSettings();   /* the title (tmBoot) waits for it: the name 
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Weather for everyone',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Gallery opening',lines:[
+    '<b>GALLERY OPENING.</b> On a server, your paintings and songs used to be strictly private. Hang a masterpiece on the wall and your friends saw an empty frame. Hand someone your best song and it played one of theirs instead. Every artist was alone. Not any more.',
+    '<b>One gallery per world.</b> Every painting and music disc on a server now belongs to the world, numbered once for everybody. Paintings on the walls, canvases on easels, songs on record players and discs in jukeboxes look and sound the same for everyone. Give a painting away and it arrives as itself.',
+    '<b>Signed by the artist.</b> A finished work carries the name of the player who finished it, checked by the server, and once finished nobody (not even you) can paint over it.',
+    '<b>Your old works come along.</b> The first time a server starts on this version it moves everyone’s existing paintings and songs into the world’s gallery and renumbers the ones they are carrying, automatically. A work left in a chest follows its owner when the server can tell whose it is; if two players had a work with the same old number it cannot, and that one shows as a Lost Work rather than as somebody else’s painting.',
+    '<b>Single player is unchanged.</b> (Servers need this version: older games are asked to update.)',
+  ]},
+ {v:'6.72',label:'DingleCraft Multiplayer 2.0',title:'Weather for everyone',lines:[
     '<b>WEATHER FOR EVERYONE.</b> On a server, a Disaster Sphere used to be a deeply personal experience. You set off a tornado, and your friends watched trees vanish one at a time for no visible reason. Now it is a shared one.',
     '<b>Everyone near it gets the full show.</b> Every player within 160 blocks sees the same disaster: its countdown, its wind, and for a tornado the funnel itself, wandering exactly where the real one goes and pulling them in just as hard.',
     '<b>It burns everybody.</b> A volcano’s lava bombs now burn whoever they land beside, not only the player who woke it. Fire rain already fell for everyone; now so does the trouble.',
@@ -17598,7 +17605,7 @@ function lightTick(){
 /* (permessage-deflate); nothing here knows about it.                    */
 /* NT_PROTO must equal PROTO in the server (tests/net/n_static.js).      */
 /* ===================================================================== */
-const NT_PROTO=6,NT_PORT=40162;
+const NT_PROTO=7,NT_PORT=40162;
 /* All multiplayer state, in one object:
      on      true while playing on a server (every core hook checks this)
      st      'off' | 'connecting' | 'on'          ws    the WebSocket
@@ -17634,12 +17641,12 @@ const NET={on:false,st:'off',ws:null,id:0,name:'',server:'',pvp:true,ap:false,pe
   cred:null,acct:null,acctPass:'',loginWait:false,skinOwn:false,retryN:0,retryH:0,pingT:0,pingN:0,pingAt:0,ms:0,rxAt:0,act:false,
   hosted:false,host:false,hp0:null,hpl:[],hrr:0,hsnT:0,hchT:0,
   fx:new Map(),fseq:0,vehs:new Map(),vseq:0,vehT:0,ignQ:[],fbT:0,apd:false,
-  wd:{},wdT:0,mktT:0,hdims:[],hprim:false,
+  wd:{},wdT:0,mktT:0,hdims:[],hprim:false,crRes:[],crIn:false,crDue:new Set(),crT:0,crPend:new Map(),crHook:false,
   served:typeof window!=='undefined'&&window.DC_SERVER===1};   /* this page was handed out by a server (it sets window.DC_SERVER before the game loads): no worlds of its own */   /* hdims: the dimensions the server runs a game for; hprim: this host also cooks the furnaces and runs the market */   /* na_data.js: each world list as last agreed with the server, the timers for them and for the market */   /* ignQ: cells to light (to the server's game) or lit (to the players); fbT: the host's furnace report timer */   /* n9_ents.js: flying things and vehicles by id, their counters, the vehicle timer */
 
 /* everything the suites reach, spread into window.__vox by src/boot/export_boot.js */
 
-const NTEX={NET,NT_PROTO,ntTagAlpha,ntTagSeen,ntTagTick,ntCrit,ntSaveSig,ntSaveWatch,ntBye,NT_PORT,ntUrl,ntConnect,ntLeave,ntDown,ntMsg,ntSend,ntEnter,ntEdit,ntFlush,ntApplyEdit,ntApplyBE,ntHostArea,ntDisOut,ntDisIn,ntDisWatch,ntBeScan,ntBeSig,
+const NTEX={NET,NT_PROTO,ntTagAlpha,ntTagSeen,ntTagTick,ntCrit,ntSaveSig,ntSaveWatch,ntBye,NT_PORT,ntUrl,ntConnect,ntLeave,ntDown,ntMsg,ntSend,ntEnter,ntEdit,ntFlush,ntApplyEdit,ntApplyBE,ntHostArea,ntCrTake,ntCrWork,ntCrIn,ntCrFlush,ntCrHook,ntDisOut,ntDisIn,ntDisWatch,ntBeScan,ntBeSig,
   ntSave,ntPoseNow,ntFrame,ntPeerAdd,ntPeerDel,ntPeersTick,ntMelee,ntTabRows,ntOpenMenu,ntHash,ntHostHere,ntDropSpawned,ntDropTake,ntDropsScan,ntDropIn,ntDropGone,ntDropTook,
   ntCmd,ntSleep,ntBeAsk,ntLockMsg,ntLockTick,ntGuard,ntSaveSoon,ntSimHere,ntShot,ntMobShared,ntMobsTick,ntMobsIn,ntMobsGone,ntMobTaken,ntMobHurt,ntMobHit,ntMobPup,ntBoom,ntBoomIn,
   ntRetry,ntRetryStop,ntPing,ntMobAdopt,ntPeerArmor,ntPeerRide,ntMobState,ntMobTwin,
@@ -17741,7 +17748,7 @@ function ntLeave(){
   if(!NET.on&&NET.st==='off'&&!NET.ws)return;
   const ws=NET.ws;NET.ws=null;
   NET.on=false;NET.st='off';NET.pend=null;NET.q.length=0;NET.beS.clear();NET.drops.clear();NET.hosted=false;NET.hdims=[];NET.fx.clear();NET.vehs.clear();
-  NET.mobs.clear();NET.lockK=null;NET.lockWant=null;NET.saveT=-1;NET.sigS=undefined;NET.crS='';NET.sigT=0;NET.op=false;NET.prot=0;NET.spawn=null;
+  NET.mobs.clear();NET.lockK=null;NET.lockWant=null;NET.saveT=-1;NET.sigS=undefined;NET.crRes=[];NET.crDue.clear();NET.crPend.clear();NET.sigT=0;NET.op=false;NET.prot=0;NET.spawn=null;
   ntClearPeers();
   if(ws){try{ws.onclose=null;ws.close();}catch(e){}}
   ntLoginHide();if(NET.skinOwn){NET.skinOwn=false;skinBoot();}   /* 6.49: back to this browser's own skin */
@@ -17782,6 +17789,8 @@ function ntMsg(m){
     case 'ign':if(NET.host&&Array.isArray(m.c))for(const c of m.c)if(Array.isArray(c))igniteAt(c[0]|0,c[1]|0,c[2]|0);return;   /* only the server's game is sent these */
     case 'fx':if(NET.on)ntFxIn(m);return;
     case 'dis':if(NET.on)ntDisIn(m);return;
+    case 'crw':ntCrIn(m);return;                           /* 6.73: a work of this world, new or changed (also while joining) */
+    case 'crres':if(Array.isArray(m.n))NET.crRes=m.n.filter(v=>Number.isInteger(v)&&v>0&&v<=9999).slice(0,8);return;
     case 'clock':if(NET.host)catchClockIn(m.v,m.max);return;   /* 6.50: only the server's game is sent these */
     case 'fxgone':if(NET.on)ntFxGone(m);return;
     case 'vehs':if(NET.on)ntVehsIn(m);return;
@@ -17886,8 +17895,12 @@ function ntEnter(){
     if(!pl){resetWorld();SEED=w.seed|0;const ws=NET.spawn,sp=ws?[ws.x,ws.y,ws.z]:findSpawn();pl={x:sp[0],y:sp[1],z:sp[2],spawn:sp};if(!ws)found=sp;}
     const d={...w,f:w.f||SAVE_FORMAT,edits:W.edits,be:W.be,player:pl,dim:pl.dim||'over',ents:[]};
     if('mp' in pl){d.mp=pl.mp;d.stash=pl.stash;}else{delete d.mp;delete d.stash;}   /* purgatory progress is per player */
-    /* ...and so are the Snail, Malgorath, the old demon and this player's own Creativity works (6.16: they used to be lost on leaving) */
-    for(const k of ['snl','mg','demon','cr']){if(pl[k]!=null)d[k]=pl[k];else delete d[k];}
+    /* ...and so are the Snail, Malgorath and the old demon */
+    for(const k of ['snl','mg','demon']){if(pl[k]!=null)d[k]=pl[k];else delete d[k];}
+    /* 6.73: the Creativity works are the world's: every painting and song on this server, one numbering (keep: none is thrown away
+       for not being in this player's things) */
+    d.cr={v:1,n:1,w:w.crw&&typeof w.crw==='object'?w.crw:{},keep:1};delete d.crw;
+    ntCrHook();
     applySave(d);
   }catch(e){
     if(typeof console!=='undefined')console.error('[net]',e);
@@ -17967,8 +17980,11 @@ function ntApplyEdit(k,lk,id,raw,by){
       for(let i=n;i<NET.q.length;i++)if(NET.q[i][0]===k&&NET.q[i][1]===lk&&NET.q[i][2]===id){NET.q.splice(i,1);break;}
       return;                                              /* whatever the cell holds now is what this game made of it (sand set in mid-air has already left) */
     }else{
+      const ck=kd+x+','+y+','+z,cb=typeof CR_BET!=='undefined'?blockEnts.get(ck):null;
+      if(cb&&CR_BET[cb.t]&&CR_BET[cb.t]!==bid)ntCrDropBE(ck,cb);   /* 6.73: someone else broke it: their game dropped the work; here it just goes */
       NET.ap=true;
       try{setBlock(x,y,z,bid,bmt);}finally{NET.ap=false;}
+      if(NET.crPend.size&&NET.crPend.has(ck))ntCrPendCheck(ck);
     }
     if(ch.bl[bidx(lx,y,lz)]===bid&&ch.mt[bidx(lx,y,lz)]===bmt)return;   /* a protected cell refused it: record it below anyway */
   }
@@ -17986,10 +18002,11 @@ function ntApplyEdit(k,lk,id,raw,by){
 function ntBeSig(b){
   if(!b)return '';
   if(b.t==='furnace')return JSON.stringify([b.in,b.fuel,b.out]);
+  if(b.t==='crjuke')return JSON.stringify({...b,s:0});    /* 6.73: when a jukebox started is each game's own clock */
   return JSON.stringify(b);
 }
 /* which block entities travel: everything except Creativity works (their data lives per player) and purgatory stashes */
-function ntBeShared(b){return !!b&&typeof b.t==='string'&&!(typeof CR_BET!=='undefined'&&CR_BET[b.t])&&b.t!=='stash';}
+function ntBeShared(b){return !!b&&typeof b.t==='string'&&b.t!=='stash';}   /* 6.73: Creativity's easels, record players, jukeboxes and paintings too (their works are the world's) */
 /* once a second: send every block entity whose signature changed, and a removal for every one that is gone */
 function ntBeScan(){
   for(const [k,b] of blockEnts){
@@ -18003,8 +18020,9 @@ function ntBeScan(){
 /* a block entity from another player (v null = removed) */
 function ntApplyBE(k,v){
   if(typeof k!=='string')return;
-  if(v==null){blockEnts.delete(k);NET.beS.delete(k);if(MODAL.kind&&MODAL.bek===k)closeModal(true);return;}
+  if(v==null){const o=blockEnts.get(k);if(o&&typeof CR_BET!=='undefined'&&CR_BET[o.t]){ntCrDropBE(k,o);return;}blockEnts.delete(k);NET.beS.delete(k);if(MODAL.kind&&MODAL.bek===k)closeModal(true);return;}
   if(!ntBeShared(v))return;
+  if(typeof CR_BET!=='undefined'&&CR_BET[v.t]){ntCrApplyBE(k,v);return;}   /* 6.73 */
   if(v.t==='furnace'&&'ct' in v){                          /* 6.68: a furnace the server's game sent, stamped with the world clock: cooked on to now (at most 4 s: an older stamp is a stored copy, not a live one) */
     const d=typeof v.ct==='number'?CATCH.clock-v.ct:-1;
     delete v.ct;
@@ -18164,12 +18182,9 @@ function ntDropsScan(){
 /* ----- this player: save, pose, chat, death ----- */
 function ntSave(quiet){
   const s=snapshot('',true);         /* the server keeps the blocks, chests and entities itself */
-  const pl={...s.player,dim:s.dim,mp:s.mp,stash:s.stash,snl:s.snl,mg:s.mg,demon:s.demon};   /* the last three, and cr: this player's own, see na_data.js */
-  /* the Creativity works can be most of a megabyte: sent when they change, and the server keeps the last ones it was sent */
-  const crS=s.cr===undefined?'':JSON.stringify(s.cr);
-  if(crS!==NET.crS)pl.cr=s.cr;
+  const pl={...s.player,dim:s.dim,mp:s.mp,stash:s.stash,snl:s.snl,mg:s.mg,demon:s.demon};   /* the last three: this player's own, see na_data.js (6.73: the Creativity works are the world's, sent as they change: ntCrWork) */
   const ok=ntSend({t:'save',player:pl});
-  if(ok){NET.crS=crS;NET.sigS=ntSaveSig();NET.posS=ntSavePos();NET.posT=NET.acc;}
+  if(ok){NET.sigS=ntSaveSig();NET.posS=ntSavePos();NET.posT=NET.acc;}
   if(!quiet)showToast(ok?'Saved to the server':'Not connected');
   return ok;
 }
@@ -18273,6 +18288,7 @@ function ntFrame(dt){
   if(Math.abs(timeOfDay-NET.tPrev)>0.01)ntSend({t:'time',v:((timeOfDay%1)+1)%1});
   NET.tPrev=timeOfDay;
   if(!NET.host){ntMobsTick(dt);ntFxTick();ntVehTick();ntDisOut();}
+  ntCrFlush();
   ntPeersTick(dt);
 }
 /* ---- PART 58: n5_players.js ---- */
@@ -18991,6 +19007,8 @@ function ntHostStart(w,mobs,vehs,dim,primary,simDist){
   NET.hp0=P;NET.hpl=[];NET.hrr=0;NET.hsnT=0;NET.hchT=0;NET.hprim=primary!==false;NET.hdims=[];
   NET.fx.clear();NET.fseq=0;NET.vehs.clear();NET.vseq=0;NET.vehT=0;
   WORLD.name='';enterGame();
+  if(typeof crLoad==='function'&&w.crw&&typeof w.crw==='object'){crLoad({cr:{v:1,n:1,w:w.crw,keep:1}});}   /* 6.73: the works (for the found works this game mints) */
+  ntCrHook();
   ntWdReset();NET.mktT=0;
   let n=0;
   for(const o of (Array.isArray(mobs)?mobs:[]))if(ntHostRestore(o))n++;
@@ -19164,6 +19182,7 @@ function ntHostTick(dt){
   if(NET.peers.size&&NET.hprim){updateStocks(dt);ntHostMkt();}   /* one market for everyone */
   ntWdTick();
   if(NET.peers.size&&NET.hprim){furnaceTick(dt);ntHostBeScan();}   /* furnaces cook wherever they stand, as long as anyone is playing (one game does: the Overworld's) */
+  ntCrFlush();
   ntHostMobsOut();
   ntHostVehsOut();
   ntFxTick();
@@ -19323,6 +19342,81 @@ function ntHostBeScan(){
     if(!first)ntSend({t:'be',k,v:{...b,ct:+CATCH.clock.toFixed(2)}});
   }
   for(const k of NET.beS.keys())if(!blockEnts.has(k))NET.beS.delete(k);
+}
+
+/* ----- Creativity works (6.73) ----- */
+/* The works are the world's: the server keeps the registry (data/works.json), numbers every work once for the whole world,
+   and hands each game a few numbers ahead of need (crres), so starting a canvas never waits. A game sends every new,
+   changed, finished or discarded work (ntCrWork, from Creativity's own onWork registry; edits at most once a second) and
+   takes in everyone else's (ntCrIn). The block entities that show them (easels, record players, jukeboxes, paintings) are
+   shared like chests; one broken in another game goes here without a second copy of its work (ntCrDropBE), and one that
+   arrives before its block waits for it (ntCrPendCheck), so Creativity never thinks it was knocked down. */
+function ntCrHook(){if(!NET.crHook&&typeof CRREG!=='undefined'){NET.crHook=true;CRREG.onWork.push(ntCrWork);}}
+/* the crNew hook: the next number this game was handed (0: none yet; the server sends more as these are used) */
+function ntCrTake(){
+  const n=NET.crRes.shift();
+  if(n>0&&n<=9999&&!(typeof CRW!=='undefined'&&CRW[n]))return n;
+  if(typeof crToast==='function')crToast('One moment: the server is still fetching a fresh canvas.');
+  return 0;
+}
+/* a record as it travels */
+function ntCrPub(r){const o={k:r.k,st:r.st,t:r.t,by:r.by,d:r.d,u:r.u|0};if(r.k==='art'){o.w=r.w;o.h=r.h;}return o;}
+/* Creativity's onWork: this game made, changed, finished or threw away work n */
+function ntCrWork(n,r,op){
+  if(!NET.on||NET.crIn||op==='load')return;
+  if(op==='edit'){NET.crDue.add(n);return;}
+  NET.crDue.delete(n);
+  ntSend({t:'crw',n,r:op==='del'?null:ntCrPub(r)});
+}
+/* from ntFrame and the server's game: the works edited since last time, at most once a second */
+function ntCrFlush(){
+  if(!NET.crDue.size||NET.acc-NET.crT<1)return;
+  NET.crT=NET.acc;
+  for(const n of NET.crDue){const r=typeof CRW!=='undefined'?CRW[n]:null;if(r)ntSend({t:'crw',n,r:ntCrPub(r)});}
+  NET.crDue.clear();
+}
+/* {t:'crw'}: a work of this world, new or changed (r null: thrown away) */
+function ntCrIn(m){
+  if(typeof CRW==='undefined'||!Number.isInteger(m.n)||!(m.n>0&&m.n<=9999))return;
+  const n=m.n,r=m.r;
+  NET.crIn=true;
+  try{
+    if(r==null){const o=CRW[n];if(!o)return;delete CRW[n];crSz(n);crDefSync(n);crEmit('onWork',n,o,'del');return;}
+    if(typeof r!=='object'||(r.k!=='art'&&r.k!=='song'))return;
+    const was=!!CRW[n];
+    CRW[n]={k:r.k,st:r.st==='done'?'done':'wip',t:crTitle(r.t),by:crTitle(r.by),d:r.d==null?null:r.d,u:r.u|0,...(r.k==='art'?{w:r.w|0,h:r.h|0}:{})};
+    CRLOST.delete(n);crSz(n);crDefSync(n);
+    crEmit('onWork',n,CRW[n],was?'edit':'new');
+  }finally{NET.crIn=false;}
+}
+/* someone else's easel, record player, jukebox or painting cell */
+function ntCrApplyBE(k,v){
+  const old=blockEnts.get(k),wasId=old&&old.t===v.t?old.id:0;
+  let be=old;
+  if(old&&old.t===v.t){const s=old.s;for(const f in old)delete old[f];Object.assign(old,v);old.s=s||0;}
+  else{if(old&&CR_BET[old.t])ntCrDropBE(k,old);be=v;be.s=0;blockEnts.set(k,be);}
+  NET.beS.set(k,ntBeSig(be));
+  if(be.t==='crjuke'&&be.id!==wasId){if(wasId)crEmit('onJuke',k,be,'stop');if(be.id){be.s=CRF.clock;crEmit('onJuke',k,be,'play');}}
+  ntCrPendCheck(k);
+  const p=keyCore(k).split(',');if(keyDim(k)===DIM)markDirty(Math.floor(+p[0]/CH),Math.floor(+p[2]/CH));
+}
+/* index it for Creativity once its block is there (before that its sweep would take it for knocked down) */
+function ntCrPendCheck(k){
+  const be=blockEnts.get(k);
+  if(!be||!CR_BET[be.t]){NET.crPend.delete(k);return;}
+  const p=keyCore(k).split(',');
+  if(keyDim(k)===DIM&&getBlock(+p[0],+p[1],+p[2])===CR_BET[be.t]){NET.crPend.delete(k);if(CRBE.get(k)!==be)crIndex(k,be);}
+  else{if(CRBE.has(k))crUnindex(k);NET.crPend.set(k,be);}
+}
+/* one gone in another game (broken, or its block replaced): it goes here quietly; that game dropped its work */
+function ntCrDropBE(k,b){
+  if(b.t==='crjuke'&&b.id)crEmit('onJuke',k,b,'stop');
+  if(MODAL.kind&&MODAL.bek===k)closeModal(true);
+  if(typeof crOn!=='undefined'&&crOn&&CRF.ctx&&CRF.ctx.bek===k)crUIClose(true);
+  if(blockEnts.get(k)===b)blockEnts.delete(k);
+  if(CRBE.get(k)===b)crUnindex(k);
+  NET.crPend.delete(k);NET.beS.delete(k);
+  const p=keyCore(k).split(',');if(keyDim(k)===DIM)markDirty(Math.floor(+p[0]/CH),Math.floor(+p[2]/CH));
 }
 
 /* ----- disasters (6.72) ----- */
@@ -23915,7 +24009,8 @@ function crNew(k,init){init=init||{};
   if(k==='art'){if(!CRC.SIZES.some(s=>s[0]===init.w&&s[1]===init.h))return 0;r.w=init.w;r.h=init.h;}
   if(crDLen(r.d)>CRC.MAX_D[k]){crToast('Too much detail to save.');return 0;}
   if(crBytes()+JSON.stringify(r).length+8>CRC.MAX_BYTES){crToast('Your gallery is full (this world keeps '+(CRC.MAX_BYTES/1000)+' KB of art and music).');return 0;}
-  const n=CRN++;CRW[n]=r;crSz(n);crDefSync(n);crEmit('onWork',n,r,'new');return n;}
+  const n=NET.on?ntCrTake():CRN++;if(!n)return 0;      /* PART 58 (6.73): on a server the number is the world's, from the few it handed this game */
+  CRW[n]=r;crSz(n);crDefSync(n);crEmit('onWork',n,r,'new');return n;}
 function crSetData(n,d){const r=CRW[n];if(!r||r.st!=='wip')return false;          /* finished works are immutable */
   if(crDLen(d)>CRC.MAX_D[r.k]){crToast('Too much detail to save: undo a little.');return false;}
   const old=r.d;r.d=d;const was=CRSZ.get(n)||0;crSz(n);
@@ -24136,7 +24231,7 @@ function crLoad(d){const c=d&&d.cr;let refs=null;
   if(c&&c.w&&typeof c.w==='object'){
     let top=0;
     for(const key in c.w){const n=+key,r=c.w[key];if(!(n>0&&n<=CRC.MAXN)||!r||(r.k!=='art'&&r.k!=='song'))continue;top=Math.max(top,n);
-      if(refs&&!refs.has(crItemId(n))){CRF.gc++;continue;}
+      if(refs&&!c.keep&&!refs.has(crItemId(n))){CRF.gc++;continue;}   /* keep (6.73): a server's registry, whose works are anywhere in its world */
       CRW[n]={k:r.k,st:r.st==='done'?'done':'wip',t:crTitle(r.t),by:crTitle(r.by),d:r.d==null?null:r.d,u:r.u|0,
         ...(r.k==='art'?{w:r.w|0,h:r.h|0}:{})};crSz(n);}
     CRN=Math.max(c.n|0,top+1,1);

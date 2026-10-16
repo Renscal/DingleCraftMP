@@ -46,6 +46,8 @@ function ntHostStart(w,mobs,vehs,dim,primary,simDist){
   NET.hp0=P;NET.hpl=[];NET.hrr=0;NET.hsnT=0;NET.hchT=0;NET.hprim=primary!==false;NET.hdims=[];
   NET.fx.clear();NET.fseq=0;NET.vehs.clear();NET.vseq=0;NET.vehT=0;
   WORLD.name='';enterGame();
+  if(typeof crLoad==='function'&&w.crw&&typeof w.crw==='object'){crLoad({cr:{v:1,n:1,w:w.crw,keep:1}});}   /* 6.73: the works (for the found works this game mints) */
+  ntCrHook();
   ntWdReset();NET.mktT=0;
   let n=0;
   for(const o of (Array.isArray(mobs)?mobs:[]))if(ntHostRestore(o))n++;
@@ -219,6 +221,7 @@ function ntHostTick(dt){
   if(NET.peers.size&&NET.hprim){updateStocks(dt);ntHostMkt();}   /* one market for everyone */
   ntWdTick();
   if(NET.peers.size&&NET.hprim){furnaceTick(dt);ntHostBeScan();}   /* furnaces cook wherever they stand, as long as anyone is playing (one game does: the Overworld's) */
+  ntCrFlush();
   ntHostMobsOut();
   ntHostVehsOut();
   ntFxTick();

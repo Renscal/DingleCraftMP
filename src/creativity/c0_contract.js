@@ -126,7 +126,8 @@ function crNew(k,init){init=init||{};
   if(k==='art'){if(!CRC.SIZES.some(s=>s[0]===init.w&&s[1]===init.h))return 0;r.w=init.w;r.h=init.h;}
   if(crDLen(r.d)>CRC.MAX_D[k]){crToast('Too much detail to save.');return 0;}
   if(crBytes()+JSON.stringify(r).length+8>CRC.MAX_BYTES){crToast('Your gallery is full (this world keeps '+(CRC.MAX_BYTES/1000)+' KB of art and music).');return 0;}
-  const n=CRN++;CRW[n]=r;crSz(n);crDefSync(n);crEmit('onWork',n,r,'new');return n;}
+  const n=NET.on?ntCrTake():CRN++;if(!n)return 0;      /* PART 58 (6.73): on a server the number is the world's, from the few it handed this game */
+  CRW[n]=r;crSz(n);crDefSync(n);crEmit('onWork',n,r,'new');return n;}
 function crSetData(n,d){const r=CRW[n];if(!r||r.st!=='wip')return false;          /* finished works are immutable */
   if(crDLen(d)>CRC.MAX_D[r.k]){crToast('Too much detail to save: undo a little.');return false;}
   const old=r.d;r.d=d;const was=CRSZ.get(n)||0;crSz(n);
@@ -347,7 +348,7 @@ function crLoad(d){const c=d&&d.cr;let refs=null;
   if(c&&c.w&&typeof c.w==='object'){
     let top=0;
     for(const key in c.w){const n=+key,r=c.w[key];if(!(n>0&&n<=CRC.MAXN)||!r||(r.k!=='art'&&r.k!=='song'))continue;top=Math.max(top,n);
-      if(refs&&!refs.has(crItemId(n))){CRF.gc++;continue;}
+      if(refs&&!c.keep&&!refs.has(crItemId(n))){CRF.gc++;continue;}   /* keep (6.73): a server's registry, whose works are anywhere in its world */
       CRW[n]={k:r.k,st:r.st==='done'?'done':'wip',t:crTitle(r.t),by:crTitle(r.by),d:r.d==null?null:r.d,u:r.u|0,
         ...(r.k==='art'?{w:r.w|0,h:r.h|0}:{})};crSz(n);}
     CRN=Math.max(c.n|0,top+1,1);

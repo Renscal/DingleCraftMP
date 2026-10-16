@@ -6,12 +6,9 @@
 /* ----- this player: save, pose, chat, death ----- */
 function ntSave(quiet){
   const s=snapshot('',true);         /* the server keeps the blocks, chests and entities itself */
-  const pl={...s.player,dim:s.dim,mp:s.mp,stash:s.stash,snl:s.snl,mg:s.mg,demon:s.demon};   /* the last three, and cr: this player's own, see na_data.js */
-  /* the Creativity works can be most of a megabyte: sent when they change, and the server keeps the last ones it was sent */
-  const crS=s.cr===undefined?'':JSON.stringify(s.cr);
-  if(crS!==NET.crS)pl.cr=s.cr;
+  const pl={...s.player,dim:s.dim,mp:s.mp,stash:s.stash,snl:s.snl,mg:s.mg,demon:s.demon};   /* the last three: this player's own, see na_data.js (6.73: the Creativity works are the world's, sent as they change: ntCrWork) */
   const ok=ntSend({t:'save',player:pl});
-  if(ok){NET.crS=crS;NET.sigS=ntSaveSig();NET.posS=ntSavePos();NET.posT=NET.acc;}
+  if(ok){NET.sigS=ntSaveSig();NET.posS=ntSavePos();NET.posT=NET.acc;}
   if(!quiet)showToast(ok?'Saved to the server':'Not connected');
   return ok;
 }
@@ -115,5 +112,6 @@ function ntFrame(dt){
   if(Math.abs(timeOfDay-NET.tPrev)>0.01)ntSend({t:'time',v:((timeOfDay%1)+1)%1});
   NET.tPrev=timeOfDay;
   if(!NET.host){ntMobsTick(dt);ntFxTick();ntVehTick();ntDisOut();}
+  ntCrFlush();
   ntPeersTick(dt);
 }

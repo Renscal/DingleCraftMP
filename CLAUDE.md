@@ -166,8 +166,8 @@ Full map: `docs/ARCHITECTURE.md` (PART-to-file table, systems index, how each up
   one saved object each (`MP`, `save.cr`, `save.mg`), written only when it differs from the default.
 - **Multiplayer** (PART 58, `src/net/`: `n0_contract` state and the map, `n1_link` connection and messages, `n2_world`
   blocks, chests and their locks, `n3_drops`, `n4_self` this player and the frame tick, `n5_players`, `n6_menu`,
-  `n7_mobs` shared mobs and explosions, `n8_host` the server's own game, `n9_ents` what flies and what you ride, `na_data` what the world remembers): 49 core
-  hooks, 40 behind `NET.on` (or `e.pup`, or `DIS.remote`) and 9 behind `NET.host`, all of which only PART 58 sets, so single player is byte-for-byte the old behaviour.
+  `n7_mobs` shared mobs and explosions, `n8_host` the server's own game, `n9_ents` what flies and what you ride, `na_data` what the world remembers): 50 core
+  hooks, 41 behind `NET.on` (or `e.pup`, or `DIS.remote`) and 9 behind `NET.host`, all of which only PART 58 sets, so single player is byte-for-byte the old behaviour.
   **The server runs the game** (6.13, first step): `server/lib/host.mjs` loads the html's own script headless in a worker
   thread and that game ("the host", player id 0) spawns, runs and saves the Overworld's shared mobs. The game knows one
   player, so the host points `P` at the nearest real player before each entity update (`ntHostAim`); anything a brain
@@ -195,7 +195,7 @@ Full map: `docs/ARCHITECTURE.md` (PART-to-file table, systems index, how each up
   message type has a per-second limit (`RATE` in `server/lib/config.mjs`: a new message type needs an entry), the game
   pings every 2 s and reconnects by itself after a lost connection, and chests and drops are sent by range like edits. Anything that writes blocks must go through `setBlock`, anything that drops an item through `spawnDrop`,
   and anything that hurts a mob through `hurtMob`, or it will not reach other players.
-  **Since 6.46** (protocol 6 since 6.49):
+  **Since 6.46** (protocol 6 since 6.49, 7 since 6.73):
   - **Accounts (6.49):** with `accounts` on, `hello` is answered with `login` until a username and password match a
     playerdata record's `password` (6.61: a scrypt hash, `scrypt$N$r$p$salt$hash`, checked off the main thread by
     `checkPassword`, so `hello` runs again when it is done; plain text is still read and hashed on start; never sent to a

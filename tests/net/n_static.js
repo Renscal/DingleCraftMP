@@ -103,11 +103,13 @@ boot.run(async()=>{
     ['world/p37_dimensions.js','if(NET.host)ntSend({t:\'be\',v:be,k:bkey(x,y,z)});'],
     /* 6.72: another player's disaster, watched (behind DIS.remote, which only PART 58 sets) */
     ['features/p11_thirdperson_lava_disasters.js','if(DIS.remote){ntDisWatch(dt);return;}'],
+    /* 6.73: on a server a new work takes the world's next number */
+    ['creativity/c0_contract.js','const n=NET.on?ntCrTake():CRN++;if(!n)return 0;'],
   ];
   ok('the stock market stands still in a player\'s game on a server that runs it',count(readSrc('features/p12_ramps_tricks_stocks.js'),'if(NET.on&&NET.hosted)return;')===1);
   for(const [f,h] of hooks)ok('hook in '+f+': '+h.slice(0,34)+'… once, and once in the build',count(readSrc(f),h)===1&&count(G,h)===1);
   {const outside=G.slice(0,i58)+G.slice(i57);const calls=outside.match(/\bnt[A-Z]\w*\(/g)||[];
-    ok('the core calls into PART 58 exactly 49 times: 40 behind NET.on, e.pup or DIS.remote (6.50: catching up asks who runs the land; 6.69: the dungeons and vaults; 6.71: the fortresses and shrines; 6.72: a watched disaster), 9 for the server\'s own game (6.69 and 6.71: a chest it filled; 6.70: the Titan\'s slam) ('+calls.length+')',calls.length===49);
+    ok('the core calls into PART 58 exactly 50 times: 41 behind NET.on, e.pup or DIS.remote (6.50: catching up asks who runs the land; 6.69: the dungeons and vaults; 6.71: the fortresses and shrines; 6.72: a watched disaster; 6.73: a work\'s number), 9 for the server\'s own game (6.69 and 6.71: a chest it filled; 6.70: the Titan\'s slam) ('+calls.length+')',calls.length===50);
     ok('6.72: DIS.remote is set only by PART 58 (the core only ever clears it)',!/DIS\.remote\s*=\s*true/.test(outside)&&/DIS\.remote=true/.test(G.slice(i58,i57)));
     ok('single player never reaches the server-game hooks: each is behind NET.host or NET.on, which only PART 58 sets',!/NET\.(host|hosted|on)\s*=[^=]/.test(outside));
     ok('the two drop guards: networked drops stay out of the dimension stash, and drops do not merge online',

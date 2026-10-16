@@ -52,8 +52,11 @@ function ntApplyEdit(k,lk,id,raw,by){
       for(let i=n;i<NET.q.length;i++)if(NET.q[i][0]===k&&NET.q[i][1]===lk&&NET.q[i][2]===id){NET.q.splice(i,1);break;}
       return;                                              /* whatever the cell holds now is what this game made of it (sand set in mid-air has already left) */
     }else{
+      const ck=kd+x+','+y+','+z,cb=typeof CR_BET!=='undefined'?blockEnts.get(ck):null;
+      if(cb&&CR_BET[cb.t]&&CR_BET[cb.t]!==bid)ntCrDropBE(ck,cb);   /* 6.73: someone else broke it: their game dropped the work; here it just goes */
       NET.ap=true;
       try{setBlock(x,y,z,bid,bmt);}finally{NET.ap=false;}
+      if(NET.crPend.size&&NET.crPend.has(ck))ntCrPendCheck(ck);
     }
     if(ch.bl[bidx(lx,y,lz)]===bid&&ch.mt[bidx(lx,y,lz)]===bmt)return;   /* a protected cell refused it: record it below anyway */
   }
@@ -71,10 +74,11 @@ function ntApplyEdit(k,lk,id,raw,by){
 function ntBeSig(b){
   if(!b)return '';
   if(b.t==='furnace')return JSON.stringify([b.in,b.fuel,b.out]);
+  if(b.t==='crjuke')return JSON.stringify({...b,s:0});    /* 6.73: when a jukebox started is each game's own clock */
   return JSON.stringify(b);
 }
 /* which block entities travel: everything except Creativity works (their data lives per player) and purgatory stashes */
-function ntBeShared(b){return !!b&&typeof b.t==='string'&&!(typeof CR_BET!=='undefined'&&CR_BET[b.t])&&b.t!=='stash';}
+function ntBeShared(b){return !!b&&typeof b.t==='string'&&b.t!=='stash';}   /* 6.73: Creativity's easels, record players, jukeboxes and paintings too (their works are the world's) */
 /* once a second: send every block entity whose signature changed, and a removal for every one that is gone */
 function ntBeScan(){
   for(const [k,b] of blockEnts){
@@ -88,8 +92,9 @@ function ntBeScan(){
 /* a block entity from another player (v null = removed) */
 function ntApplyBE(k,v){
   if(typeof k!=='string')return;
-  if(v==null){blockEnts.delete(k);NET.beS.delete(k);if(MODAL.kind&&MODAL.bek===k)closeModal(true);return;}
+  if(v==null){const o=blockEnts.get(k);if(o&&typeof CR_BET!=='undefined'&&CR_BET[o.t]){ntCrDropBE(k,o);return;}blockEnts.delete(k);NET.beS.delete(k);if(MODAL.kind&&MODAL.bek===k)closeModal(true);return;}
   if(!ntBeShared(v))return;
+  if(typeof CR_BET!=='undefined'&&CR_BET[v.t]){ntCrApplyBE(k,v);return;}   /* 6.73 */
   if(v.t==='furnace'&&'ct' in v){                          /* 6.68: a furnace the server's game sent, stamped with the world clock: cooked on to now (at most 4 s: an older stamp is a stored copy, not a live one) */
     const d=typeof v.ct==='number'?CATCH.clock-v.ct:-1;
     delete v.ct;

@@ -595,7 +595,7 @@ boot.run(async()=>{
       await S8.close();
       const p8=rj('playerdata/bea.json');
       ok('the server stops: the player file holds the last save it was sent (hp '+p8.hp+', '+((p8.inv||[])[0]||{}).count+' stone at '+p8.x+')',p8.hp===15&&p8.x===8&&p8.inv[0].count===44);
-      ok('  ... and the Creativity works from the save before, which the last one did not carry',!!p8.cr&&JSON.stringify(p8.cr)==='{"works":["one"]}');}
+      ok('  ... and no Creativity works in a player\'s file, whatever a save carried (6.73: they are the world\'s, in data/works.json)',!('cr' in p8));}
     fs.rmSync(OUT,{recursive:true,force:true});}
   await window.storage.delete('vxw:nsolo');
 });

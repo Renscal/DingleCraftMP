@@ -23,9 +23,9 @@ import http from 'node:http';
 import https from 'node:https';
 import path from 'node:path';
 import { DEFAULTS, LIMITS, SERVER_DIR, cleanRules, cleanList, findGame } from './config.mjs';
-import { openWorld, applySettings, writeWorld, worldPlace, exportWorld } from './world.mjs';
+import { openWorld, applySettings, writeWorld, worldPlace, exportWorld, migrateWorks } from './world.mjs';
 import { acceptUpgrade, newConn, textFrame, readFrames, PING, CLOSE } from './websocket.mjs';
-import { handleMessage, worldTick, forget, playerKey, setSkin } from './protocol.mjs';
+import { handleMessage, worldTick, forget, playerKey, setSkin, grantWorks } from './protocol.mjs';
 import { runCommand, hashStoredPasswords } from './commands.mjs';
 import { pageHandler, statusOf } from './http.mjs';
 import { startHost, gameScript } from './host.mjs';
@@ -63,6 +63,7 @@ export function createServer(opts = {}) {
     const gap = at && Date.now() > at ? (Date.now() - at) / 1000 : 0;
     world.clock += o.catchUpMax > 0 ? Math.min(gap, o.catchUpMax * 60) : gap; }
   applySettings(world, o.rules, opts.mode);    // opts, not o: a mode nobody asked for must not override the world file's
+  { const n = migrateWorks(world); if (n) log(`${n} Creativity work${n === 1 ? '' : 's'} moved from the players into the world (6.73: everyone sees the same paintings and hears the same songs)`); }
 
   /* ---- the server's state, shared with lib/protocol.mjs and lib/http.mjs ---- */
   const S = {
@@ -165,6 +166,7 @@ export function createServer(opts = {}) {
           if (!S.hdims.includes(dim) || S.hosts.has(dim) || world.gr[dim] === false) return;   // 6.33: a dimension the rules switch off has no game
           const h = startHost(S, script, (c, m, size) => handleMessage(S, net, c, m, size), log, dim);
           S.hosts.set(dim, h);
+          grantWorks(S, net, h.c);                       // 6.73: work numbers for the works it mints (found works in chests)
           /* a game started late missed the players who are already here: tell it who they are and where (it waits until it is ready) */
           for (const p of S.clients.values()) if (p.ready) { h.post({ t: 'join', id: p.id, name: p.name }); if (p.pose) h.post({ t: 'pose', id: p.id, ...p.pose }); }
         };

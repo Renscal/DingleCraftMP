@@ -75,7 +75,7 @@
 // A chest that already has a record can only be rewritten by the player who has it open: a later visitor's game, which
 // filled the same chest with loot of its own, is sent the server's copy back. Loot is rolled once.
 import { PROTO, DAY_LEN, MIN_GAME, LIMITS, RATE, RULES, CK_RE, LK_RE, BK_RE, DROP_ID_RE, DIMS, DIM_PFX, cleanRules, cmpVer } from './config.mjs';
-import { num, cleanName, cleanText, cleanStack, cleanMobs, cleanSkin, playerKey } from './world.mjs';
+import { num, cleanName, cleanText, cleanStack, cleanMobs, cleanSkin, playerKey, cleanWork, WORK_MAXN } from './world.mjs';
 import { runCommand, isOp, protRadius, permOf, renameAccount, checkPassword, isHashed, hashPassword, hashPasswordLater, passwordRule, accountOf, locksOf, passwordProblem, setSkin } from './commands.mjs';
 
 export { playerKey, setSkin };
@@ -108,7 +108,8 @@ function near(a, b, dist) {
 }
 
 /* what the server's own game may send, and what only it may send */
-const HOST_SENDS = new Set(['edits', 'drop', 'dropAt', 'take', 'mobs', 'mgone', 'boom', 'hurt', 'xp', 'hsnap', 'fx', 'fxgone', 'vehs', 'vgone', 'be', 'fire', 'wd', 'mkt']);
+const HOST_SENDS_673 = ['crw'];   // 6.73: the server's game mints found works
+const HOST_SENDS = new Set([...HOST_SENDS_673, 'edits', 'drop', 'dropAt', 'take', 'mobs', 'mgone', 'boom', 'hurt', 'xp', 'hsnap', 'fx', 'fxgone', 'vehs', 'vgone', 'be', 'fire', 'wd', 'mkt']);
 /* the lists the world keeps (na_data.js in the game): found structures, dead bosses, spawners, nuke sites */
 export const WORLD_LISTS = ['vseen', 'nseen', 'aseen', 'pseen', 'wdseen', 'lsseen', 'rseen', 'infkill', 'valkill', 'spw', 'nukes'];
 /* entries for one of them from a game: short strings or whole numbers, at most 200 */
@@ -239,7 +240,8 @@ function hello(S, net, c, m) {
   const saved = world.players[playerKey(c.name)] || null;
   c.gm = saved && (saved.gm === 'c' || saved.gm === 's' || saved.gm === 'spectator') ? saved.gm : null;
   c.skin = saved && typeof saved.skin === 'string' ? saved.skin : '';   // 6.49: what they wore last time (or what an operator gave them)
-  const { edits, be, players, drops, spawn, ...meta } = world;   // meta: seed, mode, time, rules and whatever else the save carried
+  const { edits, be, players, drops, spawn, crn, crfree, crv, ...meta } = world;   // meta: seed, mode, time, rules and whatever else the save carried (6.73: with crw, the works, less who owns each)
+  if (meta.crw) meta.crw = Object.fromEntries(Object.entries(meta.crw).map(([n, r]) => [n, pubWork(r)]));
   net.send(c, { t: 'welcome', proto: PROTO, id: c.id, name: c.name, server: o.name, motd: o.motd, pvp: !!o.pvp, host: S.hdims.length > 0, hdims: S.hdims,
     world: { ...meta, mode: c.gm || world.mode }, player: ownView(saved),
     acct: { accounts: !!S.o.accounts, account: !!acct, locks: locksOf(S, c.name), skin: c.skin, rule: passwordRule(S.o.passwordSecurity) },   // 6.61: what a new password needs
@@ -265,9 +267,60 @@ function hello(S, net, c, m) {
   }
   net.send(c, { t: 'ready' });
   c.ready = true;                        // from here on it also gets every live broadcast, in order, behind the sync
+  grantWorks(S, net, c);                 // 6.73
   S.log(`+ ${c.name} joined from ${c.addr} (${saved ? 'returning' : 'new'} player); ${S.clients.size} online`);
   net.broadcast({ t: 'join', id: c.id, name: c.name }, c);
   net.broadcast({ t: 'sys', txt: c.name + ' joined the game' }, c);
+}
+
+/* ---- Creativity works (6.73) ---- */
+/* a work as the players see it (without who owns it) */
+function pubWork(r) { const { o, ...pub } = r; return pub; }
+/* top up the work numbers a game holds (LIMITS.workReserve), from the given-back ones first, and tell it */
+export function grantWorks(S, net, c) {
+  const w = S.world;
+  if (!w.crw) w.crw = {};
+  if (!Array.isArray(w.crfree)) w.crfree = [];
+  if (!(w.crn > 0)) w.crn = 1;
+  c.crRes = (c.crRes || []).filter((n) => !w.crw[n]);
+  while (c.crRes.length < LIMITS.workReserve) {
+    let n = 0;
+    while (w.crfree.length && !n) { const f = w.crfree.shift(); if (Number.isInteger(f) && !w.crw[f]) n = f; }
+    if (!n && w.crn <= WORK_MAXN) n = w.crn++;
+    if (!n) break;
+    c.crRes.push(n); S.dirty = true;
+  }
+  net.send(c, { t: 'crres', n: c.crRes });
+}
+/* a game's new, changed, finished or thrown-away work: who may, and what then goes to everyone */
+function takeWork(S, net, c, m) {
+  const w = S.world, n = m.n;
+  if (!Number.isInteger(n) || n < 1 || n > WORK_MAXN) return;
+  if (!w.crw) w.crw = {};
+  const cur = w.crw[n], me = c.host ? '' : playerKey(c.name), back = () => net.send(c, { t: 'crw', n, r: cur ? pubWork(cur) : null });
+  if (m.r == null) {                      // thrown away: only an unfinished work, only by its owner
+    if (!cur || cur.st === 'done' || cur.o !== me) return back();
+    delete w.crw[n]; S.dirty = true;
+    net.broadcast({ t: 'crw', n, r: null }, c);
+    return;
+  }
+  const r = cleanWork(m.r);
+  if (!r) return back();
+  if (cur) {
+    if (cur.o !== me || cur.st === 'done' || cur.k !== r.k || (r.k === 'art' && (cur.w !== r.w || cur.h !== r.h))) return back();   // a finished work never changes
+  } else {
+    const i = (c.crRes || []).indexOf(n);
+    if (i < 0 || Object.keys(w.crw).length >= LIMITS.works) return back();
+    c.crRes.splice(i, 1);
+  }
+  const was = cur ? JSON.stringify(cur).length : 0;
+  let total = 0; for (const k of Object.keys(w.crw)) total += JSON.stringify(w.crw[k]).length;
+  if (total - was + JSON.stringify(r).length > LIMITS.workBytes) return back();
+  const told = r.by;
+  if (!c.host && r.st === 'done') r.by = cleanText(c.name, 24);   // a finished work is signed by the player who made it, whatever their game wrote
+  w.crw[n] = { ...r, o: me }; S.dirty = true;
+  net.broadcast({ t: 'crw', n, r: pubWork(w.crw[n]) }, r.by !== told ? null : c);   // the maker hears it back only when the server changed it
+  if (!cur) grantWorks(S, net, c);
 }
 
 /* a player is gone (called by lib/server.mjs when a connection ends, before the others are told):
@@ -278,6 +331,7 @@ function hello(S, net, c, m) {
    - the mobs their game was running go to the nearest player who can see them (mheir). */
 export function forget(S, net, c) {
   for (const [k, id] of S.locks) if (id === c.id) S.locks.delete(k);
+  if (Array.isArray(c.crRes) && c.crRes.length) { const w = S.world; if (!Array.isArray(w.crfree)) w.crfree = []; for (const n of c.crRes) if (!w.crw || !w.crw[n]) w.crfree.push(n); c.crRes = []; S.dirty = true; }   // 6.73: numbers not used are given back
   for (const [vid, id] of S.vown) if (id === c.id) { S.vown.delete(vid); for (const h of S.hosts.values()) if (!h.stopped) net.send(h.c, { t: 'vfree', id: vid }); }   // the vehicle they sat on is the server's again
   const p = c.pose, sv = S.world.players[playerKey(c.name)];
   if (!p) return;
@@ -484,6 +538,7 @@ export function handleMessage(S, net, c, m, size) {
         net.broadcast({ t: 'crit', x: to.pose.x, y: to.pose.y + 1.1, z: to.pose.z }, c, (p) => p !== to && near(p.pose, to.pose, LIMITS.mobRange));
       return;
     }
+    case 'crw': takeWork(S, net, c, m); return;   // 6.73: a Creativity work (see takeWork)
     case 'dis': {                      // 6.72: a disaster in this player's game (k '' once it is over): the players near it watch the same one
       if (c.host || !c.pose) return;
       const k = typeof m.k === 'string' ? m.k : '';
@@ -507,8 +562,7 @@ export function handleMessage(S, net, c, m, size) {
       const key = playerKey(c.name), had = world.players[key];
       const { password: _pw, locks: _lk, ...mine } = m.player;   // 6.49: a game cannot give itself a password or take its locks off
       world.players[key] = { ...mine, name: c.name, seen: new Date().toISOString(), ...(c.gm ? { gm: c.gm } : {}), ...(c.skin ? { skin: c.skin } : {}) };
-      // 6.34: a game sends its Creativity works only when they change; a save without them keeps the ones already here
-      if (!('cr' in m.player) && had && had.cr !== undefined) world.players[key].cr = had.cr;
+      delete world.players[key].cr;      // 6.73: the Creativity works are the world's now (crw), never a player's
       if (had && typeof had.password === 'string') world.players[key].password = had.password;   // the account stays an account
       if (had && had.locks) world.players[key].locks = had.locks;
       S.dirty = true;

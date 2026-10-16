@@ -183,6 +183,7 @@ data/
       bosses.json                   which dimension bosses are dead
       nukes.json                    where a mega nuke went off
       market.json                   what the stocks cost
+      works.json                    every painting and music disc of the world, and who owns each (6.73)
 ```
 
 - **A region** is 32 x 32 chunks (512 x 512 blocks) and is named after its place in the world: `r.<x>.<z>`, so

@@ -92,7 +92,7 @@ function ntLeave(){
   if(!NET.on&&NET.st==='off'&&!NET.ws)return;
   const ws=NET.ws;NET.ws=null;
   NET.on=false;NET.st='off';NET.pend=null;NET.q.length=0;NET.beS.clear();NET.drops.clear();NET.hosted=false;NET.hdims=[];NET.fx.clear();NET.vehs.clear();
-  NET.mobs.clear();NET.lockK=null;NET.lockWant=null;NET.saveT=-1;NET.sigS=undefined;NET.crS='';NET.sigT=0;NET.op=false;NET.prot=0;NET.spawn=null;
+  NET.mobs.clear();NET.lockK=null;NET.lockWant=null;NET.saveT=-1;NET.sigS=undefined;NET.crRes=[];NET.crDue.clear();NET.crPend.clear();NET.sigT=0;NET.op=false;NET.prot=0;NET.spawn=null;
   ntClearPeers();
   if(ws){try{ws.onclose=null;ws.close();}catch(e){}}
   ntLoginHide();if(NET.skinOwn){NET.skinOwn=false;skinBoot();}   /* 6.49: back to this browser's own skin */
@@ -133,6 +133,8 @@ function ntMsg(m){
     case 'ign':if(NET.host&&Array.isArray(m.c))for(const c of m.c)if(Array.isArray(c))igniteAt(c[0]|0,c[1]|0,c[2]|0);return;   /* only the server's game is sent these */
     case 'fx':if(NET.on)ntFxIn(m);return;
     case 'dis':if(NET.on)ntDisIn(m);return;
+    case 'crw':ntCrIn(m);return;                           /* 6.73: a work of this world, new or changed (also while joining) */
+    case 'crres':if(Array.isArray(m.n))NET.crRes=m.n.filter(v=>Number.isInteger(v)&&v>0&&v<=9999).slice(0,8);return;
     case 'clock':if(NET.host)catchClockIn(m.v,m.max);return;   /* 6.50: only the server's game is sent these */
     case 'fxgone':if(NET.on)ntFxGone(m);return;
     case 'vehs':if(NET.on)ntVehsIn(m);return;
@@ -237,8 +239,12 @@ function ntEnter(){
     if(!pl){resetWorld();SEED=w.seed|0;const ws=NET.spawn,sp=ws?[ws.x,ws.y,ws.z]:findSpawn();pl={x:sp[0],y:sp[1],z:sp[2],spawn:sp};if(!ws)found=sp;}
     const d={...w,f:w.f||SAVE_FORMAT,edits:W.edits,be:W.be,player:pl,dim:pl.dim||'over',ents:[]};
     if('mp' in pl){d.mp=pl.mp;d.stash=pl.stash;}else{delete d.mp;delete d.stash;}   /* purgatory progress is per player */
-    /* ...and so are the Snail, Malgorath, the old demon and this player's own Creativity works (6.16: they used to be lost on leaving) */
-    for(const k of ['snl','mg','demon','cr']){if(pl[k]!=null)d[k]=pl[k];else delete d[k];}
+    /* ...and so are the Snail, Malgorath and the old demon */
+    for(const k of ['snl','mg','demon']){if(pl[k]!=null)d[k]=pl[k];else delete d[k];}
+    /* 6.73: the Creativity works are the world's: every painting and song on this server, one numbering (keep: none is thrown away
+       for not being in this player's things) */
+    d.cr={v:1,n:1,w:w.crw&&typeof w.crw==='object'?w.crw:{},keep:1};delete d.crw;
+    ntCrHook();
     applySave(d);
   }catch(e){
     if(typeof console!=='undefined')console.error('[net]',e);

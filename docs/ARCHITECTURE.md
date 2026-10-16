@@ -504,12 +504,17 @@ village is populated once, not once per client. A pose also carries armour (`ar`
 sets `NET.act`, `ntEdit` spends it) so other clients play its sound and dust.
 
 **Not shared:** parked vehicles, dragons, snakes, blocklings, a boss's projectiles, the Purgatory and Malgorath casts, the
-XP orbs, creativity works, the stock market and the structure SEEN sets (so a dead boss returns for a player who was not there). Each client simulates
+XP orbs, the stock market and the structure SEEN sets (so a dead boss returns for a player who was not there). Each client simulates
 those itself. Fire, falling blocks and structure processing also still run on every client: their block writes travel as
 ordinary edits and converge on the last writer. Since 6.69 the buried dungeons and spawner vaults are the exception on a
 dimension the server runs: a player's game empties `WDPEND`/`LSPEND` unprocessed, and the server's game runs `processWD`
 and `processCells` in `ntHostTick`, so it marks them seen, fills their chests (`lootFill` sends each one) and spawns
-their mobs and boss itself (`n_host` section 17). A disaster (6.72) runs in the game of the player who started it;
+their mobs and boss itself (`n_host` section 17). Creativity works (6.73) are the world's: the server keeps the
+registry (`crw`, `data/works.json`; `grantWorks` hands each game three numbers ahead of need, `takeWork` checks every
+change: owner, size, a finished work never changes, the author's name signed by the server), the `crNew` hook takes a
+handed number (`ntCrTake`), `ntCrWork` listens on `CRREG.onWork` and sends changes (edits once a second), `ntCrIn` takes
+others'; easels, record players, jukeboxes and paintings are shared block entities (`ntCrApplyBE` waits for the block
+before `crIndex`, `ntCrDropBE` removes one broken elsewhere without a second drop). A disaster (6.72) runs in the game of the player who started it;
 `ntDisOut` announces it twice a second (`{t:'dis'}`: kind, centre, time, its tornado) and the players within 160 blocks
 watch it (`DIS.remote`, `ntDisIn`, `ntDisWatch`): timer and wind, a twister copy (`e.remote`) that follows and pulls but
 shreds nothing, and `lavab` copies that burn (`n_disaster`). 6.71 does the same for the Nether fortresses and Aether shrines

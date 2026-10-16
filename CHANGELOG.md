@@ -21,6 +21,16 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## DingleCraft Multiplayer 2.0 — Gallery opening
+
+*Game version 6.73, released 2026-10-16.*
+
+- **GALLERY OPENING.** On a server, your paintings and songs used to be strictly private. Hang a masterpiece on the wall and your friends saw an empty frame. Hand someone your best song and it played one of theirs instead. Every artist was alone. Not any more.
+- **One gallery per world.** Every painting and music disc on a server now belongs to the world, numbered once for everybody. Paintings on the walls, canvases on easels, songs on record players and discs in jukeboxes look and sound the same for everyone. Give a painting away and it arrives as itself.
+- **Signed by the artist.** A finished work carries the name of the player who finished it, checked by the server, and once finished nobody (not even you) can paint over it.
+- **Your old works come along.** The first time a server starts on this version it moves everyone’s existing paintings and songs into the world’s gallery and renumbers the ones they are carrying, automatically. A work left in a chest follows its owner when the server can tell whose it is; if two players had a work with the same old number it cannot, and that one shows as a Lost Work rather than as somebody else’s painting.
+- **Single player is unchanged.** (Servers need this version: older games are asked to update.)
+
 ## DingleCraft Multiplayer 2.0 — Weather for everyone
 
 *Game version 6.72, released 2026-10-16.*

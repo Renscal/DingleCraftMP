@@ -3,7 +3,14 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Weather for everyone',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Gallery opening',lines:[
+    '<b>GALLERY OPENING.</b> On a server, your paintings and songs used to be strictly private. Hang a masterpiece on the wall and your friends saw an empty frame. Hand someone your best song and it played one of theirs instead. Every artist was alone. Not any more.',
+    '<b>One gallery per world.</b> Every painting and music disc on a server now belongs to the world, numbered once for everybody. Paintings on the walls, canvases on easels, songs on record players and discs in jukeboxes look and sound the same for everyone. Give a painting away and it arrives as itself.',
+    '<b>Signed by the artist.</b> A finished work carries the name of the player who finished it, checked by the server, and once finished nobody (not even you) can paint over it.',
+    '<b>Your old works come along.</b> The first time a server starts on this version it moves everyone’s existing paintings and songs into the world’s gallery and renumbers the ones they are carrying, automatically. A work left in a chest follows its owner when the server can tell whose it is; if two players had a work with the same old number it cannot, and that one shows as a Lost Work rather than as somebody else’s painting.',
+    '<b>Single player is unchanged.</b> (Servers need this version: older games are asked to update.)',
+  ]},
+ {v:'6.72',label:'DingleCraft Multiplayer 2.0',title:'Weather for everyone',lines:[
     '<b>WEATHER FOR EVERYONE.</b> On a server, a Disaster Sphere used to be a deeply personal experience. You set off a tornado, and your friends watched trees vanish one at a time for no visible reason. Now it is a shared one.',
     '<b>Everyone near it gets the full show.</b> Every player within 160 blocks sees the same disaster: its countdown, its wind, and for a tornado the funnel itself, wandering exactly where the real one goes and pulling them in just as hard.',
     '<b>It burns everybody.</b> A volcano’s lava bombs now burn whoever they land beside, not only the player who woke it. Fire rain already fell for everyone; now so does the trouble.',

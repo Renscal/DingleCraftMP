@@ -91,6 +91,63 @@ export function cleanMobs(list) {
   return out;
 }
 
+/* ---- Creativity works (6.73) ---- */
+export const WORK_ID0 = 10000, WORK_MAXN = 9999;
+const WORK_SIZES = [[64, 64], [128, 64], [64, 128]], WORK_D = { art: 7000, song: 6000 };
+/* a work as the game sends it, checked: null if it is not one */
+export function cleanWork(r) {
+  if (!r || typeof r !== 'object' || (r.k !== 'art' && r.k !== 'song')) return null;
+  let dl = 0;
+  try { dl = r.d == null ? 0 : typeof r.d === 'string' ? r.d.length : JSON.stringify(r.d).length; } catch { return null; }
+  if (dl > WORK_D[r.k]) return null;
+  const o = { k: r.k, st: r.st === 'done' ? 'done' : 'wip', t: cleanText(r.t, 24), by: cleanText(r.by, 24), d: r.d == null ? null : r.d, u: Math.max(0, num(r.u, 0, 1e9, 0) | 0) };
+  if (r.k === 'art') { if (!WORK_SIZES.some((s) => s[0] === r.w && s[1] === r.h)) return null; o.w = r.w; o.h = r.h; }
+  return o;
+}
+/* every stack ({id, count}) anywhere inside x, each passed to f */
+function eachStack(x, f, depth = 0) {
+  if (!x || typeof x !== 'object' || depth > 12) return;
+  if (Array.isArray(x)) { for (const v of x) eachStack(v, f, depth + 1); return; }
+  if (Number.isInteger(x.id) && Number.isInteger(x.count)) f(x);
+  for (const k of Object.keys(x)) if (x[k] && typeof x[k] === 'object') eachStack(x[k], f, depth + 1);
+}
+/* One time, from the first start of 6.73: each player's own Creativity works (players[key].cr, numbered per player) become
+   the world's (crw, numbered once for everyone). Their works in that player's own things get the new numbers; a work in a
+   chest or on the ground gets its owner's new number when exactly one player had that old one, and otherwise keeps its old
+   number, which no new work will ever take (it shows as a Lost Work rather than as somebody else's). Returns how many moved. */
+export function migrateWorks(world) {
+  if (world.crv === 1) return 0;
+  const owners = new Map(), maps = {};
+  let top = 0, moved = 0;
+  const seen = (st) => { const n = st.id - WORK_ID0; if (n > 0 && n <= WORK_MAXN) top = Math.max(top, n); };
+  eachStack(world.players, seen); eachStack(world.be, seen); eachStack(world.drops, seen);
+  for (const key of Object.keys(world.players || {})) { const w = world.players[key] && world.players[key].cr && world.players[key].cr.w; if (w) for (const n of Object.keys(w)) top = Math.max(top, +n || 0); }
+  let crn = Math.min(WORK_MAXN + 1, top + 1);
+  const crw = world.crw && typeof world.crw === 'object' ? world.crw : {};
+  for (const key of Object.keys(world.players || {})) {
+    const p = world.players[key], w = p && p.cr && p.cr.w;
+    if (w && typeof w === 'object') for (const old of Object.keys(w)) {
+      const r = cleanWork(w[old]);
+      if (!r || crn > WORK_MAXN) continue;
+      const n = crn++;
+      crw[n] = { ...r, o: key };
+      (maps[key] ||= {})[old] = n;
+      if (!owners.has(+old)) owners.set(+old, []);
+      owners.get(+old).push(key);
+      moved++;
+    }
+    if (p && typeof p === 'object') {
+      const m = maps[key];
+      if (m) eachStack(p, (st) => { const n = st.id - WORK_ID0; if (m[n]) st.id = WORK_ID0 + m[n]; });
+      delete p.cr;
+    }
+  }
+  const elsewhere = (st) => { const n = st.id - WORK_ID0, who = owners.get(n); if (who && who.length === 1) st.id = WORK_ID0 + maps[who[0]][n]; };
+  eachStack(world.be, elsewhere); eachStack(world.drops, elsewhere);
+  world.crw = crw; world.crn = crn; world.crfree = []; world.crv = 1;
+  return moved;
+}
+
 /* an empty world from the settings (seed, mode, name) */
 export function newWorld(o) {
   return { f: 1, v: null, name: o.name, seed: hashSeed(o.seed), mode: o.mode === 'c' ? 'c' : 's', time: 0.3, gr: {}, edits: {}, be: {}, players: {}, drops: {}, mobs: [], vehicles: [], spawn: null };
@@ -132,6 +189,7 @@ const DATA_FILES = {
   bosses: { about: 'Which dimension bosses are dead: the fortresses of the Nether (infkill) and the citadels of the Aether (valkill) whose boss has been killed.', keys: ['infkill', 'valkill'] },
   nukes: { about: 'Where a mega nuke went off: [x, y, z, dimension] or "x,y,z,dimension" (0 Overworld, 1 Nether, 2 Aether, 3 Puppet Purgatory).', keys: ['nukes'] },
   market: { about: 'What the stocks cost (p) and where each is drifting (mu).', keys: ['market'] },
+  works: { about: 'The Creativity works (6.73): every painting and music disc of this world by its number (crw: kind, finished or not, title, author, its data; o: the player who owns it), the next number (crn), numbers handed out and given back (crfree), and the form (crv).', keys: ['crw', 'crn', 'crfree', 'crv'] },
 };
 const DIM_OF = Object.fromEntries(Object.entries(DIM_PFX).map(([dim, pfx]) => [pfx, dim]));   // 'n;' -> 'nether'
 /* the folder a key's dimension prefix ('' or 'n;' ...) is stored under, and back. A prefix this server has no name for

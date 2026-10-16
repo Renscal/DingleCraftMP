@@ -85,7 +85,7 @@
 /* (permessage-deflate); nothing here knows about it.                    */
 /* NT_PROTO must equal PROTO in the server (tests/net/n_static.js).      */
 /* ===================================================================== */
-const NT_PROTO=6,NT_PORT=40162;
+const NT_PROTO=7,NT_PORT=40162;
 /* All multiplayer state, in one object:
      on      true while playing on a server (every core hook checks this)
      st      'off' | 'connecting' | 'on'          ws    the WebSocket
@@ -121,12 +121,12 @@ const NET={on:false,st:'off',ws:null,id:0,name:'',server:'',pvp:true,ap:false,pe
   cred:null,acct:null,acctPass:'',loginWait:false,skinOwn:false,retryN:0,retryH:0,pingT:0,pingN:0,pingAt:0,ms:0,rxAt:0,act:false,
   hosted:false,host:false,hp0:null,hpl:[],hrr:0,hsnT:0,hchT:0,
   fx:new Map(),fseq:0,vehs:new Map(),vseq:0,vehT:0,ignQ:[],fbT:0,apd:false,
-  wd:{},wdT:0,mktT:0,hdims:[],hprim:false,
+  wd:{},wdT:0,mktT:0,hdims:[],hprim:false,crRes:[],crIn:false,crDue:new Set(),crT:0,crPend:new Map(),crHook:false,
   served:typeof window!=='undefined'&&window.DC_SERVER===1};   /* this page was handed out by a server (it sets window.DC_SERVER before the game loads): no worlds of its own */   /* hdims: the dimensions the server runs a game for; hprim: this host also cooks the furnaces and runs the market */   /* na_data.js: each world list as last agreed with the server, the timers for them and for the market */   /* ignQ: cells to light (to the server's game) or lit (to the players); fbT: the host's furnace report timer */   /* n9_ents.js: flying things and vehicles by id, their counters, the vehicle timer */
 
 /* everything the suites reach, spread into window.__vox by src/boot/export_boot.js */
 
-const NTEX={NET,NT_PROTO,ntTagAlpha,ntTagSeen,ntTagTick,ntCrit,ntSaveSig,ntSaveWatch,ntBye,NT_PORT,ntUrl,ntConnect,ntLeave,ntDown,ntMsg,ntSend,ntEnter,ntEdit,ntFlush,ntApplyEdit,ntApplyBE,ntHostArea,ntDisOut,ntDisIn,ntDisWatch,ntBeScan,ntBeSig,
+const NTEX={NET,NT_PROTO,ntTagAlpha,ntTagSeen,ntTagTick,ntCrit,ntSaveSig,ntSaveWatch,ntBye,NT_PORT,ntUrl,ntConnect,ntLeave,ntDown,ntMsg,ntSend,ntEnter,ntEdit,ntFlush,ntApplyEdit,ntApplyBE,ntHostArea,ntCrTake,ntCrWork,ntCrIn,ntCrFlush,ntCrHook,ntDisOut,ntDisIn,ntDisWatch,ntBeScan,ntBeSig,
   ntSave,ntPoseNow,ntFrame,ntPeerAdd,ntPeerDel,ntPeersTick,ntMelee,ntTabRows,ntOpenMenu,ntHash,ntHostHere,ntDropSpawned,ntDropTake,ntDropsScan,ntDropIn,ntDropGone,ntDropTook,
   ntCmd,ntSleep,ntBeAsk,ntLockMsg,ntLockTick,ntGuard,ntSaveSoon,ntSimHere,ntShot,ntMobShared,ntMobsTick,ntMobsIn,ntMobsGone,ntMobTaken,ntMobHurt,ntMobHit,ntMobPup,ntBoom,ntBoomIn,
   ntRetry,ntRetryStop,ntPing,ntMobAdopt,ntPeerArmor,ntPeerRide,ntMobState,ntMobTwin,

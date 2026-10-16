@@ -152,6 +152,81 @@ function ntHostBeScan(){
   for(const k of NET.beS.keys())if(!blockEnts.has(k))NET.beS.delete(k);
 }
 
+/* ----- Creativity works (6.73) ----- */
+/* The works are the world's: the server keeps the registry (data/works.json), numbers every work once for the whole world,
+   and hands each game a few numbers ahead of need (crres), so starting a canvas never waits. A game sends every new,
+   changed, finished or discarded work (ntCrWork, from Creativity's own onWork registry; edits at most once a second) and
+   takes in everyone else's (ntCrIn). The block entities that show them (easels, record players, jukeboxes, paintings) are
+   shared like chests; one broken in another game goes here without a second copy of its work (ntCrDropBE), and one that
+   arrives before its block waits for it (ntCrPendCheck), so Creativity never thinks it was knocked down. */
+function ntCrHook(){if(!NET.crHook&&typeof CRREG!=='undefined'){NET.crHook=true;CRREG.onWork.push(ntCrWork);}}
+/* the crNew hook: the next number this game was handed (0: none yet; the server sends more as these are used) */
+function ntCrTake(){
+  const n=NET.crRes.shift();
+  if(n>0&&n<=9999&&!(typeof CRW!=='undefined'&&CRW[n]))return n;
+  if(typeof crToast==='function')crToast('One moment: the server is still fetching a fresh canvas.');
+  return 0;
+}
+/* a record as it travels */
+function ntCrPub(r){const o={k:r.k,st:r.st,t:r.t,by:r.by,d:r.d,u:r.u|0};if(r.k==='art'){o.w=r.w;o.h=r.h;}return o;}
+/* Creativity's onWork: this game made, changed, finished or threw away work n */
+function ntCrWork(n,r,op){
+  if(!NET.on||NET.crIn||op==='load')return;
+  if(op==='edit'){NET.crDue.add(n);return;}
+  NET.crDue.delete(n);
+  ntSend({t:'crw',n,r:op==='del'?null:ntCrPub(r)});
+}
+/* from ntFrame and the server's game: the works edited since last time, at most once a second */
+function ntCrFlush(){
+  if(!NET.crDue.size||NET.acc-NET.crT<1)return;
+  NET.crT=NET.acc;
+  for(const n of NET.crDue){const r=typeof CRW!=='undefined'?CRW[n]:null;if(r)ntSend({t:'crw',n,r:ntCrPub(r)});}
+  NET.crDue.clear();
+}
+/* {t:'crw'}: a work of this world, new or changed (r null: thrown away) */
+function ntCrIn(m){
+  if(typeof CRW==='undefined'||!Number.isInteger(m.n)||!(m.n>0&&m.n<=9999))return;
+  const n=m.n,r=m.r;
+  NET.crIn=true;
+  try{
+    if(r==null){const o=CRW[n];if(!o)return;delete CRW[n];crSz(n);crDefSync(n);crEmit('onWork',n,o,'del');return;}
+    if(typeof r!=='object'||(r.k!=='art'&&r.k!=='song'))return;
+    const was=!!CRW[n];
+    CRW[n]={k:r.k,st:r.st==='done'?'done':'wip',t:crTitle(r.t),by:crTitle(r.by),d:r.d==null?null:r.d,u:r.u|0,...(r.k==='art'?{w:r.w|0,h:r.h|0}:{})};
+    CRLOST.delete(n);crSz(n);crDefSync(n);
+    crEmit('onWork',n,CRW[n],was?'edit':'new');
+  }finally{NET.crIn=false;}
+}
+/* someone else's easel, record player, jukebox or painting cell */
+function ntCrApplyBE(k,v){
+  const old=blockEnts.get(k),wasId=old&&old.t===v.t?old.id:0;
+  let be=old;
+  if(old&&old.t===v.t){const s=old.s;for(const f in old)delete old[f];Object.assign(old,v);old.s=s||0;}
+  else{if(old&&CR_BET[old.t])ntCrDropBE(k,old);be=v;be.s=0;blockEnts.set(k,be);}
+  NET.beS.set(k,ntBeSig(be));
+  if(be.t==='crjuke'&&be.id!==wasId){if(wasId)crEmit('onJuke',k,be,'stop');if(be.id){be.s=CRF.clock;crEmit('onJuke',k,be,'play');}}
+  ntCrPendCheck(k);
+  const p=keyCore(k).split(',');if(keyDim(k)===DIM)markDirty(Math.floor(+p[0]/CH),Math.floor(+p[2]/CH));
+}
+/* index it for Creativity once its block is there (before that its sweep would take it for knocked down) */
+function ntCrPendCheck(k){
+  const be=blockEnts.get(k);
+  if(!be||!CR_BET[be.t]){NET.crPend.delete(k);return;}
+  const p=keyCore(k).split(',');
+  if(keyDim(k)===DIM&&getBlock(+p[0],+p[1],+p[2])===CR_BET[be.t]){NET.crPend.delete(k);if(CRBE.get(k)!==be)crIndex(k,be);}
+  else{if(CRBE.has(k))crUnindex(k);NET.crPend.set(k,be);}
+}
+/* one gone in another game (broken, or its block replaced): it goes here quietly; that game dropped its work */
+function ntCrDropBE(k,b){
+  if(b.t==='crjuke'&&b.id)crEmit('onJuke',k,b,'stop');
+  if(MODAL.kind&&MODAL.bek===k)closeModal(true);
+  if(typeof crOn!=='undefined'&&crOn&&CRF.ctx&&CRF.ctx.bek===k)crUIClose(true);
+  if(blockEnts.get(k)===b)blockEnts.delete(k);
+  if(CRBE.get(k)===b)crUnindex(k);
+  NET.crPend.delete(k);NET.beS.delete(k);
+  const p=keyCore(k).split(',');if(keyDim(k)===DIM)markDirty(Math.floor(+p[0]/CH),Math.floor(+p[2]/CH));
+}
+
 /* ----- disasters (6.72) ----- */
 /* A disaster runs in the game of the player who started it; its blocks travel as their edits. The players near it watch
    the same one: twice a second the starter's game says what is raging, where, how long it has run and where its tornado
