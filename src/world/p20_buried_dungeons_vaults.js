@@ -119,6 +119,7 @@ function stampWDungeons(blocks,x0,z0){
   }
 }
 function processWD(dt){
+  if(NET.on&&ntHosted()){WDPEND.length=0;return;}          /* PART 58 (6.69): where the server runs the world its game processes the dungeon (the chests, the spawners, the mobs, the boss); this game only draws it */
   while(WDPEND.length){
     const v=WDPEND.pop();
     if(WDSEEN.has(v.id))continue;
@@ -166,6 +167,7 @@ function stampCells(blocks,x0,z0){
   }
 }
 function processCells(dt){
+  if(NET.on&&ntHosted()){LSPEND.length=0;return;}          /* PART 58 (6.69): the server's game fills the vault, as with the dungeons */
   while(LSPEND.length){
     const v=LSPEND.pop();
     if(LSSEEN.has(v.id))continue;

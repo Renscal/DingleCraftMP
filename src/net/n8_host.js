@@ -196,6 +196,7 @@ function ntHostTick(dt){
     tickFlow(dt);                                          /* water, fire: only this game runs them in the Overworld (6.15) */
     updateFires(dt);
     try{P=pl[NET.hrr%pl.length];tickSpawners(dt);}finally{P=NET.hp0;}   /* spawners (6.16); since 6.48 each looks at every player itself */
+    if(DIM==='over'){processWD(dt);processCells(dt);}      /* 6.69: the buried dungeons and spawner vaults in the chunks built round the players: their chests are filled here, not by whichever player came first */
   }
   if(NET.peers.size&&NET.hprim){updateStocks(dt);ntHostMkt();}   /* one market for everyone */
   ntWdTick();

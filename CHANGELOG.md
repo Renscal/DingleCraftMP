@@ -21,6 +21,15 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## DingleCraft Multiplayer 2.0 — Sealed for freshness
+
+*Game version 6.69, released 2026-10-16.*
+
+- **SEALED FOR FRESHNESS.** On a server, the loot in a buried dungeon or a spawner vault used to be rolled by whichever player’s game happened to get there first. The server took that player’s word for what was inside. It no longer has to.
+- **The server packs the chests.** The server’s own game now finds the dungeons and vaults in the land it builds around its players, rolls their chests itself and hands everyone the same copy. Your game draws the room and waits for the delivery.
+- **And the welcoming committee.** The zombies, skeletons and the dungeon boss that come with a dungeon are now spawned by the server’s game too, instead of being spawned by a player and handed over a moment later.
+- **Nothing changes alone.** In single player, and on a server without its own game, dungeons work exactly as before.
+
 ## DingleCraft Multiplayer 2.0 — Hot off the press
 
 *Game version 6.68, released 2026-10-16.*

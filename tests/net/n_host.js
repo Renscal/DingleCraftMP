@@ -359,5 +359,19 @@ boot.run(async()=>{
     const h0=S8.host();h0.kill();
     ok('the Overworld game crashes: it is back by itself within seconds',await until(()=>S8.host()&&S8.host()!==h0&&S8.host().ready,25000));
     await S8.close();}
+  /* ===== 17. structure chests (6.69): the server's game fills them ===== */
+  {let v=null;const g0x=Math.floor(sx/96),g0z=Math.floor(sz/96);
+    for(let r=0;r<6&&!v;r++)for(let gx=g0x-r;gx<=g0x+r&&!v;gx++)for(let gz=g0z-r;gz<=g0z+r&&!v;gz++){const c=V.lsCell(gx,gz);if(c&&Math.hypot(c.cx-sx,c.cz-sz)>40)v=c;}
+    ok('a spawner vault to visit ('+(v?v.id+' at '+v.cx+','+v.cy+','+v.cz:'none')+')',!!v);
+    if(v){const S9=createServer({port:0,memory:true,world:'',noGame:true,hostGame:GAME,quiet:true,seed:'4242',pauseWhenEmpty:0,rules:{snail:false,mobSpawn:false}});await S9.listen();
+      await until(()=>S9.host()&&S9.host().ready,20000);
+      const b=raw(S9.port,'Bea');await b.open;await until(()=>!!b.last('ready'));
+      const ck=(v.cx+2)+','+v.cy+','+(v.cz+2);
+      for(let i=0;i<250&&!(S9.world().be[ck]&&(S9.world().lsseen||[]).includes(v.id));i++)await b.pose(v.cx+0.5,v.cy+30,v.cz+0.5);
+      const W9=S9.world(),be=W9.be[ck],items=be&&Array.isArray(be.inv)?be.inv.filter(Boolean):[];
+      ok('a player near a vault nobody has seen: the server\'s game marks it seen, for everyone',(W9.lsseen||[]).includes(v.id)&&b.by('wd').some(m=>m.k==='lsseen'&&(m.add||[]).includes(v.id)));
+      ok('...and fills its chest: the server holds it with '+items.length+' stacks, and the player is sent it',!!be&&be.t==='chest'&&items.length>0&&b.by('be').some(m=>m.k===ck&&m.v&&m.v.t==='chest'));
+      ok('...once: one chest copy, sent by the server\'s game alone (this raw player sent none)',b.by('be').filter(m=>m.k===ck).length>=1&&JSON.stringify(b.by('be').filter(m=>m.k===ck).pop().v.inv)===JSON.stringify(be.inv));
+      await S9.close();}}
   fs.rmSync(OUT,{recursive:true,force:true});
 });

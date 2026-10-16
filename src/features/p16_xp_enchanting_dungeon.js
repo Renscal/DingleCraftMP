@@ -295,6 +295,7 @@ function lootFill(x,y,z,epic){
     be.inv[(Math.random()*27)|0]={id:guns[(Math.random()*guns.length)|0],count:1,dur:250};
   }
   crFoundRoll(be,x,y,z); /* PART 56 c3_found: a very rare found work (a seed + cell hash, never Math.random) */
+  if(NET.host)ntSend({t:'be',k:bkey(x,y,z),v:be});         /* PART 58 (6.69): the server's game filled it: the server and every player hear of it */
 }
 function addSpawner(x,y,z,kind){
   setBlock(x,y,z,kind);

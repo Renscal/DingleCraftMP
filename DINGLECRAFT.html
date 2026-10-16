@@ -1042,7 +1042,7 @@ THE SOFTWARE.
    ===================================================================== */
 'use strict';
 
-const GAME_VERSION = '6.68';
+const GAME_VERSION = '6.69';
 const RELEASE_LABEL = 'DingleCraft Multiplayer 2.0';   /* the public name of this game version (docs/RELEASING.md): GAME_VERSION stays the internal, monotonic number */
 var HIT_HOW=null,EXPL_BY=null;  /* damage attribution (PART 53) */
 var TP={id:'og',q:-1,qr:1,hr:false,busy:false,want:null,shadow:false,mods:[],live:[],og:null,ogR:null,ogF:null,ev:{},warm:null,devTexBase:null};  /* texture packs (PART 54) */
@@ -9253,6 +9253,7 @@ function lootFill(x,y,z,epic){
     be.inv[(Math.random()*27)|0]={id:guns[(Math.random()*guns.length)|0],count:1,dur:250};
   }
   crFoundRoll(be,x,y,z); /* PART 56 c3_found: a very rare found work (a seed + cell hash, never Math.random) */
+  if(NET.host)ntSend({t:'be',k:bkey(x,y,z),v:be});         /* PART 58 (6.69): the server's game filled it: the server and every player hear of it */
 }
 function addSpawner(x,y,z,kind){
   setBlock(x,y,z,kind);
@@ -10110,6 +10111,7 @@ function stampWDungeons(blocks,x0,z0){
   }
 }
 function processWD(dt){
+  if(NET.on&&ntHosted()){WDPEND.length=0;return;}          /* PART 58 (6.69): where the server runs the world its game processes the dungeon (the chests, the spawners, the mobs, the boss); this game only draws it */
   while(WDPEND.length){
     const v=WDPEND.pop();
     if(WDSEEN.has(v.id))continue;
@@ -10157,6 +10159,7 @@ function stampCells(blocks,x0,z0){
   }
 }
 function processCells(dt){
+  if(NET.on&&ntHosted()){LSPEND.length=0;return;}          /* PART 58 (6.69): the server's game fills the vault, as with the dungeons */
   while(LSPEND.length){
     const v=LSPEND.pop();
     if(LSSEEN.has(v.id))continue;
@@ -11437,7 +11440,13 @@ const SETTINGS_P=loadSettings();   /* the title (tmBoot) waits for it: the name 
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Hot off the press',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Sealed for freshness',lines:[
+    '<b>SEALED FOR FRESHNESS.</b> On a server, the loot in a buried dungeon or a spawner vault used to be rolled by whichever player’s game happened to get there first. The server took that player’s word for what was inside. It no longer has to.',
+    '<b>The server packs the chests.</b> The server’s own game now finds the dungeons and vaults in the land it builds around its players, rolls their chests itself and hands everyone the same copy. Your game draws the room and waits for the delivery.',
+    '<b>And the welcoming committee.</b> The zombies, skeletons and the dungeon boss that come with a dungeon are now spawned by the server’s game too, instead of being spawned by a player and handed over a moment later.',
+    '<b>Nothing changes alone.</b> In single player, and on a server without its own game, dungeons work exactly as before.',
+  ]},
+ {v:'6.68',label:'DingleCraft Multiplayer 2.0',title:'Hot off the press',lines:[
     '<b>HOT OFF THE PRESS.</b> On a server, a furnace nobody is looking at is cooked by the server itself. It used to send you its progress every two seconds, so opening one could show the arrow up to two seconds behind, then jump. Your iron was never late; the news about it was.',
     '<b>Now the news is stamped.</b> Every furnace the server sends carries the world clock it was sent at, and your game cooks it on to the present moment by the furnace’s own rules before you see it. Open it and the arrow is where it really is.',
     '<b>Nothing cooks twice.</b> A copy older than four seconds is a stored one, not fresh news, and is taken as it is; the stamp is dropped on arrival, so it never travels back to the server with your changes.',
@@ -19100,6 +19109,7 @@ function ntHostTick(dt){
     tickFlow(dt);                                          /* water, fire: only this game runs them in the Overworld (6.15) */
     updateFires(dt);
     try{P=pl[NET.hrr%pl.length];tickSpawners(dt);}finally{P=NET.hp0;}   /* spawners (6.16); since 6.48 each looks at every player itself */
+    if(DIM==='over'){processWD(dt);processCells(dt);}      /* 6.69: the buried dungeons and spawner vaults in the chunks built round the players: their chests are filled here, not by whichever player came first */
   }
   if(NET.peers.size&&NET.hprim){updateStocks(dt);ntHostMkt();}   /* one market for everyone */
   ntWdTick();

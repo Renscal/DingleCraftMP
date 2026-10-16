@@ -506,7 +506,10 @@ sets `NET.act`, `ntEdit` spends it) so other clients play its sound and dust.
 **Not shared:** parked vehicles, dragons, snakes, blocklings, a boss's projectiles, the Purgatory and Malgorath casts, the
 XP orbs, creativity works, the stock market and the structure SEEN sets (so a dead boss returns for a player who was not there). Each client simulates
 those itself. Fire, falling blocks and structure processing also still run on every client: their block writes travel as
-ordinary edits and converge on the last writer.
+ordinary edits and converge on the last writer. Since 6.69 the buried dungeons and spawner vaults are the exception on a
+dimension the server runs: a player's game empties `WDPEND`/`LSPEND` unprocessed, and the server's game runs `processWD`
+and `processCells` in `ntHostTick`, so it marks them seen, fills their chests (`lootFill` sends each one) and spawns
+their mobs and boss itself (`n_host` section 17).
 
 In the core: `setBlock` (`ntEdit`), `saveToStorage` (`ntSave`), `quitToTitle` (`ntLeave`), the frame (`ntFrame`, which
 also runs while paused), `doMine` (`ntMelee`), `die` (`ntDied`), `chatSubmit` (`ntChat`), `renderTab` (`ntTabRows`),

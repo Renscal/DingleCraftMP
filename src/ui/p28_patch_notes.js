@@ -3,7 +3,13 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Hot off the press',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Sealed for freshness',lines:[
+    '<b>SEALED FOR FRESHNESS.</b> On a server, the loot in a buried dungeon or a spawner vault used to be rolled by whichever player’s game happened to get there first. The server took that player’s word for what was inside. It no longer has to.',
+    '<b>The server packs the chests.</b> The server’s own game now finds the dungeons and vaults in the land it builds around its players, rolls their chests itself and hands everyone the same copy. Your game draws the room and waits for the delivery.',
+    '<b>And the welcoming committee.</b> The zombies, skeletons and the dungeon boss that come with a dungeon are now spawned by the server’s game too, instead of being spawned by a player and handed over a moment later.',
+    '<b>Nothing changes alone.</b> In single player, and on a server without its own game, dungeons work exactly as before.',
+  ]},
+ {v:'6.68',label:'DingleCraft Multiplayer 2.0',title:'Hot off the press',lines:[
     '<b>HOT OFF THE PRESS.</b> On a server, a furnace nobody is looking at is cooked by the server itself. It used to send you its progress every two seconds, so opening one could show the arrow up to two seconds behind, then jump. Your iron was never late; the news about it was.',
     '<b>Now the news is stamped.</b> Every furnace the server sends carries the world clock it was sent at, and your game cooks it on to the present moment by the furnace’s own rules before you see it. Open it and the arrow is where it really is.',
     '<b>Nothing cooks twice.</b> A copy older than four seconds is a stored one, not fresh news, and is taken as it is; the stamp is dropped on arrival, so it never travels back to the server with your changes.',

@@ -155,8 +155,8 @@ Smaller, independent, any order.
   own them once 6b lets it trust where a player is aiming.
 - **Fortress bosses** (Nether, Aether) and their guards carry a `cellId` and are excluded from sharing: still each
   player's own, though their deaths are shared.
-- **Structure chests** are filled by the first visitor's game, not by the server's. Run the structure processors on the
-  server's game instead.
+- **Structure chests**: done in 6.69 for the buried dungeons and spawner vaults (the only generated structures with
+  chests): on a dimension the server runs, its game processes them (`ntHostTick`) and players' games do not.
 - **Creativity works** are saved per player; a work handed to another player does not show. Needs world-wide numbering.
 - **Disasters and the Snail** start in one player's game.
 - **A boss fights one player** (the nearest), and the dungeon boss and the Stone Titan have no kill record of their own.
