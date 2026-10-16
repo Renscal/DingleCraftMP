@@ -160,7 +160,8 @@ Smaller, independent, any order.
 - **Creativity works** are saved per player; a work handed to another player does not show. Needs world-wide numbering.
 - **Disasters and the Snail** start in one player's game.
 - **A boss fights one player** (the nearest), and the dungeon boss and the Stone Titan have no kill record of their own.
-- **Furnace progress** updates in 2-second steps when opening one the server has been cooking.
+- **Furnace progress**: done in 6.68. The server's game stamps each furnace it sends with the world clock (`ct`) and the
+  player's game cooks it on to now with `furnaceCatch` (`ntApplyBE`; a stamp over 4 s old is a stored copy and is ignored).
 - **A server game that crashes**: done in 6.55 (the Overworld's restarts after 5 s, at most 3 times in 10 minutes).
 - **Idle dimension games**: paused since 6.46, and since 6.55 a paused Nether or Aether game is stopped after
   `stopWhenEmpty` minutes.

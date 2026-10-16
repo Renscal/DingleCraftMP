@@ -90,6 +90,11 @@ function ntApplyBE(k,v){
   if(typeof k!=='string')return;
   if(v==null){blockEnts.delete(k);NET.beS.delete(k);if(MODAL.kind&&MODAL.bek===k)closeModal(true);return;}
   if(!ntBeShared(v))return;
+  if(v.t==='furnace'&&'ct' in v){                          /* 6.68: a furnace the server's game sent, stamped with the world clock: cooked on to now (at most 4 s: an older stamp is a stored copy, not a live one) */
+    const d=typeof v.ct==='number'?CATCH.clock-v.ct:-1;
+    delete v.ct;
+    if(!NET.host&&d>0&&d<=4)furnaceCatch(v,d);
+  }
   if(v.t==='chest'){v.inv=(Array.isArray(v.inv)?v.inv:[]).slice(0,27);while(v.inv.length<27)v.inv.push(null);}
   const old=blockEnts.get(k);
   if(old&&old.t===v.t){for(const f in old)delete old[f];Object.assign(old,v);}   /* in place: an open chest window holds this object */

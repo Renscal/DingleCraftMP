@@ -130,7 +130,8 @@ function ntNoTick(be){
   return NET.hosted===true&&blockEnts.get(NET.lockK)!==be;
 }
 /* on the server's game, once a second: send every furnace whose items changed, and the ones that are burning every two
-   seconds, so a player opening one finds it where it really is */
+   seconds, so a player opening one finds it where it really is. 6.68: each copy carries the world clock it was sent at
+   (ct), and the player's game catches it up from there (ntApplyBE): opening one no longer shows it up to two seconds behind */
 function ntHostBeScan(){
   if(NET.acc-NET.fbT<1)return;
   NET.fbT=NET.acc;
@@ -141,7 +142,7 @@ function ntHostBeScan(){
     if(NET.beS.get(k)===s)continue;
     const first=!NET.beS.has(k);
     NET.beS.set(k,s);
-    if(!first)ntSend({t:'be',k,v:b});
+    if(!first)ntSend({t:'be',k,v:{...b,ct:+CATCH.clock.toFixed(2)}});
   }
   for(const k of NET.beS.keys())if(!blockEnts.has(k))NET.beS.delete(k);
 }

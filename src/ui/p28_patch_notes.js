@@ -3,7 +3,12 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Deep water',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Hot off the press',lines:[
+    '<b>HOT OFF THE PRESS.</b> On a server, a furnace nobody is looking at is cooked by the server itself. It used to send you its progress every two seconds, so opening one could show the arrow up to two seconds behind, then jump. Your iron was never late; the news about it was.',
+    '<b>Now the news is stamped.</b> Every furnace the server sends carries the world clock it was sent at, and your game cooks it on to the present moment by the furnace’s own rules before you see it. Open it and the arrow is where it really is.',
+    '<b>Nothing cooks twice.</b> A copy older than four seconds is a stored one, not fresh news, and is taken as it is; the stamp is dropped on arrival, so it never travels back to the server with your changes.',
+  ]},
+ {v:'6.67',label:'DingleCraft Multiplayer 2.0',title:'Deep water',lines:[
     '<b>DEEP WATER.</b> The game has been carefully drawing the bottom of the ocean. Every block of it. From inside. Nobody has ever seen it, because it is under thirty blocks of other water. It has stopped.',
     '<b>Building land is about 40% faster.</b> Turning a chunk into something your graphics card can draw took about 2.9 ms on seas and coasts here and now takes about 1.7 ms. Water under water and stone inside stone are skipped before the game asks about their six sides, and a water block works out the slope of its surface only if you can actually see it. The game builds land for at most 8 ms a frame, so you get it as land that is finished sooner: twelve seconds into a new world it used to be still catching up (frames of about 13 ms); now it is done and frames take about 3 ms, OG and Hyperreal alike.',
     '<b>Not one pixel moved.</b> 108 real chunks and a deliberately nasty random mix of water, lava, ice, glass, leaves and torches come out vertex for vertex the same as in 6.66.',

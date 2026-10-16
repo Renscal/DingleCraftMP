@@ -21,6 +21,14 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## DingleCraft Multiplayer 2.0 — Hot off the press
+
+*Game version 6.68, released 2026-10-16.*
+
+- **HOT OFF THE PRESS.** On a server, a furnace nobody is looking at is cooked by the server itself. It used to send you its progress every two seconds, so opening one could show the arrow up to two seconds behind, then jump. Your iron was never late; the news about it was.
+- **Now the news is stamped.** Every furnace the server sends carries the world clock it was sent at, and your game cooks it on to the present moment by the furnace’s own rules before you see it. Open it and the arrow is where it really is.
+- **Nothing cooks twice.** A copy older than four seconds is a stored one, not fresh news, and is taken as it is; the stamp is dropped on arrival, so it never travels back to the server with your changes.
+
 ## DingleCraft Multiplayer 2.0 — Deep water
 
 *Game version 6.67, released 2026-10-16.*

@@ -1042,7 +1042,7 @@ THE SOFTWARE.
    ===================================================================== */
 'use strict';
 
-const GAME_VERSION = '6.67';
+const GAME_VERSION = '6.68';
 const RELEASE_LABEL = 'DingleCraft Multiplayer 2.0';   /* the public name of this game version (docs/RELEASING.md): GAME_VERSION stays the internal, monotonic number */
 var HIT_HOW=null,EXPL_BY=null;  /* damage attribution (PART 53) */
 var TP={id:'og',q:-1,qr:1,hr:false,busy:false,want:null,shadow:false,mods:[],live:[],og:null,ogR:null,ogF:null,ev:{},warm:null,devTexBase:null};  /* texture packs (PART 54) */
@@ -11437,7 +11437,12 @@ const SETTINGS_P=loadSettings();   /* the title (tmBoot) waits for it: the name 
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Deep water',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Hot off the press',lines:[
+    '<b>HOT OFF THE PRESS.</b> On a server, a furnace nobody is looking at is cooked by the server itself. It used to send you its progress every two seconds, so opening one could show the arrow up to two seconds behind, then jump. Your iron was never late; the news about it was.',
+    '<b>Now the news is stamped.</b> Every furnace the server sends carries the world clock it was sent at, and your game cooks it on to the present moment by the furnace’s own rules before you see it. Open it and the arrow is where it really is.',
+    '<b>Nothing cooks twice.</b> A copy older than four seconds is a stored one, not fresh news, and is taken as it is; the stamp is dropped on arrival, so it never travels back to the server with your changes.',
+  ]},
+ {v:'6.67',label:'DingleCraft Multiplayer 2.0',title:'Deep water',lines:[
     '<b>DEEP WATER.</b> The game has been carefully drawing the bottom of the ocean. Every block of it. From inside. Nobody has ever seen it, because it is under thirty blocks of other water. It has stopped.',
     '<b>Building land is about 40% faster.</b> Turning a chunk into something your graphics card can draw took about 2.9 ms on seas and coasts here and now takes about 1.7 ms. Water under water and stone inside stone are skipped before the game asks about their six sides, and a water block works out the slope of its surface only if you can actually see it. The game builds land for at most 8 ms a frame, so you get it as land that is finished sooner: twelve seconds into a new world it used to be still catching up (frames of about 13 ms); now it is done and frames take about 3 ms, OG and Hyperreal alike.',
     '<b>Not one pixel moved.</b> 108 real chunks and a deliberately nasty random mix of water, lava, ice, glass, leaves and torches come out vertex for vertex the same as in 6.66.',
@@ -17959,6 +17964,11 @@ function ntApplyBE(k,v){
   if(typeof k!=='string')return;
   if(v==null){blockEnts.delete(k);NET.beS.delete(k);if(MODAL.kind&&MODAL.bek===k)closeModal(true);return;}
   if(!ntBeShared(v))return;
+  if(v.t==='furnace'&&'ct' in v){                          /* 6.68: a furnace the server's game sent, stamped with the world clock: cooked on to now (at most 4 s: an older stamp is a stored copy, not a live one) */
+    const d=typeof v.ct==='number'?CATCH.clock-v.ct:-1;
+    delete v.ct;
+    if(!NET.host&&d>0&&d<=4)furnaceCatch(v,d);
+  }
   if(v.t==='chest'){v.inv=(Array.isArray(v.inv)?v.inv:[]).slice(0,27);while(v.inv.length<27)v.inv.push(null);}
   const old=blockEnts.get(k);
   if(old&&old.t===v.t){for(const f in old)delete old[f];Object.assign(old,v);}   /* in place: an open chest window holds this object */
@@ -19233,7 +19243,8 @@ function ntNoTick(be){
   return NET.hosted===true&&blockEnts.get(NET.lockK)!==be;
 }
 /* on the server's game, once a second: send every furnace whose items changed, and the ones that are burning every two
-   seconds, so a player opening one finds it where it really is */
+   seconds, so a player opening one finds it where it really is. 6.68: each copy carries the world clock it was sent at
+   (ct), and the player's game catches it up from there (ntApplyBE): opening one no longer shows it up to two seconds behind */
 function ntHostBeScan(){
   if(NET.acc-NET.fbT<1)return;
   NET.fbT=NET.acc;
@@ -19244,7 +19255,7 @@ function ntHostBeScan(){
     if(NET.beS.get(k)===s)continue;
     const first=!NET.beS.has(k);
     NET.beS.set(k,s);
-    if(!first)ntSend({t:'be',k,v:b});
+    if(!first)ntSend({t:'be',k,v:{...b,ct:+CATCH.clock.toFixed(2)}});
   }
   for(const k of NET.beS.keys())if(!blockEnts.has(k))NET.beS.delete(k);
 }

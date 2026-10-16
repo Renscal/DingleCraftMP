@@ -217,7 +217,18 @@ boot.run(async()=>{
         ok('...so here its timers stand still',fb.cook===0||fb.cook<=1);
         ok('the server\'s game cooks it: it starts burning, and ten seconds later the first item is out, for everyone',await pumpUntil(()=>bea.by('be').some(m=>m.k===fk&&m.v.burn>0),6000)&&await pumpUntil(()=>bea.by('be').some(m=>m.k===fk&&m.v.out&&m.v.out.id===V.SMELT[ore]),16000)&&await pumpUntil(()=>!!fb.out&&fb.out.id===V.SMELT[ore],3000));
         /* with the window open it is this player's to cook */
-        V.NET.lockK=fk;ok('with its window open, it is this player\'s game that cooks it',V.ntNoTick(fb)===false);V.NET.lockK=null;}
+        V.NET.lockK=fk;ok('with its window open, it is this player\'s game that cooks it',V.ntNoTick(fb)===false);V.NET.lockK=null;
+        /* 6.68: where it really is: every copy the server's game sends carries the world clock, and arrives cooked on to now */
+        {const hm=bea.by('be').filter(m=>m.k===fk&&m.v&&m.v.burn>0);
+          ok('the server\'s game stamps every furnace it sends with the world clock ('+hm.length+' copies)',hm.length>0&&hm.every(m=>typeof m.v.ct==='number'&&isFinite(m.v.ct)));
+          ok('...and the stamp is gone once it is here (so it never goes back to the server)',!('ct' in fb));
+          const C=V.CATCH,base={t:'furnace',in:{id:ore,count:5},fuel:{id:fuel,count:3},out:null,burn:6,burnMax:10,cook:2.5},k2=(hx+2)+','+(hy+1)+','+(hz-1);
+          const want=JSON.parse(JSON.stringify(base));V.furnaceCatch(want,1.5);
+          V.ntApplyBE(k2,{...JSON.parse(JSON.stringify(base)),ct:C.clock-1.5});const got=V.blockEnts.get(k2);
+          ok('a copy sent 1.5 s ago arrives cooked on by 1.5 s, by the furnace\'s own rules (cook '+(got&&got.cook.toFixed(2))+', burn '+(got&&got.burn.toFixed(2))+')',!!got&&!('ct' in got)&&JSON.stringify(got)===JSON.stringify(want)&&got.cook>base.cook);
+          const same=ct=>{V.ntApplyBE(k2,ct===undefined?JSON.parse(JSON.stringify(base)):{...JSON.parse(JSON.stringify(base)),ct});const g=V.blockEnts.get(k2);return !!g&&!('ct' in g)&&JSON.stringify(g)===JSON.stringify(base);};
+          ok('a stamp older than 4 s (a stored copy), one from the future, a broken one and none at all: taken as it is',same(C.clock-30)&&same(C.clock+5)&&same('soon')&&same(undefined));
+          V.ntApplyBE(k2,null);}}
       V.P.mode='s';V.P.flying=false;}
 
     /* ===== 12. what the world remembers ===== */
