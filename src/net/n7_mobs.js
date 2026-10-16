@@ -165,7 +165,7 @@ function ntMobHurt(m){
   const e=NET.mobs.get(m.id);
   if(!e||e.dead||e.pup||!playing)return;
   const ph=HIT_BY,pw=HIT_HOW,p0=P;
-  if(NET.host){const q=NET.hpl.find(o=>o.nid===(m.from|0));if(q)P=q;}   /* on the server's game: the one who hit it is "the player" it flees or turns on */
+  if(NET.host){const q=NET.hpl.find(o=>o.nid===(m.from|0));if(q){P=q;if(MOBT[e.mt]&&MOBT[e.mt].boss){e.aggro=q.nid;e.aggroT=NET.acc;}}}   /* on the server's game: the one who hit it is "the player" it flees or turns on; a boss remembers them (6.70, ntHostAim) */
   HIT_BY=ntShown(m.name);HIT_HOW='melee';
   try{hurtMob(e,+m.dmg||0,+m.kx||0,+m.kz||0);}finally{HIT_BY=ph;HIT_HOW=pw;P=p0;}
 }

@@ -66,6 +66,7 @@ function titanExtra(e,dt,pd,pdx,pdz){
     P.vx+=pdx/dd*9;P.vz+=pdz/dd*9;P.vy=Math.max(P.vy,9.5);
     P.hurtT=0;
     damagePlayer(4);
+    if(NET.host)ntHostArea(e.x,e.y,e.z,6.5,4);             /* PART 58 (6.70): on the server's game, every player in the slam */
     for(const o of entities){
       if(o.t==='mob'&&!o.dead&&o!==e){
         const ox=o.x-e.x,oz=o.z-e.z,od=Math.hypot(ox,oz);

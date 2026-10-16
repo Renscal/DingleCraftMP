@@ -3,7 +3,13 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Sealed for freshness',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Everybody gets a turn',lines:[
+    '<b>EVERYBODY GETS A TURN.</b> On a server, a boss used to fight whoever stood nearest and nobody else. Stand at the back with a bow and you could empty a quiver into the Stone Titan while your friend took every punch. Bosses have read the room.',
+    '<b>Bosses hold a grudge.</b> Hit a boss and it comes for you, even past a nearer player, for fifteen seconds after your last hit. Stop hitting it and it goes back to whoever is closest. Ordinary monsters are not that petty.',
+    '<b>The slam is for everyone.</b> When the Stone Titan slams the ground, every player standing in the shockwave takes the hit and gets thrown back, not just the one it was looking at.',
+    '<b>Single player is unchanged:</b> there was only ever one of you to be angry at.',
+  ]},
+ {v:'6.69',label:'DingleCraft Multiplayer 2.0',title:'Sealed for freshness',lines:[
     '<b>SEALED FOR FRESHNESS.</b> On a server, the loot in a buried dungeon or a spawner vault used to be rolled by whichever player’s game happened to get there first. The server took that player’s word for what was inside. It no longer has to.',
     '<b>The server packs the chests.</b> The server’s own game now finds the dungeons and vaults in the land it builds around its players, rolls their chests itself and hands everyone the same copy. Your game draws the room and waits for the delivery.',
     '<b>And the welcoming committee.</b> The zombies, skeletons and the dungeon boss that come with a dungeon are now spawned by the server’s game too, instead of being spawned by a player and handed over a moment later.',

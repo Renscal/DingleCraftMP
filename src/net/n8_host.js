@@ -105,6 +105,8 @@ function ntHostAim(e){
     if(d<bd&&!q.dead&&q.mode!=='c'){bd=d;best=q;}
   }
   best=best||alt;
+  /* 6.70: a boss goes for whoever hit it last (for 15 s, while they are in reach, alive and not in creative), not just the nearest */
+  if(e.aggro&&NET.acc-e.aggroT<15){const a=NET.hpl.find(q=>q.nid===e.aggro);if(a&&!a.dead&&a.mode!=='c'&&Math.hypot(a.x-e.x,a.z-e.z)<reach)best=a;}
   if(!best||!chunkAt(Math.floor(e.x),Math.floor(e.z)))return true;
   P=best;
   return false;
@@ -131,6 +133,16 @@ function ntHostHurt(n,kx,kz){
   if(NET.acc-q.hitAt<0.5)return;
   q.hitAt=NET.acc;
   ntSend({t:'hurt',to:q.nid,dmg:n,kx:+kx||0,kz:+kz||0,by:LASTDMG&&LASTDMG.by?''+LASTDMG.by:'',how:LASTDMG&&LASTDMG.how?''+LASTDMG.how:'mob'});
+}
+/* The titanExtra hook (6.70): an attack that hurts everyone in an area hurts every player in it, not only the one the boss
+   is aimed at (P, which the attack has already hit): each gets the hit, pushed away from (x,z), in their own game */
+function ntHostArea(x,y,z,r,n){
+  const p0=P;
+  for(const q of NET.hpl){
+    if(q===p0||q.dead||q.mode==='c'||Math.hypot(q.x-x,q.z-z)>=r||Math.abs(q.y-y)>4)continue;
+    P=q;
+    try{damagePlayer(n,(q.x-x)||0.1,(q.z-z)||0.1);}finally{P=p0;}
+  }
 }
 /* build the chunks around every player (blocks only: nothing is ever meshed here), a few each tick, and every 10 seconds
    forget the ones no player is near any more */

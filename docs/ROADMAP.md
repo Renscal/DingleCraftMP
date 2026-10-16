@@ -159,7 +159,9 @@ Smaller, independent, any order.
   chests): on a dimension the server runs, its game processes them (`ntHostTick`) and players' games do not.
 - **Creativity works** are saved per player; a work handed to another player does not show. Needs world-wide numbering.
 - **Disasters and the Snail** start in one player's game.
-- **A boss fights one player** (the nearest), and the dungeon boss and the Stone Titan have no kill record of their own.
+- **A boss fights one player**: done in 6.70. On the server's game a boss goes for whoever hit it last (15 s, `e.aggro`,
+  `ntHostAim`), and the Stone Titan's slam hits every player in it (`ntHostArea`). The dungeon boss is spawned once by the
+  server's game since 6.69 (the dungeon's seen-mark is its record); a Titan is summoned, so it needs none.
 - **Furnace progress**: done in 6.68. The server's game stamps each furnace it sends with the world clock (`ct`) and the
   player's game cooks it on to now with `furnaceCatch` (`ntApplyBE`; a stamp over 4 s old is a stored copy and is ignored).
 - **A server game that crashes**: done in 6.55 (the Overworld's restarts after 5 s, at most 3 times in 10 minutes).

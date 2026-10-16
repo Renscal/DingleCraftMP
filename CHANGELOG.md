@@ -21,6 +21,15 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## DingleCraft Multiplayer 2.0 — Everybody gets a turn
+
+*Game version 6.70, released 2026-10-16.*
+
+- **EVERYBODY GETS A TURN.** On a server, a boss used to fight whoever stood nearest and nobody else. Stand at the back with a bow and you could empty a quiver into the Stone Titan while your friend took every punch. Bosses have read the room.
+- **Bosses hold a grudge.** Hit a boss and it comes for you, even past a nearer player, for fifteen seconds after your last hit. Stop hitting it and it goes back to whoever is closest. Ordinary monsters are not that petty.
+- **The slam is for everyone.** When the Stone Titan slams the ground, every player standing in the shockwave takes the hit and gets thrown back, not just the one it was looking at.
+- **Single player is unchanged:** there was only ever one of you to be angry at.
+
 ## DingleCraft Multiplayer 2.0 — Sealed for freshness
 
 *Game version 6.69, released 2026-10-16.*

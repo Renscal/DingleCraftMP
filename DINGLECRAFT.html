@@ -1042,7 +1042,7 @@ THE SOFTWARE.
    ===================================================================== */
 'use strict';
 
-const GAME_VERSION = '6.69';
+const GAME_VERSION = '6.70';
 const RELEASE_LABEL = 'DingleCraft Multiplayer 2.0';   /* the public name of this game version (docs/RELEASING.md): GAME_VERSION stays the internal, monotonic number */
 var HIT_HOW=null,EXPL_BY=null;  /* damage attribution (PART 53) */
 var TP={id:'og',q:-1,qr:1,hr:false,busy:false,want:null,shadow:false,mods:[],live:[],og:null,ogR:null,ogF:null,ev:{},warm:null,devTexBase:null};  /* texture packs (PART 54) */
@@ -10629,6 +10629,7 @@ function titanExtra(e,dt,pd,pdx,pdz){
     P.vx+=pdx/dd*9;P.vz+=pdz/dd*9;P.vy=Math.max(P.vy,9.5);
     P.hurtT=0;
     damagePlayer(4);
+    if(NET.host)ntHostArea(e.x,e.y,e.z,6.5,4);             /* PART 58 (6.70): on the server's game, every player in the slam */
     for(const o of entities){
       if(o.t==='mob'&&!o.dead&&o!==e){
         const ox=o.x-e.x,oz=o.z-e.z,od=Math.hypot(ox,oz);
@@ -11440,7 +11441,13 @@ const SETTINGS_P=loadSettings();   /* the title (tmBoot) waits for it: the name 
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Sealed for freshness',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Everybody gets a turn',lines:[
+    '<b>EVERYBODY GETS A TURN.</b> On a server, a boss used to fight whoever stood nearest and nobody else. Stand at the back with a bow and you could empty a quiver into the Stone Titan while your friend took every punch. Bosses have read the room.',
+    '<b>Bosses hold a grudge.</b> Hit a boss and it comes for you, even past a nearer player, for fifteen seconds after your last hit. Stop hitting it and it goes back to whoever is closest. Ordinary monsters are not that petty.',
+    '<b>The slam is for everyone.</b> When the Stone Titan slams the ground, every player standing in the shockwave takes the hit and gets thrown back, not just the one it was looking at.',
+    '<b>Single player is unchanged:</b> there was only ever one of you to be angry at.',
+  ]},
+ {v:'6.69',label:'DingleCraft Multiplayer 2.0',title:'Sealed for freshness',lines:[
     '<b>SEALED FOR FRESHNESS.</b> On a server, the loot in a buried dungeon or a spawner vault used to be rolled by whichever player’s game happened to get there first. The server took that player’s word for what was inside. It no longer has to.',
     '<b>The server packs the chests.</b> The server’s own game now finds the dungeons and vaults in the land it builds around its players, rolls their chests itself and hands everyone the same copy. Your game draws the room and waits for the delivery.',
     '<b>And the welcoming committee.</b> The zombies, skeletons and the dungeon boss that come with a dungeon are now spawned by the server’s game too, instead of being spawned by a player and handed over a moment later.',
@@ -17608,7 +17615,7 @@ const NET={on:false,st:'off',ws:null,id:0,name:'',server:'',pvp:true,ap:false,pe
 
 /* everything the suites reach, spread into window.__vox by src/boot/export_boot.js */
 
-const NTEX={NET,NT_PROTO,ntTagAlpha,ntTagSeen,ntTagTick,ntCrit,ntSaveSig,ntSaveWatch,ntBye,NT_PORT,ntUrl,ntConnect,ntLeave,ntDown,ntMsg,ntSend,ntEnter,ntEdit,ntFlush,ntApplyEdit,ntApplyBE,ntBeScan,ntBeSig,
+const NTEX={NET,NT_PROTO,ntTagAlpha,ntTagSeen,ntTagTick,ntCrit,ntSaveSig,ntSaveWatch,ntBye,NT_PORT,ntUrl,ntConnect,ntLeave,ntDown,ntMsg,ntSend,ntEnter,ntEdit,ntFlush,ntApplyEdit,ntApplyBE,ntHostArea,ntBeScan,ntBeSig,
   ntSave,ntPoseNow,ntFrame,ntPeerAdd,ntPeerDel,ntPeersTick,ntMelee,ntTabRows,ntOpenMenu,ntHash,ntHostHere,ntDropSpawned,ntDropTake,ntDropsScan,ntDropIn,ntDropGone,ntDropTook,
   ntCmd,ntSleep,ntBeAsk,ntLockMsg,ntLockTick,ntGuard,ntSaveSoon,ntSimHere,ntShot,ntMobShared,ntMobsTick,ntMobsIn,ntMobsGone,ntMobTaken,ntMobHurt,ntMobHit,ntMobPup,ntBoom,ntBoomIn,
   ntRetry,ntRetryStop,ntPing,ntMobAdopt,ntPeerArmor,ntPeerRide,ntMobState,ntMobTwin,
@@ -18834,7 +18841,7 @@ function ntMobHurt(m){
   const e=NET.mobs.get(m.id);
   if(!e||e.dead||e.pup||!playing)return;
   const ph=HIT_BY,pw=HIT_HOW,p0=P;
-  if(NET.host){const q=NET.hpl.find(o=>o.nid===(m.from|0));if(q)P=q;}   /* on the server's game: the one who hit it is "the player" it flees or turns on */
+  if(NET.host){const q=NET.hpl.find(o=>o.nid===(m.from|0));if(q){P=q;if(MOBT[e.mt]&&MOBT[e.mt].boss){e.aggro=q.nid;e.aggroT=NET.acc;}}}   /* on the server's game: the one who hit it is "the player" it flees or turns on; a boss remembers them (6.70, ntHostAim) */
   HIT_BY=ntShown(m.name);HIT_HOW='melee';
   try{hurtMob(e,+m.dmg||0,+m.kx||0,+m.kz||0);}finally{HIT_BY=ph;HIT_HOW=pw;P=p0;}
 }
@@ -19018,6 +19025,8 @@ function ntHostAim(e){
     if(d<bd&&!q.dead&&q.mode!=='c'){bd=d;best=q;}
   }
   best=best||alt;
+  /* 6.70: a boss goes for whoever hit it last (for 15 s, while they are in reach, alive and not in creative), not just the nearest */
+  if(e.aggro&&NET.acc-e.aggroT<15){const a=NET.hpl.find(q=>q.nid===e.aggro);if(a&&!a.dead&&a.mode!=='c'&&Math.hypot(a.x-e.x,a.z-e.z)<reach)best=a;}
   if(!best||!chunkAt(Math.floor(e.x),Math.floor(e.z)))return true;
   P=best;
   return false;
@@ -19044,6 +19053,16 @@ function ntHostHurt(n,kx,kz){
   if(NET.acc-q.hitAt<0.5)return;
   q.hitAt=NET.acc;
   ntSend({t:'hurt',to:q.nid,dmg:n,kx:+kx||0,kz:+kz||0,by:LASTDMG&&LASTDMG.by?''+LASTDMG.by:'',how:LASTDMG&&LASTDMG.how?''+LASTDMG.how:'mob'});
+}
+/* The titanExtra hook (6.70): an attack that hurts everyone in an area hurts every player in it, not only the one the boss
+   is aimed at (P, which the attack has already hit): each gets the hit, pushed away from (x,z), in their own game */
+function ntHostArea(x,y,z,r,n){
+  const p0=P;
+  for(const q of NET.hpl){
+    if(q===p0||q.dead||q.mode==='c'||Math.hypot(q.x-x,q.z-z)>=r||Math.abs(q.y-y)>4)continue;
+    P=q;
+    try{damagePlayer(n,(q.x-x)||0.1,(q.z-z)||0.1);}finally{P=p0;}
+  }
 }
 /* build the chunks around every player (blocks only: nothing is ever meshed here), a few each tick, and every 10 seconds
    forget the ones no player is near any more */
