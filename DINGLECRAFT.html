@@ -18,7 +18,7 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges}
    must stay a share of the WINDOW are written as % of the overlay, or as calc(Nvh / var(--uiz)). */
 :root{--uiz:1;--uih:1}
 .ovl,#cutbox,#cutskip{zoom:var(--uiz)}
-#cross,#ring,#handname,#stats,#hotbar,#dis,#trick,#coords,#cmphud,#pcmphud,#chatbox,#tablist,#nuket,#xp,#armor,#boss,#mgbar,#debug,
+#cross,#ring,#handname,#stats,#hotbar,#dis,#trick,#coords,#cmphud,#pcmphud,#chatbox,#tablist,#nuket,#xp,#armor,#thrhud,#boss,#mgbar,#debug,
 #toast{zoom:var(--uih)}
 
 /* ---------- HUD ---------- */
@@ -350,6 +350,10 @@ body.touch #cross{display:none}
 #armor{position:fixed;right:10px;bottom:42px;display:none;color:#cfd6ff;
   font:bold 15px 'Courier New',monospace;white-space:nowrap;background:rgba(0,0,0,.42);
   padding:4px 9px;border-radius:4px;text-shadow:1px 1px 0 #000}
+#thrhud{position:fixed;right:14px;top:50%;transform:translateY(-50%);width:12px;height:140px;display:none;
+  background:rgba(0,0,0,.45);border:2px solid #1c1c1c;box-shadow:0 0 0 1px rgba(255,255,255,.25);pointer-events:none}
+#thrfill{position:absolute;left:0;right:0;bottom:0;height:0;background:#ffb43a}
+#thrfill.full{background:#ff5a2a}
 #store,#pow{z-index:25;background:rgba(0,0,0,.62)}
 #storewin,#powwin{position:relative;min-width:min(calc(100% - 16px),540px);max-width:min(calc(100% - 16px),580px);
   max-height:calc(100% - 16px);overflow-y:auto}
@@ -481,6 +485,7 @@ body.touch #cross{display:none}
   <div id="nuket"></div>
 <div id="xp"></div>
 <div id="armor"></div>
+<div id="thrhud"><div id="thrfill"></div></div>
 <div id="boss"></div>
 <div id="mgbar"><div id="mgbarname">MALGORATH, THE WORLD-EATER</div><canvas id="mgbarc" width="600" height="26"></canvas></div>
 <div id="mgedge"></div>
@@ -931,7 +936,7 @@ body.touch #cross{display:none}
           <h3>Vehicles &amp; mounts</h3>
           <div class="krow"><b>Drive car</b> <span>right-click a car · <kbd data-k="fwd">W</kbd>/<kbd data-k="back">S</kbd> accelerate · <kbd data-k="left">A</kbd>/<kbd data-k="right">D</kbd> steer · <kbd data-k="sneak">Shift</kbd> gets out · <kbd data-k="honk">H</kbd> honks</span></div>
           <div class="krow"><b>Boat</b> <span>right-click water to launch · <kbd data-k="fwd">W</kbd>/<kbd data-k="back">S</kbd> throttle · <kbd data-k="left">A</kbd>/<kbd data-k="right">D</kbd> steer · <kbd data-k="sneak">Shift</kbd> hops out</span></div>
-          <div class="krow"><b>Plane</b> <span>right-click to board · <kbd data-k="jump">Space</kbd> throttle · <kbd data-k="brake">Alt</kbd> brake (stopped on the ground: backs up) · <kbd data-k="fwd">W</kbd> nose down · <kbd data-k="back">S</kbd> nose up · <kbd data-k="left">A</kbd>/<kbd data-k="right">D</kbd> turn · <kbd data-k="sneak">Shift</kbd> gets out · where you look does not steer</span></div>
+          <div class="krow"><b>Plane</b> <span>right-click to board · <kbd data-k="jump">Space</kbd> throttle up · <kbd data-k="brake">Alt</kbd> brake and throttle down (stopped on the ground: backs up) · the throttle stays where you leave it (the bar on the right) · <kbd data-k="fwd">W</kbd> nose down · <kbd data-k="back">S</kbd> nose up · <kbd data-k="left">A</kbd>/<kbd data-k="right">D</kbd> turn · <kbd data-k="sneak">Shift</kbd> gets out · where you look does not steer</span></div>
           <div class="krow"><b>Skateboard</b> <span>right-click to ride · <kbd data-k="fwd">W</kbd> push · <kbd data-k="left">A</kbd>/<kbd data-k="right">D</kbd> carve · <kbd data-k="jump">Space</kbd> ollie · <kbd data-k="left">A</kbd>/<kbd data-k="right">D</kbd> in the air spins · land on a block edge to grind · <kbd data-k="sneak">Shift</kbd> steps off</span></div>
           <div class="krow"><b>Coaster cart</b> <span>right-click to hop in · hold <kbd data-k="fwd">W</kbd> to roll out of the station</span></div>
           <div class="krow"><b>Dragons</b> <span>feed 5 steak to tame · right-click bare-handed to ride · fly where you look, <kbd data-k="jump">Space</kbd> climbs, <kbd data-k="sneak">Shift</kbd> dismounts</span></div>
@@ -1037,7 +1042,7 @@ THE SOFTWARE.
    ===================================================================== */
 'use strict';
 
-const GAME_VERSION = '6.65';
+const GAME_VERSION = '6.66';
 const RELEASE_LABEL = 'DingleCraft Multiplayer 2.0';   /* the public name of this game version (docs/RELEASING.md): GAME_VERSION stays the internal, monotonic number */
 var HIT_HOW=null,EXPL_BY=null;  /* damage attribution (PART 53) */
 var TP={id:'og',q:-1,qr:1,hr:false,busy:false,want:null,shadow:false,mods:[],live:[],og:null,ogR:null,ogF:null,ev:{},warm:null,devTexBase:null};  /* texture packs (PART 54) */
@@ -6211,7 +6216,7 @@ function frame(t){
     updateDisaster(run?dt:0);
     if(playing&&run)updateStocks(dt);
     trickFrame(run?dt:0);
-    if(playing&&run){if(DIM==='over'){processVillages(dt);processParks(dt);processWD(dt);processCells(dt);tickTitans(dt);processRoosts(dt);tickMalg(dt);tickCompass(dt);}tickSpawners(dt);updateBossBar();updateXPHud();tickFlow(dt);updateArmorHud();tickDragons(dt);tickTrail(dt);tickBPass(dt);updateCut(dt);tickWin(dt);tickNuke(dt);tickMega(dt);tickTerr(dt);tickXray(dt);tickGadgets(dt);tickBig(dt);tickDisp(dt);tickChestLabels();tickLawns(dt);tickCine(dt);tickSnail(dt);tickScare(dt);tickHorror(dt);processNether(dt);processAether(dt);processPuppet(dt);tickPortal(dt);tickPCompass(dt);processCrea(dt);}
+    if(playing&&run){if(DIM==='over'){processVillages(dt);processParks(dt);processWD(dt);processCells(dt);tickTitans(dt);processRoosts(dt);tickMalg(dt);tickCompass(dt);}tickSpawners(dt);updateBossBar();updateXPHud();tickFlow(dt);updateArmorHud();tickThrottleHud();tickDragons(dt);tickTrail(dt);tickBPass(dt);updateCut(dt);tickWin(dt);tickNuke(dt);tickMega(dt);tickTerr(dt);tickXray(dt);tickGadgets(dt);tickBig(dt);tickDisp(dt);tickChestLabels();tickLawns(dt);tickCine(dt);tickSnail(dt);tickScare(dt);tickHorror(dt);processNether(dt);processAether(dt);processPuppet(dt);tickPortal(dt);tickPCompass(dt);processCrea(dt);}
     const hideCur=playing&&!paused&&P&&!P.dead&&!modalOpen();
     if(hideCur!==curHidden){curHidden=hideCur;$('gl').style.cursor=hideCur?'none':'default';}
     engineSnd(!paused&&!!P.ride&&(P.ride.t==='car'||P.ride.t==='plane'),P.ride?P.ride.spd:0);
@@ -11423,7 +11428,13 @@ const SETTINGS_P=loadSettings();   /* the title (tmBoot) waits for it: the name 
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Light work',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Full throttle',lines:[
+    '<b>FULL THROTTLE.</b> Dingle Airlines has installed a throttle lever. Pilots who spent whole flights with a thumb welded to the Space bar can now let go of it.',
+    '<b>It stays where you put it.</b> Space opens the throttle, Alt closes it, and the plane holds whatever you leave it at. Push it to full and it stays full: no more slowly running out of speed the moment you stop pressing. Half throttle cruises at half speed. Taking off and climbing with Space held works just as it did.',
+    '<b>A gauge.</b> A small bar on the right of the screen shows the throttle while you fly: amber as it fills, red at full. It scales with the rest of the HUD and goes away when you get out.',
+    '<b>The ground pushes back.</b> Hitting the ground (falling onto it, or meeting it fast and sinking) now costs half your speed and half your throttle, with a thud. Flying into a hillside or a wall halves the throttle too, so the engine no longer roars you straight back into it. A gentle landing, a hop on the take-off run and a one-block ledge on the runway cost nothing. Alt still brakes, and stopped on the ground it still backs you up.',
+  ]},
+ {v:'6.65',label:'DingleCraft Multiplayer 2.0',title:'Light work',lines:[
     '<b>LIGHT WORK.</b> No new features again. The game found out it had been spending half its time lighting the world by checking, one block at a time, which chunk it was standing in. It now remembers.',
     '<b>Lighting a new chunk, twice as fast.</b> Every new piece of land works out where the sunlight and the torchlight reach. Along the border between two chunks that sum went back and forth between them, and the game only remembered one, so at every step it forgot the other and looked it up again by name. It remembers two now: lighting a chunk takes about 1.6 ms instead of 3.6 ms here, and building one about a quarter less overall. Flying the plane at full speed, loading a world and a server with many players spread out all build land, and all of it gets the time back.',
     '<b>Exactly the same light.</b> Not one block is lit differently: the light of 64 new chunks adds up to the same number as it did in 6.64, block for block, sun and torch. A change of dimension and every chunk let go also wipe the memory now, so the Nether can never borrow the Overworld’s sunshine.',
@@ -14820,7 +14831,10 @@ function updatePlane(e,dt){
   if(e.hurtT<0.15)for(const m of e.mats)m.emissive&&m.emissive.setRGB(0,0,0);
   const ridden=P&&P.ride===e&&!P.dead;
   /* 6.57: flown like a plane, not pointed like a camera. W dives and S climbs, A/D turn, Space is the throttle, Alt the
-     brake (each follows its binding: p06h). Where the rider looks changes nothing. */
+     brake (each follows its binding: p06h). Where the rider looks changes nothing.
+     6.66: the throttle (e.thr, 0 to 1) stays where it is put: Space opens it, Alt closes it (and brakes while held), and
+     the speed follows it up to thr x 28. Held from a standstill it climbs exactly as before (the 6/s rate is always the
+     lower limit). Nobody aboard: it closes. */
   let pin=0,s=0,thr=false,brk=false;
   if(ridden&&!modalOpen()&&!paused){
     pin=clamp((KEY.KeyS?1:0)-(KEY.KeyW?1:0)-TOUCH.f,-1,1);
@@ -14828,9 +14842,11 @@ function updatePlane(e,dt){
     thr=!!KEY.Space;brk=!!KEY.AltLeft;
   }
   if(e.pitch==null)e.pitch=0;
-  if(thr)e.spd=Math.min(28,Math.max(0,e.spd)+dt*(e.onGround?7:6));
-  else if(brk)e.spd=e.spd>0.05?Math.max(0,e.spd-dt*(e.onGround?12:6)):(e.onGround?Math.max(-3,e.spd-dt*2):e.spd);
-  else if(e.spd>0)e.spd=Math.max(0,e.spd-dt*(e.onGround?3:0.5+e.spd*0.02));
+  e.thr=ridden?clamp((e.thr||0)+(thr?dt*0.5:(brk?-dt*0.5:0)),0,1):0;
+  const tgt=e.thr*28;
+  if(brk&&!thr)e.spd=e.spd>0.05?Math.max(0,e.spd-dt*(e.onGround?12:6)):(e.onGround?Math.max(-3,e.spd-dt*2):e.spd);
+  else if(e.spd<tgt)e.spd=Math.min(tgt,Math.max(0,e.spd)+dt*(e.onGround?7:6));
+  else if(e.spd>tgt)e.spd=Math.max(tgt,e.spd-dt*(e.onGround?3:0.5+e.spd*0.02));
   else if(e.spd<0)e.spd=Math.min(0,e.spd+dt*3);
   if(!e.onGround)e.spd=clamp(e.spd-Math.sin(e.pitch)*dt*5,0,34);   /* climbing costs speed, diving pays it back */
   if(Math.abs(e.spd)>0.5)e.yaw-=s*dt*(e.onGround?1.7:1.05);
@@ -14846,15 +14862,16 @@ function updatePlane(e,dt){
   const tv=Math.sin(e.pitch)*e.spd*lift;
   e.vy=lerp(e.vy,tv,1-Math.exp(-dt*2.6))-GRAV*dt*(1-lift);
   if(e.vy<-38)e.vy=-38;
-  const spdWas=Math.abs(e.spd);
+  const spdWas=Math.abs(e.spd),air=!e.onGround,vyIn=e.vy;
   const wall=moveBody(e,e.vx*dt,e.vy*dt,e.vz*dt,false);
+  if(air&&e.onGround&&(vyIn<-8||(spdWas>20&&vyIn<-3))){e.spd*=0.5;e.thr*=0.5;playS('thud');}   /* 6.66: hitting the ground (a drop of two blocks or more, or fast and sinking) costs speed and throttle; a ledge while taxiing, a hop on the take-off run and a gentle landing do not */
   if(wall){
     if(spdWas>11){
       e.hp-=Math.round(spdWas*0.5);e.hurtT=0.4;playS('thud');
       for(const m of e.mats)m.emissive&&m.emissive.setRGB(0.4,0.1,0);
       if(e.hp<=0){killCar(e);return;}
     }
-    e.spd*=0.3;
+    e.spd*=0.3;e.thr*=0.5;
   }
   if(e.y<-40){if(P&&P.ride===e)P.ride=null;removeEnt(e);return;}
   e.prop.rotation.z+=dt*(3+Math.abs(e.spd)*1.6);
@@ -14863,6 +14880,17 @@ function updatePlane(e,dt){
   e.mesh.rotation.x=e.pitch;
   e.roll=lerp(e.roll||0,e.onGround?0:s*-0.4,1-Math.exp(-dt*3));
   e.mesh.rotation.z=e.roll;
+}
+/* 6.66: the throttle gauge on the right of the screen, while riding a plane (written only when it changes) */
+let _thrLast=-1;
+function tickThrottleHud(){
+  const el=$('thrhud'),f=$('thrfill');
+  if(!el||!f)return;
+  const e=P&&!P.dead&&!CUT.on&&P.ride&&P.ride.t==='plane'?P.ride:null,v=e?Math.round((e.thr||0)*100):-1;
+  if(v===_thrLast)return;
+  _thrLast=v;
+  el.style.display=v<0?'none':'block';
+  if(v>=0){f.style.height=v+'%';f.className=v>=100?'full':'';}
 }
 IT.PLANE=283;
 idef(IT.PLANE,{name:'Prop Plane',icon:'i_plane',stack:1,plane:1});
@@ -15829,7 +15857,7 @@ const KB_ACTS=[   /* [id, group, label, default code] */
   ['hot4','Inventory','Hotbar slot 4','Digit4'],['hot5','Inventory','Hotbar slot 5','Digit5'],['hot6','Inventory','Hotbar slot 6','Digit6'],
   ['hot7','Inventory','Hotbar slot 7','Digit7'],['hot8','Inventory','Hotbar slot 8','Digit8'],['hot9','Inventory','Hotbar slot 9','Digit9'],
   ['cam','Actions','Change camera','KeyF'],['powers','Actions','Powers menu','KeyP'],['laser','Actions','Laser Eyes (hold)','KeyL'],
-  ['honk','Actions','Honk (in a car)','KeyH'],['brake','Actions','Plane brake','AltLeft'],
+  ['honk','Actions','Honk (in a car)','KeyH'],['brake','Actions','Plane brake / throttle down','AltLeft'],
   ['chat','Screen & chat','Chat','KeyT'],['cmd','Screen & chat','Chat with a command','Slash'],['list','Screen & chat','Player list (hold)','Tab'],
   ['shot','Screen & chat','Screenshot','F2'],['replay','Screen & chat','Save a replay','F8']];
 const KB_FIXED=['Escape','F3','Enter','NumpadEnter','MetaLeft','MetaRight','ContextMenu','OSLeft','OSRight'];
@@ -40741,7 +40769,7 @@ if(typeof window==='undefined'||typeof __VOXTEST!=='undefined'){
   window.__vox={...CREX,...PGEX,...MGEX,...TPEX,chatSubmit,CHAT,chatPush,sysMsg,openChat,closeChat,chatKey,renderChat,renderTab,tickChatHud,
     pcmpCycle,pcmpPlayers,tickPCompass,getPC:()=>P.pcmpT,FLOWER_IDS,bioFlower,primeTNT,getLASTDMG:()=>LASTDMG,mouseFilter,MF,
     DEFS,calcCraft,mkResult,takeCraft,invAddTo,invConsume,invCount,stackMax,canHarvest,blockDrop,RECIPES,GROUPS,FUELS,SMELT,terrainInfo,hashSeed,heldStack,damagePlayer,explode,TOUCH,startNewWorld,quitToTitle,saveToStorage,loadWorldByName,applySave,snapshot,
-    MINE,breakTime,toolId,raycastB,farmWild,FARM_WILD,SPAWN,spawnRoom,spawnDark,spawnClear,spawnOK,spawnTry,mobsTick,fireLaser,laserBeam,eyePos,lookDir,GR_DEF,GR_LABELS,isPaused:()=>paused,CHLM,chestLabelRefresh,chestLabelClick,chestLabelSlot,tickChestLabels,MKT,updateStocks,initMarket,MKT_TREND,MKT_MU,autoSaveT:v=>{if(typeof v==='number')autoT=v;return autoT;},CATCH,catchTick,catchChunk,catchStamp,farmCatch,treeCatch,furnaceCatch,furnaceStep,catchIn,catchOut,catchClockIn,catchSteps,getSky,skyDarken,countMobs,spawnChunks,mobsDespawn,spawnOKP,TREE,TREE_KINDS,treeKindOf,treeShape,treeGrow,treeUse,treeTick,leafDrop,leafHeld,isLogId,isLeafId,skyOpen,stackName,PSN,psnDraw,psnSplit,psnMoved,psnAdd,psnCraft,psnHit,psnBite,spawnBullet,updateBullet,bulletPass,puSpawn,puUpdate,psnName,fxPoison,fxTick,fxPoisoned,breakBlock,genChunk,FARM,FARM_RECIPE_N,CROPS,cropStage,cropYield,farmUse,farmTick,farmHarvest,wcanUses,getMeta,setLastDmg:o=>{LASTDMG=o;},DIFF_NAMES,diffKey,diffLevel,diffCore,diffMobDmg,diffStarveFloor,diffSet,specStart,specStop,diffDeathUI,tgrDiff,grToggle,grFromCreate,respawn,die,armorPixels,armorMat,armorLayer,skinArm,SKINS,getHandG:()=>handG,ARM_M,ARMOR_TEX,ARMOR_GROW,skinModel,syncArmorModel,armorIcons,armorPts,updateArmorHud,drawStats,PIX,dimOn,dimEvict,dayRamp,dayLight,dayElev,sunUp,DAY_LEN,critNow,critFx,CRIT_MUL,doorId,toggleDoor,setPLock:v=>{usePLock=!!v;},meshChunk,chunkAt,dropSel,dropMe,DROP_WAIT,LGT,lightEmit,lightAt:getLight,lightEdit,lightChunk,lightCh,lightFlood,lightTick,lightDay,bufLight,blightObc,blightPatch,getMats:()=>({op:matOp,cut:matCut,wat:matWat}),getTLIGHTS:()=>TLIGHTS,LIQ,isLiq,getMeta,liqAmt,liqHeight,liqTop,liqFlow,liqWake,liqCell,liqStep,liqDirs,liqCanEnter,lavaWaterCheck,liqRule,SKINS,SKIN_PX,SKIN_BOXES,skinFaces,skinCorners,skinBoxData,skinLegacyCopies,skinCheck,skinBytes,skinModel,skinSet,skinOwn,skinPaintDefault,skinBoot,mkPlayerModel,getPlModel:()=>plModel,syncArmorModel,IM,stackPart,imDown,imOver,imUp,imWheel,imOutside,imKey,imReset,imCollectAll,slotClick,quickMove,getCursor:()=>cursorStack,setCursor:v=>{cursorStack=v;},getMODAL:()=>MODAL,DBG,INHAB,dbgText,dbgSection,dbgFacing,dbgDifficulty,dbgMemory,dbgKeyDown,dbgKeyUp,dbgBoxes,dbgBorders,dbgTick,dbgSaveFields,dbgLoad,getWAGE:()=>WAGE,setWAGE:v=>{WAGE=+v;},getDebugOn:()=>debugOn,getScene:()=>scene,openModal,closeModal,respawn,ensureBE,spawnMob,spawnCar,spawnSkate,setBlock,getBlock,frameStep:t=>frame(t),startDisaster,endDisaster,igniteAt,getDIS:()=>DIS,getMKT:()=>MKT,STOX,stoxMigrate,getTRICK:()=>TRICK,vCell,openDlg,closeDlg,dlgPick,getDLG:()=>({open:dlgOpen,node:DLGN,opts:LASTOPTS.map(o=>o.t),e:DLGE}),getVSEEN:()=>VSEEN,pcBuy,pcSell,pcDeposit,pcWithdraw,openPC,closePC,pcPL,openCas,closeCas,casSpin,bjDeal,bjHit,bjStand,bjDouble,getBJ:()=>CASBJ,getCAS:()=>casOpen,pCell,spawnCart,colInfo,openDSel,closeDSel,dselPick,spawnXP,openEnch,closeEnch,enchApply,breakTime,damageHeld,enchName,hurtMob,spawnMob,blockEnts,MOBT,toolId,doSleep,spawnBoat,equipArmor,armorPts,armorAbsorb,armorId,sortInv,tickFlow,flowPush,getFLOWQ:()=>FLOWQ,pickMob,dragonFire,storeBuy,buyDB,givePlayer,openStore,closeStore,buildHat,powActive,powUnlock,powToggle,openPow,closePow,POW,fireLaser,rstCell,getRSEEN:()=>RSEEN,getTITQ:()=>TITQ,getDEMON:()=>DEMON,getCUT:()=>CUT,getWIN:()=>WIN,endCut,winHome,demonAY,cmpSelect,cmpFind,getCMP:()=>CMP,openCmp,closeCmp,nukeExplode,getSHAKE:()=>SHAKE,getNUKE:()=>NUKE,EGG_BASE:250,EGG_MOBS:()=>EGG_MOBS,GR,grToggle,setRD,getRD:()=>RD,saveSettings,loadSettings,setTime:t=>{timeOfDay=t;},getTime:()=>timeOfDay,wdCell,lsCell,getWDSEEN:()=>WDSEEN,getLSSEEN:()=>LSSEEN,setTime:t=>{timeOfDay=t;},getTime:()=>timeOfDay,getLight:()=>({amb:ambL?ambL.intensity:0,fb:fullbright}),setBright:b=>{fullbright=!!b;},sunUp,getENCH:()=>ENCHUI,getSPW:()=>SPW,dungeonBuild,rollOffers,enchCost,getEnchOpen:()=>enchOpen,getDSEL:()=>dselOpen,getPSEEN:()=>PSEEN,PATCH_NOTES,PATCH_LOG,openPatch,closePatch,renderPatch,openHelp,closeHelp,getHelp:()=>helpOpen,KB,KB_ACTS,KB_FIXED,kbEv,kbSet,kbReset,kbLoad,kbSaveVal,kbName,kbCode,kbRebuild,kbSec,kbRender,kbHelp,kbMouse,getRP:()=>RP,RIDE_SEATED,rideSeatPos,rideSeat,rideHeadYaw,updatePlane,setLock,getLock:()=>usePLock,toggleXray,xrayRefresh,getXR:()=>({on:XR.on,n:XR.g?XR.g.children.length:0}),setDim,getDim:()=>DIM,nCol,aCol,lavaWaterCheck,tryIgnitePortal,travelNether,travelAether,nfCell,asCell,getNSEEN:()=>NSEEN,getASEEN:()=>ASEEN,getINFKILL:()=>INFKILL,getVALKILL:()=>VALKILL,GADGET_IDS,randGadget,getGDG:()=>({...GDG}),getJET:()=>JETF,getGRAP:()=>GRAP?{...GRAP}:null,countBlockNear:(id,y0,y1)=>{let n=0;for(const [k,ch] of chunks){if(keyDim(k)!==DIM)continue;const bl=ch.bl;for(let i=0;i<bl.length;i++){if(bl[i]!==id)continue;const y=((i-(i%CH))/CH)%WH;if(y>=y0&&y<=y1)n++;}}return n;},getPatch:()=>patchOpen,modalOpen,GAME_VERSION,RELEASE_LABEL,TOOL3D,toolIdParts,mkTool3D,refreshHand,spawnDrop,getHand:()=>({kind:handKind,n:handG?handG.children.length:0,t3d:!!(handG&&handG.children[0]&&handG.children[0].isT3D)}),getArmTool:()=>plModel?(plModel._toolId||0):0,setCam:n=>{camMode=n;},WPN3D,b64bytes,gunIdParts,mkWpn3D,wpnRaw,draw3DIcon,setShaders,getSHD:()=>({on:SHD.on,ready:!!SHD.rt}),openSet,closeSet,getSet:()=>setOpen,getSnd:()=>soundOn,setSnd:v=>{soundOn=!!v;},getMus:()=>musicOn,setMus:v=>{musicOn=!!v;},getUG:()=>ugT,throwSubBtn,mkSkateMesh,applyShadows,getShadow:()=>(renderer&&renderer.shadowMap?!!renderer.shadowMap.enabled:false),STORE_CAT,pauseGame,resumeGame,getPaused:()=>!!paused,armorAccepts,syncArmorModel,getArmVis:()=>plModel&&plModel._arm?plModel._arm.map(g=>g[0].visible):null,openTerrAt:(x,y,z)=>{ensureBE(x,y,z,'terr');openTerr(bkey(x,y,z));},closeTerr,getTG:()=>({on:terrOpen,w:TG.w,h:TG.h,hp:TG.hp,px:TG.px,py:TG.py,hasT:!!TG.t}),terrTile:(x,y)=>TG.t?TG.t[y*TG.w+x]:-1,terrPoke:(x,y,v)=>{if(TG.t)TG.t[y*TG.w+x]=v;},saveTerr,terrCraft,TCRAFTS,terrGive:(k,n)=>{if(k==='ore')TG.ore+=n;else TG.binv[k]=(TG.binv[k]||0)+n;},terrWarp:(x,y)=>{TG.px=x;TG.py=y;TG.vx=TG.vy=0;TG.fallV=0;},b64enc,blockAliveRoll,blockComesAlive,getFISHB:()=>FISHB?{x:FISHB.x,y:FISHB.y,z:FISHB.z,inWater:FISHB.inWater,bite:FISHB.bite}:null,fishForceBite:()=>{if(FISHB){FISHB.bite=1.2;}},dispUse,setFigChance:v=>{FIG_CHANCE=v;},getDISPM:()=>DISPM.size,lawnCheck,getLWN:()=>LWN.size,stampCinema,openCine,closeCine,cineSelect,cineEnter,getCIN:()=>({on:cineOpen,mode:CIN.mode,m:CIN.m,res:CIN.res}),getM8:()=>M8LAST,getSNL:()=>SNL&&!SNL.dead?{x:SNL.x,y:SNL.y,z:SNL.z,on:SNL_ON}:{on:SNL_ON},snailReset:()=>{if(SNL)removeEnt(SNL);SNL=null;SNL_ON=false;},snailWarp:(x,y,z)=>{if(SNL&&!SNL.dead){SNL.x=x;SNL.y=y;SNL.z=z;SNL.vx=SNL.vy=SNL.vz=0;}},spawnPlane,megaNuke,nukeDrop,nukeSealed,forceChunksNear,surfaceTop,getNARM:()=>({t:NARM.t,armed:!!NARM.e}),setNARM:t=>{if(NARM.e)NARM.t=t;},getNUKES:()=>NUKES.map(n=>({x:n.x,y:n.y,z:n.z,d:n.d})),nukeSpawnBomb:(x,y,z)=>{spawnABomb(x,y,z,0,0);NARM.e=entities[entities.length-1];NARM.t=20;NARM.sir=0;},getSCARE:()=>({t:SCARE.t,kind:SCARE.kind}),setGhostChance:v=>{GHOST_CHANCE=v;},spawnGhost,setGameSpeed:v=>{GAMESPD=clamp(+v,0.1,1);},getGameSpeed:()=>GAMESPD,look,drainLook,getYaw:()=>P?P.yaw:0,getPitch:()=>P?P.pitch:0,getHorror:()=>({ghosts:entities.filter(e=>e.t==='ghost'&&!e.dead).length}),getTGX:()=>({binv:{...TG.binv},ore:TG.ore,pick:TG.pick,sword:TG.sword,won:!!TG.won,craft:!!TG.craft}),
+    MINE,breakTime,toolId,raycastB,farmWild,FARM_WILD,SPAWN,spawnRoom,spawnDark,spawnClear,spawnOK,spawnTry,mobsTick,fireLaser,laserBeam,eyePos,lookDir,GR_DEF,GR_LABELS,isPaused:()=>paused,CHLM,chestLabelRefresh,chestLabelClick,chestLabelSlot,tickChestLabels,MKT,updateStocks,initMarket,MKT_TREND,MKT_MU,autoSaveT:v=>{if(typeof v==='number')autoT=v;return autoT;},CATCH,catchTick,catchChunk,catchStamp,farmCatch,treeCatch,furnaceCatch,furnaceStep,catchIn,catchOut,catchClockIn,catchSteps,getSky,skyDarken,countMobs,spawnChunks,mobsDespawn,spawnOKP,TREE,TREE_KINDS,treeKindOf,treeShape,treeGrow,treeUse,treeTick,leafDrop,leafHeld,isLogId,isLeafId,skyOpen,stackName,PSN,psnDraw,psnSplit,psnMoved,psnAdd,psnCraft,psnHit,psnBite,spawnBullet,updateBullet,bulletPass,puSpawn,puUpdate,psnName,fxPoison,fxTick,fxPoisoned,breakBlock,genChunk,FARM,FARM_RECIPE_N,CROPS,cropStage,cropYield,farmUse,farmTick,farmHarvest,wcanUses,getMeta,setLastDmg:o=>{LASTDMG=o;},DIFF_NAMES,diffKey,diffLevel,diffCore,diffMobDmg,diffStarveFloor,diffSet,specStart,specStop,diffDeathUI,tgrDiff,grToggle,grFromCreate,respawn,die,armorPixels,armorMat,armorLayer,skinArm,SKINS,getHandG:()=>handG,ARM_M,ARMOR_TEX,ARMOR_GROW,skinModel,syncArmorModel,armorIcons,armorPts,updateArmorHud,tickThrottleHud,drawStats,PIX,dimOn,dimEvict,dayRamp,dayLight,dayElev,sunUp,DAY_LEN,critNow,critFx,CRIT_MUL,doorId,toggleDoor,setPLock:v=>{usePLock=!!v;},meshChunk,chunkAt,dropSel,dropMe,DROP_WAIT,LGT,lightEmit,lightAt:getLight,lightEdit,lightChunk,lightCh,lightFlood,lightTick,lightDay,bufLight,blightObc,blightPatch,getMats:()=>({op:matOp,cut:matCut,wat:matWat}),getTLIGHTS:()=>TLIGHTS,LIQ,isLiq,getMeta,liqAmt,liqHeight,liqTop,liqFlow,liqWake,liqCell,liqStep,liqDirs,liqCanEnter,lavaWaterCheck,liqRule,SKINS,SKIN_PX,SKIN_BOXES,skinFaces,skinCorners,skinBoxData,skinLegacyCopies,skinCheck,skinBytes,skinModel,skinSet,skinOwn,skinPaintDefault,skinBoot,mkPlayerModel,getPlModel:()=>plModel,syncArmorModel,IM,stackPart,imDown,imOver,imUp,imWheel,imOutside,imKey,imReset,imCollectAll,slotClick,quickMove,getCursor:()=>cursorStack,setCursor:v=>{cursorStack=v;},getMODAL:()=>MODAL,DBG,INHAB,dbgText,dbgSection,dbgFacing,dbgDifficulty,dbgMemory,dbgKeyDown,dbgKeyUp,dbgBoxes,dbgBorders,dbgTick,dbgSaveFields,dbgLoad,getWAGE:()=>WAGE,setWAGE:v=>{WAGE=+v;},getDebugOn:()=>debugOn,getScene:()=>scene,openModal,closeModal,respawn,ensureBE,spawnMob,spawnCar,spawnSkate,setBlock,getBlock,frameStep:t=>frame(t),startDisaster,endDisaster,igniteAt,getDIS:()=>DIS,getMKT:()=>MKT,STOX,stoxMigrate,getTRICK:()=>TRICK,vCell,openDlg,closeDlg,dlgPick,getDLG:()=>({open:dlgOpen,node:DLGN,opts:LASTOPTS.map(o=>o.t),e:DLGE}),getVSEEN:()=>VSEEN,pcBuy,pcSell,pcDeposit,pcWithdraw,openPC,closePC,pcPL,openCas,closeCas,casSpin,bjDeal,bjHit,bjStand,bjDouble,getBJ:()=>CASBJ,getCAS:()=>casOpen,pCell,spawnCart,colInfo,openDSel,closeDSel,dselPick,spawnXP,openEnch,closeEnch,enchApply,breakTime,damageHeld,enchName,hurtMob,spawnMob,blockEnts,MOBT,toolId,doSleep,spawnBoat,equipArmor,armorPts,armorAbsorb,armorId,sortInv,tickFlow,flowPush,getFLOWQ:()=>FLOWQ,pickMob,dragonFire,storeBuy,buyDB,givePlayer,openStore,closeStore,buildHat,powActive,powUnlock,powToggle,openPow,closePow,POW,fireLaser,rstCell,getRSEEN:()=>RSEEN,getTITQ:()=>TITQ,getDEMON:()=>DEMON,getCUT:()=>CUT,getWIN:()=>WIN,endCut,winHome,demonAY,cmpSelect,cmpFind,getCMP:()=>CMP,openCmp,closeCmp,nukeExplode,getSHAKE:()=>SHAKE,getNUKE:()=>NUKE,EGG_BASE:250,EGG_MOBS:()=>EGG_MOBS,GR,grToggle,setRD,getRD:()=>RD,saveSettings,loadSettings,setTime:t=>{timeOfDay=t;},getTime:()=>timeOfDay,wdCell,lsCell,getWDSEEN:()=>WDSEEN,getLSSEEN:()=>LSSEEN,setTime:t=>{timeOfDay=t;},getTime:()=>timeOfDay,getLight:()=>({amb:ambL?ambL.intensity:0,fb:fullbright}),setBright:b=>{fullbright=!!b;},sunUp,getENCH:()=>ENCHUI,getSPW:()=>SPW,dungeonBuild,rollOffers,enchCost,getEnchOpen:()=>enchOpen,getDSEL:()=>dselOpen,getPSEEN:()=>PSEEN,PATCH_NOTES,PATCH_LOG,openPatch,closePatch,renderPatch,openHelp,closeHelp,getHelp:()=>helpOpen,KB,KB_ACTS,KB_FIXED,kbEv,kbSet,kbReset,kbLoad,kbSaveVal,kbName,kbCode,kbRebuild,kbSec,kbRender,kbHelp,kbMouse,getRP:()=>RP,RIDE_SEATED,rideSeatPos,rideSeat,rideHeadYaw,updatePlane,setLock,getLock:()=>usePLock,toggleXray,xrayRefresh,getXR:()=>({on:XR.on,n:XR.g?XR.g.children.length:0}),setDim,getDim:()=>DIM,nCol,aCol,lavaWaterCheck,tryIgnitePortal,travelNether,travelAether,nfCell,asCell,getNSEEN:()=>NSEEN,getASEEN:()=>ASEEN,getINFKILL:()=>INFKILL,getVALKILL:()=>VALKILL,GADGET_IDS,randGadget,getGDG:()=>({...GDG}),getJET:()=>JETF,getGRAP:()=>GRAP?{...GRAP}:null,countBlockNear:(id,y0,y1)=>{let n=0;for(const [k,ch] of chunks){if(keyDim(k)!==DIM)continue;const bl=ch.bl;for(let i=0;i<bl.length;i++){if(bl[i]!==id)continue;const y=((i-(i%CH))/CH)%WH;if(y>=y0&&y<=y1)n++;}}return n;},getPatch:()=>patchOpen,modalOpen,GAME_VERSION,RELEASE_LABEL,TOOL3D,toolIdParts,mkTool3D,refreshHand,spawnDrop,getHand:()=>({kind:handKind,n:handG?handG.children.length:0,t3d:!!(handG&&handG.children[0]&&handG.children[0].isT3D)}),getArmTool:()=>plModel?(plModel._toolId||0):0,setCam:n=>{camMode=n;},WPN3D,b64bytes,gunIdParts,mkWpn3D,wpnRaw,draw3DIcon,setShaders,getSHD:()=>({on:SHD.on,ready:!!SHD.rt}),openSet,closeSet,getSet:()=>setOpen,getSnd:()=>soundOn,setSnd:v=>{soundOn=!!v;},getMus:()=>musicOn,setMus:v=>{musicOn=!!v;},getUG:()=>ugT,throwSubBtn,mkSkateMesh,applyShadows,getShadow:()=>(renderer&&renderer.shadowMap?!!renderer.shadowMap.enabled:false),STORE_CAT,pauseGame,resumeGame,getPaused:()=>!!paused,armorAccepts,syncArmorModel,getArmVis:()=>plModel&&plModel._arm?plModel._arm.map(g=>g[0].visible):null,openTerrAt:(x,y,z)=>{ensureBE(x,y,z,'terr');openTerr(bkey(x,y,z));},closeTerr,getTG:()=>({on:terrOpen,w:TG.w,h:TG.h,hp:TG.hp,px:TG.px,py:TG.py,hasT:!!TG.t}),terrTile:(x,y)=>TG.t?TG.t[y*TG.w+x]:-1,terrPoke:(x,y,v)=>{if(TG.t)TG.t[y*TG.w+x]=v;},saveTerr,terrCraft,TCRAFTS,terrGive:(k,n)=>{if(k==='ore')TG.ore+=n;else TG.binv[k]=(TG.binv[k]||0)+n;},terrWarp:(x,y)=>{TG.px=x;TG.py=y;TG.vx=TG.vy=0;TG.fallV=0;},b64enc,blockAliveRoll,blockComesAlive,getFISHB:()=>FISHB?{x:FISHB.x,y:FISHB.y,z:FISHB.z,inWater:FISHB.inWater,bite:FISHB.bite}:null,fishForceBite:()=>{if(FISHB){FISHB.bite=1.2;}},dispUse,setFigChance:v=>{FIG_CHANCE=v;},getDISPM:()=>DISPM.size,lawnCheck,getLWN:()=>LWN.size,stampCinema,openCine,closeCine,cineSelect,cineEnter,getCIN:()=>({on:cineOpen,mode:CIN.mode,m:CIN.m,res:CIN.res}),getM8:()=>M8LAST,getSNL:()=>SNL&&!SNL.dead?{x:SNL.x,y:SNL.y,z:SNL.z,on:SNL_ON}:{on:SNL_ON},snailReset:()=>{if(SNL)removeEnt(SNL);SNL=null;SNL_ON=false;},snailWarp:(x,y,z)=>{if(SNL&&!SNL.dead){SNL.x=x;SNL.y=y;SNL.z=z;SNL.vx=SNL.vy=SNL.vz=0;}},spawnPlane,megaNuke,nukeDrop,nukeSealed,forceChunksNear,surfaceTop,getNARM:()=>({t:NARM.t,armed:!!NARM.e}),setNARM:t=>{if(NARM.e)NARM.t=t;},getNUKES:()=>NUKES.map(n=>({x:n.x,y:n.y,z:n.z,d:n.d})),nukeSpawnBomb:(x,y,z)=>{spawnABomb(x,y,z,0,0);NARM.e=entities[entities.length-1];NARM.t=20;NARM.sir=0;},getSCARE:()=>({t:SCARE.t,kind:SCARE.kind}),setGhostChance:v=>{GHOST_CHANCE=v;},spawnGhost,setGameSpeed:v=>{GAMESPD=clamp(+v,0.1,1);},getGameSpeed:()=>GAMESPD,look,drainLook,getYaw:()=>P?P.yaw:0,getPitch:()=>P?P.pitch:0,getHorror:()=>({ghosts:entities.filter(e=>e.t==='ghost'&&!e.dead).length}),getTGX:()=>({binv:{...TG.binv},ore:TG.ore,pick:TG.pick,sword:TG.sword,won:!!TG.won,craft:!!TG.craft}),
     B,IT,KEY,MB,chunks,blockEnts,get P(){return P;},get entities(){return entities;},
     get playing(){return playing;},
     /* Release 1.0 seams: the menu music, the volume buses, the player's name */

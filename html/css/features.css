@@ -68,6 +68,10 @@
 #armor{position:fixed;right:10px;bottom:42px;display:none;color:#cfd6ff;
   font:bold 15px 'Courier New',monospace;white-space:nowrap;background:rgba(0,0,0,.42);
   padding:4px 9px;border-radius:4px;text-shadow:1px 1px 0 #000}
+#thrhud{position:fixed;right:14px;top:50%;transform:translateY(-50%);width:12px;height:140px;display:none;
+  background:rgba(0,0,0,.45);border:2px solid #1c1c1c;box-shadow:0 0 0 1px rgba(255,255,255,.25);pointer-events:none}
+#thrfill{position:absolute;left:0;right:0;bottom:0;height:0;background:#ffb43a}
+#thrfill.full{background:#ff5a2a}
 #store,#pow{z-index:25;background:rgba(0,0,0,.62)}
 #storewin,#powwin{position:relative;min-width:min(calc(100% - 16px),540px);max-width:min(calc(100% - 16px),580px);
   max-height:calc(100% - 16px);overflow-y:auto}

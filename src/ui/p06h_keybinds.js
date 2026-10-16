@@ -16,7 +16,7 @@ const KB_ACTS=[   /* [id, group, label, default code] */
   ['hot4','Inventory','Hotbar slot 4','Digit4'],['hot5','Inventory','Hotbar slot 5','Digit5'],['hot6','Inventory','Hotbar slot 6','Digit6'],
   ['hot7','Inventory','Hotbar slot 7','Digit7'],['hot8','Inventory','Hotbar slot 8','Digit8'],['hot9','Inventory','Hotbar slot 9','Digit9'],
   ['cam','Actions','Change camera','KeyF'],['powers','Actions','Powers menu','KeyP'],['laser','Actions','Laser Eyes (hold)','KeyL'],
-  ['honk','Actions','Honk (in a car)','KeyH'],['brake','Actions','Plane brake','AltLeft'],
+  ['honk','Actions','Honk (in a car)','KeyH'],['brake','Actions','Plane brake / throttle down','AltLeft'],
   ['chat','Screen & chat','Chat','KeyT'],['cmd','Screen & chat','Chat with a command','Slash'],['list','Screen & chat','Player list (hold)','Tab'],
   ['shot','Screen & chat','Screenshot','F2'],['replay','Screen & chat','Save a replay','F8']];
 const KB_FIXED=['Escape','F3','Enter','NumpadEnter','MetaLeft','MetaRight','ContextMenu','OSLeft','OSRight'];

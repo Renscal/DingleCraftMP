@@ -11,7 +11,7 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges}
    must stay a share of the WINDOW are written as % of the overlay, or as calc(Nvh / var(--uiz)). */
 :root{--uiz:1;--uih:1}
 .ovl,#cutbox,#cutskip{zoom:var(--uiz)}
-#cross,#ring,#handname,#stats,#hotbar,#dis,#trick,#coords,#cmphud,#pcmphud,#chatbox,#tablist,#nuket,#xp,#armor,#boss,#mgbar,#debug,
+#cross,#ring,#handname,#stats,#hotbar,#dis,#trick,#coords,#cmphud,#pcmphud,#chatbox,#tablist,#nuket,#xp,#armor,#thrhud,#boss,#mgbar,#debug,
 #toast{zoom:var(--uih)}
 
 /* ---------- HUD ---------- */

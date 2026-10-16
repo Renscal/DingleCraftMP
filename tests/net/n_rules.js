@@ -291,7 +291,7 @@ boot.run(async()=>{
 
   /* ===== 6b. a thrown item and its thrower (6.21) ===== */
   {await a.pose(0,40,0);await bo.pose(1,40,0);bo.clear();
-    a.send({t:'drop',id:'thrown01.1',dim:'over',x:0,y:40,z:0,vx:0,vy:0,vz:0,st:{id:1,count:1},by:1});await until(()=>'thrown01.1' in W.drops,1500);
+    a.send({t:'drop',id:'thrown01.1',dim:'over',x:0,y:40,z:0,vx:0,vy:0,vz:0,st:{id:1,count:1},by:1});await until(()=>'thrown01.1' in W.drops&&!!bo.last('drop'),1500);   /* 6.66: and passed on to Bo (under load it had not arrived yet) */
     ok('a throw is passed on with its thrower\'s name (the server\'s word for it, not the game\'s), and that is not written into the world',bo.last('drop').by==='Ann'&&!JSON.stringify(W.drops['thrown01.1']).includes('by'));
     a.clear();a.send({t:'take',id:'thrown01.1'});await sleep(120);
     ok('the thrower cannot pick it straight back up: no answer, like a lost race, and it stays where it is',a.by('took').length===0&&a.by('undrop').length===0&&('thrown01.1' in W.drops));

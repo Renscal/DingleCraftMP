@@ -21,6 +21,15 @@ A version appears once `npm run release` has recorded it in `tests/fixtures/ship
 
 <!-- generated from PATCH_LOG: do not edit below this line (up to the next manual block) -->
 
+## DingleCraft Multiplayer 2.0 — Full throttle
+
+*Game version 6.66, released 2026-10-16.*
+
+- **FULL THROTTLE.** Dingle Airlines has installed a throttle lever. Pilots who spent whole flights with a thumb welded to the Space bar can now let go of it.
+- **It stays where you put it.** Space opens the throttle, Alt closes it, and the plane holds whatever you leave it at. Push it to full and it stays full: no more slowly running out of speed the moment you stop pressing. Half throttle cruises at half speed. Taking off and climbing with Space held works just as it did.
+- **A gauge.** A small bar on the right of the screen shows the throttle while you fly: amber as it fills, red at full. It scales with the rest of the HUD and goes away when you get out.
+- **The ground pushes back.** Hitting the ground (falling onto it, or meeting it fast and sinking) now costs half your speed and half your throttle, with a thud. Flying into a hillside or a wall halves the throttle too, so the engine no longer roars you straight back into it. A gentle landing, a hop on the take-off run and a one-block ledge on the runway cost nothing. Alt still brakes, and stopped on the ground it still backs you up.
+
 ## DingleCraft Multiplayer 2.0 — Light work
 
 *Game version 6.65, released 2026-10-16.*

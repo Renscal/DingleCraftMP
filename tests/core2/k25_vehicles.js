@@ -46,7 +46,10 @@ boot.run(async()=>{
    const s0=e.spd;keys({AltLeft:1});step(20);
    ok('Alt brakes in the air ('+s0.toFixed(1)+' -> '+e.spd.toFixed(1)+')',e.spd<s0-3);
    off(e);}
-  {const P=V.P,gy=V.surfaceTop(Math.floor(P.x+2),Math.floor(P.z))+1,e=plane(gy+0.2);V.P.ride=e;keys();step(30);
+  {const P=V.P,px=Math.floor(P.x),pz=Math.floor(P.z),gy=V.surfaceTop(px+2,pz)+1;
+   V.forceChunksNear(P.x,P.z-20);   /* 6.66: a flat strip to taxi on (it used to be wherever the flights before ended: a ledge there stopped the back-up) */
+   for(let x=px-1;x<=px+5;x++)for(let z=pz-30;z<=pz+8;z++){V.setBlock(x,gy-1,z,V.B.STONE);for(let y=gy;y<gy+5;y++)V.setBlock(x,y,z,V.B.AIR);}
+   step(2);const e=plane(gy+0.2);V.P.ride=e;keys();step(30);
    ok('a parked plane sits on the ground',e.onGround);
    keys({Space:1});step(40);const sp=e.spd;keys({AltLeft:1});step(60);
    const z0=e.z,x0=e.x;step(40);const back=e.spd;keys();

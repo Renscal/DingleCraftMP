@@ -298,6 +298,7 @@ boot.run(async()=>{
   /* 6.34: the server always has the player as they are now, with nobody pressing Save */
   {const key=V.getPName().toLowerCase(),rec=()=>W.players[key]||{};
     const seen=new Set();let base='';const watch=setInterval(()=>{const v=rec().seen;if(v&&v!==base)seen.add(v);},2);const mark=()=>{base=rec().seen||'';seen.clear();};
+    const calm=()=>{for(const e of V.entities)if(e.t==='mob')e.dead=true;V.autoSaveT(0);};   /* 6.66: a mob dying in a window drops its loot, and a drop asks for a save (ntSaveSoon); the 60 s autosave is a save too: neither may land in a window that counts saves */
     const run=async n=>{for(let i=0;i<n;i++){step(1);await sleep(4);}};   /* frames of 40-60 ms of game time, with time for the socket between them */
     await run(30);await sleep(60);mark();
     V.P.inv[5]={id:B.DIRT,count:1};V.redrawHotbar&&V.redrawHotbar();
@@ -305,11 +306,11 @@ boot.run(async()=>{
     await run(28);await sleep(80);
     ok('a change to the inventory reaches the server within about a second, unasked (slot 5: '+((rec().inv||[])[5]||{}).count+')',!!rec().inv&&!!rec().inv[5]&&rec().inv[5].id===B.DIRT&&rec().inv[5].count===50);
     ok('  ... and a burst of 50 changes was one save, not fifty ('+seen.size+')',seen.size===1);
-    mark();await run(40);await sleep(60);
+    calm();mark();await run(40);await sleep(60);
     ok('nothing changes: nothing is sent ('+seen.size+' saves in two seconds)',seen.size===0);
     V.P.hp=13;V.P.armor=V.P.armor||[null,null,null,null];V.P.xp=(V.P.xp||0)+7;await run(30);await sleep(80);
     ok('health and experience count as changes too',rec().hp===13&&rec().xp===Math.round(V.P.xp));
-    V.P.hp=20;await run(30);await until(()=>rec().hp===20,3000);await sleep(60);V.autoSaveT(0);mark();const x0=V.P.x;   /* 6.63: the health save is on the server before counting starts, and the game's own autosave (every 60 s of game time, which online is a save too) is a minute away, not inside the window: it landed there about one run in twenty */V.P.x=x0+6;await run(60);await sleep(60);const early=seen.size;
+    V.P.hp=20;await run(30);await until(()=>rec().hp===20,3000);await sleep(60);calm();mark();const x0=V.P.x;   /* 6.63: the health save is on the server before counting starts, and the game's own autosave (every 60 s of game time, which online is a save too) is a minute away, not inside the window: it landed there about one run in twenty */V.P.x=x0+6;await run(60);await sleep(60);const early=seen.size;
     for(let i=0;i<8;i++){V.NET.acc+=1.3;await run(4);}await sleep(80);
     ok('standing somewhere new is not sent at once ('+early+'), but is within ten seconds ('+(rec().x||0).toFixed(1)+')',early===0&&Math.abs(rec().x-(x0+6))<0.6);
     V.P.x=x0;

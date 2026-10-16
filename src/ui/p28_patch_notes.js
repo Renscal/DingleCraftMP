@@ -3,7 +3,13 @@
    frozen core suite keep working, but players never see it. PATCH_LOG still feeds CHANGELOG.md (scripts/changelog.mjs)
    and the release tooling. Data-driven off GAME_VERSION so it can't drift from the shipped build. */
 const PATCH_LOG=[
- {v:GAME_VERSION,label:RELEASE_LABEL,title:'Light work',lines:[
+ {v:GAME_VERSION,label:RELEASE_LABEL,title:'Full throttle',lines:[
+    '<b>FULL THROTTLE.</b> Dingle Airlines has installed a throttle lever. Pilots who spent whole flights with a thumb welded to the Space bar can now let go of it.',
+    '<b>It stays where you put it.</b> Space opens the throttle, Alt closes it, and the plane holds whatever you leave it at. Push it to full and it stays full: no more slowly running out of speed the moment you stop pressing. Half throttle cruises at half speed. Taking off and climbing with Space held works just as it did.',
+    '<b>A gauge.</b> A small bar on the right of the screen shows the throttle while you fly: amber as it fills, red at full. It scales with the rest of the HUD and goes away when you get out.',
+    '<b>The ground pushes back.</b> Hitting the ground (falling onto it, or meeting it fast and sinking) now costs half your speed and half your throttle, with a thud. Flying into a hillside or a wall halves the throttle too, so the engine no longer roars you straight back into it. A gentle landing, a hop on the take-off run and a one-block ledge on the runway cost nothing. Alt still brakes, and stopped on the ground it still backs you up.',
+  ]},
+ {v:'6.65',label:'DingleCraft Multiplayer 2.0',title:'Light work',lines:[
     '<b>LIGHT WORK.</b> No new features again. The game found out it had been spending half its time lighting the world by checking, one block at a time, which chunk it was standing in. It now remembers.',
     '<b>Lighting a new chunk, twice as fast.</b> Every new piece of land works out where the sunlight and the torchlight reach. Along the border between two chunks that sum went back and forth between them, and the game only remembered one, so at every step it forgot the other and looked it up again by name. It remembers two now: lighting a chunk takes about 1.6 ms instead of 3.6 ms here, and building one about a quarter less overall. Flying the plane at full speed, loading a world and a server with many players spread out all build land, and all of it gets the time back.',
     '<b>Exactly the same light.</b> Not one block is lit differently: the light of 64 new chunks adds up to the same number as it did in 6.64, block for block, sun and torch. A change of dimension and every chunk let go also wipe the memory now, so the Nether can never borrow the Overworld’s sunshine.',
